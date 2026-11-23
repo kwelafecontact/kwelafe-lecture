@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { config } from "./config";
+import { premier, executer } from "./cf";
 
 export type Session = {
   cid: string; // identifiant client Shopify (gid://shopify/Customer/...)
@@ -12,11 +13,25 @@ export type Session = {
 const NOM_COOKIE = "kw_session";
 const DUREE = 60 * 60 * 24 * 30; // 30 jours
 
-function cle() {
-  if (config.sessionSecret.length < 32) {
-    throw new Error("SESSION_SECRET doit contenir au moins 32 caractères.");
+let cacheCle: Uint8Array | null = null;
+
+/** Clé de signature : SESSION_SECRET si fourni, sinon secret aléatoire créé une fois et rangé dans la base. */
+async function cle(): Promise<Uint8Array> {
+  if (cacheCle) return cacheCle;
+  let secret = config.sessionSecret;
+  if (secret.length < 32) {
+    const existant = await premier<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'session_secret'");
+    if (existant) secret = existant.valeur;
+    else {
+      const octets = new Uint8Array(48);
+      crypto.getRandomValues(octets);
+      const nouveau = Array.from(octets, (o) => o.toString(16).padStart(2, "0")).join("");
+      await executer("INSERT OR IGNORE INTO reglages (cle, valeur) VALUES ('session_secret', ?)", nouveau);
+      secret = (await premier<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'session_secret'"))!.valeur;
+    }
   }
-  return new TextEncoder().encode(config.sessionSecret);
+  cacheCle = new TextEncoder().encode(secret);
+  return cacheCle;
 }
 
 export async function signer(payload: Record<string, unknown>, dureeSecondes: number) {
@@ -24,12 +39,12 @@ export async function signer(payload: Record<string, unknown>, dureeSecondes: nu
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + dureeSecondes)
-    .sign(cle());
+    .sign(await cle());
 }
 
 export async function verifier<T>(jeton: string): Promise<T | null> {
   try {
-    const { payload } = await jwtVerify(jeton, cle());
+    const { payload } = await jwtVerify(jeton, await cle());
     return payload as T;
   } catch {
     return null;

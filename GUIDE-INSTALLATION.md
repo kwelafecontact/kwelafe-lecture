@@ -37,10 +37,8 @@ Pourquoi 5 $ avec des clients : la formule gratuite limite le temps de calcul à
    - Commande de build : `npx opennextjs-cloudflare build`
    - Commande de déploiement : `npx opennextjs-cloudflare deploy`
 3. Lance le déploiement. Cloudflare donne une adresse provisoire du type `https://kwelafe-lecture.ton-nom.workers.dev`.
-4. Dans le Worker > **Paramètres > Variables et secrets** :
-   - Variable `APP_URL` = l'adresse provisoire (tu la changeras à l'étape 7)
-   - **Secret** `SESSION_SECRET` = une longue phrase aléatoire (40 caractères ou plus)
-5. Redéploie, ouvre l'adresse et touche « Me connecter ». En mode démo, tu entres directement avec l'accès éditeur.
+4. Le secret de session est créé automatiquement par l'application (rien à saisir).
+5. Ouvre l'adresse et touche « Me connecter ». En mode démo, tu entres directement avec l'accès éditeur.
 6. **Mon compte > Gérer les livres** : importe 2 ou 3 livres (un EPUB interactif, un EPUB classique, un PDF), coche « Publié », puis teste sur ton iPhone et ton iPad, en portrait et en paysage.
    Fais l'import depuis Chrome sur ordinateur, c'est plus rapide.
 7. Installe l'app sur ton téléphone : Safari > Partager > « Sur l'écran d'accueil ».
