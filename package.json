@@ -1,0 +1,32 @@
+{
+  "name": "kwelafe-lecture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kwélafé Lecture : bibliothèque numérique et lecteur protégé de Kwélafé Production",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "node scripts/copier-worker-pdf.mjs",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "db:init": "wrangler d1 migrations apply kwelafe-lecture --remote",
+    "db:init:local": "wrangler d1 migrations apply kwelafe-lecture --local"
+  },
+  "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.18",
+    "jose": "^6.1.0",
+    "jszip": "^3.10.1",
+    "next": "^16.4.6",
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.166.0"
+  }
+}

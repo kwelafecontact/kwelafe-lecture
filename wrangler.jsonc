@@ -1,0 +1,35 @@
+{
+  // Configuration Cloudflare de Kwélafé Lecture
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kwelafe-lecture",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "observability": { "enabled": true },
+
+  // Base de données (D1) : catalogue, clients, progression, codes cadeaux
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kwelafe-lecture",
+      "database_id": "b0aaaf38-9379-445e-a383-41f54595353f",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Stockage des livres (R2), privé
+  "r2_buckets": [{ "binding": "LIVRES", "bucket_name": "kwelafe-livres" }],
+
+  // Réglages non secrets (les secrets se mettent avec : npx wrangler secret put NOM)
+  "vars": {
+    "APP_URL": "https://lire.kwelafeproduction.com",
+    "DEMO_MODE": "1",
+    "ADMIN_EMAILS": "kwelafe.contact@gmail.com",
+    "SHOPIFY_SHOP_URL": "https://kwelafeproduction.com",
+    "SHOPIFY_STORE_DOMAIN": "ta-boutique.myshopify.com",
+    "SHOPIFY_BOUTIQUE_ABONNEMENT_URL": "https://kwelafeproduction.com/products/abonnement-mensuel-kwelafe",
+    "SHOPIFY_API_VERSION": "2026-10",
+    "ABONNE_TAGS": "kwelafe-abonne,appstle_membership_active"
+  }
+}
