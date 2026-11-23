@@ -7,6 +7,8 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "observability": { "enabled": true },
+  "workers_dev": true,
+  "preview_urls": false,
 
   // Base de données (D1) : catalogue, clients, progression, codes cadeaux
   "d1_databases": [
@@ -23,7 +25,7 @@
 
   // Réglages non secrets (les secrets se mettent avec : npx wrangler secret put NOM)
   "vars": {
-    "APP_URL": "https://lire.kwelafeproduction.com",
+    "APP_URL": "https://kwelafe-lecture.kwelafe-contact.workers.dev",
     "DEMO_MODE": "1",
     "ADMIN_EMAILS": "kwelafe.contact@gmail.com",
     "SHOPIFY_SHOP_URL": "https://kwelafeproduction.com",
