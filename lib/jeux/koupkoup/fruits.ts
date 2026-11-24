@@ -272,110 +272,141 @@ function anneau(rayon: number, epaisseur: number, couleur: string, y: number) {
 // ---------------------------------------------------------------------------
 
 function modeleLetchi(or = false): Modele {
-  const h = 1.55;
-  const g = revolution((t) => 0.74 * Math.pow(Math.sin(Math.PI * t), 0.72) * (1 + 0.07 * Math.sin(Math.PI * t * 2) - 0.06 * t), h, 72, 96);
-  const rouges = [C("#b3172b"), C("#c9283a"), C("#a01226"), C("#d23a40")];
-  const creux = C("#5a0a15"), pointe = C("#f08a8a"), brun = C("#8a4a26");
+  // Petite sphère un peu en cœur, enveloppe écailleuse rose à rouge
+  const h = 1.52;
+  const g = revolution((t) => {
+    const coeur = t < 0.35 ? Math.pow(t / 0.35, 0.55) : 1;
+    return 0.75 * Math.pow(Math.sin(Math.PI * (0.02 + 0.96 * t)), 0.6) * (0.82 + 0.18 * coeur) * (1 - 0.05 * t);
+  }, h, 80, 112);
+  const rouges = [C("#b0162c"), C("#c2223a"), C("#9c1228"), C("#cc3040"), C("#b81c32")];
+  const sillonC = C("#3e0610"), pointe = C("#e87a7e"), brun = C("#8e4422"), vertJ = C("#9a7a3a");
   const dores = [C("#e8b52c"), C("#f6cc45"), C("#d9a020")];
   modeler(g, (p) => {
-    const w = worley(p.x * 7.5, p.y * 7.5, p.z * 7.5);
-    const dome = Math.max(0, 0.55 - w.f1) * 0.11;                         // chaque tubercule bombé
-    const pic = w.f1 < 0.07 ? (0.07 - w.f1) * 0.35 : 0;                   // petite pointe au centre
-    const sillon = lisse(0.12, 0.0, w.f2 - w.f1);                         // creux entre tubercules
-    const d = dome + pic - sillon * 0.02;
+    const w = worley(p.x * 10.5, p.y * 10.5, p.z * 10.5);
+    const ecaille = Math.min(1, (w.f2 - w.f1) * 6);                    // 0 sur le bord de l'écaille, 1 au centre
+    const plat = 0.026 * Math.pow(ecaille, 0.55);                         // écaille plate et légèrement bombée
+    const pic = w.f1 < 0.06 ? (0.06 - w.f1) * 0.18 : 0;                  // minuscule pointe centrale
+    const d = plat + pic;
+    const sillon = 1 - Math.min(1, ecaille * 2.2);
     if (or) {
-      const c = melange(dores[Math.floor(w.id * 3)], C("#fff0a0"), lisse(0.1, 0.0, w.f1));
-      return [d, melange(c, C("#a87410"), sillon * 0.7)];
+      const c = melange(dores[Math.floor(w.id * 3)], C("#fff0a0"), lisse(0.08, 0.0, w.f1) * 0.7);
+      return [d, melange(c, C("#a87410"), sillon * 0.6)];
     }
-    let c = rouges[Math.floor(w.id * 4)].clone();
-    c = melange(c, brun, lisse(0.55, 0.95, hauteurRel(p, h)) * 0.45 + (fbm(p.x * 2, p.y * 2, p.z * 2) - 0.5) * 0.3);
-    c = melange(c, pointe, lisse(0.09, 0.0, w.f1) * 0.7);
-    return [d, melange(c, creux, sillon * 0.85)];
+    let c = rouges[Math.floor(w.id * 5)].clone();
+    const haut = lisse(0.6, 1, hauteurRel(p, h));
+    c = melange(c, brun, haut * 0.35 + (fbm(p.x * 2, p.y * 2, p.z * 2) - 0.55) * 0.4);
+    c = melange(c, vertJ, haut * lisse(0.7, 0.9, fbm(p.x * 3 + 7, p.y * 3, p.z * 3)) * 0.35);
+    c = melange(c, pointe, lisse(0.07, 0.0, w.f1) * 0.45);
+    return [d, melange(c, sillonC, sillon * 0.9)];
   });
   const materiau = or
     ? peauPhysique({ metalness: 0.8, roughness: 0.25, emissive: C("#ff9a10"), emissiveIntensity: 0.22, clearcoat: 1 })
-    : peauPhysique({ roughness: 0.58, clearcoat: 0.2, clearcoatRoughness: 0.5 });
+    : peauPhysique({ roughness: 0.62, clearcoat: 0.12, clearcoatRoughness: 0.6 });
   return {
     corps: g, materiau,
     accessoires: () => {
-      const t = tige(0.42, 0.045, 0.03, 0.4, or ? "#b88412" : "#6b4a24");
-      t.position.y = h / 2 - 0.04;
+      const t = tige(0.5, 0.04, 0.028, 0.5, or ? "#b88412" : "#6b4a24");
+      t.position.y = h / 2 - 0.05;
       return [t];
     },
   };
 }
 
 function modeleMangue(): Modele {
-  const h = 2.3;
-  const g = revolution((t) => 0.8 * Math.pow(Math.sin(Math.PI * t), 0.62) * (1 + 0.14 * t), h, 72, 96);
+  // Mangue José : ovale allongée, peau verte et jaune teintée d'orange, petit bec
+  const h = 2.25;
+  const g = revolution((t) => 0.72 * Math.pow(Math.sin(Math.PI * t), 0.6) * (1 + 0.12 * t), h, 80, 104);
   const pos = g.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) {
     const y = pos.getY(i), x = pos.getX(i), z = pos.getZ(i);
     const t = y / h + 0.5;
-    let nx = x + 0.24 * Math.sin(Math.PI * t);                                     // forme de rein
-    if (x > 0) nx += 0.16 * Math.exp(-Math.pow((t - 0.22) / 0.1, 2));               // le « bec » de la mangue
-    pos.setXYZ(i, nx, y, z * 0.84);
+    let nx = x + 0.18 * Math.sin(Math.PI * t);
+    if (x > 0) nx += 0.14 * Math.exp(-Math.pow((t - 0.2) / 0.09, 2));
+    pos.setXYZ(i, nx, y, z * 0.86);
   }
-  const vert = C("#4f7f27"), vertJ = C("#9fb53a"), jaune = C("#eab52e"), orange = C("#ef8a26"), rouge = C("#c8352c"), lenticelle = C("#f4e2a6");
+  const vert = C("#4a7a22"), vertJ = C("#8fa82e"), jaune = C("#dcb02a"), orange = C("#e48a24"), rose = C("#c8502c"), lenticelle = C("#efdc9a");
   modeler(g, (p) => {
-    const t = hauteurRel(p, h) + (fbm(p.x * 1.6, p.y * 1.6, p.z * 1.6) - 0.5) * 0.45;
-    const soleil = lisse(-0.2, 0.9, p.x * 0.8 + (t - 0.5));
-    let c = melange(vert, vertJ, lisse(0.05, 0.35, t));
-    c = melange(c, jaune, lisse(0.3, 0.6, t));
-    c = melange(c, orange, soleil * 0.7);
-    c = melange(c, rouge, lisse(0.55, 1, soleil) * lisse(0.4, 0.9, t));
-    const w = worley(p.x * 16, p.y * 16, p.z * 16);
-    c = melange(c, lenticelle, lisse(0.06, 0.02, w.f1) * 0.55);
-    return [0.004 * bruit3(p.x * 24, p.y * 24, p.z * 24), c];
+    const t = hauteurRel(p, h) + (fbm(p.x * 1.4, p.y * 1.4, p.z * 1.4) - 0.5) * 0.5;
+    const soleil = lisse(0.0, 1.0, p.x * 0.7 + (t - 0.45));
+    let c = melange(vert, vertJ, lisse(0.0, 0.4, t));
+    c = melange(c, jaune, lisse(0.35, 0.7, t));
+    c = melange(c, orange, soleil * 0.55);
+    c = melange(c, rose, lisse(0.7, 1, soleil) * lisse(0.55, 0.9, t) * 0.5);
+    const w = worley(p.x * 18, p.y * 18, p.z * 18);
+    c = melange(c, lenticelle, lisse(0.055, 0.02, w.f1) * 0.5);
+    return [0.003 * bruit3(p.x * 24, p.y * 24, p.z * 24), c];
   });
   return {
-    corps: g, materiau: peauPhysique({ roughness: 0.32, clearcoat: 0.45, clearcoatRoughness: 0.35 }),
+    corps: g, materiau: peauPhysique({ roughness: 0.42, clearcoat: 0.22, clearcoatRoughness: 0.5 }),
     accessoires: () => {
-      const t = tige(0.28, 0.06, 0.045, 0.2, "#5a4a26");
-      t.position.set(0.2, h / 2 - 0.05, 0);
+      const t = tige(0.3, 0.055, 0.04, 0.25, "#5a4a26");
+      t.position.set(0.16, h / 2 - 0.05, 0);
       return [t];
     },
   };
 }
 
 function modeleAnanas(): Modele {
-  const h = 1.95;
-  const g = revolution((t) => 0.8 * Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * t)), 0.42) * (1 - 0.06 * t), h, 80, 112);
-  const brunVert = C("#5c5520"), or = C("#e4a42a"), orange = C("#d9801f"), vert = C("#6c8a2a"), epine = C("#4a2e12");
+  // Ananas Victoria : petit, svelte (hauteur ≈ 1,3 × diamètre), jaune d'or, couronne épineuse
+  const h = 1.8;
+  const g = revolution((t) => 0.68 * Math.pow(Math.sin(Math.PI * (0.05 + 0.9 * t)), 0.38) * (1 - 0.1 * t), h, 96, 128);
+  const COL = 13;                     // yeux par tour
+  const DY = 0.2;                     // hauteur d'une rangée
+  const or = C("#d99a2a"), orange = C("#cf741c"), vertB = C("#76862c"), bord = C("#38240c"), bractee = C("#b98a34"), epine = C("#2e1a08");
   modeler(g, (p) => {
-    const a = angle(p);
-    const u = (a * 8) / Math.PI + p.y * 3.3, v = (a * 8) / Math.PI - p.y * 3.3;
-    const fu = u - Math.floor(u) - 0.5, fv = v - Math.floor(v) - 0.5;
-    const r = Math.hypot(fu, fv);                                  // distance au centre de l'œil
-    const oeil = Math.max(0, 1 - r * 1.9);
-    const cellule = (Math.floor(u) * 13 + Math.floor(v) * 7) & 7;
-    let c = melange(brunVert, cellule % 2 ? or : orange, Math.pow(oeil, 0.7));
-    c = melange(c, vert, lisse(0.25, -0.05, hauteurRel(p, h)) * 0.55);
-    c = melange(c, epine, lisse(0.12, 0.03, r));                    // petite épine brune au centre
-    const d = 0.085 * Math.pow(oeil, 0.65) + (r < 0.08 ? 0.02 : 0);
+    const a = (angle(p) + Math.PI) / (Math.PI * 2);   // 0..1 autour
+    // grille hexagonale décalée d'une demi-case à chaque rangée (spirale des yeux)
+    let best = 9, bu = 0, bv = 0, br = 0;
+    const r0 = Math.round(p.y / DY);
+    for (let r = r0 - 1; r <= r0 + 1; r++) {
+      const dec = (r & 1) * 0.5;
+      const cu = Math.round(a * COL - dec) + dec;
+      for (let k = -1; k <= 1; k++) {
+        const u = (cu + k) / COL;
+        let du = (a - u) * COL; du -= Math.round(du / COL) * COL;
+        const dv = (p.y - r * DY) / DY;
+        const dist = Math.hypot(du * 0.95, dv * 1.0);
+        if (dist < best) { best = dist; bu = du; bv = dv; br = r; }
+      }
+    }
+    const hexa = Math.max(Math.abs(bu) * 1.0 + Math.abs(bv) * 0.5, Math.abs(bv) * 1.0);
+    const interieur = Math.max(0, 1 - hexa * 1.95);                    // 1 au centre de l'œil, 0 au bord
+    const t = hauteurRel(p, h);
+    let c = melange(or, orange, (((br * 7) % 5) / 5) * 0.6 + lisse(0.5, 1, t) * 0.3 + (fbm(p.x * 2, p.y * 2, p.z * 2) - 0.5) * 0.5);
+    c = melange(c, vertB, lisse(0.4, 0.0, t) * 0.7 + lisse(0.0, -0.2, bv) * 0.25);
+    c = melange(c, bractee, lisse(-0.15, -0.45, bv) * interieur * 0.8);   // lèvre de la bractée en bas de l'œil
+    c = melange(c, bord, lisse(0.32, 0.0, interieur));
+    c = melange(c, epine, lisse(0.1, 0.03, best));
+    const d = 0.03 * Math.pow(interieur, 0.45) - 0.018 * lisse(0.25, 0.0, interieur) + (best < 0.08 ? 0.01 : 0);
     return [d, c];
   });
   return {
-    corps: g, materiau: peauPhysique({ roughness: 0.62, clearcoat: 0.1 }),
+    corps: g, materiau: peauPhysique({ roughness: 0.6, clearcoat: 0.12 }),
     accessoires: () => {
       const r = graine(11);
-      const out: THREE.Object3D[] = [];
       const couronne = new THREE.Group();
-      couronne.position.y = h / 2 - 0.06;
-      for (let anneauI = 0; anneauI < 3; anneauI++) {
-        const nb = [8, 9, 7][anneauI];
+      couronne.position.y = h / 2 - 0.05;
+      for (let anneauI = 0; anneauI < 4; anneauI++) {
+        const nb = [9, 9, 8, 6][anneauI];
         for (let i = 0; i < nb; i++) {
-          const L = [1.15, 0.95, 0.7][anneauI] * (0.85 + r() * 0.3);
-          const f = feuilleDetaillee(L, 0.16, ["#3f7a4a", "#4a8a50", "#5a9a52"][anneauI], 0.35 + anneauI * 0.1, 0.4);
+          const L = [1.3, 1.15, 0.9, 0.6][anneauI] * (0.85 + r() * 0.3);
+          const f = feuilleDetaillee(L, 0.13, ["#3e7650", "#478254", "#55905a", "#62a060"][anneauI], 0.28 + anneauI * 0.08, 0.5);
+          // petites épines sur le bord des feuilles
+          for (let e = 0; e < 5; e++) {
+            const ep = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 4), new THREE.MeshStandardMaterial({ color: "#2f5a3a" }));
+            const ty = L * (0.2 + e * 0.13);
+            ep.position.set((e % 2 ? 1 : -1) * 0.045 * (1 - ty / L), ty, 0.28 * L * (ty / L) * (ty / L));
+            ep.rotation.z = (e % 2 ? -1 : 1) * 1.2;
+            f.add(ep);
+          }
           const pivot = new THREE.Group();
-          pivot.rotation.y = (i / nb) * Math.PI * 2 + anneauI * 0.4 + r() * 0.2;
-          f.rotation.x = -(0.25 + (2 - anneauI) * 0.3 + r() * 0.12);
+          pivot.rotation.y = (i / nb) * Math.PI * 2 + anneauI * 0.35 + r() * 0.2;
+          f.rotation.x = -(0.12 + (3 - anneauI) * 0.22 + r() * 0.1);
           pivot.add(f);
           couronne.add(pivot);
         }
       }
-      out.push(couronne);
-      return out;
+      return [couronne];
     },
   };
 }
@@ -509,20 +540,20 @@ function modeleCitron(): Modele {
 }
 
 function modeleMandarine(): Modele {
-  const h = 1.1;
-  const g = revolution((t) => 0.76 * Math.pow(Math.sin(Math.PI * t), 0.6) * (1 - 0.04 * t), h, 80, 128);
+  const h = 1.22;
+  const g = revolution((t) => 0.74 * Math.pow(Math.sin(Math.PI * t), 0.42) * (1 - 0.03 * t), h, 80, 128);
   const orange = C("#ea6a10"), fonce = C("#c94c08"), clair = C("#f68a22");
   modeler(g, (p) => {
     const w = worley(p.x * 30, p.y * 30, p.z * 30);
     const pore = lisse(0.25, 0.0, w.f1);
     const t = hauteurRel(p, h);
     let c = melange(orange, clair, fbm(p.x * 3, p.y * 3, p.z * 3) * 1.2 - 0.2);
-    c = melange(c, fonce, lisse(0.7, 1, t) * 0.4 + pore * 0.25);
+    c = melange(c, fonce, lisse(0.7, 1, t) * 0.4 + pore * 0.4);
     const nombril = lisse(0.08, 0.0, t) * 0.04;                        // petit creux en bas
-    return [-0.008 * pore - nombril, c];
+    return [-0.013 * pore - nombril, c];
   });
   return {
-    corps: g, materiau: peauPhysique({ roughness: 0.36, clearcoat: 0.5 }),
+    corps: g, materiau: peauPhysique({ roughness: 0.4, clearcoat: 0.35, clearcoatRoughness: 0.45 }),
     accessoires: () => {
       const t = tige(0.14, 0.03, 0.025, 0.3, "#456a28");
       t.position.y = h / 2 - 0.02;
@@ -579,16 +610,19 @@ function modeleBringelle(): Modele {
 }
 
 function modeleGoyavier(): Modele {
-  const h = 0.86;
-  const g = revolution((t) => 0.44 * Math.pow(Math.sin(Math.PI * t), 0.52), h, 56, 80);
-  const rouge = C("#8c1430"), clair = C("#cc3a56"), fonce = C("#5e0c1e");
+  // Goyavier (goyave-fraise) : petite baie ronde rouge violacé, brillante, couronne de sépales en bas
+  const h = 0.84;
+  const g = revolution((t) => 0.44 * Math.pow(Math.sin(Math.PI * t), 0.5) * (1 - 0.05 * t), h, 56, 80);
+  const rouge = C("#8a1430"), violet = C("#5e0f2e"), clair = C("#c4304c");
   modeler(g, (p) => {
-    let c = melange(rouge, clair, fbm(p.x * 5, p.y * 5, p.z * 5) * 1.3 - 0.25);
-    c = melange(c, fonce, lisse(0.3, 0.0, hauteurRel(p, h)) * 0.5);
-    return [0.005 * bruit3(p.x * 25, p.y * 25, p.z * 25), c];
+    let c = melange(rouge, clair, fbm(p.x * 5, p.y * 5, p.z * 5) * 1.2 - 0.3);
+    c = melange(c, violet, lisse(0.45, 0.0, hauteurRel(p, h)) * 0.55 + (fbm(p.x * 3 + 2, p.y * 3, p.z * 3) - 0.5) * 0.4);
+    const w = worley(p.x * 22, p.y * 22, p.z * 22);
+    c = melange(c, C("#e07080"), lisse(0.04, 0.012, w.f1) * 0.5);
+    return [0.004 * bruit3(p.x * 25, p.y * 25, p.z * 25), c];
   });
   return {
-    corps: g, materiau: peauPhysique({ roughness: 0.28, clearcoat: 0.7 }),
+    corps: g, materiau: peauPhysique({ roughness: 0.22, clearcoat: 0.85, clearcoatRoughness: 0.2 }),
     accessoires: () => [calice(5, 0.1, 0.06, "#3a1a12", 0.2, -h / 2 + 0.02, true), anneau(0.05, 0.02, "#3a1a12", -h / 2 + 0.02)],
   };
 }
@@ -621,20 +655,21 @@ function modelePiment(): Modele {
 }
 
 function modeleTiJacque(): Modele {
+  // Jeune jacque : gros ovale vert couvert de petites pointes hexagonales serrées
   const h = 2.6;
-  const g = revolution((t) => 0.86 * Math.pow(Math.sin(Math.PI * t), 0.58) * (1 + 0.05 * Math.sin(Math.PI * t * 2)), h, 80, 112);
-  const vert = C("#5d8a28"), jaune = C("#9fae3a"), pointe = C("#2f4f14"), sillon = C("#83a03a");
+  const g = revolution((t) => 0.86 * Math.pow(Math.sin(Math.PI * t), 0.55) * (1 + 0.05 * Math.sin(Math.PI * t * 2)), h, 96, 128);
+  const vert = C("#5a8628"), vertC = C("#7fa232"), pointe = C("#c8c85a"), creux = C("#355a16");
   modeler(g, (p) => {
-    const w = worley(p.x * 10, p.y * 10, p.z * 10);
-    const pyramide = Math.max(0, 0.5 - w.f1) * 0.16;                  // petites pointes en pyramide
-    const s = lisse(0.08, 0.0, w.f2 - w.f1);
-    let c = melange(vert, jaune, fbm(p.x * 1.4, p.y * 1.4, p.z * 1.4) * 1.3 - 0.25);
-    c = melange(c, pointe, lisse(0.18, 0.02, w.f1) * 0.8);
-    c = melange(c, sillon, s * 0.6);
-    return [pyramide - s * 0.01, c];
+    const w = worley(p.x * 15, p.y * 15, p.z * 15);
+    const centre = Math.min(1, (w.f2 - w.f1) * 5);
+    const pyramide = 0.045 * Math.pow(centre, 1.4);                     // pointe en pyramide
+    let c = melange(vert, vertC, fbm(p.x * 1.4, p.y * 1.4, p.z * 1.4) * 1.3 - 0.25);
+    c = melange(c, pointe, lisse(0.75, 1, centre) * 0.45);
+    c = melange(c, creux, lisse(0.35, 0.0, centre) * 0.7);
+    return [pyramide, c];
   });
   return {
-    corps: g, materiau: peauPhysique({ roughness: 0.72 }),
+    corps: g, materiau: peauPhysique({ roughness: 0.7 }),
     accessoires: () => {
       const t = tige(0.55, 0.12, 0.1, 0.15, "#5a4a22");
       t.position.y = h / 2 - 0.05;
@@ -788,7 +823,8 @@ function modeleBibasse(): Modele {
 }
 
 function modeleLave(): Modele {
-  let g: THREE.BufferGeometry = new THREE.IcosahedronGeometry(0.82, 5);
+  // Scorie basaltique : bloc irrégulier, poreux (vacuoles), noir à brun rouille, magma dans les fissures
+  let g: THREE.BufferGeometry = new THREE.IcosahedronGeometry(0.82, 30);
   g.deleteAttribute("uv");
   g.deleteAttribute("normal");
   g = mergeVertices(g);
@@ -798,22 +834,33 @@ function modeleLave(): Modele {
   const braise = new Float32Array(pos.count);
   const couleurs = new Float32Array(pos.count * 3);
   const p = new THREE.Vector3(), n = new THREE.Vector3();
-  const roche = C("#2a2421"), rocheClaire = C("#4a3f39");
+  const noir = C("#141212"), gris = C("#3a3533"), rouille = C("#5e2c18"), cendre = C("#6a6260");
   for (let i = 0; i < pos.count; i++) {
     p.fromBufferAttribute(pos, i); n.fromBufferAttribute(nor, i);
-    const crevasse = Math.abs(bruit3(p.x * 3.5, p.y * 3.5, p.z * 3.5) - 0.5);
-    const b = 1 - lisse(0.02, 0.07, crevasse);
-    p.addScaledVector(n, (fbm(p.x * 2, p.y * 2, p.z * 2) - 0.5) * 0.45 - b * 0.06);
+    // forme anguleuse : bruit « en crêtes » + gros blocs
+    const bloc = (fbm(p.x * 1.4, p.y * 1.4, p.z * 1.4) - 0.5) * 0.55;
+    const crete = (1 - Math.abs(bruit3(p.x * 3, p.y * 3, p.z * 3) * 2 - 1)) * 0.08;
+    // vacuoles : petits trous ronds
+    const v = worley(p.x * 7, p.y * 7, p.z * 7);
+    const trou = lisse(0.26, 0.06, v.f1);
+    const v2 = worley(p.x * 16 + 5, p.y * 16, p.z * 16);
+    const petitTrou = lisse(0.25, 0.05, v2.f1);
+    // fissures où l'on voit le magma
+    const fissure = 1 - lisse(0.006, 0.022, Math.abs(bruit3(p.x * 2.4, p.y * 2.4, p.z * 2.4) - 0.5));
+    p.addScaledVector(n, bloc + crete - trou * 0.09 - petitTrou * 0.03 - fissure * 0.05);
     pos.setXYZ(i, p.x, p.y, p.z);
-    braise[i] = b;
-    const c = melange(roche, rocheClaire, fbm(p.x * 6, p.y * 6, p.z * 6));
+    braise[i] = Math.max(fissure, lisse(0.5, 1, trou) * 0.7);
+    let c = melange(noir, gris, fbm(p.x * 5, p.y * 5, p.z * 5) * 1.4 - 0.3);
+    c = melange(c, rouille, lisse(0.6, 0.85, fbm(p.x * 2.2 + 9, p.y * 2.2, p.z * 2.2)) * 0.7);
+    c = melange(c, cendre, crete * 4 * lisse(0.6, 0.8, fbm(p.x * 8, p.y * 8, p.z * 8)) * 0.5);
+    c = melange(c, noir, trou * 0.8 + petitTrou * 0.6);
     couleurs.set([c.r, c.g, c.b], i * 3);
   }
   g.setAttribute("braise", new THREE.BufferAttribute(braise, 1));
   g.setAttribute("color", new THREE.BufferAttribute(couleurs, 3));
   g.computeVertexNormals();
   g.computeBoundingSphere();
-  const materiau = peauPhysique({ roughness: 0.85 });
+  const materiau = peauPhysique({ roughness: 0.95 });
   materiau.userData.pulsation = { value: 0 };
   materiau.onBeforeCompile = (shader) => {
     shader.uniforms.uPulse = materiau.userData.pulsation;
@@ -824,7 +871,7 @@ function modeleLave(): Modele {
       .replace("#include <common>", "#include <common>\nvarying float vBraise;\nuniform float uPulse;")
       .replace(
         "#include <emissivemap_fragment>",
-        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, 0.32, 0.04) * vBraise * (2.2 + 1.6 * uPulse);"
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, 0.3, 0.03) * pow(vBraise, 1.5) * (1.6 + 1.4 * uPulse);"
       );
   };
   return { corps: g, materiau, accessoires: () => [] };

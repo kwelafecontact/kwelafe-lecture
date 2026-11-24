@@ -30,7 +30,7 @@ export class Sons {
       }
       conv.buffer = ir;
       this.salle = this.ctx.createGain();
-      this.salle.gain.value = 0.22;
+      this.salle.gain.value = 0.08;
       this.salle.connect(conv).connect(comp);
       const n = this.ctx.sampleRate * 1.5;
       this.bruitBlanc = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
@@ -92,22 +92,38 @@ export class Sons {
     this.bruit(t, 0.16, "bandpass", 700 + v * 600, 2600 + v * 2000, 0.05 + v * 0.1, 1.4);
   }
 
-  /** Une petite goutte qui éclate (son de bulle : la hauteur monte très vite). */
+  /**
+   * Impact d'une goutte : un « tic » mouillé, très court et sec, joué de près (sans réverbération).
+   * f : fréquence centrale (plus aiguë pour une petite goutte), volume : force de l'impact.
+   */
   private plic(t: number, f: number, volume: number) {
     const ctx = this.ctx!;
+    const src = ctx.createBufferSource();
+    src.buffer = this.bruitBlanc;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = f;
+    bp.Q.value = 1.1;
+    const g = ctx.createGain();
+    const duree = 0.006 + Math.random() * 0.008;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(volume, t + 0.0007);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + duree);
+    src.connect(bp).connect(g).connect(this.maitre!);
+    src.start(t, Math.random());
+    src.stop(t + duree + 0.02);
+    // petit corps grave de l'impact sur le bois
     const o = ctx.createOscillator();
     o.type = "sine";
-    o.frequency.setValueAtTime(f, t);
-    o.frequency.exponentialRampToValueAtTime(f * (1.5 + Math.random() * 0.6), t + 0.018);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(volume, t + 0.002);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035 + Math.random() * 0.02);
-    o.connect(g);
-    g.connect(this.maitre!);
-    if (this.salle) g.connect(this.salle);
+    o.frequency.setValueAtTime(260 + Math.random() * 120, t);
+    o.frequency.exponentialRampToValueAtTime(110, t + 0.014);
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.exponentialRampToValueAtTime(volume * 0.45, t + 0.001);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.018);
+    o.connect(g2).connect(this.maitre!);
     o.start(t);
-    o.stop(t + 0.08);
+    o.stop(t + 0.03);
   }
 
   /** Bruit mouillé : filtre résonant qui glisse vers le grave, avec un léger « gargouillis ». */
@@ -194,9 +210,10 @@ export class Sons {
       // éclaboussure : souffle liquide clair pour les jus liquides
       if (viscosite < 0.5) this.bruit(t + 0.02, 0.18 + jus * 0.15, "bandpass", 3200 * v(), 1400, 0.06 + jus * 0.1, 1.2, 0.01);
       // 7. Gouttes qui éclatent juste après la coupe
-      const nb = Math.round(jus * (viscosite > 0.7 ? 4 : 11));
+      // 7. Gouttes qui retombent juste après la coupe : impacts courts et francs
+      const nb = Math.round(jus * (viscosite > 0.7 ? 5 : 12));
       for (let i = 0; i < nb; i++) {
-        this.plic(t + 0.05 + Math.random() * (0.25 + jus * 0.25), (700 + Math.random() * 900 + aigu * 400) * (1 - viscosite * 0.35), 0.035 + Math.random() * 0.05);
+        this.plic(t + 0.07 + Math.random() * (0.2 + jus * 0.25), (1300 + Math.random() * 1500) * (1 - viscosite * 0.4), 0.06 + Math.random() * 0.09);
       }
     }
   }
@@ -206,9 +223,9 @@ export class Sons {
     const ctx = this.pret();
     if (!ctx) return;
     const t = ctx.currentTime;
-    if (t - this.derniereGoutte < 0.035) return;
+    if (t - this.derniereGoutte < 0.03) return;
     this.derniereGoutte = t;
-    this.plic(t, 900 + Math.random() * 1200 - taille * 2000, 0.012 + taille * 0.08);
+    this.plic(t, 2600 - taille * 9000 + Math.random() * 600, 0.03 + taille * 0.35);
   }
 
   combo(n: number) {
