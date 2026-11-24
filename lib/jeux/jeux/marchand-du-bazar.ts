@@ -1,5 +1,5 @@
 // Marchand du bazar : les clients arrivent avec leur liste, on les sert vite pour gagner des pièces.
-import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, texteContour, arrondi, melanger, etoilesPour } from "../commun/moteur2d";
+import { type Contexte, type DefJeu, type Jeu, THEMES, FONDS_AQUARELLE, sprite, texteContour, arrondi, melanger, etoilesPour } from "../commun/moteur2d";
 import { FRUITS_MARCHE, photosMarche } from "../commun/photos";
 import { personnage, bulle, jauge, cagette, dans } from "../commun/dessins";
 
@@ -75,8 +75,10 @@ class Marchand implements Jeu {
   }
   dessiner(ctx: CanvasRenderingContext2D) {
     const { L, H } = this;
+    if (!FONDS_AQUARELLE.has("marchand-du-bazar")) {
     ctx.fillStyle = "#5e3a22"; ctx.fillRect(0, H * 0.58, L, H * 0.42);
     for (let i = 0; i < 12; i++) { ctx.fillStyle = i % 2 ? "#fff3e0" : "#3a8ae8"; const w = L / 12; ctx.beginPath(); ctx.moveTo(i * w, 0); ctx.lineTo((i + 1) * w, 0); ctx.lineTo((i + 1) * w, 36); ctx.arc(i * w + w / 2, 36, w / 2, 0, Math.PI); ctx.fill(); }
+    }
     const sortie = this.depart > 0 ? (0.7 - this.depart) / 0.7 : 0;
     const cx = L * 0.18 - (1 - this.arrivee) * L * 0.4 + sortie * L * 0.8, cy = H * 0.32, t = Math.min(L, H) * 0.19;
     personnage(ctx, cx, cy, t, this.client, this.depart > 0 ? 1 : this.patience, this.temps);

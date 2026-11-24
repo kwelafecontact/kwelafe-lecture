@@ -338,7 +338,10 @@ export class Moteur2D {
 export const etoilesPour = (score: number, paliers: [number, number, number]) => (score >= paliers[2] ? 3 : score >= paliers[1] ? 2 : score >= paliers[0] ? 1 : 0);
 
 /** Jeux qui ont reçu leur fond aquarelle (fichier public/jeux/fonds/<id>.webp). */
-export const FONDS_AQUARELLE = new Set<string>([]);
+export const FONDS_AQUARELLE = new Set<string>([
+  "marche-des-jus", "fusion-pei", "bazar-krush", "2048-pei", "memory-pei", "kel-fri-sa", "trie-le-bazar", "rekolt-la", "let-melanze", "marchand-du-bazar",
+  "kosa-in-shoz", "zarlor", "oussa-i-le", "memory-lontan", "ramasse-les-letchis", "cari-parfait", "gardiens-de-l-ile", "expressions-a-recoller", "case-bleue", "coulee-de-lave",
+]);
 export const cheminFond = (id: string) => `/jeux/fonds/${id}.webp`;
 
 export const THEMES: Record<string, Theme> = {

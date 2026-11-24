@@ -1,5 +1,5 @@
 // Ramasse les letchis ! : les letchis tombent du pied, on les attrape dans la tant (panier) en évitant guêpes et feuilles mortes.
-import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, etoilesPour } from "../commun/moteur2d";
+import { type Contexte, type DefJeu, type Jeu, THEMES, FONDS_AQUARELLE, sprite, etoilesPour } from "../commun/moteur2d";
 import { guepe } from "../commun/dessins";
 
 type Chute = { type: "letchi" | "grappe" | "guepe" | "feuille"; x: number; y: number; v: number; rot: number; vr: number; t: number };
@@ -67,6 +67,7 @@ class Letchis implements Jeu {
   }
   dessiner(ctx: CanvasRenderingContext2D) {
     const { L, H } = this;
+    if (!FONDS_AQUARELLE.has("ramasse-les-letchis")) {
     // feuillage du pied de letchi
     const verts = ["#2c6a2c", "#3a8a34", "#4aa63e"];
     for (let i = 0; i < 16; i++) {
@@ -75,6 +76,7 @@ class Letchis implements Jeu {
       ctx.beginPath(); ctx.arc(x, y, 60 + (i % 4) * 12 + Math.sin(this.temps * 1.5 + i) * 2, 0, 7); ctx.fill();
     }
     for (let i = 0; i < 14; i++) { const x = ((i * 0.071 + 0.03) % 1) * L, y = H * 0.07 + ((i * 37) % 40); sprite(ctx, this.c.img("letchi"), x, y, 30, i, 1, false); }
+    }
     for (const ch of this.chutes) {
       if (ch.type === "guepe") guepe(ctx, ch.x, ch.y, 48, this.temps);
       else if (ch.type === "feuille") {
