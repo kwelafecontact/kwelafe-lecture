@@ -1,8 +1,9 @@
 // Bazar Krush : on échange deux fruits voisins pour en aligner trois ou plus.
+import { couleurDe } from "../commun/photos";
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, arrondi, texteContour, etoilesPour, melanger } from "../commun/moteur2d";
 import { produit } from "../commun/produits";
 
-const TYPES_TOUS = ["letchi", "mangue", "carambole", "citron", "grenadine", "goyavier", "bibasse", "mandarine"];
+const TYPES_TOUS = ["letchi", "mangue", "carambole", "combava", "grenadine", "orange", "goyave", "pasteque", "coco", "jamalac-blanc"];
 type Case = { t: number; special: 0 | 1 | 2 | 3; y: number; x: number; s: number; vie: number } | null; // special 1 ligne, 2 colonne, 3 bombe
 
 class Krush implements Jeu {
@@ -130,7 +131,7 @@ class Krush implements Jeu {
     for (const k of m) {
       const [c, r] = k.split(",").map(Number); const ca = this.g[c][r]; if (!ca) continue;
       const x = this.ox + (c + 0.5) * this.cell, y = this.oy + (r + 0.5) * this.cell; sx += x; sy += y;
-      this.c.fx.gerbe(x, y, produit(this.types[ca.t]).jus.couleur, 8, 180, 2);
+      this.c.fx.gerbe(x, y, couleurDe(this.types[ca.t]), 8, 180, 2);
       this.g[c][r] = null;
     }
     for (const cr of crees) this.g[cr.c][cr.r] = { t: cr.t, special: cr.special, y: cr.r, x: cr.c, s: 1.4, vie: 1 };
@@ -208,6 +209,7 @@ const def: DefJeu = {
   regles: ["Fais glisser un fruit vers son voisin pour les échanger.", "Trois fruits identiques alignés disparaissent.", "Quatre alignés : un fruit rayé qui vide une ligne. Cinq : une étoile qui vide tous les fruits d'une sorte.", "Atteins l'objectif avant la fin des coups."],
   niveaux: 30,
   theme: THEMES.jardin,
+  visuels: "photos",
   creer: (c, n) => new Krush(c, n),
 };
 export default def;

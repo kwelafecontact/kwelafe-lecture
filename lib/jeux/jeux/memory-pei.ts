@@ -1,6 +1,6 @@
 // Memory péi : retrouver les paires de fruits et légumes.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, arrondi, texteContour, melanger } from "../commun/moteur2d";
-import { PRODUITS, produit } from "../commun/produits";
+import { PHOTOS, photo } from "../commun/photos";
 
 type Carte = { id: string; ouverte: number; cible: number; trouvee: boolean; x: number; y: number; vol: number };
 
@@ -19,7 +19,7 @@ class Memory implements Jeu {
     this.cols = n <= 8 ? 4 : n <= 12 ? 4 : n <= 16 ? 4 : n <= 20 ? 5 : 6;
     this.lignes = Math.ceil(n / this.cols);
     this.limite = niveau >= 8 ? 30 + this.paires * 6 : null;
-    const ids = melanger(PRODUITS.map((p) => p.id), c.rnd).slice(0, this.paires);
+    const ids = melanger(PHOTOS.map((p) => p.id), c.rnd).slice(0, this.paires);
     this.cartes = melanger([...ids, ...ids], c.rnd).map((id, i) => ({ id, ouverte: 0, cible: 0, trouvee: false, x: 0, y: 0, vol: -i * 0.05 }));
     this.disposer();
     this.hud();
@@ -46,7 +46,7 @@ class Memory implements Jeu {
         a.trouvee = b.trouvee = true; this.trouvees++; this.serie++;
         const gain = 50 + this.serie * 25; this.score += gain;
         const p = this.pos(this.choix[1]);
-        setTimeout(() => { this.c.sons.bon(); this.c.fx.etoiles(p.x + this.w / 2, p.y + this.h / 2, 16); this.c.fx.texte(produit(a.id).nom, p.x + this.w / 2, p.y, "#fff", 20); this.c.fx.texte(`+${gain}`, p.x + this.w / 2, p.y + this.h, "#ffe066", 24); }, 250);
+        setTimeout(() => { this.c.sons.bon(); this.c.fx.etoiles(p.x + this.w / 2, p.y + this.h / 2, 16); const nom = photo(a.id)?.nom; if (nom) this.c.fx.texte(nom, p.x + this.w / 2, p.y, "#fff", 20); this.c.fx.texte(`+${gain}`, p.x + this.w / 2, p.y + this.h, "#ffe066", 24); }, 250);
         this.choix = [];
         if (this.trouvees === this.paires) { this.fini = true; setTimeout(() => this.finir(true), 900); }
       } else { this.serie = 0; this.attente = 0.9; }
@@ -97,6 +97,7 @@ const def: DefJeu = {
   regles: ["Retourne deux cartes à la fois.", "Si elles sont pareilles, la paire reste visible.", "Moins tu fais de coups, plus tu gagnes d'étoiles.", "À partir du niveau 8, le temps est compté."],
   niveaux: 20,
   theme: THEMES.case,
+  visuels: "photos",
   creer: (c, n) => new Memory(c, n),
 };
 export default def;

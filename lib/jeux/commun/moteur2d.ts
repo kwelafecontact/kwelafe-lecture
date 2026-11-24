@@ -1,5 +1,6 @@
 // Moteur commun des jeux 2D Kwélafé : boucle, dessin haute définition, effets, sons, images.
 import { toutesLesImages } from "./produits";
+import { PHOTOS } from "./photos";
 
 export type Resultat = { gagne: boolean; score: number; etoiles: number };
 export type Hud = { score?: number; objectif?: string; temps?: number | null; info?: string };
@@ -32,6 +33,7 @@ export type DefJeu = {
   regles: string[];
   niveaux: number;          // 0 = partie sans fin (on bat son record)
   theme: Theme;
+  visuels?: "photos";       // images photo des planches de KWélafé à la place des rendus 3D
   creer: (c: Contexte, niveau: number) => Jeu;
 };
 
@@ -185,8 +187,9 @@ export const melanger = <T,>(a: T[], rnd: () => number) => { const b = a.slice()
 // Moteur
 // ---------------------------------------------------------------------------
 const cacheImages = new Map<string, HTMLImageElement>();
-export function precharger(): Promise<void> {
+export function precharger(visuels?: "photos"): Promise<void> {
   const liste = toutesLesImages();
+  if (visuels === "photos") for (const p of PHOTOS) liste["photo:" + p.id] = p.image;
   return Promise.all(Object.entries(liste).map(([id, src]) => new Promise<void>((ok) => {
     if (cacheImages.has(id)) return ok();
     const im = new Image(); im.decoding = "async"; im.src = src;
@@ -235,7 +238,7 @@ export class Moteur2D {
     this.fx = new Effets();
     const c: Contexte = {
       L: this.L, H: this.H,
-      img: (id) => cacheImages.get(id),
+      img: (id) => (this.def.visuels === "photos" && cacheImages.get("photo:" + id)) || cacheImages.get(id),
       sons: this.sons, fx: this.fx, rnd: this.rnd,
       fin: (r) => { this.jeu = null; if (r.gagne) { this.sons.victoire(); this.fx.confettis(this.L); } else this.sons.defaite(); this.rappels.fin(r); },
       hud: (h) => this.rappels.hud(h),
