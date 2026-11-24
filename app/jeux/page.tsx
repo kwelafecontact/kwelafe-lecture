@@ -28,15 +28,18 @@ export default async function PageJeux() {
           </section>
         )}
 
-        <section className="section" style={{ marginTop: 0 }}>
-          <h2>Fruits et légumes péi</h2>
+        {([["fruits", "Fruits et légumes péi"], ["reunion", "Jeux de La Réunion"]] as const).map(([serie, titre]) => (
+        <section key={serie} className="section" style={{ marginTop: serie === "fruits" ? 0 : undefined }}>
+          <h2>{titre}</h2>
           <div className="jeux-grille">
-            {CATALOGUE.filter((j) => j.serie === "fruits").map((j) => {
+            {CATALOGUE.filter((j) => j.serie === serie).map((j) => {
               const contenu = (
                 <>
                   <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/jeux/fruits/${j.vignette}.webp`} alt="" width={120} height={120} />
+                    {j.emoji ? <span className="jeu-emoji">{j.emoji}</span> : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={j.image || `/jeux/fruits/${j.vignette}.webp`} alt="" width={120} height={120} />
+                    )}
                   </div>
                   <div className="jeu-infos">
                     <h3>{j.titre}{j.troisD ? " 3D" : ""}</h3>
@@ -49,6 +52,7 @@ export default async function PageJeux() {
             })}
           </div>
         </section>
+        ))}
         <LienSite />
       </main>
       <NavBas />

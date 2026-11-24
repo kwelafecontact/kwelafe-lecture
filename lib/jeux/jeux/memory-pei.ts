@@ -4,7 +4,7 @@ import { PHOTOS, photo } from "../commun/photos";
 
 type Carte = { id: string; ouverte: number; cible: number; trouvee: boolean; x: number; y: number; vol: number };
 
-class Memory implements Jeu {
+export class Memory implements Jeu {
   L: number; H: number;
   cartes: Carte[] = [];
   cols = 4; lignes = 3;
@@ -12,14 +12,14 @@ class Memory implements Jeu {
   attente = 0; coups = 0; trouvees = 0; paires: number;
   temps = 0; limite: number | null; score = 0; serie = 0; fini = false;
   w = 80; h = 100; ox = 0; oy = 0;
-  constructor(private c: Contexte, private niveau: number) {
+  constructor(private c: Contexte, private niveau: number, private pool: string[] = PHOTOS.map((p) => p.id), private nomDe: (id: string) => string | undefined = (id) => photo(id)?.nom, private paireMax = 12) {
     this.L = c.L; this.H = c.H;
-    this.paires = Math.min(12, 3 + Math.ceil(niveau / 2));
+    this.paires = Math.min(paireMax, pool.length, 3 + Math.ceil(niveau / 2));
     const n = this.paires * 2;
     this.cols = n <= 8 ? 4 : n <= 12 ? 4 : n <= 16 ? 4 : n <= 20 ? 5 : 6;
     this.lignes = Math.ceil(n / this.cols);
     this.limite = niveau >= 8 ? 30 + this.paires * 6 : null;
-    const ids = melanger(PHOTOS.map((p) => p.id), c.rnd).slice(0, this.paires);
+    const ids = melanger(pool, c.rnd).slice(0, this.paires);
     this.cartes = melanger([...ids, ...ids], c.rnd).map((id, i) => ({ id, ouverte: 0, cible: 0, trouvee: false, x: 0, y: 0, vol: -i * 0.05 }));
     this.disposer();
     this.hud();
@@ -46,7 +46,7 @@ class Memory implements Jeu {
         a.trouvee = b.trouvee = true; this.trouvees++; this.serie++;
         const gain = 50 + this.serie * 25; this.score += gain;
         const p = this.pos(this.choix[1]);
-        setTimeout(() => { this.c.sons.bon(); this.c.fx.etoiles(p.x + this.w / 2, p.y + this.h / 2, 16); const nom = photo(a.id)?.nom; if (nom) this.c.fx.texte(nom, p.x + this.w / 2, p.y, "#fff", 20); this.c.fx.texte(`+${gain}`, p.x + this.w / 2, p.y + this.h, "#ffe066", 24); }, 250);
+        setTimeout(() => { this.c.sons.bon(); this.c.fx.etoiles(p.x + this.w / 2, p.y + this.h / 2, 16); const nom = this.nomDe(a.id); if (nom) this.c.fx.texte(nom, p.x + this.w / 2, p.y, "#fff", 20); this.c.fx.texte(`+${gain}`, p.x + this.w / 2, p.y + this.h, "#ffe066", 24); }, 250);
         this.choix = [];
         if (this.trouvees === this.paires) { this.fini = true; setTimeout(() => this.finir(true), 900); }
       } else { this.serie = 0; this.attente = 0.9; }
