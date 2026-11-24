@@ -1213,7 +1213,7 @@ function tourner(o: THREE.Object3D, w: THREE.Vector3, dt: number) {
 }
 
 /** Calcule la face coupée : contour réel de la section du fruit, triangulé en éventail. */
-function sectionCoupe(geo: THREE.BufferGeometry, plan: THREE.Plane): THREE.BufferGeometry | null {
+export function sectionCoupe(geo: THREE.BufferGeometry, plan: THREE.Plane): THREE.BufferGeometry | null {
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const idx = geo.index;
   const nTri = idx ? idx.count / 3 : pos.count / 3;
