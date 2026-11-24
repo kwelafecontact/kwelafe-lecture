@@ -267,7 +267,7 @@ export class MoteurKoupKoup {
   private construireEffets() {
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.6, 0.35, 1.02);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.65, 0.35, 1.15);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
   }
@@ -933,20 +933,27 @@ export class MoteurKoupKoup {
     corps.castShadow = true;
     groupe.add(corps);
     m.accessoires().forEach((a) => { a.castShadow = true; groupe.add(a); });
-    const x0 = (this.rnd() * 2 - 1) * this.demiL * 0.75;
-    const y0 = -this.demiH - 1.8;
-    const sommet = THREE.MathUtils.lerp(this.demiH * 0.05, this.demiH - def.rayon - 0.4, this.rnd());
-    const vy = Math.sqrt(2 * GRAVITE * (sommet - y0));
-    const tSommet = vy / GRAVITE;
-    const cible = (this.rnd() * 2 - 1) * this.demiL * 0.55;
-    groupe.position.set(x0, y0, (this.rnd() - 0.5) * 2.4);
-    groupe.rotation.set(this.rnd() * 6, this.rnd() * 6, this.rnd() * 6);
-    const fruit: Fruit = {
-      def, groupe, corps,
-      vel: new THREE.Vector3((cible - x0) / (2 * tSommet), vy, 0),
-      rot: new THREE.Vector3((this.rnd() - 0.5) * 4, (this.rnd() - 0.5) * 4, (this.rnd() - 0.5) * 4),
-      monte: false,
-    };
+    let vel: THREE.Vector3, rot: THREE.Vector3;
+    if (def.id === "vanille") {
+      // La gousse de vanille tombe toujours du ciel, en tournoyant doucement
+      const x0 = (this.rnd() * 2 - 1) * this.demiL * 0.6;
+      groupe.position.set(x0, this.demiH + 1.6, (this.rnd() - 0.5) * 1.5);
+      groupe.rotation.set(0, this.rnd() * 6, (this.rnd() - 0.5) * 0.6);
+      vel = new THREE.Vector3((this.rnd() - 0.5) * 1.5, -(0.5 + this.rnd() * 1.5), 0);
+      rot = new THREE.Vector3((this.rnd() - 0.5) * 0.8, (this.rnd() - 0.5) * 1.2, (this.rnd() - 0.5) * 2.2);
+    } else {
+      const x0 = (this.rnd() * 2 - 1) * this.demiL * 0.75;
+      const y0 = -this.demiH - 1.8;
+      const sommet = THREE.MathUtils.lerp(this.demiH * 0.05, this.demiH - def.rayon - 0.4, this.rnd());
+      const vy = Math.sqrt(2 * GRAVITE * (sommet - y0));
+      const tSommet = vy / GRAVITE;
+      const cible = (this.rnd() * 2 - 1) * this.demiL * 0.55;
+      groupe.position.set(x0, y0, (this.rnd() - 0.5) * 2.4);
+      groupe.rotation.set(this.rnd() * 6, this.rnd() * 6, this.rnd() * 6);
+      vel = new THREE.Vector3((cible - x0) / (2 * tSommet), vy, 0);
+      rot = new THREE.Vector3((this.rnd() - 0.5) * 4, (this.rnd() - 0.5) * 4, (this.rnd() - 0.5) * 4);
+    }
+    const fruit: Fruit = { def, groupe, corps, vel, rot, monte: false };
     if (def.special === "lave" || def.special === "or") {
       const libre = this.lumieres.find((x) => !x.fruit);
       if (libre) {
@@ -1055,7 +1062,8 @@ export class MoteurKoupKoup {
   private majFruits(dt: number) {
     const limite = -this.demiH - 2.6;
     for (const f of [...this.fruits]) {
-      f.vel.y -= GRAVITE * dt;
+      if (f.def.id === "vanille") { f.vel.y -= GRAVITE * 0.45 * dt; f.vel.y = Math.max(f.vel.y, -9); }
+      else f.vel.y -= GRAVITE * dt;
       f.groupe.position.addScaledVector(f.vel, dt);
       tourner(f.groupe, f.rot, dt);
       if (f.groupe.position.y > -this.demiH) f.monte = true;
@@ -1076,7 +1084,7 @@ export class MoteurKoupKoup {
       }
       if (f.vel.y < 0 && f.groupe.position.y < limite) {
         this.retirerFruit(f);
-        if (f.monte && f.def.special !== "lave" && this.etat === "jeu" && this.mode === "classique") {
+        if (f.monte && f.def.special !== "lave" && f.def.id !== "vanille" && this.etat === "jeu" && this.mode === "classique") {
           this.sons.rate();
           const c = this.ecran(new THREE.Vector3(f.groupe.position.x, -this.demiH + 0.8, 0));
           this.bulle("✕", undefined, Math.max(40, Math.min(this.largeur - 40, c.x)), c.y, "#ff5040", 44);
