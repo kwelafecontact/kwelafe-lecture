@@ -27,8 +27,8 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
     let annule = false;
     (async () => {
       try {
-        const [{ Moteur2D, precharger }, d] = await Promise.all([import("@/lib/jeux/commun/moteur2d"), chargerJeu(id)]);
-        await precharger(d?.visuels, d?.images);
+        const [{ Moteur2D, precharger, FONDS_AQUARELLE, cheminFond }, d] = await Promise.all([import("@/lib/jeux/commun/moteur2d"), chargerJeu(id)]);
+        await precharger(d?.visuels, { ...(d?.images || {}), ...(d && FONDS_AQUARELLE.has(d.id) ? { ["fond:" + d.id]: cheminFond(d.id) } : {}) });
         if (annule || !zone.current || !d) { if (!d) setEcran("erreur"); return; }
         try { if (localStorage.getItem("kw-son") === "0") setSon(false); } catch { /* rien */ }
         const m = new Moteur2D(zone.current, d, {
