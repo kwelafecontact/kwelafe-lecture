@@ -50,7 +50,7 @@ img { max-width: 100%; display: block; }
 /* ----- Navigation du bas ----- */
 .nav-bas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(255,255,255,0.97);
   backdrop-filter: blur(10px); border-top: 1px solid var(--beige); padding-bottom: var(--safe-b); }
-.nav-bas ul { list-style: none; margin: 0 auto; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); max-width: 640px; }
+.nav-bas ul { list-style: none; margin: 0 auto; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); max-width: 680px; }
 .nav-bas a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   height: var(--nav-h); color: var(--doux); font-size: 13px; font-weight: 700; }
 .nav-bas a .ico { font-size: 25px; line-height: 1; filter: grayscale(1); opacity: .75; }
@@ -185,3 +185,64 @@ img { max-width: 100%; display: block; }
 .reglage { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0; }
 .pastille-theme { flex: 1; min-height: 52px; border-radius: 14px; border: 2px solid var(--beige); font-weight: 800; }
 .pastille-theme.active { border-color: var(--lave); box-shadow: 0 0 0 2px var(--lave); }
+
+
+/* ===== Jeux ===== */
+.jeux-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.jeu-carte { display: block; background: var(--blanc); border-radius: 18px; overflow: hidden; box-shadow: var(--ombre); transition: transform .15s; }
+.jeu-carte:active { transform: scale(0.98); }
+.jeu-carte.inactive { opacity: .72; }
+.jeu-visuel { height: 150px; display: flex; align-items: center; justify-content: center; }
+.jeu-visuel span { font-size: 64px; filter: drop-shadow(0 8px 14px rgba(0,0,0,.25)); }
+.jeu-infos { padding: 16px 18px 20px; }
+.jeu-infos p { margin: 6px 0 12px; font-size: 15px; }
+.jeu-etiquette { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--lave); color: #fff; font-weight: 800; font-size: 14px; }
+.jeu-etiquette.bientot { background: var(--sauge-clair); color: var(--doux); }
+
+/* ----- Koup Koup (plein écran) ----- */
+.kk-ecran { position: fixed; inset: 0; z-index: 100; background: #1a120c; overflow: hidden; touch-action: none;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; color: #fff; }
+.kk-scene { position: absolute; inset: 0; }
+.kk-scene canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; }
+.kk-overlay { pointer-events: none; }
+.kk-vignette { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(10,5,2,.55) 100%); }
+.kk-barre { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); left: calc(env(safe-area-inset-left, 0px) + 22px);
+  right: calc(env(safe-area-inset-right, 0px) + 22px); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; pointer-events: none; }
+.kk-groupe { display: flex; gap: 10px; align-items: center; pointer-events: auto; }
+.kk-rond { width: 48px; height: 48px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(20,10,4,.45); color: #fff; font-size: 19px; font-weight: 800; backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.18); }
+.kk-score { text-align: center; text-shadow: 0 3px 10px rgba(0,0,0,.6); }
+.kk-score b { display: block; font-family: var(--titre); font-size: 46px; line-height: 1; color: #ffe066; }
+.kk-score span { font-size: 14px; font-weight: 700; opacity: .85; }
+.kk-vies { display: flex; gap: 6px; }
+.kk-vies i { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 2px rgba(255,255,255,.3); }
+.kk-vies i.pleine { background: radial-gradient(circle at 35% 30%, #ff8a8a, #b3122a 60%, #6e0a19); box-shadow: 0 0 10px rgba(255,60,60,.6); }
+.kk-temps { font-family: var(--titre); font-size: 28px; color: #ffe066; text-shadow: 0 3px 10px rgba(0,0,0,.6); min-width: 58px; text-align: right; }
+.kk-centre { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 90px 24px 40px; }
+.kk-traversant { pointer-events: none; }
+.kk-traversant .kk-panneau { pointer-events: auto; }
+.kk-panneau { width: 100%; max-width: 440px; background: rgba(26,16,10,.72); backdrop-filter: blur(14px); border-radius: 26px; padding: 28px 26px;
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.45), inset 0 0 0 1.5px rgba(255,230,190,.14); max-height: 100%; overflow: auto; }
+.kk-panneau h2 { color: #fff; margin-bottom: 12px; }
+.kk-panneau p { color: rgba(255,245,230,.85); }
+.kk-titre { font-family: var(--titre); font-size: clamp(48px, 11vw, 76px); line-height: 1; font-weight: 600;
+  background: linear-gradient(180deg, #ffe58a, #ff9a1f 60%, #e8283a); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 18px rgba(255,120,20,.35)); }
+.kk-accroche { margin: 10px 0 20px; font-size: 16px; }
+.kk-astuce { margin: 18px 0 0; font-size: 14px; opacity: .75; }
+.kk-boutons { display: grid; gap: 12px; }
+.kk-panneau .btn.secondaire { background: rgba(255,255,255,.1); color: #fff; box-shadow: inset 0 0 0 2px rgba(255,255,255,.2); }
+.kk-chargement { font-weight: 800; font-size: 18px; opacity: .85; animation: kk-pulse 1.2s ease-in-out infinite; }
+@keyframes kk-pulse { 50% { opacity: .4; } }
+.kk-badge { display: inline-block; padding: 6px 16px; border-radius: 999px; background: linear-gradient(90deg, #ffcf40, #ff8a18); color: #3a1a00; font-weight: 800; margin-bottom: 8px; }
+.kk-gros-score { font-family: var(--titre); font-size: 84px; line-height: 1; color: #ffe066; margin: 4px 0 14px; }
+.kk-stats { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 16px; font-size: 15px; color: rgba(255,245,230,.85); }
+.kk-stats b { color: #fff; }
+.kk-nouveaux { font-size: 15px; margin: 0 0 18px; }
+.kk-panier ul { list-style: none; padding: 0; margin: 0 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; text-align: left; }
+.kk-panier li { display: grid; grid-template-columns: 30px 1fr; column-gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.06); }
+.kk-panier li i { grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.12); box-shadow: inset 0 -4px 8px rgba(0,0,0,.25); }
+.kk-panier li b { font-size: 16px; }
+.kk-panier li span { font-size: 13px; opacity: .7; }
+.kk-panier li:not(.vu) b { opacity: .5; }
