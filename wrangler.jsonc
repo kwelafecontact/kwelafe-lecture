@@ -26,11 +26,11 @@
   // Réglages non secrets (les secrets se mettent avec : npx wrangler secret put NOM)
   "vars": {
     "APP_URL": "https://kwelafe-lecture.kwelafe-contact.workers.dev",
-    "DEMO_MODE": "1",
+    "DEMO_MODE": "0",
     "ADMIN_EMAILS": "kwelafe.contact@gmail.com",
     "SHOPIFY_SHOP_URL": "https://kwelafeproduction.com",
     "SHOPIFY_STORE_DOMAIN": "hmsnue-1a.myshopify.com",
-    "SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID": "",
+    "SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID": "a39f7762-1bc3-4d95-9eba-86400c49f1ad",
     "SHOPIFY_BOUTIQUE_ABONNEMENT_URL": "https://kwelafeproduction.com/products/abonnement-mensuel-kwelafe",
     "SHOPIFY_API_VERSION": "2026-10",
     "ABONNE_TAGS": "kwelafe-abonne,appstle_membership_active"
