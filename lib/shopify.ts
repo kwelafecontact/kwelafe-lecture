@@ -14,6 +14,12 @@ let cacheGraphqlClient: string | null = null;
 
 export async function decouverte(): Promise<Decouverte> {
   if (cacheDecouverte) return cacheDecouverte;
+  // Adresses officielles connues : pas de requête de découverte (Shopify peut la bloquer depuis un serveur)
+  if (config.shopId) {
+    const b = `https://shopify.com/authentication/${config.shopId}`;
+    cacheDecouverte = { authorization_endpoint: `${b}/oauth/authorize`, token_endpoint: `${b}/oauth/token`, end_session_endpoint: `${b}/logout` };
+    return cacheDecouverte;
+  }
   const r = await fetch(`${config.shopUrl}/.well-known/openid-configuration`, { cache: "no-store" });
   if (!r.ok) throw new Error("Impossible de joindre la connexion Shopify (openid-configuration).");
   cacheDecouverte = (await r.json()) as Decouverte;
@@ -22,6 +28,10 @@ export async function decouverte(): Promise<Decouverte> {
 
 async function urlGraphqlClient(): Promise<string> {
   if (cacheGraphqlClient) return cacheGraphqlClient;
+  if (config.shopId) {
+    cacheGraphqlClient = `https://shopify.com/${config.shopId}/account/customer/api/${config.apiVersion}/graphql`;
+    return cacheGraphqlClient;
+  }
   const r = await fetch(`${config.shopUrl}/.well-known/customer-account-api`, { cache: "no-store" });
   if (!r.ok) throw new Error("Impossible de joindre la Customer Account API.");
   const j = (await r.json()) as { graphql_api: string };
@@ -60,7 +70,7 @@ export async function echangerCode(code: string, verifier: string) {
     entetes.Authorization =
       "Basic " + Buffer.from(`${config.caClientId}:${config.caClientSecret}`).toString("base64");
   }
-  const r = await fetch(d.token_endpoint, { method: "POST", headers: entetes, body: corps });
+  const r = await fetch(d.token_endpoint, { method: "POST", headers: { ...entetes, "User-Agent": "KwelafeLecture/1.0", Origin: config.appUrl }, body: corps });
   if (!r.ok) throw new Error("Échange du code Shopify refusé : " + (await r.text()));
   return (await r.json()) as { access_token: string; refresh_token?: string; id_token?: string };
 }
@@ -88,7 +98,7 @@ export async function renouvelerJeton(refreshToken: string) {
   }
   const r = await fetch(d.token_endpoint, {
     method: "POST",
-    headers: entetes,
+    headers: { ...entetes, "User-Agent": "KwelafeLecture/1.0", Origin: config.appUrl },
     body: new URLSearchParams({ grant_type: "refresh_token", client_id: config.caClientId, refresh_token: refreshToken }),
   });
   if (!r.ok) throw new Error("Renouvellement refusé : " + (await r.text()));
@@ -109,7 +119,7 @@ export async function droitsDepuisCompteClient(accessToken: string): Promise<Dro
   const url = await urlGraphqlClient();
   const r = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: accessToken },
+    headers: { "Content-Type": "application/json", Authorization: accessToken, "User-Agent": "KwelafeLecture/1.0", Origin: config.appUrl },
     body: JSON.stringify({
       query: `{
         customer {

@@ -9,6 +9,7 @@ export const config = {
     .filter(Boolean),
   shopUrl: (process.env.SHOPIFY_SHOP_URL || "https://kwelafeproduction.com").replace(/\/$/, ""),
   storeDomain: process.env.SHOPIFY_STORE_DOMAIN || "",
+  shopId: process.env.SHOPIFY_SHOP_ID || "",
   abonnementUrl:
     process.env.SHOPIFY_BOUTIQUE_ABONNEMENT_URL ||
     "https://kwelafeproduction.com/products/abonnement-mensuel-kwelafe",
