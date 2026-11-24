@@ -6,6 +6,7 @@ const ONGLETS = [
   { href: "/", ico: "🏠", nom: "Accueil" },
   { href: "/livres", ico: "📚", nom: "Mes livres" },
   { href: "/catalogue", ico: "🔎", nom: "Catalogue" },
+  { href: "/jeux", ico: "🎮", nom: "Jeux" },
   { href: "/compte", ico: "👤", nom: "Mon compte" },
 ];
 

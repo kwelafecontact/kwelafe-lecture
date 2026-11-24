@@ -125,3 +125,12 @@ Aucune protection n'est parfaite sur le web. Mais ici, il n'y a aucun bouton de 
 - Test local : `npm install`, copier `.dev.vars.exemple` en `.dev.vars`, `npm run db:init:local`, puis `npm run preview` (http://localhost:8787).
 - Déploiement en ligne de commande : `npx wrangler login`, `npm run db:init`, `npm run deploy`.
 - Secrets : `npx wrangler secret put NOM`.
+
+---
+
+## Les jeux (rubrique « Jeux »)
+
+- Les jeux sont dans `app/jeux/` (pages) et `lib/jeux/` (moteurs). Le premier jeu est **Koup Koup**, écrit en TypeScript avec Three.js (WebGL) : fruits péi modélisés en 3D par le code, vraie découpe, jus, taches et halo lumineux.
+- Les records et le « panier » de fruits découverts sont enregistrés dans la table `scores_jeux` (migration `0003_jeux.sql`, déjà appliquée sur la base en ligne par Claude).
+- Accès : abonnés, éditeur, ou tout le monde tant que `DEMO_MODE` vaut `1`.
+- Sur un appareil trop lent, le jeu retire tout seul le halo lumineux et baisse la définition pour rester fluide.
