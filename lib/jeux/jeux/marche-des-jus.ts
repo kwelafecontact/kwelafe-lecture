@@ -1,9 +1,10 @@
 // Le marché des jus : le client commande un jus, on met les bons fruits dans le blender.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, texteContour, arrondi, melanger } from "../commun/moteur2d";
-import { PRODUITS, produit, type Produit } from "../commun/produits";
+import { FRUITS_MARCHE, photosJus, couleurDe } from "../commun/photos";
 import { personnage, bulle, jauge, dessinerBouton, cagette, dans, vers, type Bouton } from "../commun/dessins";
 
-const JUTEUX = PRODUITS.filter((p) => p.categorie === "fruit" && p.jus.quantite >= 0.3 && p.id !== "coco").map((p) => p.id);
+const JUTEUX = photosJus();
+const NOUVEAUX_JUS = FRUITS_MARCHE.filter((id) => JUTEUX.includes(id));
 
 type Volant = { id: string; x: number; y: number; t: number; x0: number; y0: number; x1: number; y1: number };
 
@@ -35,7 +36,8 @@ class MarcheDesJus implements Jeu {
     this.objectif = 4 + Math.floor(niveau / 3);
     this.dureePatience = Math.max(9, 22 - niveau * 0.45);
     const nbEtal = niveau <= 5 ? 6 : niveau <= 15 ? 9 : 12;
-    this.etal = melanger(JUTEUX, c.rnd).slice(0, nbEtal);
+    const nouveaux = melanger(NOUVEAUX_JUS, c.rnd).slice(0, Math.ceil(nbEtal / 2));
+    this.etal = melanger([...nouveaux, ...melanger(JUTEUX.filter((id) => !nouveaux.includes(id)), c.rnd).slice(0, nbEtal - nouveaux.length)], c.rnd);
     this.disposer();
     this.nouveauClient();
     this.envoyerHud();
@@ -101,7 +103,7 @@ class MarcheDesJus implements Jeu {
   }
 
   couleurJus() {
-    const cs = this.dansBlender.map((id) => produit(id).jus.couleur);
+    const cs = this.dansBlender.map((id) => couleurDe(id));
     if (!cs.length) return "#ffffff";
     let r = 0, g = 0, b = 0;
     for (const c of cs) { const n = parseInt(c.slice(1), 16); r += n >> 16; g += (n >> 8) & 255; b += n & 255; }
@@ -122,7 +124,7 @@ class MarcheDesJus implements Jeu {
       if (v.t >= 1) {
         this.dansBlender.push(v.id);
         this.c.sons.plouf();
-        this.c.fx.gerbe(v.x1, v.y1 + 20, produit(v.id).jus.couleur, 14, 200, 2);
+        this.c.fx.gerbe(v.x1, v.y1 + 20, couleurDe(v.id), 14, 200, 2);
       }
     }
     this.volants = this.volants.filter((v) => v.t < 1);
@@ -241,7 +243,8 @@ const def: DefJeu = {
   regles: ["Regarde la bulle : elle montre les fruits du jus.", "Touche les bons fruits pour les jeter dans le blender.", "Appuie sur MIXER, puis sers le client avant qu'il perde patience.", "Trois clients partis, et la partie s'arrête."],
   niveaux: 30,
   theme: THEMES.marche,
+  visuels: "photos",
   creer: (c, n) => new MarcheDesJus(c, n),
 };
 export default def;
-export type { Produit };
+

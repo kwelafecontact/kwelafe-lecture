@@ -16,7 +16,7 @@ const BRUT: Photo[] = [
   {"id": "figue-barbarie", "couleur": "#a95349", "produit": true},
   {"id": "salak", "couleur": "#7b3e29", "nom": "Salak"},
   {"id": "kiwano", "couleur": "#e07b0c", "nom": "Kiwano"},
-  {"id": "cerise-cayenne", "couleur": "#902e21", "nom": "Cerise de Cayenne"},
+  {"id": "cerise-cayenne", "couleur": "#902e21", "nom": "Cerise à côtes"},
   {"id": "photo-2-6", "couleur": "#c99714"},
   {"id": "photo-2-7", "couleur": "#5b3a59"},
   {"id": "avocat", "couleur": "#858020", "produit": true},
@@ -67,7 +67,16 @@ const BRUT: Photo[] = [
   {"id": "mangue", "couleur": "#b1551f", "produit": true},
   {"id": "photo-8-6", "couleur": "#b15e23"},
   {"id": "cacao", "couleur": "#b55020", "nom": "Cabosse de cacao"},
-  {"id": "chouchou", "couleur": "#a0a238", "produit": true}
+  {"id": "chouchou", "couleur": "#a0a238", "produit": true},
+  {"id": "abiu", "couleur": "#a98e17", "nom": "Abiu"},
+  {"id": "abricotier-pei", "couleur": "#b47626", "nom": "Abricotier-péi"},
+  {"id": "caimite", "couleur": "#86544e", "nom": "Caïmite"},
+  {"id": "groseille-ceylan", "couleur": "#7c4e18", "nom": "Groseille de Ceylan"},
+  {"id": "guajilote", "couleur": "#9a9d25", "nom": "Guajilote"},
+  {"id": "liane-poc-poc", "couleur": "#879c1c", "nom": "Liane poc-poc"},
+  {"id": "prune-pei", "couleur": "#954c40", "nom": "Prune péi"},
+  {"id": "safou", "couleur": "#663f55", "nom": "Safou"},
+  {"id": "vavangue", "couleur": "#868c15", "nom": "Vavangue"}
 ];
 
 /** Toutes les photos ; le nom vient de la fiche du fruit quand il existe déjà dans le catalogue. */
@@ -84,3 +93,12 @@ export const photosNommees = () => PHOTOS.filter((p) => !!p.nom);
 export function couleurDe(id: string): string {
   return photo(id)?.couleur ?? FRUITS.find((f) => f.id === id)?.jus.couleur ?? "#ffe066";
 }
+
+/** Fruits ajoutés pour les jeux du marché (planches étiquetées de KWélafé). */
+export const FRUITS_MARCHE = ["abiu", "abricotier-pei", "caimite", "groseille-ceylan", "guajilote", "liane-poc-poc", "prune-pei", "safou", "vavangue",
+  "canistel", "figue-barbarie", "salak", "kiwano", "cerise-cayenne", "jamalac", "durian", "letchi"];
+const PAS_EN_JUS = ["vanille", "cacahuete", "chataigne", "coco", "cacao", "chouchou", "avocat", "oseille"];
+/** Photos utilisables au marché : nom connu (les photos sans nom sûr restent à part). */
+export const photosMarche = () => PHOTOS.filter((p) => !!p.nom && p.id !== "vanille").map((p) => p.id);
+/** Fruits qu'on peut mettre dans un jus. */
+export const photosJus = () => PHOTOS.filter((p) => !!p.nom && !PAS_EN_JUS.includes(p.id)).map((p) => p.id);
