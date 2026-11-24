@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
 import ImportLivre from "@/components/ImportLivre";
+import ImportLot from "@/components/ImportLot";
 import BasculeAdmin from "@/components/BasculeAdmin";
 import { sessionAdmin } from "@/lib/admin";
 import { tous } from "@/lib/cf";
@@ -19,6 +20,11 @@ export default async function Admin() {
     <>
       <main className="page">
         <header className="entete"><h1>Espace éditeur</h1></header>
+
+        <section className="panneau">
+          <h2>📚 Importer toute la bibliothèque</h2>
+          <ImportLot dejaImportes={livres.map((l) => l.titre)} />
+        </section>
 
         <section className="panneau">
           <h2>Ajouter un livre</h2>

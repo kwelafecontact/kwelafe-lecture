@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   if (!(await sessionAdmin())) return NextResponse.json({}, { status: 403 });
   const b = await req.json();
   let slug = slugifier(b.titre);
-  const pris = await tous<{ slug: string }>("SELECT slug FROM livres WHERE slug LIKE ?", `${slug}%`);
+  const pris = await tous<{ slug: string }>("SELECT slug FROM livres WHERE substr(slug, 1, ?) = ?", slug.length, slug);
   if (pris.some((p) => p.slug === slug)) slug = `${slug}-${pris.length + 1}`;
   try {
     await executer(

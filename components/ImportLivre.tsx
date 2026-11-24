@@ -44,7 +44,7 @@ function typeMime(nom: string) {
   return t[ext] || "application/octet-stream";
 }
 
-async function televerser(envois: Envoi[], couverture: boolean, progression: (n: number) => void) {
+export async function televerser(envois: Envoi[], couverture: boolean, progression: (n: number) => void) {
   let faits = 0;
   let idx = 0;
   const zone = couverture ? "couvertures" : "livres";
@@ -65,7 +65,7 @@ async function televerser(envois: Envoi[], couverture: boolean, progression: (n:
   );
 }
 
-async function preparerEpub(fichier: File, id: string) {
+export async function preparerEpub(fichier: File, id: string) {
   const zip = await JSZip.loadAsync(fichier);
   const container = await zip.file("META-INF/container.xml")?.async("text");
   if (!container) throw new Error("Ce fichier n'est pas un EPUB valide (container.xml absent).");
@@ -138,7 +138,7 @@ async function preparerEpub(fichier: File, id: string) {
   return { titre, manifeste, envois, couverture, typeLivre: interactif ? "epub_interactif" : "epub_texte" };
 }
 
-async function preparerPdf(fichier: File, id: string, etape: (t: string) => void) {
+export async function preparerPdf(fichier: File, id: string, etape: (t: string) => void) {
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await fichier.arrayBuffer()) }).promise;
