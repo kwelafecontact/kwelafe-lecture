@@ -44,6 +44,6 @@ export async function stockage(): Promise<R2> {
 
 export function urlCouverture(chemin: string | null | undefined): string | null {
   if (!chemin) return null;
-  if (chemin.startsWith("http")) return chemin;
+  if (chemin.startsWith("http") || chemin.startsWith("/")) return chemin;
   return `/couv/${chemin}`;
 }

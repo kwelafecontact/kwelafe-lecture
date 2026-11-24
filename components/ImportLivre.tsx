@@ -221,10 +221,10 @@ export default function ImportLivre() {
       setEtat(`Envoi des ${r.envois.length} morceaux du livre…`);
       await televerser(r.envois, false, (n) => setEtat(`Envoi : ${n} / ${r.envois.length}`));
 
-      let cheminCouv: string | null = couvPerso ? null : couvBoutique;
+      let cheminCouv: string | null = couvPerso || r.couverture ? null : couvBoutique;
       const couv = couvPerso
         ? { chemin: `${id}.${couvPerso.name.split(".").pop()}`, blob: couvPerso as Blob, type: couvPerso.type }
-        : couvBoutique ? null : r.couverture;
+        : r.couverture;
       if (couv) {
         setEtat("Envoi de la couverture…");
         await televerser([couv], true, () => {});

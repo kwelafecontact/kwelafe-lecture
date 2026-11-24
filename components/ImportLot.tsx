@@ -25,7 +25,7 @@ export default function ImportLot({ dejaImportes, produitsImportes }: { dejaImpo
   const estDeja = (l: Entree) => deja.has(cle(l.titre)) || l.produits.slice(0, 2).some((p) => produitsDeja.has(p));
 
   function choisir(liste: FileList | null) {
-    const m = new Map<string, File>();
+    const m = new Map<string, File>(fichiers); // on ajoute aux fichiers déjà choisis
     for (const f of Array.from(liste || [])) if (!m.has(f.name)) m.set(f.name, f);
     setFichiers(m);
     const e: typeof etats = {};
@@ -45,8 +45,9 @@ export default function ImportLot({ dejaImportes, produitsImportes }: { dejaImpo
         const estPdf = /\.pdf$/i.test(f.name);
         const r = estPdf ? await preparerPdf(f, id, (t) => maj("en cours", t)) : await preparerEpub(f, id);
         await televerser(r.envois, false, (n) => maj("en cours", `envoi ${n} / ${r.envois.length}`));
+        // Couverture du fichier lui-même (toujours à jour), sinon celle de la boutique
         let couverture: string | null = e.couverture;
-        if (!couverture && r.couverture) {
+        if (r.couverture) {
           await televerser([r.couverture], true, () => {});
           couverture = r.couverture.chemin;
         }
@@ -78,7 +79,10 @@ export default function ImportLot({ dejaImportes, produitsImportes }: { dejaImpo
         Choisis le dossier <b>« Livres final pdf »</b> sur ton bureau. L'app reconnaît automatiquement les {lot.length} livres dont la version est vérifiée,
         prend la meilleure version (EPUB iPad), et les relie à leurs fiches Shopify, packs et coffrets.
       </p>
-      <label>Dossier des livres
+      <label>Choisir les fichiers (ouvre le dossier, puis Ctrl + A pour tout sélectionner)
+        <input type="file" multiple accept=".epub,.pdf" onChange={(ev) => choisir(ev.target.files)} disabled={enCours} />
+      </label>
+      <label>… ou choisir un dossier entier
         {/* @ts-expect-error : attribut non standard pour choisir un dossier entier */}
         <input type="file" webkitdirectory="" multiple onChange={(ev) => choisir(ev.target.files)} disabled={enCours} />
       </label>
