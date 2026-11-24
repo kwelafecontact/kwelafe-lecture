@@ -22,6 +22,10 @@ export async function GET(req: NextRequest) {
     const droits = await droitsDepuisCompteClient(jetons.access_token);
     await enregistrerDroitsClient(droits, jetons.refresh_token); // achats, abonnement, codes cadeaux
     await ouvrirSession({ cid: droits.id, email: droits.email, prenom: droits.prenom });
+    // Gardé pour fermer aussi la session Shopify à la déconnexion
+    if (jetons.id_token) {
+      jar.set("kw_idt", jetons.id_token, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
+    }
     return NextResponse.redirect(`${config.appUrl}/`);
   } catch (e) {
     console.error(e);
