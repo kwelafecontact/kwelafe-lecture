@@ -12,6 +12,15 @@ export type Jus = {
   ecran?: boolean;      // éclabousse l'écran du joueur
 };
 
+/** Profil sonore de la découpe, chaque valeur de 0 à 1. */
+export type Son = {
+  croquant?: number;  // chair ferme qui craque (pastèque, ananas, chouchou)
+  coque?: number;     // coque dure qui claque (coco, fruit de la passion)
+  mou?: number;       // chair tendre, son sourd et mouillé (banane, mangue)
+  sec?: number;       // claquement sec et fin (vanille, piment)
+  aigu?: number;      // hauteur du son : 0 grave (gros fruit), 1 aigu (petit fruit)
+};
+
 export type DefFruit = {
   id: string;
   nom: string;          // nom français
@@ -20,25 +29,33 @@ export type DefFruit = {
   points: number;
   poids: number;        // fréquence d'apparition
   jus: Jus;
+  son: Son;
   special?: "or" | "lave";
 };
 
 export const FRUITS: DefFruit[] = [
-  { id: "letchi", nom: "Letchi", kreol: "Letchi", rayon: 0.8, points: 1, poids: 10, jus: { couleur: "#f3e6dc", quantite: 0.7, viscosite: 0.35, morceaux: "#fff8ee", ecran: true } },
-  { id: "mangue", nom: "Mangue", kreol: "Mang", rayon: 1.15, points: 1, poids: 9, jus: { couleur: "#f39a12", quantite: 0.75, viscosite: 0.85, morceaux: "#ffb52e" } },
-  { id: "ananas", nom: "Ananas", kreol: "Zananas", rayon: 1.15, points: 1, poids: 7, jus: { couleur: "#f6d23a", quantite: 0.95, viscosite: 0.15, morceaux: "#ffe680", ecran: true } },
-  { id: "banane", nom: "Banane", kreol: "Fig", rayon: 1.15, points: 1, poids: 8, jus: { couleur: "#f4ecc8", quantite: 0.12, viscosite: 0.9, morceaux: "#f7efcf" } },
-  { id: "papaye", nom: "Papaye", kreol: "Papay", rayon: 1.1, points: 1, poids: 7, jus: { couleur: "#f37b2a", quantite: 0.6, viscosite: 0.6, graines: "#1d1612" } },
-  { id: "grenadine", nom: "Fruit de la passion", kreol: "Grenadine", rayon: 0.75, points: 1, poids: 7, jus: { couleur: "#f2a91c", quantite: 0.8, viscosite: 0.55, graines: "#1a1410", ecran: true } },
-  { id: "pasteque", nom: "Pastèque", kreol: "Pastèk", rayon: 1.35, points: 1, poids: 6, jus: { couleur: "#e8283a", quantite: 1, viscosite: 0.1, graines: "#160f0c", ecran: true } },
-  { id: "citron", nom: "Citron vert", kreol: "Sitron", rayon: 0.6, points: 2, poids: 6, jus: { couleur: "#d6ec7a", quantite: 0.85, viscosite: 0.05, ecran: true } },
-  { id: "mandarine", nom: "Mandarine", kreol: "Mandarine", rayon: 0.72, points: 1, poids: 7, jus: { couleur: "#ff8a18", quantite: 0.9, viscosite: 0.1, ecran: true } },
-  { id: "coco", nom: "Noix de coco", kreol: "Koko", rayon: 1.0, points: 1, poids: 5, jus: { couleur: "#eef3f6", quantite: 0.7, viscosite: 0.05, morceaux: "#ffffff" } },
-  { id: "bringelle", nom: "Aubergine", kreol: "Bringèl", rayon: 1.05, points: 1, poids: 5, jus: { couleur: "#efe5c4", quantite: 0.1, viscosite: 0.9, morceaux: "#efe7cc" } },
-  { id: "goyavier", nom: "Goyavier", kreol: "Goyavié", rayon: 0.5, points: 2, poids: 6, jus: { couleur: "#e2475f", quantite: 0.7, viscosite: 0.4, graines: "#f3d9a8" } },
-  { id: "piment", nom: "Piment", kreol: "Piman", rayon: 0.55, points: 3, poids: 4, jus: { couleur: "#d4141c", quantite: 0.35, viscosite: 0.3, graines: "#f6e3a3" } },
-  { id: "letchi-or", nom: "Letchi doré", kreol: "Letchi doré", rayon: 0.85, points: 10, poids: 0, special: "or", jus: { couleur: "#ffd34d", quantite: 0.9, viscosite: 0.3, morceaux: "#fff1a8" } },
-  { id: "lave", nom: "Roche de lave", kreol: "Roche de lave", rayon: 0.9, points: 0, poids: 0, special: "lave", jus: { couleur: "#ff6a00", quantite: 0, viscosite: 0 } },
+  { id: "letchi", nom: "Letchi", kreol: "Letchi", rayon: 0.8, points: 1, poids: 10, jus: { couleur: "#f3e6dc", quantite: 0.7, viscosite: 0.35, morceaux: "#fff8ee", ecran: true }, son: { croquant: 0.3, mou: 0.2, aigu: 0.6 } },
+  { id: "mangue", nom: "Mangue", kreol: "Mang", rayon: 1.15, points: 1, poids: 9, jus: { couleur: "#f39a12", quantite: 0.75, viscosite: 0.85, morceaux: "#ffb52e" }, son: { mou: 0.65, croquant: 0.05, aigu: 0.35 } },
+  { id: "ananas", nom: "Ananas", kreol: "Zananas", rayon: 1.15, points: 1, poids: 7, jus: { couleur: "#f6d23a", quantite: 0.95, viscosite: 0.15, morceaux: "#ffe680", ecran: true }, son: { croquant: 0.75, aigu: 0.35 } },
+  { id: "banane", nom: "Banane", kreol: "Fig", rayon: 1.15, points: 1, poids: 8, jus: { couleur: "#f4ecc8", quantite: 0.12, viscosite: 0.9, morceaux: "#f7efcf" }, son: { mou: 0.95, aigu: 0.4 } },
+  { id: "papaye", nom: "Papaye", kreol: "Papay", rayon: 1.1, points: 1, poids: 7, jus: { couleur: "#f37b2a", quantite: 0.6, viscosite: 0.6, graines: "#1d1612" }, son: { mou: 0.6, croquant: 0.15, aigu: 0.35 } },
+  { id: "grenadine", nom: "Fruit de la passion", kreol: "Grenadine", rayon: 0.75, points: 1, poids: 7, jus: { couleur: "#f2a91c", quantite: 0.8, viscosite: 0.55, graines: "#1a1410", ecran: true }, son: { coque: 0.35, croquant: 0.2, aigu: 0.6 } },
+  { id: "pasteque", nom: "Pastèque", kreol: "Pastèk", rayon: 1.35, points: 1, poids: 6, jus: { couleur: "#e8283a", quantite: 1, viscosite: 0.1, graines: "#160f0c", ecran: true }, son: { croquant: 0.95, aigu: 0.15 } },
+  { id: "citron", nom: "Citron vert", kreol: "Sitron", rayon: 0.6, points: 2, poids: 6, jus: { couleur: "#d6ec7a", quantite: 0.85, viscosite: 0.05, ecran: true }, son: { croquant: 0.35, aigu: 0.8 } },
+  { id: "mandarine", nom: "Mandarine", kreol: "Mandarine", rayon: 0.72, points: 1, poids: 7, jus: { couleur: "#ff8a18", quantite: 0.9, viscosite: 0.1, ecran: true }, son: { croquant: 0.2, mou: 0.15, aigu: 0.65 } },
+  { id: "coco", nom: "Noix de coco", kreol: "Koko", rayon: 1.0, points: 1, poids: 5, jus: { couleur: "#eef3f6", quantite: 0.7, viscosite: 0.05, morceaux: "#ffffff" }, son: { coque: 1, aigu: 0.3 } },
+  { id: "bringelle", nom: "Aubergine", kreol: "Bringèl", rayon: 1.05, points: 1, poids: 5, jus: { couleur: "#efe5c4", quantite: 0.1, viscosite: 0.9, morceaux: "#efe7cc" }, son: { mou: 0.5, croquant: 0.25, aigu: 0.4 } },
+  { id: "goyavier", nom: "Goyavier", kreol: "Goyavié", rayon: 0.5, points: 2, poids: 6, jus: { couleur: "#e2475f", quantite: 0.7, viscosite: 0.4, graines: "#f3d9a8" }, son: { croquant: 0.3, mou: 0.2, aigu: 0.9 } },
+  { id: "piment", nom: "Piment", kreol: "Piman", rayon: 0.55, points: 3, poids: 4, jus: { couleur: "#d4141c", quantite: 0.35, viscosite: 0.3, graines: "#f6e3a3" }, son: { sec: 0.7, croquant: 0.4, aigu: 0.95 } },
+  { id: "tijacque", nom: "Ti jacque", kreol: "Ti jacque", rayon: 1.35, points: 1, poids: 4, jus: { couleur: "#f6f2e4", quantite: 0.45, viscosite: 0.97, morceaux: "#efe3b8" }, son: { croquant: 0.55, mou: 0.25, aigu: 0.15 } },
+  { id: "friyapin", nom: "Fruit à pain", kreol: "Friyapin", rayon: 1.15, points: 1, poids: 4, jus: { couleur: "#f7f4ea", quantite: 0.3, viscosite: 0.95, morceaux: "#f3e7b8" }, son: { croquant: 0.45, mou: 0.35, aigu: 0.25 } },
+  { id: "goyave", nom: "Goyave", kreol: "Goyave", rayon: 0.7, points: 1, poids: 6, jus: { couleur: "#f27f8a", quantite: 0.6, viscosite: 0.5, graines: "#f1e2b8" }, son: { croquant: 0.45, mou: 0.2, aigu: 0.6 } },
+  { id: "vanille", nom: "Gousse de vanille", kreol: "Vanille", rayon: 0.6, points: 3, poids: 3, jus: { couleur: "#2a170c", quantite: 0.05, viscosite: 0.95, graines: "#0d0805" }, son: { sec: 1, aigu: 0.85 } },
+  { id: "carambole", nom: "Carambole", kreol: "Carambole", rayon: 0.85, points: 1, poids: 5, jus: { couleur: "#f2d64a", quantite: 0.85, viscosite: 0.1, ecran: true }, son: { croquant: 0.85, aigu: 0.55 } },
+  { id: "chouchou", nom: "Chouchou", kreol: "Chouchou", rayon: 0.85, points: 1, poids: 5, jus: { couleur: "#e9f1d0", quantite: 0.5, viscosite: 0.2, morceaux: "#eef3dc" }, son: { croquant: 0.8, aigu: 0.5 } },
+  { id: "bibasse", nom: "Bibasse", kreol: "Bibasse", rayon: 0.5, points: 2, poids: 5, jus: { couleur: "#ffad3a", quantite: 0.7, viscosite: 0.35, ecran: true }, son: { mou: 0.35, croquant: 0.15, aigu: 0.85 } },
+  { id: "letchi-or", nom: "Letchi doré", kreol: "Letchi doré", rayon: 0.85, points: 10, poids: 0, special: "or", jus: { couleur: "#ffd34d", quantite: 0.9, viscosite: 0.3, morceaux: "#fff1a8" }, son: { croquant: 0.3, mou: 0.2, aigu: 0.6 } },
+  { id: "lave", nom: "Roche de lave", kreol: "Roche de lave", rayon: 0.9, points: 0, poids: 0, special: "lave", jus: { couleur: "#ff6a00", quantite: 0, viscosite: 0 }, son: {} },
 ];
 
 export const fruitParId = (id: string) => FRUITS.find((f) => f.id === id)!;
@@ -118,6 +135,17 @@ function sculpter(
   g.setAttribute("color", new THREE.BufferAttribute(couleurs, 3));
   g.computeVertexNormals();
   g.computeBoundingSphere();
+  return g;
+}
+
+/** Modifie le rayon de chaque sommet selon son angle autour de l'axe (côtes, sillons). */
+function moduler(g: THREE.BufferGeometry, facteur: (angle: number, y: number) => number) {
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), y = pos.getY(i);
+    const f = facteur(Math.atan2(z, x), y);
+    pos.setXYZ(i, x * f, y, z * f);
+  }
   return g;
 }
 
@@ -400,6 +428,137 @@ function modeleLave(): Modele {
   return { corps: g, materiau, accessoires: () => [] };
 }
 
+function modeleTiJacque(): Modele {
+  const h = 2.6;
+  const g = revolution((t) => 0.86 * Math.pow(Math.sin(Math.PI * t), 0.62) * (1 + 0.06 * Math.sin(Math.PI * t * 2)), h, 56, 72);
+  const vert = C("#6c8f2b"), jaune = C("#a3ab3c"), pointe = C("#45651c");
+  sculpter(g, (p) => {
+    const b = bruit3(p.x * 13, p.y * 13, p.z * 13);
+    return 0.06 * Math.pow(b, 3) + 0.01 * bruit3(p.x * 30, p.y * 30, p.z * 30);
+  }, (p) => {
+    const b = bruit3(p.x * 13, p.y * 13, p.z * 13);
+    const base = melange(vert, jaune, fbm(p.x * 1.5, p.y * 1.5, p.z * 1.5) * 1.2 - 0.2);
+    return melange(base, pointe, lisse(0.55, 0.9, b));
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.7 }),
+    accessoires: () => {
+      const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.45, 8), new THREE.MeshStandardMaterial({ color: "#5a4a22", roughness: 0.85 }));
+      queue.position.y = h / 2 + 0.15;
+      return [queue];
+    },
+  };
+}
+
+function modeleFriyapin(): Modele {
+  const g = revolution((t) => 0.95 * Math.pow(Math.sin(Math.PI * t), 0.7), 1.95, 48, 64);
+  const vert = C("#7fa53a"), fonce = C("#4f7426"), latex = C("#e9eccd");
+  const facette = (p: THREE.Vector3) => {
+    const a = angle(p);
+    const u = (a * 7) / Math.PI + p.y * 2.6, v = (a * 7) / Math.PI - p.y * 2.6;
+    return Math.min(Math.abs(Math.sin(u * Math.PI)), Math.abs(Math.sin(v * Math.PI)));
+  };
+  sculpter(g, (p) => 0.03 * Math.pow(facette(p), 0.5), (p) => {
+    const f = facette(p);
+    const base = melange(fonce, vert, Math.pow(f, 0.6) + (fbm(p.x * 2, p.y * 2, p.z * 2) - 0.5) * 0.4);
+    return melange(base, latex, lisse(0.93, 0.97, bruit3(p.x * 18, p.y * 18, p.z * 18)) * 0.8);
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.55, clearcoat: 0.15 }),
+    accessoires: () => {
+      const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.35, 8), new THREE.MeshStandardMaterial({ color: "#5d4a26" }));
+      queue.position.y = 1.05;
+      return [queue];
+    },
+  };
+}
+
+function modeleGoyave(): Modele {
+  const g = revolution((t) => 0.64 * Math.pow(Math.sin(Math.PI * t), 0.72) * (1 - 0.16 * t), 1.3);
+  const vert = C("#8fa833"), jaune = C("#c9be45"), rose = C("#d5844f");
+  sculpter(g, (p) => 0.006 * bruit3(p.x * 22, p.y * 22, p.z * 22), (p) => {
+    const base = melange(vert, jaune, fbm(p.x * 2.5, p.y * 2.5, p.z * 2.5) * 1.3 - 0.1);
+    return melange(base, rose, lisse(0.62, 0.85, fbm(p.x * 1.8 + 3, p.y * 1.8, p.z * 1.8)) * 0.5);
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.42, clearcoat: 0.3 }),
+    accessoires: () => {
+      const couronne = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.03, 6, 10), new THREE.MeshStandardMaterial({ color: "#4a3a1c" }));
+      couronne.rotation.x = Math.PI / 2;
+      couronne.position.y = -0.64;
+      return [couronne];
+    },
+  };
+}
+
+function modeleVanille(): Modele {
+  const g = tubeCourbe(
+    [new THREE.Vector3(-1.35, 0.15, 0), new THREE.Vector3(-0.6, -0.05, 0.05), new THREE.Vector3(0.2, -0.08, -0.04), new THREE.Vector3(0.9, 0.05, 0), new THREE.Vector3(1.35, 0.28, 0)],
+    0.12,
+    (t) => (t < 0.03 ? 0.3 + t * 20 : Math.pow(Math.sin(Math.PI * Math.min(1, t)), 0.18)),
+    9, 72, 18
+  );
+  const brun = C("#3a2213"), noir = C("#1e110a"), reflet = C("#6a4224");
+  sculpter(g, null, (p) => melange(melange(brun, noir, fbm(p.x * 6, p.y * 6, p.z * 6) * 1.4 - 0.3), reflet, lisse(0.82, 0.95, bruit3(p.x * 3, p.y * 9, p.z * 9)) * 0.5));
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.35 }),
+    accessoires: () => [],
+  };
+}
+
+function modeleCarambole(): Modele {
+  const g = revolution((t) => 0.82 * Math.pow(Math.sin(Math.PI * t), 0.55), 1.85, 48, 90);
+  // cinq côtes saillantes : en coupe, une étoile
+  moduler(g, (a) => 0.5 + 0.5 * Math.pow(0.5 + 0.5 * Math.cos(5 * a), 1.6));
+  const jaune = C("#e6b92c"), vert = C("#a3ab34"), arete = C("#a87e20");
+  sculpter(g, null, (p) => {
+    const a = angle(p);
+    const cote = Math.pow(0.5 + 0.5 * Math.cos(5 * a), 8);
+    return melange(melange(jaune, vert, lisse(-0.3, -0.95, p.y) * 0.6), arete, cote * 0.55);
+  });
+  return { corps: g, materiau: peauPhysique({ roughness: 0.22, clearcoat: 0.8, clearcoatRoughness: 0.2 }), accessoires: () => [] };
+}
+
+function modeleChouchou(): Modele {
+  const h = 1.55;
+  const g = revolution((t) => 0.6 * Math.pow(Math.sin(Math.PI * t), 0.65) * (1 + 0.32 * (1 - t)), h, 44, 72);
+  const clair = C("#98bb58"), vert = C("#6c9636");
+  sculpter(g, (p) => {
+    const a = angle(p);
+    const sillon = Math.pow(0.5 + 0.5 * Math.cos(5 * a + 0.3), 10);
+    const bas = lisse(-0.35, -0.75, p.y);
+    return -0.07 * sillon * (0.4 + bas) + 0.008 * bruit3(p.x * 20, p.y * 20, p.z * 20);
+  }, (p) => melange(clair, vert, fbm(p.x * 2.5, p.y * 2.5, p.z * 2.5) * 1.2 - 0.15 + Math.pow(0.5 + 0.5 * Math.cos(5 * angle(p) + 0.3), 10) * 0.4));
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.4, clearcoat: 0.3 }),
+    accessoires: () => {
+      const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.07, 0.25, 6), new THREE.MeshStandardMaterial({ color: "#5d7d33" }));
+      queue.position.y = h / 2 + 0.08;
+      return [queue];
+    },
+  };
+}
+
+function modeleBibasse(): Modele {
+  const g = revolution((t) => 0.45 * Math.pow(Math.sin(Math.PI * t), 0.78) * (1 + 0.08 * (1 - t)), 1.0);
+  const orange = C("#f0a12c"), jaune = C("#f6c64a"), tache = C("#a8661c");
+  sculpter(g, (p) => 0.004 * bruit3(p.x * 30, p.y * 30, p.z * 30), (p) => {
+    const base = melange(orange, jaune, fbm(p.x * 3, p.y * 3, p.z * 3) * 1.3 - 0.2);
+    return melange(base, tache, lisse(0.82, 0.9, bruit3(p.x * 16, p.y * 16, p.z * 16)) * 0.6);
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.38, clearcoat: 0.35 }),
+    accessoires: () => {
+      const oeil = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.025, 6, 10), new THREE.MeshStandardMaterial({ color: "#3c2a14" }));
+      oeil.rotation.x = Math.PI / 2;
+      oeil.position.y = -0.48;
+      const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.04, 0.2, 6), new THREE.MeshStandardMaterial({ color: "#5a4424" }));
+      queue.position.y = 0.55;
+      return [oeil, queue];
+    },
+  };
+}
+
 const CONSTRUCTEURS: Record<string, () => Modele> = {
   letchi: () => modeleLetchi(),
   "letchi-or": () => modeleLetchi(true),
@@ -416,6 +575,13 @@ const CONSTRUCTEURS: Record<string, () => Modele> = {
   goyavier: modeleGoyavier,
   piment: modelePiment,
   lave: modeleLave,
+  tijacque: modeleTiJacque,
+  friyapin: modeleFriyapin,
+  goyave: modeleGoyave,
+  vanille: modeleVanille,
+  carambole: modeleCarambole,
+  chouchou: modeleChouchou,
+  bibasse: modeleBibasse,
 };
 
 const cacheModeles = new Map<string, Modele>();
@@ -576,6 +742,63 @@ const CHAIRS: Record<string, (pi: Pinceau) => void> = {
     disque(pi, 0.82, "#e8313a");
     disque(pi, 0.55, "#f6d9c4");
     graines(pi, 18, 0.05, 0.45, "#f6e3a3", pi.R * 0.08, false);
+  },
+  tijacque: (pi) => {
+    disque(pi, 1, "#5f7f26");
+    disque(pi, 0.95, degrade(pi, 0, 0.95, [[0, "#f7f1dc"], [0.6, "#f1e7c4"], [1, "#e8dcae"]]));
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + pi.rnd() * 0.2, r = pi.R * 0.6;
+      pi.ctx.save(); pi.ctx.translate(pi.c + Math.cos(a) * r, pi.c + Math.sin(a) * r); pi.ctx.rotate(a);
+      pi.ctx.beginPath(); pi.ctx.ellipse(0, 0, pi.R * 0.2, pi.R * 0.08, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "#efdf9e"; pi.ctx.fill();
+      pi.ctx.beginPath(); pi.ctx.ellipse(-pi.R * 0.02, 0, pi.R * 0.08, pi.R * 0.045, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "#f8f3e2"; pi.ctx.fill();
+      pi.ctx.restore();
+    }
+    fibres(pi, 110, "rgba(255,255,255,0.35)", 0.15, 0.95);
+    disque(pi, 0.2, degrade(pi, 0, 0.2, [[0, "#fbf7ea"], [1, "#efe4c2"]]));
+  },
+  friyapin: (pi) => {
+    disque(pi, 1, "#5b7f2a");
+    disque(pi, 0.95, degrade(pi, 0, 0.95, [[0, "#f6ecc6"], [0.7, "#f1e2a8"], [1, "#e9d892"]]));
+    fibres(pi, 70, "rgba(255,250,230,0.4)", 0.25, 0.92);
+    disque(pi, 0.22, degrade(pi, 0, 0.22, [[0, "#e6d29a"], [1, "#c9b070"]]));
+  },
+  goyave: (pi) => {
+    disque(pi, 1, "#c9cf58");
+    disque(pi, 0.94, degrade(pi, 0, 0.94, [[0, "#f6a0a6"], [0.7, "#f2848e"], [1, "#f6b7a0"]]));
+    disque(pi, 0.55, "#ee7480");
+    graines(pi, 40, 0.15, 0.52, "#f1e2b8", pi.R * 0.035, false);
+  },
+  vanille: (pi) => {
+    disque(pi, 1, "#2e1a0e");
+    disque(pi, 0.82, degrade(pi, 0, 0.82, [[0, "#1d0f07"], [1, "#3d2414"]]));
+    graines(pi, 260, 0, 0.75, "#060302", pi.R * 0.018, false);
+  },
+  carambole: (pi) => {
+    disque(pi, 1, "#c4a22c");
+    disque(pi, 0.95, degrade(pi, 0, 0.95, [[0, "#fff3b0"], [0.5, "#fbe478"], [1, "#f2cc3c"]]));
+    quartiers(pi, 5, 0.08, 0.95, "rgba(255,250,215,0.75)");
+    graines(pi, 6, 0.12, 0.3, "#8a5a24", pi.R * 0.06);
+    disque(pi, 0.07, "#fff6c8");
+  },
+  chouchou: (pi) => {
+    disque(pi, 1, "#8db04e");
+    disque(pi, 0.95, degrade(pi, 0, 0.95, [[0, "#f6f9ea"], [1, "#e4eecc"]]));
+    pi.ctx.beginPath();
+    pi.ctx.ellipse(pi.c, pi.c, pi.R * 0.36, pi.R * 0.24, 0, 0, Math.PI * 2);
+    pi.ctx.fillStyle = "#fbfaf2"; pi.ctx.fill();
+    pi.ctx.strokeStyle = "rgba(170,190,130,0.7)"; pi.ctx.lineWidth = pi.R * 0.02; pi.ctx.stroke();
+  },
+  bibasse: (pi) => {
+    disque(pi, 1, "#e8962a");
+    disque(pi, 0.94, degrade(pi, 0, 0.94, [[0, "#ffd27a"], [1, "#ffae3e"]]));
+    [[-0.17, 0], [0.17, 0.02], [0, -0.2]].forEach(([dx, dy]) => {
+      pi.ctx.beginPath();
+      pi.ctx.ellipse(pi.c + dx * pi.R, pi.c + dy * pi.R, pi.R * 0.17, pi.R * 0.13, dx * 3, 0, Math.PI * 2);
+      pi.ctx.fillStyle = "#6a3c18"; pi.ctx.fill();
+      pi.ctx.beginPath();
+      pi.ctx.ellipse(pi.c + dx * pi.R - pi.R * 0.05, pi.c + dy * pi.R - pi.R * 0.04, pi.R * 0.05, pi.R * 0.03, 0, 0, Math.PI * 2);
+      pi.ctx.fillStyle = "rgba(255,255,255,0.35)"; pi.ctx.fill();
+    });
   },
   lave: (pi) => {
     disque(pi, 1, "#2a2421");

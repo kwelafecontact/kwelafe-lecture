@@ -515,7 +515,7 @@ export class MoteurKoupKoup {
     this.giclee(pos, dirM, n, def);
     this.tacher(pos, dirM, n, def);
     if (def.jus.ecran && this.rnd() < 0.35 + def.jus.quantite * 0.3) this.eclabousserEcran(c.x, c.y, def);
-    this.sons.decoupe(Math.min(1, def.rayon / 1.35), def.jus.quantite);
+    this.sons.decoupe(def.son, def.jus.quantite, def.jus.viscosite);
 
     if (def.special === "or") {
       this.ralenti = 2.6;
@@ -1114,6 +1114,7 @@ export class MoteurKoupKoup {
       g.pos.addScaledVector(g.vel, dt);
       if (g.versPlanche && g.pos.z <= PLANCHE_Z + 0.05) {
         this.petiteTache(g.pos, g.vel, g.couleur, g.taille, g.graine);
+        if (Math.random() < 0.35) this.sons.goutteTombe(g.taille);
         continue;
       }
       if (g.vie <= 0 || g.pos.y < -this.demiH - 3) continue;
@@ -1230,11 +1231,23 @@ function sectionCoupe(geo: THREE.BufferGeometry, plan: THREE.Plane): THREE.Buffe
   const v = new THREE.Vector3().crossVectors(nrm, u);
   const origine = nrm.clone().multiplyScalar(-plan.constant);
   const p2 = points.map((p) => { const d = p.clone().sub(origine); return [d.dot(u), d.dot(v)] as [number, number]; });
-  const enveloppe = enveloppeConvexe(p2);
+  // Contour par angle : on garde le point le plus éloigné dans chaque direction.
+  // Contrairement à une enveloppe convexe, cela respecte les formes en étoile (carambole) ou à sillons.
+  let mx = 0, my = 0;
+  p2.forEach(([x, y]) => { mx += x; my += y; });
+  mx /= p2.length; my /= p2.length;
+  const NB = 96;
+  const bins: ([number, number] | null)[] = new Array(NB).fill(null);
+  const dist: number[] = new Array(NB).fill(-1);
+  for (const [x, y] of p2) {
+    const a = Math.atan2(y - my, x - mx);
+    const k = Math.min(NB - 1, Math.floor(((a + Math.PI) / (Math.PI * 2)) * NB));
+    const d = Math.hypot(x - mx, y - my);
+    if (d > dist[k]) { dist[k] = d; bins[k] = [x, y]; }
+  }
+  const enveloppe = bins.filter((b): b is [number, number] => !!b);
   if (enveloppe.length < 3) return null;
-  let cx = 0, cy = 0;
-  enveloppe.forEach(([x, y]) => { cx += x; cy += y; });
-  cx /= enveloppe.length; cy /= enveloppe.length;
+  const cx = mx, cy = my;
   const sommets: number[] = [];
   const uvs: number[] = [];
   const vers3D = (x: number, y: number) => origine.clone().addScaledVector(u, x).addScaledVector(v, y);
@@ -1255,18 +1268,6 @@ function sectionCoupe(geo: THREE.BufferGeometry, plan: THREE.Plane): THREE.Buffe
   g.setIndex(index);
   g.computeVertexNormals();
   return g;
-}
-
-function enveloppeConvexe(pts: [number, number][]): [number, number][] {
-  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  if (p.length < 3) return p;
-  const croix = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const bas: [number, number][] = [];
-  for (const q of p) { while (bas.length >= 2 && croix(bas[bas.length - 2], bas[bas.length - 1], q) <= 0) bas.pop(); bas.push(q); }
-  const haut: [number, number][] = [];
-  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (haut.length >= 2 && croix(haut[haut.length - 2], haut[haut.length - 1], q) <= 0) haut.pop(); haut.push(q); }
-  bas.pop(); haut.pop();
-  return bas.concat(haut);
 }
 
 function texturePoint() {
