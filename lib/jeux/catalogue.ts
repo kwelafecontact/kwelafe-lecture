@@ -6,6 +6,8 @@ export type FicheJeu = {
   titre: string;
   accroche: string;
   vignette: string;          // id d'une image de fruit
+  image?: string;            // chemin d'une autre image de vignette
+  emoji?: string;            // ou un pictogramme
   fond: string;              // dégradé de la carte
   serie: "fruits" | "reunion";
   troisD?: boolean;          // jeu 3D avec sa propre page (Koup Koup)
@@ -23,6 +25,16 @@ export const CATALOGUE: FicheJeu[] = [
   { id: "rekolt-la", titre: "Rékolt la !", accroche: "Ramasse les bons fruits, évite les guêpes.", vignette: "goyavier", fond: "linear-gradient(135deg,#d8f0a0,#6aa83a)", serie: "fruits" },
   { id: "let-melanze", titre: "Lèt mélanzé", accroche: "Remets les lettres dans l'ordre.", vignette: "bibasse", fond: "linear-gradient(135deg,#ffe08a,#e0a020)", serie: "fruits" },
   { id: "marchand-du-bazar", titre: "Marchand du bazar", accroche: "Sers les clients vite pour gagner des pièces.", vignette: "mandarine", fond: "linear-gradient(135deg,#ff9a8a,#7a3a8a)", serie: "fruits" },
+  { id: "kosa-in-shoz", titre: "Kosa in shoz ?", accroche: "Les sirandanes de La Réunion, contre la montre.", vignette: "", emoji: "❓", fond: "linear-gradient(135deg,#c9a8ff,#7a2e8f)", serie: "reunion" },
+  { id: "zarlor", titre: "Zarlor, le mot caché", accroche: "Devine le mot créole en 6 essais.", vignette: "", emoji: "🔤", fond: "linear-gradient(135deg,#8fe0ff,#1e6e86)", serie: "reunion" },
+  { id: "oussa-i-le", titre: "Oussa i lé ?", accroche: "Retrouve les lieux de l'île, en chaud ou froid.", vignette: "", emoji: "🗺️", fond: "linear-gradient(135deg,#ffb08a,#d9442b)", serie: "reunion" },
+  { id: "memory-lontan", titre: "Memory lontan", accroche: "Les paires d'objets d'autrefois.", vignette: "", image: "/jeux/lontan/obj-lanp.webp", fond: "linear-gradient(135deg,#e8c89a,#8a4b1f)", serie: "reunion" },
+  { id: "ramasse-les-letchis", titre: "Ramasse les letchis !", accroche: "Attrape les letchis, évite les guêpes.", vignette: "", image: "/jeux/reunion/letchi-grappe.webp", fond: "linear-gradient(135deg,#bff0a8,#c8202f)", serie: "reunion" },
+  { id: "cari-parfait", titre: "Le cari parfait", accroche: "Cuisine sans que ça attache.", vignette: "", image: "/jeux/lontan/obj-marmit.webp", fond: "linear-gradient(135deg,#ffcf8a,#b5482a)", serie: "reunion" },
+  { id: "gardiens-de-l-ile", titre: "Les Gardiens de l'île", accroche: "Reconnais les animaux de La Réunion.", vignette: "", emoji: "🦎", fond: "linear-gradient(135deg,#bff0a8,#2e7d4f)", serie: "reunion" },
+  { id: "expressions-a-recoller", titre: "Expressions à recoller", accroche: "Relie les expressions créoles à leur sens.", vignette: "", emoji: "💬", fond: "linear-gradient(135deg,#ff9ab0,#d9442b)", serie: "reunion" },
+  { id: "case-bleue", titre: "L'énigme de la Case Bleue", accroche: "Escape game dans la kaz de Gramoun Zélie.", vignette: "", emoji: "🔑", fond: "linear-gradient(135deg,#7ab0f0,#1b2a4a)", serie: "reunion" },
+  { id: "coulee-de-lave", titre: "Coulée de lave", accroche: "Guide la lave du volcan jusqu'à la mer.", vignette: "", emoji: "🌋", fond: "linear-gradient(135deg,#ff9a5a,#5a2a1c)", serie: "reunion" },
 ];
 
 export const fiche = (id: string) => CATALOGUE.find((f) => f.id === id);
@@ -41,6 +53,16 @@ export async function chargerJeu(id: string): Promise<DefJeu | null> {
     case "rekolt-la": return (await import("./jeux/rekolt-la")).default;
     case "let-melanze": return (await import("./jeux/let-melanze")).default;
     case "marchand-du-bazar": return (await import("./jeux/marchand-du-bazar")).default;
+    case "kosa-in-shoz": return (await import("./jeux/kosa-in-shoz")).default;
+    case "zarlor": return (await import("./jeux/zarlor")).default;
+    case "oussa-i-le": return (await import("./jeux/oussa-i-le")).default;
+    case "memory-lontan": return (await import("./jeux/memory-lontan")).default;
+    case "ramasse-les-letchis": return (await import("./jeux/ramasse-les-letchis")).default;
+    case "cari-parfait": return (await import("./jeux/cari-parfait")).default;
+    case "gardiens-de-l-ile": return (await import("./jeux/gardiens-de-l-ile")).default;
+    case "expressions-a-recoller": return (await import("./jeux/expressions-a-recoller")).default;
+    case "case-bleue": return (await import("./jeux/case-bleue")).default;
+    case "coulee-de-lave": return (await import("./jeux/coulee-de-lave")).default;
     default: return null;
   }
 }

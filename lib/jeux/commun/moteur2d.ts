@@ -34,6 +34,7 @@ export type DefJeu = {
   niveaux: number;          // 0 = partie sans fin (on bat son record)
   theme: Theme;
   visuels?: "photos";       // images photo des planches de KWélafé à la place des rendus 3D
+  images?: Record<string, string>;   // images propres au jeu (id → chemin), préchargées avec lui
   creer: (c: Contexte, niveau: number) => Jeu;
 };
 
@@ -187,8 +188,8 @@ export const melanger = <T,>(a: T[], rnd: () => number) => { const b = a.slice()
 // Moteur
 // ---------------------------------------------------------------------------
 const cacheImages = new Map<string, HTMLImageElement>();
-export function precharger(visuels?: "photos"): Promise<void> {
-  const liste = toutesLesImages();
+export function precharger(visuels?: "photos", images?: Record<string, string>): Promise<void> {
+  const liste = { ...toutesLesImages(), ...(images || {}) };
   if (visuels === "photos") for (const p of PHOTOS) liste["photo:" + p.id] = p.image;
   return Promise.all(Object.entries(liste).map(([id, src]) => new Promise<void>((ok) => {
     if (cacheImages.has(id)) return ok();
