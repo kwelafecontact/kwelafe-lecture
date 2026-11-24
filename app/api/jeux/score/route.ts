@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lireSession } from "@/lib/session";
 import { executer, premier } from "@/lib/cf";
+import { IDS_JEUX } from "@/lib/jeux/catalogue";
 
-const JEUX = new Set(["koup-koup"]);
+const JEUX = IDS_JEUX;
 
 /** Renvoie le record, le nombre de parties et les données (fruits découverts…) du joueur. */
 export async function GET(req: NextRequest) {

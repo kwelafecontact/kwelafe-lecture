@@ -3,27 +3,9 @@ import NavBas from "@/components/NavBas";
 import LienSite from "@/components/LienSite";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
+import { CATALOGUE } from "@/lib/jeux/catalogue";
 
 export const dynamic = "force-dynamic";
-
-const JEUX = [
-  {
-    slug: "koup-koup",
-    titre: "Koup Koup",
-    resume: "Coupe les fruits péi en 3D, fais gicler le jus et évite la lave du volcan.",
-    fond: "linear-gradient(135deg, #f39a12 0%, #e8283a 55%, #6e2a5c 100%)",
-    emoji: "🥭",
-    disponible: true,
-  },
-  {
-    slug: "",
-    titre: "Le marché des jus",
-    resume: "Bientôt : prépare les jus que les clients commandent en créole.",
-    fond: "linear-gradient(135deg, #8a9a7b 0%, #4c7a2a 100%)",
-    emoji: "🍹",
-    disponible: false,
-  },
-];
 
 export default async function PageJeux() {
   const { session, abonne } = await contexte();
@@ -46,25 +28,27 @@ export default async function PageJeux() {
           </section>
         )}
 
-        <div className="jeux-grille">
-          {JEUX.map((j) => {
-            const contenu = (
-              <>
-                <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden><span>{j.emoji}</span></div>
-                <div className="jeu-infos">
-                  <h3>{j.titre}</h3>
-                  <p className="texte-doux">{j.resume}</p>
-                  {j.disponible ? <span className="jeu-etiquette">{acces ? "Jouer" : "Abonnés"}</span> : <span className="jeu-etiquette bientot">Bientôt</span>}
-                </div>
-              </>
-            );
-            return j.disponible && acces ? (
-              <Link key={j.titre} href={`/jeux/${j.slug}`} className="jeu-carte">{contenu}</Link>
-            ) : (
-              <div key={j.titre} className="jeu-carte inactive">{contenu}</div>
-            );
-          })}
-        </div>
+        <section className="section" style={{ marginTop: 0 }}>
+          <h2>Fruits et légumes péi</h2>
+          <div className="jeux-grille">
+            {CATALOGUE.filter((j) => j.serie === "fruits").map((j) => {
+              const contenu = (
+                <>
+                  <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/jeux/fruits/${j.vignette}.webp`} alt="" width={120} height={120} />
+                  </div>
+                  <div className="jeu-infos">
+                    <h3>{j.titre}{j.troisD ? " 3D" : ""}</h3>
+                    <p className="texte-doux">{j.accroche}</p>
+                    <span className="jeu-etiquette">{acces ? "Jouer" : "Abonnés"}</span>
+                  </div>
+                </>
+              );
+              return acces ? <Link key={j.id} href={`/jeux/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
+            })}
+          </div>
+        </section>
         <LienSite />
       </main>
       <NavBas />
