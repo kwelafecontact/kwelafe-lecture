@@ -225,8 +225,8 @@ function modeleLetchi(or = false): Modele {
     const coeur = t < 0.35 ? Math.pow(t / 0.35, 0.55) : 1;
     return 0.75 * Math.pow(Math.sin(Math.PI * (0.02 + 0.96 * t)), 0.6) * (0.82 + 0.18 * coeur) * (1 - 0.05 * t);
   }, h, 80, 112);
-  const rouges = [C("#b0162c"), C("#c2223a"), C("#9c1228"), C("#cc3040"), C("#b81c32")];
-  const sillonC = C("#3e0610"), pointe = C("#e87a7e"), brun = C("#8e4422"), vertJ = C("#9a7a3a");
+  const rouges = [C("#d01c3c"), C("#e02a4a"), C("#bc1834"), C("#ea3a50"), C("#d42242")];
+  const sillonC = C("#5a0a1a"), pointe = C("#f49aa0"), brun = C("#8e4422"), vertJ = C("#9a7a3a");
   const dores = [C("#e8b52c"), C("#f6cc45"), C("#d9a020")];
   modeler(g, (p) => {
     const w = worley(p.x * 10.5, p.y * 10.5, p.z * 10.5);
@@ -277,8 +277,10 @@ function modeleMangue(): Modele {
     const soleil = lisse(0.0, 1.0, p.x * 0.7 + (t - 0.45));
     let c = melange(vert, vertJ, lisse(0.0, 0.4, t));
     c = melange(c, jaune, lisse(0.35, 0.7, t));
-    c = melange(c, orange, soleil * 0.55);
-    c = melange(c, rose, lisse(0.7, 1, soleil) * lisse(0.55, 0.9, t) * 0.5);
+    c = melange(c, orange, soleil * 0.8);
+    c = melange(c, rose, lisse(0.55, 1, soleil) * lisse(0.4, 0.9, t) * 0.8);
+    c = melange(c, orange, lisse(0.45, 0.8, t) * 0.55);
+    c = melange(c, rose, lisse(0.7, 0.95, t) * 0.5);
     const w = worley(p.x * 18, p.y * 18, p.z * 18);
     c = melange(c, lenticelle, lisse(0.055, 0.02, w.f1) * 0.5);
     return [0.003 * bruit3(p.x * 24, p.y * 24, p.z * 24), c];
@@ -489,7 +491,7 @@ function modeleCitron(): Modele {
 function modeleMandarine(): Modele {
   const h = 1.22;
   const g = revolution((t) => 0.74 * Math.pow(Math.sin(Math.PI * t), 0.42) * (1 - 0.03 * t), h, 80, 128);
-  const orange = C("#ea6a10"), fonce = C("#c94c08"), clair = C("#f68a22");
+  const orange = C("#e85a00"), fonce = C("#c04400"), clair = C("#f87c10");
   modeler(g, (p) => {
     const w = worley(p.x * 30, p.y * 30, p.z * 30);
     const pore = lisse(0.25, 0.0, w.f1);
@@ -724,7 +726,7 @@ function modeleCarambole(): Modele {
 function modeleChouchou(): Modele {
   const h = 1.55;
   const g = revolution((t) => 0.6 * Math.pow(Math.sin(Math.PI * t), 0.62) * (1 + 0.34 * (1 - t)), h, 72, 112);
-  const clair = C("#a6c866"), vert = C("#6a9636"), crete = C("#bcd98a");
+  const clair = C("#76aa36"), vert = C("#467a20"), crete = C("#94c45a");
   modeler(g, (p) => {
     const a = angle(p);
     const t = hauteurRel(p, h);
@@ -824,6 +826,363 @@ function modeleLave(): Modele {
   return { corps: g, materiau, accessoires: () => [] };
 }
 
+// ---------------------------------------------------------------------------
+// V4 : nouveaux fruits d'après les planches de référence de KWélafé
+// ---------------------------------------------------------------------------
+
+/** Bractée ou écaille en feuille, dégradé de couleur de la base à la pointe. */
+function bractee(longueur: number, largeur: number, base: string, pointe: string, courbure = 0.5) {
+  const f = feuilleDetaillee(longueur, largeur, base, courbure, 0.2);
+  const pos = f.geometry.attributes.position as THREE.BufferAttribute;
+  const col = f.geometry.attributes.color as THREE.BufferAttribute;
+  const cp = C(pointe);
+  for (let i = 0; i < pos.count; i++) {
+    const t = lisse(0.45, 1, pos.getY(i) / longueur);
+    const c = new THREE.Color(col.getX(i), col.getY(i), col.getZ(i)).lerp(cp, t);
+    col.setXYZ(i, c.r, c.g, c.b);
+  }
+  return f;
+}
+
+/** Pose un objet plaqué sur une surface de révolution, à l'angle a et à la hauteur y, incliné vers l'extérieur. */
+function plaquer(o: THREE.Object3D, rayon: number, y: number, a: number, inclinaison: number) {
+  o.rotation.y = Math.PI / 2;                 // le plan de la feuille devient tangent, la courbure part vers l'extérieur
+  const penche = new THREE.Group();
+  penche.add(o);
+  penche.rotation.z = -inclinaison;
+  penche.position.set(rayon, y, 0);
+  const pivot = new THREE.Group();
+  pivot.rotation.y = -a;
+  pivot.add(penche);
+  return pivot;
+}
+
+function modeleAvocat(): Modele {
+  // Avocat vert lisse des jardins créoles : forme de poire, peau vert sombre finement grenue
+  const h = 2.05;
+  const prof = (t: number) => 0.66 * Math.pow(Math.sin(Math.PI * t), 0.5) * (1.06 - 0.46 * lisse(0.35, 1, t));
+  const g = revolution(prof, h, 80, 104);
+  const fonce = C("#2a4a16"), vert = C("#40681e"), clair = C("#6a8a2c"), point = C("#a8b860");
+  modeler(g, (p) => {
+    const f = fbm(p.x * 2.5, p.y * 2.5, p.z * 2.5);
+    let c = melange(fonce, vert, f * 1.4 - 0.2);
+    c = melange(c, clair, lisse(0.62, 0.8, fbm(p.x * 1.2 + 3, p.y * 1.2, p.z * 1.2)) * 0.4);
+    const w = worley(p.x * 26, p.y * 26, p.z * 26);
+    c = melange(c, point, lisse(0.05, 0.015, w.f1) * 0.35);
+    return [0.004 * bruit3(p.x * 30, p.y * 30, p.z * 30) - 0.003 * lisse(0.05, 0.015, w.f1), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.5 }),
+    accessoires: () => {
+      const t = tige(0.28, 0.05, 0.04, 0.3, "#5a5a28");
+      t.position.y = h / 2 - 0.04;
+      return [t];
+    },
+  };
+}
+
+function modelePitaya(): Modele {
+  // Fruit du dragon : ovale rose fuchsia, grandes écailles roses à pointe verte
+  const h = 1.95;
+  const prof = (t: number) => 0.74 * Math.pow(Math.sin(Math.PI * t), 0.55) * (1 - 0.06 * t);
+  const g = revolution(prof, h, 72, 104);
+  const rose = C("#d81e6a"), clair = C("#f0508e"), fonce = C("#a8104e"), vert = C("#8aa83a");
+  modeler(g, (p) => {
+    const f = fbm(p.x * 2, p.y * 2, p.z * 2);
+    let c = melange(fonce, rose, f * 1.4 - 0.1);
+    c = melange(c, clair, lisse(0.6, 0.85, fbm(p.x * 3 + 5, p.y * 3, p.z * 3)) * 0.5);
+    c = melange(c, vert, lisse(0.92, 1, hauteurRel(p, h)) * 0.6);
+    return [0.02 * (f - 0.5), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.3 }),
+    accessoires: () => {
+      const r = graine(71), objets: THREE.Object3D[] = [];
+      const N = 20;
+      for (let i = 0; i < N; i++) {
+        const t = 0.14 + 0.68 * (i / (N - 1));
+        const a = i * 2.39996 + r() * 0.3;                // spirale dorée : écailles bien réparties
+        const L = 0.36 + 0.12 * Math.sin(Math.PI * t);
+        const b = bractee(L, L * 0.85, "#e0307a", "#9cc83a", 0.35);
+        objets.push(plaquer(b, prof(t) * 0.97, -h / 2 + t * h, a, 0.1 + 0.18 * t));
+      }
+      for (let i = 0; i < 5; i++) {                       // petite couronne au sommet
+        const b = bractee(0.32, 0.18, "#d8306e", "#8ab83a", 0.4);
+        objets.push(plaquer(b, 0.08, h / 2 - 0.08, (i / 5) * Math.PI * 2, 0.5));
+      }
+      return objets;
+    },
+  };
+}
+
+function modeleCanne(): Modele {
+  // Tronçon de canne à sucre : tige à nœuds, écorce violette et jaune, coupée net aux deux bouts
+  const h = 2.5, R = 0.3;
+  const g = revolution((t) => R * Math.min(1, Math.pow(Math.sin(Math.PI * t), 0.06)), h, 120, 48);
+  const noeuds = [0.18, 0.5, 0.82];
+  moduler(g, (_a, y) => {
+    const t = y / h + 0.5;
+    let f = 1;
+    for (const n of noeuds) f += 0.09 * Math.exp(-Math.pow((t - n) / 0.018, 2)) - 0.04 * Math.exp(-Math.pow((t - n - 0.035) / 0.02, 2));
+    return f;
+  });
+  const violet = C("#6a2a3a"), jaune = C("#c8a84a"), vert = C("#8a8a3a"), cire = C("#c8c0b0"), anneauC = C("#3a2418"), bout = C("#efe6c0");
+  modeler(g, (p) => {
+    const t = hauteurRel(p, h), a = angle(p);
+    const stries = fbm(a * 30, p.y * 0.8, 1.3, 2);
+    let c = melange(violet, jaune, lisse(0.45, 0.7, fbm(p.x * 1.5, p.y * 0.6, p.z * 1.5) + stries * 0.3));
+    c = melange(c, vert, lisse(0.6, 0.8, fbm(p.x + 9, p.y * 0.5, p.z)) * 0.4);
+    let d = 0.004 * stries;
+    for (const n of noeuds) {
+      const k = Math.abs(t - n);
+      c = melange(c, anneauC, lisse(0.012, 0.002, k) * 0.85);
+      c = melange(c, cire, lisse(0.05, 0.015, Math.abs(t - n - 0.04)) * 0.55);   // bande cireuse sous le nœud
+    }
+    const r = Math.hypot(p.x, p.z);
+    if (t < 0.012 || t > 0.988) c = melange(bout, C("#d8cc98"), lisse(0, R, r) * 0.6);
+    return [d, c];
+  });
+  return { corps: g, materiau: peauPhysique({ roughness: 0.35, clearcoat: 0.45, clearcoatRoughness: 0.35 }), accessoires: () => [] };
+}
+
+function modeleTamarin(): Modele {
+  // Gousse de tamarin : courbe, bosselée par les graines, écorce cannelle mate et poudreuse
+  const pts = [new THREE.Vector3(-1.05, -0.12, 0), new THREE.Vector3(-0.5, 0.1, 0), new THREE.Vector3(0.1, 0.16, 0), new THREE.Vector3(0.6, 0.05, 0), new THREE.Vector3(1.05, -0.2, 0)];
+  const g = tubeCourbe(pts, 0.24, (t) => Math.pow(Math.sin(Math.PI * (0.03 + 0.94 * t)), 0.35) * (0.78 + 0.22 * Math.abs(Math.sin(t * Math.PI * 4.5))), 0, 96, 24);
+  g.scale(1, 1, 0.75);
+  const cannelle = C("#9a6a3c"), clair = C("#c49464"), fonce = C("#5e3c1e");
+  modeler(g, (p) => {
+    const f = fbm(p.x * 6, p.y * 6, p.z * 6);
+    let c = melange(fonce, cannelle, f * 1.6 - 0.1);
+    c = melange(c, clair, lisse(0.55, 0.75, fbm(p.x * 12 + 2, p.y * 12, p.z * 12)) * 0.6);
+    return [0.012 * (f - 0.5), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.95 }),
+    accessoires: () => {
+      const t = tige(0.25, 0.03, 0.025, 0.4, "#5a3a1e");
+      t.rotation.z = Math.PI / 2 + 0.3;
+      t.position.set(-1.0, -0.12, 0);
+      return [t];
+    },
+  };
+}
+
+function modeleLongani(): Modele {
+  // Longani (longane) : petite boule beige-brun, peau fine légèrement grumeleuse
+  const h = 0.92;
+  const g = revolution((t) => 0.47 * Math.pow(Math.sin(Math.PI * t), 0.55), h, 56, 80);
+  const beige = C("#b8884a"), clair = C("#d4a868"), brun = C("#7e5428");
+  modeler(g, (p) => {
+    const f = fbm(p.x * 6, p.y * 6, p.z * 6);
+    let c = melange(brun, beige, f * 1.5);
+    c = melange(c, clair, lisse(0.6, 0.8, fbm(p.x * 14, p.y * 14, p.z * 14)) * 0.5);
+    return [0.008 * bruit3(p.x * 40, p.y * 40, p.z * 40), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.75 }),
+    accessoires: () => {
+      const t = tige(0.3, 0.025, 0.02, 0.4, "#6a5030");
+      t.position.y = h / 2 - 0.02;
+      return [t];
+    },
+  };
+}
+
+function modeleJamalac(): Modele {
+  // Jamalac : cloche rouge vif et très brillante, base large creusée de quatre lobes
+  const h = 1.45;
+  const g = revolution((t) => 0.7 * Math.pow(Math.sin(Math.PI * (0.06 + 0.94 * t)), 0.42) * (1.05 - 0.5 * t), h, 72, 104);
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const r = Math.hypot(x, z), t = y / h + 0.5;
+    const creux = t < 0.12 ? 0.22 * (1 - r / 0.7) * lisse(0.12, 0.0, t) : 0;     // base creusée
+    const lobe = 1 + 0.07 * Math.cos(4 * Math.atan2(z, x)) * lisse(0.45, 0.0, t);
+    pos.setXYZ(i, x * lobe, y + creux, z * lobe);
+  }
+  const rouge = C("#d8142a"), clair = C("#f0384a"), fonce = C("#9a0c1e"), creme = C("#f6d0b0");
+  modeler(g, (p) => {
+    const t = hauteurRel(p, h);
+    let c = melange(fonce, rouge, fbm(p.x * 2.5, p.y * 2.5, p.z * 2.5) * 1.5);
+    c = melange(c, clair, lisse(0.6, 0.85, fbm(p.x * 4 + 3, p.y * 4, p.z * 4)) * 0.4);
+    c = melange(c, creme, lisse(0.12, 0.02, t) * 0.5);
+    return [0, c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 }),
+    accessoires: () => {
+      const t = tige(0.18, 0.035, 0.03, 0.2, "#7a5a2a");
+      t.position.y = h / 2 - 0.02;
+      const s = calice(4, 0.12, 0.09, "#8a3020", 0.2, -h / 2 + 0.14, true);
+      return [t, s];
+    },
+  };
+}
+
+function modeleSapotille(): Modele {
+  // Sapotille : ovale brun mat, peau poudreuse comme une pomme de terre
+  const h = 1.3;
+  const g = revolution((t) => 0.6 * Math.pow(Math.sin(Math.PI * t), 0.55) * (1 + 0.06 * (1 - t)), h, 64, 88);
+  const brun = C("#7a5232"), clair = C("#a87a50"), fonce = C("#4e3220");
+  modeler(g, (p) => {
+    const f = fbm(p.x * 5, p.y * 5, p.z * 5);
+    let c = melange(fonce, brun, f * 1.5);
+    c = melange(c, clair, lisse(0.55, 0.8, fbm(p.x * 16, p.y * 16, p.z * 16)) * 0.6);
+    return [0.005 * bruit3(p.x * 30, p.y * 30, p.z * 30), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.95 }),
+    accessoires: () => {
+      const t = tige(0.16, 0.03, 0.025, 0.3, "#5a3e24");
+      t.position.y = h / 2 - 0.02;
+      return [t];
+    },
+  };
+}
+
+function modeleAtte(): Modele {
+  // Atte (pomme cannelle) : cœur vert couvert de bosses arrondies, sillons plus clairs
+  const h = 1.6;
+  const g = revolution((t) => 0.78 * Math.pow(Math.sin(Math.PI * (0.04 + 0.96 * t)), 0.55) * (1.05 - 0.22 * t), h, 80, 112);
+  const vert = C("#7aa040"), fonce = C("#55782a"), clair = C("#b8cc78"), brun = C("#6a5a2a");
+  modeler(g, (p) => {
+    const w = worley(p.x * 4.6, p.y * 4.6, p.z * 4.6);
+    const bosse = Math.min(1, (w.f2 - w.f1) * 3.2);
+    const d = 0.07 * Math.pow(bosse, 0.6);
+    let c = melange(fonce, vert, bosse * 1.1 + (w.id - 0.5) * 0.4);
+    c = melange(c, clair, (1 - Math.min(1, bosse * 3)) * 0.75);                // sillons clairs et poudrés
+    c = melange(c, brun, lisse(0.6, 0.85, fbm(p.x * 3, p.y * 3, p.z * 3)) * 0.25);
+    return [d, c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.6, clearcoat: 0.15 }),
+    accessoires: () => {
+      const t = tige(0.25, 0.05, 0.04, 0.3, "#5a4a26");
+      t.position.y = h / 2 - 0.02;
+      return [t];
+    },
+  };
+}
+
+function modeleCombava(): Modele {
+  // Combava : petit agrume vert sombre, peau très bosselée et ridée, petit téton
+  const h = 1.15;
+  const g = revolution((t) => 0.6 * Math.pow(Math.sin(Math.PI * t), 0.5) * (1 + 0.08 * Math.sin(Math.PI * t)), h, 72, 104);
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i), t = y / h + 0.5;
+    pos.setY(i, y + 0.12 * Math.pow(lisse(0.82, 1, t), 2));                     // téton au sommet
+  }
+  const vert = C("#3e6a1e"), clair = C("#6e9a34"), fonce = C("#24420e");
+  modeler(g, (p) => {
+    const ride = fbm(p.x * 4, p.y * 4, p.z * 4);
+    const w = worley(p.x * 9, p.y * 9, p.z * 9);
+    const bosse = Math.min(1, (w.f2 - w.f1) * 3);
+    let c = melange(fonce, vert, bosse + ride * 0.5);
+    c = melange(c, clair, lisse(0.7, 1, bosse) * 0.45);
+    const pore = lisse(0.2, 0.0, worley(p.x * 30, p.y * 30, p.z * 30).f1);
+    return [0.05 * (ride - 0.5) + 0.03 * bosse - 0.006 * pore, c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.4, clearcoat: 0.4, clearcoatRoughness: 0.4 }),
+    accessoires: () => {
+      const t = tige(0.18, 0.03, 0.025, 0.3, "#3e5a22");
+      t.position.y = -h / 2 + 0.02;
+      t.rotation.z = Math.PI;
+      const f = feuilleDetaillee(0.55, 0.26, "#2e6a22", 0.25, 0.1);
+      f.position.set(0, -h / 2 - 0.05, 0);
+      f.rotation.set(2.0, 0.4, 0.3);
+      return [t, f];
+    },
+  };
+}
+
+function modeleCacao(): Modele {
+  // Cabosse de cacao : allongée, pointue, dix côtes, jaune orangé teinté de rouge brun
+  const h = 2.3;
+  const g = revolution((t) => 0.66 * Math.pow(Math.sin(Math.PI * t), 0.72) * (1 + 0.05 * Math.sin(2 * Math.PI * t)), h, 80, 120);
+  moduler(g, (a) => 1 + 0.05 * Math.cos(10 * a) + 0.035 * Math.cos(5 * a));
+  const jaune = C("#e4a82a"), orange = C("#d07020"), rouge = C("#8e3018"), vert = C("#8a9a2a");
+  modeler(g, (p) => {
+    const a = angle(p), t = hauteurRel(p, h);
+    const f = fbm(p.x * 2, p.y * 2, p.z * 2);
+    let c = melange(jaune, orange, f * 1.4 - 0.1);
+    c = melange(c, rouge, lisse(0.55, 0.85, fbm(p.x * 1.4 + 4, p.y * 1.4, p.z * 1.4)) * 0.75);
+    c = melange(c, vert, lisse(0.8, 1, t) * 0.35);
+    const sillon = Math.pow(0.5 + 0.5 * Math.cos(10 * a + Math.PI), 10);
+    c = melange(c, rouge, sillon * 0.35);
+    const verrue = lisse(0.06, 0.0, worley(p.x * 12, p.y * 12, p.z * 12).f1) * 0.02;
+    return [verrue + 0.01 * (f - 0.5), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.45, clearcoat: 0.3 }),
+    accessoires: () => {
+      const t = tige(0.35, 0.07, 0.055, 0.15, "#5a4a22");
+      t.position.y = h / 2 - 0.05;
+      return [t];
+    },
+  };
+}
+
+function modeleCanistel(): Modele {
+  // Canistel (jaune d'œuf) : goutte pointue vers le bas, peau jaune d'or lisse
+  const h = 1.75;
+  const g = revolution((t) => 0.68 * Math.pow(Math.sin(Math.PI * t), 0.55) * (0.52 + 0.48 * lisse(0.0, 0.7, t)) * (1 - 0.08 * lisse(0.85, 1, t)), h, 72, 104);
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) pos.setX(i, pos.getX(i) + 0.06 * Math.sin(Math.PI * (pos.getY(i) / h + 0.5)));
+  const jaune = C("#e08a08"), clair = C("#eeaa18"), orange = C("#c86a06"), tache = C("#9a5a08");
+  modeler(g, (p) => {
+    let c = melange(jaune, clair, fbm(p.x * 2.5, p.y * 2.5, p.z * 2.5) * 1.4 - 0.2);
+    c = melange(c, orange, lisse(0.3, 0.0, hauteurRel(p, h)) * 0.5);
+    c = melange(c, tache, lisse(0.04, 0.01, worley(p.x * 16, p.y * 16, p.z * 16).f1) * 0.4);
+    return [0.003 * bruit3(p.x * 30, p.y * 30, p.z * 30), c];
+  });
+  return {
+    corps: g, materiau: peauPhysique({ roughness: 0.35, clearcoat: 0.45, clearcoatRoughness: 0.35 }),
+    accessoires: () => {
+      const t = tige(0.28, 0.045, 0.035, 0.4, "#6a4a22");
+      t.position.y = h / 2 - 0.03;
+      const f = feuilleDetaillee(0.95, 0.38, "#2e7a2e", 0.3, 0.12);
+      f.position.set(0.05, h / 2 + 0.12, 0);
+      f.rotation.set(-1.0, 0.2, 0.9);
+      return [t, f];
+    },
+  };
+}
+
+function modeleFigueBarbarie(): Modele {
+  // Figue de Barbarie : ovale vert-jaune rosissant, aréoles brunes en quinconce, sommet creusé
+  const h = 1.6;
+  const g = revolution((t) => 0.6 * Math.pow(Math.sin(Math.PI * (0.03 + 0.97 * t)), 0.5) * (0.88 + 0.12 * t), h, 72, 104);
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), t = y / h + 0.5, r = Math.hypot(x, z);
+    if (t > 0.9) pos.setY(i, y - 0.1 * (1 - r / 0.6) * lisse(0.9, 1, t));       // sommet creusé (ombilic)
+  }
+  const vert = C("#7a9a26"), jaune = C("#c8b828"), rose = C("#d0502e"), areole = C("#4a2e18"), duvet = C("#d8c890");
+  const N = 9;
+  modeler(g, (p) => {
+    const t = hauteurRel(p, h), a = angle(p);
+    const soleil = lisse(-0.2, 0.9, p.x * 0.8 + (t - 0.5) * 0.6 + (fbm(p.x * 2, p.y * 2, p.z * 2) - 0.5));
+    let c = melange(vert, jaune, soleil);
+    c = melange(c, rose, lisse(0.5, 1, soleil) * 0.7);
+    // aréoles en quinconce
+    const ligne = Math.round(t * 8), decale = (ligne % 2) * 0.5;
+    const ta = (a / (Math.PI * 2)) * N - decale;
+    const da = (ta - Math.round(ta)) * (Math.PI * 2 / N) * Math.hypot(p.x, p.z), dy = (t * 8 - ligne) * (h / 8);
+    const dist = Math.hypot(da, dy);
+    let d = 0;
+    if (ligne > 0 && ligne < 8 && dist < 0.045) {
+      c = melange(c, duvet, lisse(0.045, 0.03, dist) * 0.6);
+      c = melange(c, areole, lisse(0.028, 0.01, dist));
+      d = lisse(0.045, 0.0, dist) * 0.015;
+    }
+    return [d, c];
+  });
+  return { corps: g, materiau: peauPhysique({ roughness: 0.5, clearcoat: 0.2 }), accessoires: () => [] };
+}
+
 const CONSTRUCTEURS: Record<string, () => Modele> = {
   letchi: () => modeleLetchi(),
   "letchi-or": () => modeleLetchi(true),
@@ -847,6 +1206,18 @@ const CONSTRUCTEURS: Record<string, () => Modele> = {
   carambole: modeleCarambole,
   chouchou: modeleChouchou,
   bibasse: modeleBibasse,
+  avocat: modeleAvocat,
+  pitaya: modelePitaya,
+  canne: modeleCanne,
+  tamarin: modeleTamarin,
+  longani: modeleLongani,
+  jamalac: modeleJamalac,
+  sapotille: modeleSapotille,
+  atte: modeleAtte,
+  combava: modeleCombava,
+  cacao: modeleCacao,
+  canistel: modeleCanistel,
+  "figue-barbarie": modeleFigueBarbarie,
 };
 
 const cacheModeles = new Map<string, Modele>();
@@ -1064,6 +1435,102 @@ const CHAIRS: Record<string, (pi: Pinceau) => void> = {
       pi.ctx.ellipse(pi.c + dx * pi.R - pi.R * 0.05, pi.c + dy * pi.R - pi.R * 0.04, pi.R * 0.05, pi.R * 0.03, 0, 0, Math.PI * 2);
       pi.ctx.fillStyle = "rgba(255,255,255,0.35)"; pi.ctx.fill();
     });
+  },
+  avocat: (pi) => {
+    disque(pi, 1, "#24400e");
+    disque(pi, 0.95, degrade(pi, 0, 0.95, [[0, "#f2eaa0"], [0.55, "#dfe28a"], [0.85, "#b8d060"], [1, "#8ab83e"]]));
+    disque(pi, 0.42, degrade(pi, 0, 0.42, [[0, "#c8905a"], [0.7, "#9a6232"], [1, "#6a3e1c"]]));
+    pi.ctx.beginPath(); pi.ctx.ellipse(pi.c - pi.R * 0.12, pi.c - pi.R * 0.12, pi.R * 0.1, pi.R * 0.06, -0.6, 0, Math.PI * 2);
+    pi.ctx.fillStyle = "rgba(255,255,255,0.3)"; pi.ctx.fill();
+  },
+  pitaya: (pi) => {
+    disque(pi, 1, "#c8185e");
+    disque(pi, 0.93, degrade(pi, 0, 0.93, [[0, "#fbf8f4"], [0.9, "#f4eee8"], [1, "#f6c8d8"]]));
+    graines(pi, 220, 0.02, 0.88, "#141010", pi.R * 0.022, false);
+  },
+  canne: (pi) => {
+    disque(pi, 1, "#5e2434");
+    disque(pi, 0.9, degrade(pi, 0, 0.9, [[0, "#f6f0d0"], [1, "#e8dcae"]]));
+    graines(pi, 160, 0.05, 0.85, "rgba(190,170,110,0.55)", pi.R * 0.018, false);
+  },
+  tamarin: (pi) => {
+    disque(pi, 1, "#9a6a3c");
+    disque(pi, 0.86, degrade(pi, 0, 0.86, [[0, "#8a4e22"], [1, "#6a3816"]]));
+    fibres(pi, 40, "rgba(220,170,110,0.35)", 0.2, 0.85);
+    disque(pi, 0.36, degrade(pi, 0, 0.36, [[0, "#6a3a1c"], [1, "#3a1e0c"]]));
+  },
+  longani: (pi) => {
+    disque(pi, 1, "#a87a40");
+    disque(pi, 0.92, degrade(pi, 0, 0.92, [[0, "#fbf6ee"], [1, "#ece2d2"]]));
+    disque(pi, 0.44, degrade(pi, 0, 0.44, [[0, "#3a2a20"], [0.8, "#160e0a"], [1, "#0a0604"]]));
+    pi.ctx.beginPath(); pi.ctx.arc(pi.c + pi.R * 0.12, pi.c + pi.R * 0.1, pi.R * 0.12, 0, Math.PI * 2);
+    pi.ctx.fillStyle = "#f2ead8"; pi.ctx.fill();
+    fibres(pi, 50, "rgba(255,255,255,0.3)", 0.48, 0.9);
+  },
+  jamalac: (pi) => {
+    disque(pi, 1, "#c8102a");
+    disque(pi, 0.95, degrade(pi, 0, 0.95, [[0, "#fbf3ec"], [0.8, "#f6e2da"], [1, "#f6b0b0"]]));
+    graines(pi, 120, 0.05, 0.85, "rgba(230,200,190,0.5)", pi.R * 0.03, false);
+    disque(pi, 0.16, "#f2e0c8");
+  },
+  sapotille: (pi) => {
+    disque(pi, 1, "#6a4428");
+    disque(pi, 0.94, degrade(pi, 0, 0.94, [[0, "#d8a878"], [0.7, "#c8925e"], [1, "#b07a48"]]));
+    fibres(pi, 60, "rgba(240,200,150,0.35)", 0.2, 0.9);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + 0.4, r = pi.R * 0.28;
+      pi.ctx.save(); pi.ctx.translate(pi.c + Math.cos(a) * r, pi.c + Math.sin(a) * r); pi.ctx.rotate(a);
+      pi.ctx.beginPath(); pi.ctx.ellipse(0, 0, pi.R * 0.16, pi.R * 0.07, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "#140c08"; pi.ctx.fill();
+      pi.ctx.beginPath(); pi.ctx.ellipse(-pi.R * 0.04, -pi.R * 0.02, pi.R * 0.06, pi.R * 0.02, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "rgba(255,255,255,0.35)"; pi.ctx.fill();
+      pi.ctx.restore();
+    }
+  },
+  atte: (pi) => {
+    disque(pi, 1, "#6a9a3a");
+    disque(pi, 0.92, degrade(pi, 0, 0.92, [[0, "#fdfaf2"], [1, "#f2ecda"]]));
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2, r = pi.R * 0.55;
+      pi.ctx.strokeStyle = "rgba(200,190,160,0.6)"; pi.ctx.lineWidth = pi.R * 0.012;
+      pi.ctx.beginPath(); pi.ctx.moveTo(pi.c, pi.c); pi.ctx.lineTo(pi.c + Math.cos(a) * pi.R * 0.9, pi.c + Math.sin(a) * pi.R * 0.9); pi.ctx.stroke();
+      pi.ctx.save(); pi.ctx.translate(pi.c + Math.cos(a + 0.2) * r, pi.c + Math.sin(a + 0.2) * r); pi.ctx.rotate(a);
+      pi.ctx.beginPath(); pi.ctx.ellipse(0, 0, pi.R * 0.09, pi.R * 0.05, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "#1a120c"; pi.ctx.fill();
+      pi.ctx.restore();
+    }
+    disque(pi, 0.12, "#efe6cc");
+  },
+  combava: (pi) => {
+    disque(pi, 1, "#2e5a16");
+    disque(pi, 0.88, "#eef2d6");
+    disque(pi, 0.78, degrade(pi, 0, 0.78, [[0, "#eef6b8"], [1, "#cfe27a"]]));
+    quartiers(pi, 8, 0.08, 0.78, "rgba(250,252,230,0.9)");
+    graines(pi, 6, 0.15, 0.4, "#f6f0d0", pi.R * 0.05);
+  },
+  cacao: (pi) => {
+    disque(pi, 1, "#d08a20");
+    disque(pi, 0.88, "#f2dca0");
+    disque(pi, 0.72, degrade(pi, 0, 0.72, [[0, "#fbf8f2"], [1, "#efe6d8"]]));
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2, r = pi.R * 0.45;
+      pi.ctx.save(); pi.ctx.translate(pi.c + Math.cos(a) * r, pi.c + Math.sin(a) * r); pi.ctx.rotate(a);
+      pi.ctx.beginPath(); pi.ctx.ellipse(0, 0, pi.R * 0.16, pi.R * 0.1, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "#fbf8f0"; pi.ctx.fill();
+      pi.ctx.beginPath(); pi.ctx.ellipse(0, 0, pi.R * 0.11, pi.R * 0.065, 0, 0, Math.PI * 2); pi.ctx.fillStyle = "#6a2e3a"; pi.ctx.fill();
+      pi.ctx.restore();
+    }
+    disque(pi, 0.12, "#e8dcc4");
+  },
+  canistel: (pi) => {
+    disque(pi, 1, "#d89810");
+    disque(pi, 0.96, degrade(pi, 0, 0.96, [[0, "#ffb830"], [0.7, "#f8a418"], [1, "#f09010"]]));
+    graines(pi, 80, 0.1, 0.9, "rgba(255,210,120,0.35)", pi.R * 0.02, false);
+    pi.ctx.beginPath(); pi.ctx.ellipse(pi.c, pi.c, pi.R * 0.32, pi.R * 0.22, 0.3, 0, Math.PI * 2);
+    pi.ctx.fillStyle = "#4a2410"; pi.ctx.fill();
+    pi.ctx.beginPath(); pi.ctx.ellipse(pi.c - pi.R * 0.08, pi.c - pi.R * 0.07, pi.R * 0.1, pi.R * 0.05, 0.3, 0, Math.PI * 2);
+    pi.ctx.fillStyle = "rgba(255,255,255,0.3)"; pi.ctx.fill();
+  },
+  "figue-barbarie": (pi) => {
+    disque(pi, 1, "#a8b040");
+    disque(pi, 0.9, degrade(pi, 0, 0.9, [[0, "#ff8a3a"], [0.8, "#f46a20"], [1, "#e8a040"]]));
+    graines(pi, 110, 0.05, 0.82, "#2a1a10", pi.R * 0.03, false);
   },
   lave: (pi) => {
     disque(pi, 1, "#2a2421");
