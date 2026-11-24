@@ -10,21 +10,26 @@ type Entree = { fichier: string; titre: string; univers: string; produits: strin
 const lot = LOT as Entree[];
 type Etat = "attente" | "en cours" | "fait" | "erreur" | "déjà là";
 
-export default function ImportLot({ dejaImportes }: { dejaImportes: string[] }) {
+// Titre simplifié pour reconnaître un livre déjà présent même si son titre est un peu différent
+const cle = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().slice(0, 28);
+
+export default function ImportLot({ dejaImportes, produitsImportes }: { dejaImportes: string[]; produitsImportes: string[] }) {
   const router = useRouter();
   const [fichiers, setFichiers] = useState<Map<string, File>>(new Map());
   const [etats, setEtats] = useState<Record<string, { etat: Etat; detail?: string }>>({});
   const [enCours, setEnCours] = useState(false);
 
   const trouves = useMemo(() => lot.filter((e) => fichiers.has(e.fichier)), [fichiers]);
-  const deja = new Set(dejaImportes.map((t) => t.toLowerCase()));
+  const deja = new Set(dejaImportes.map(cle));
+  const produitsDeja = new Set(produitsImportes.flatMap((p) => p.split(",")).map((p) => p.trim().split("/").pop()));
+  const estDeja = (l: Entree) => deja.has(cle(l.titre)) || l.produits.slice(0, 2).some((p) => produitsDeja.has(p));
 
   function choisir(liste: FileList | null) {
     const m = new Map<string, File>();
     for (const f of Array.from(liste || [])) if (!m.has(f.name)) m.set(f.name, f);
     setFichiers(m);
     const e: typeof etats = {};
-    for (const l of lot) if (m.has(l.fichier)) e[l.fichier] = { etat: deja.has(l.titre.toLowerCase()) ? "déjà là" : "attente" };
+    for (const l of lot) if (m.has(l.fichier)) e[l.fichier] = { etat: estDeja(l) ? "déjà là" : "attente" };
     setEtats(e);
   }
 
@@ -70,7 +75,7 @@ export default function ImportLot({ dejaImportes }: { dejaImportes: string[] }) 
   return (
     <div className="formulaire">
       <p className="texte-doux" style={{ margin: 0 }}>
-        Choisis le dossier <b>« Livres final pdf »</b> sur ton bureau. L'app reconnaît automatiquement les {lot.length} livres de la bibliothèque,
+        Choisis le dossier <b>« Livres final pdf »</b> sur ton bureau. L'app reconnaît automatiquement les {lot.length} livres dont la version est vérifiée,
         prend la meilleure version (EPUB iPad), et les relie à leurs fiches Shopify, packs et coffrets.
       </p>
       <label>Dossier des livres

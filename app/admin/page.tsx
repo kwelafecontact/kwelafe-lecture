@@ -23,7 +23,7 @@ export default async function Admin() {
 
         <section className="panneau">
           <h2>📚 Importer toute la bibliothèque</h2>
-          <ImportLot dejaImportes={livres.map((l) => l.titre)} />
+          <ImportLot dejaImportes={livres.map((l) => l.titre)} produitsImportes={livres.map((l) => l.shopify_product_id || "").filter(Boolean)} />
         </section>
 
         <section className="panneau">
