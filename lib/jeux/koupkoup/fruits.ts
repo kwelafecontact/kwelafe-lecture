@@ -37,8 +37,8 @@ export const FRUITS: DefFruit[] = [
   { id: "bringelle", nom: "Aubergine", kreol: "Bringèl", rayon: 1.05, points: 1, poids: 5, jus: { couleur: "#efe5c4", quantite: 0.1, viscosite: 0.9, morceaux: "#efe7cc" } },
   { id: "goyavier", nom: "Goyavier", kreol: "Goyavié", rayon: 0.5, points: 2, poids: 6, jus: { couleur: "#e2475f", quantite: 0.7, viscosite: 0.4, graines: "#f3d9a8" } },
   { id: "piment", nom: "Piment", kreol: "Piman", rayon: 0.55, points: 3, poids: 4, jus: { couleur: "#d4141c", quantite: 0.35, viscosite: 0.3, graines: "#f6e3a3" } },
-  { id: "letchi-or", nom: "Letchi doré", kreol: "Letchi lor", rayon: 0.85, points: 10, poids: 0, special: "or", jus: { couleur: "#ffd34d", quantite: 0.9, viscosite: 0.3, morceaux: "#fff1a8" } },
-  { id: "lave", nom: "Roche de lave", kreol: "Ros lav", rayon: 0.9, points: 0, poids: 0, special: "lave", jus: { couleur: "#ff6a00", quantite: 0, viscosite: 0 } },
+  { id: "letchi-or", nom: "Letchi doré", kreol: "Letchi doré", rayon: 0.85, points: 10, poids: 0, special: "or", jus: { couleur: "#ffd34d", quantite: 0.9, viscosite: 0.3, morceaux: "#fff1a8" } },
+  { id: "lave", nom: "Roche de lave", kreol: "Roche de lave", rayon: 0.9, points: 0, poids: 0, special: "lave", jus: { couleur: "#ff6a00", quantite: 0, viscosite: 0 } },
 ];
 
 export const fruitParId = (id: string) => FRUITS.find((f) => f.id === id)!;
