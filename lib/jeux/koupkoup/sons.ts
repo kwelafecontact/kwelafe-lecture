@@ -1,9 +1,12 @@
 // Sons de Koup Koup, entièrement fabriqués par le navigateur (Web Audio). Aucune voix.
+import type { Son } from "./fruits";
 
 export class Sons {
   private ctx: AudioContext | null = null;
   private maitre: GainNode | null = null;
   private bruitBlanc: AudioBuffer | null = null;
+  private salle: GainNode | null = null;       // envoi vers une petite réverbération (cuisine)
+  private derniereGoutte = 0;
   private dernierSouffle = 0;
   actif = true;
 
@@ -17,6 +20,18 @@ export class Sons {
       this.maitre.gain.value = 0.8;
       const comp = this.ctx.createDynamicsCompressor();
       this.maitre.connect(comp).connect(this.ctx.destination);
+      // Petite pièce : une réverbération courte rend les sons moins « synthétiques »
+      const conv = this.ctx.createConvolver();
+      const lg = Math.round(this.ctx.sampleRate * 0.45);
+      const ir = this.ctx.createBuffer(2, lg, this.ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const d = ir.getChannelData(c);
+        for (let i = 0; i < lg; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / lg, 3.2);
+      }
+      conv.buffer = ir;
+      this.salle = this.ctx.createGain();
+      this.salle.gain.value = 0.22;
+      this.salle.connect(conv).connect(comp);
       const n = this.ctx.sampleRate * 1.5;
       this.bruitBlanc = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
       const d = this.bruitBlanc.getChannelData(0);
@@ -29,7 +44,7 @@ export class Sons {
     return this.actif && this.ctx && this.maitre && this.bruitBlanc ? this.ctx : null;
   }
 
-  private bruit(debut: number, duree: number, filtre: BiquadFilterType, f0: number, f1: number, volume: number, q = 1) {
+  private bruit(debut: number, duree: number, filtre: BiquadFilterType, f0: number, f1: number, volume: number, q = 1, attaque = 0.02) {
     const ctx = this.ctx!;
     const src = ctx.createBufferSource();
     src.buffer = this.bruitBlanc;
@@ -40,9 +55,11 @@ export class Sons {
     fl.frequency.exponentialRampToValueAtTime(Math.max(20, f1), debut + duree);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, debut);
-    g.gain.exponentialRampToValueAtTime(volume, debut + Math.min(0.02, duree * 0.2));
+    g.gain.exponentialRampToValueAtTime(volume, debut + Math.min(attaque, duree * 0.2));
     g.gain.exponentialRampToValueAtTime(0.0001, debut + duree);
-    src.connect(fl).connect(g).connect(this.maitre!);
+    src.connect(fl).connect(g);
+    g.connect(this.maitre!);
+    if (this.salle) g.connect(this.salle);
     src.start(debut, Math.random() * 0.5);
     src.stop(debut + duree + 0.05);
   }
@@ -57,7 +74,9 @@ export class Sons {
     g.gain.setValueAtTime(0.0001, debut);
     g.gain.exponentialRampToValueAtTime(volume, debut + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, debut + duree);
-    o.connect(g).connect(this.maitre!);
+    o.connect(g);
+    g.connect(this.maitre!);
+    if (this.salle) g.connect(this.salle);
     o.start(debut);
     o.stop(debut + duree + 0.05);
   }
@@ -73,16 +92,123 @@ export class Sons {
     this.bruit(t, 0.16, "bandpass", 700 + v * 600, 2600 + v * 2000, 0.05 + v * 0.1, 1.4);
   }
 
-  /** Découpe juteuse : taille 0 (petit fruit) à 1 (gros fruit), jus 0 à 1. */
-  decoupe(taille: number, jus: number) {
+  /** Une petite goutte qui éclate (son de bulle : la hauteur monte très vite). */
+  private plic(t: number, f: number, volume: number) {
+    const ctx = this.ctx!;
+    const o = ctx.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(f, t);
+    o.frequency.exponentialRampToValueAtTime(f * (1.5 + Math.random() * 0.6), t + 0.018);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(volume, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035 + Math.random() * 0.02);
+    o.connect(g);
+    g.connect(this.maitre!);
+    if (this.salle) g.connect(this.salle);
+    o.start(t);
+    o.stop(t + 0.08);
+  }
+
+  /** Bruit mouillé : filtre résonant qui glisse vers le grave, avec un léger « gargouillis ». */
+  private squelch(t: number, duree: number, f0: number, f1: number, volume: number) {
+    const ctx = this.ctx!;
+    const src = ctx.createBufferSource();
+    src.buffer = this.bruitBlanc;
+    const fl = ctx.createBiquadFilter();
+    fl.type = "bandpass";
+    fl.Q.value = 5;
+    fl.frequency.setValueAtTime(f0, t);
+    fl.frequency.exponentialRampToValueAtTime(f1, t + duree);
+    // modulation rapide de la fréquence = texture mouillée
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 28 + Math.random() * 20;
+    const prof = ctx.createGain();
+    prof.gain.value = f0 * 0.25;
+    lfo.connect(prof).connect(fl.frequency);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(volume, t + 0.012);
+    g.gain.setTargetAtTime(volume * 0.5, t + 0.03, duree * 0.25);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + duree);
+    src.connect(fl).connect(g);
+    g.connect(this.maitre!);
+    if (this.salle) g.connect(this.salle);
+    src.start(t, Math.random());
+    src.stop(t + duree + 0.05);
+    lfo.start(t);
+    lfo.stop(t + duree + 0.05);
+  }
+
+  /**
+   * Découpe d'un fruit : chaque fruit a son propre mélange de couches sonores.
+   * son : profil du fruit, jus : 0 (sec) à 1 (très juteux), viscosite : 0 liquide à 1 épais.
+   */
+  decoupe(son: Son, jus: number, viscosite: number) {
+    const ctx = this.pret();
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.005;
+    const v = () => 1 + (Math.random() - 0.5) * 0.18;               // petites variations : jamais deux coupes identiques
+    const aigu = son.aigu ?? 0.5;
+    const croquant = son.croquant ?? 0, coque = son.coque ?? 0, mou = son.mou ?? 0, sec = son.sec ?? 0;
+
+    // 1. La lame qui tranche la peau
+    this.bruit(t, 0.05 + (1 - aigu) * 0.03, "highpass", (2600 + aigu * 2400) * v(), 1500, 0.16 + croquant * 0.08, 0.7, 0.003);
+
+    // 2. Craquement de la chair ferme : une rafale de petits grains
+    if (croquant > 0.05) {
+      const n = Math.round(4 + croquant * 14);
+      const etalement = 0.04 + croquant * 0.07;
+      for (let i = 0; i < n; i++) {
+        const ti = t + Math.random() * etalement;
+        this.bruit(ti, 0.006 + Math.random() * 0.01, "bandpass", (1600 + aigu * 2200 + Math.random() * 1800) * v(), 1200, 0.1 + croquant * 0.22, 2.5, 0.001);
+      }
+    }
+
+    // 3. Coque dure : un « toc » boisé (partiels inharmoniques) et une fêlure
+    if (coque > 0.05) {
+      const base = (260 + aigu * 380) * v();
+      [1, 2.76, 5.4].forEach((m, i) => this.ton(t, 0.09 - i * 0.02, "sine", base * m, base * m * 0.97, (0.35 - i * 0.1) * coque));
+      this.bruit(t + 0.004, 0.07, "bandpass", 1800 * v(), 900, 0.25 * coque, 1.8, 0.002);
+    }
+
+    // 4. Claquement sec (gousse, piment)
+    if (sec > 0.05) {
+      this.bruit(t, 0.012, "highpass", 5200 * v(), 4000, 0.3 * sec, 0.8, 0.001);
+      for (let i = 0; i < 4; i++) this.bruit(t + 0.01 + Math.random() * 0.03, 0.005, "bandpass", 3800 * v(), 3000, 0.12 * sec, 3, 0.001);
+    }
+
+    // 5. Chair tendre : choc sourd et mouillé
+    if (mou > 0.05) {
+      this.ton(t, 0.12 + mou * 0.06, "sine", (160 - (1 - aigu) * 60) * v(), 55, 0.28 * mou + 0.08);
+      this.bruit(t, 0.12 + mou * 0.1, "lowpass", 900 * v(), 200, 0.2 * mou, 1, 0.006);
+    } else {
+      this.ton(t, 0.09, "sine", (190 - (1 - aigu) * 90) * v(), 60, 0.16);
+    }
+
+    // 6. Le jus : un « schlic » mouillé, plus long et plus grave si le jus est épais
+    if (jus > 0.08) {
+      const duree = 0.12 + jus * 0.22 + viscosite * 0.12;
+      const f0 = (2200 - viscosite * 1100 + aigu * 600) * v();
+      this.squelch(t + 0.01, duree, f0, f0 * (0.28 + viscosite * 0.12), 0.12 + jus * 0.3);
+      // éclaboussure : souffle liquide clair pour les jus liquides
+      if (viscosite < 0.5) this.bruit(t + 0.02, 0.18 + jus * 0.15, "bandpass", 3200 * v(), 1400, 0.06 + jus * 0.1, 1.2, 0.01);
+      // 7. Gouttes qui éclatent juste après la coupe
+      const nb = Math.round(jus * (viscosite > 0.7 ? 4 : 11));
+      for (let i = 0; i < nb; i++) {
+        this.plic(t + 0.05 + Math.random() * (0.25 + jus * 0.25), (700 + Math.random() * 900 + aigu * 400) * (1 - viscosite * 0.35), 0.035 + Math.random() * 0.05);
+      }
+    }
+  }
+
+  /** Une goutte de jus qui tombe sur la planche (très discret). */
+  goutteTombe(taille: number) {
     const ctx = this.pret();
     if (!ctx) return;
     const t = ctx.currentTime;
-    const p = 1 + (Math.random() - 0.5) * 0.2;
-    this.bruit(t, 0.07, "highpass", 3000 * p, 1800, 0.22);                         // la lame qui entre
-    this.bruit(t + 0.01, 0.16 + jus * 0.18, "lowpass", 2200 * p, 380, 0.18 + jus * 0.25, 2); // le jus
-    this.ton(t, 0.13, "sine", (190 - taille * 90) * p, 55, 0.35);                    // le choc sourd
-    if (jus > 0.6) this.bruit(t + 0.09, 0.3, "bandpass", 900, 400, 0.08, 3);       // gouttes
+    if (t - this.derniereGoutte < 0.035) return;
+    this.derniereGoutte = t;
+    this.plic(t, 900 + Math.random() * 1200 - taille * 2000, 0.012 + taille * 0.08);
   }
 
   combo(n: number) {
