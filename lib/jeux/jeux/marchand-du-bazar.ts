@@ -1,6 +1,6 @@
 // Marchand du bazar : les clients arrivent avec leur liste, on les sert vite pour gagner des pièces.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, texteContour, arrondi, melanger, etoilesPour } from "../commun/moteur2d";
-import { PRODUITS } from "../commun/produits";
+import { FRUITS_MARCHE, photosMarche } from "../commun/photos";
 import { personnage, bulle, jauge, cagette, dans } from "../commun/dessins";
 
 type Ligne = { id: string; n: number; servi: number };
@@ -20,7 +20,10 @@ class Marchand implements Jeu {
     this.L = c.L; this.H = c.H;
     this.objectif = 80 + niveau * 18;
     this.dureePatience = Math.max(8, 18 - niveau * 0.4);
-    this.etal = melanger(PRODUITS.map((p) => p.id), c.rnd).slice(0, niveau <= 6 ? 6 : niveau <= 14 ? 8 : 9);
+    const nb = niveau <= 6 ? 6 : niveau <= 14 ? 8 : 9;
+    // au moins la moitié de l'étal vient des fruits ajoutés pour le marché
+    const nouveaux = melanger(FRUITS_MARCHE, c.rnd).slice(0, Math.ceil(nb / 2));
+    this.etal = melanger([...nouveaux, ...melanger(photosMarche().filter((id) => !nouveaux.includes(id)), c.rnd).slice(0, nb - nouveaux.length)], c.rnd);
     this.disposer(); this.nouveau(); this.hud();
   }
   hud() { this.c.hud({ score: this.pieces, objectif: `objectif ${this.objectif} 🪙`, temps: Math.max(0, this.duree - this.temps) }); }
@@ -105,6 +108,7 @@ const def: DefJeu = {
   regles: ["La bulle du client montre ce qu'il veut, et combien.", "Touche les produits de ton étal pour remplir sa commande.", "Plus tu es rapide, plus le client te donne de pièces.", "Atteins l'objectif de pièces avant la fin du temps."],
   niveaux: 20,
   theme: THEMES.marche,
+  visuels: "photos",
   creer: (c, n) => new Marchand(c, n),
 };
 export default def;
