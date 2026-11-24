@@ -47,3 +47,32 @@ export function graine(s: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+export type Cellule = { f1: number; f2: number; id: number };
+
+/**
+ * Bruit cellulaire (Worley) : distance au point le plus proche (f1) et au suivant (f2).
+ * Sert à dessiner les bosses du letchi, les facettes du fruit à pain, les pointes du jacque…
+ */
+export function worley(x: number, y: number, z: number): Cellule {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  let f1 = 9, f2 = 9, id = 0;
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dz = -1; dz <= 1; dz++) {
+        const cx = xi + dx, cy = yi + dy, cz = zi + dz;
+        const h1 = hashCell(cx, cy, cz, 1), h2 = hashCell(cx, cy, cz, 2), h3 = hashCell(cx, cy, cz, 3);
+        const px = cx + h1, py = cy + h2, pz = cz + h3;
+        const d = Math.hypot(px - x, py - y, pz - z);
+        if (d < f1) { f2 = f1; f1 = d; id = hashCell(cx, cy, cz, 7); }
+        else if (d < f2) f2 = d;
+      }
+  return { f1, f2, id };
+}
+
+function hashCell(x: number, y: number, z: number, s: number) {
+  let h = (x * 73856093) ^ (y * 19349663) ^ (z * 83492791) ^ (s * 2654435761);
+  h = Math.imul(h ^ (h >>> 15), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
