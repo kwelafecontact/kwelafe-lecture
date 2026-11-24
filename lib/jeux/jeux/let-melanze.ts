@@ -4,11 +4,13 @@ import { dessinerBouton, dans, type Bouton } from "../commun/dessins";
 
 // Mots simples (français courant) associés à une image
 const MOTS: [string, string][] = [
-  ["COCO", "coco"], ["FIG", "banane"], ["MANGUE", "mangue"], ["LETCHI", "letchi"], ["CITRON", "citron"], ["PIMENT", "piment"],
-  ["ANANAS", "ananas"], ["BANANE", "banane"], ["PAPAYE", "papaye"], ["GOYAVE", "goyave"], ["JACQUE", "tijacque"], ["BIBASSE", "bibasse"],
-  ["VANILLE", "vanille"], ["PASTEQUE", "pasteque"], ["CHOUCHOU", "chouchou"], ["GOYAVIER", "goyavier"], ["MANDARINE", "mandarine"], ["CARAMBOLE", "carambole"],
-  ["AUBERGINE", "bringelle"], ["GRENADINE", "grenadine"], ["FRUIT A PAIN", "friyapin"],
-].filter(([m]) => m !== "FIG") as [string, string][];
+  ["KAKI", "kaki"], ["COCO", "coco"], ["MURE", "mure"], ["FIGUE", "figue"], ["POMME", "pomme"], ["MELON", "melon"],
+  ["PECHE", "peche"], ["SALAK", "salak"], ["MANGUE", "mangue"], ["LETCHI", "letchi"], ["ORANGE", "orange"], ["CEDRAT", "cedrat"],
+  ["PAPAYE", "papaye"], ["GOYAVE", "goyave"], ["AVOCAT", "avocat"], ["DURIAN", "durian"], ["KIWANO", "kiwano"], ["VANILLE", "vanille"],
+  ["LONGANI", "longani"], ["JAMALAC", "jamalac"], ["COMBAVA", "combava"], ["PASTEQUE", "pasteque"], ["CHOUCHOU", "chouchou"], ["COROSSOL", "corossol"],
+  ["PHYSALIS", "physalis"], ["GOYAVIER", "goyavier"], ["MANDARINE", "mandarine"], ["CARAMBOLE", "carambole"], ["RAMBOUTAN", "ramboutan"], ["SAPOTILLE", "sapotille"],
+  ["CHATAIGNE", "chataigne"], ["CACAHUETE", "cacahuete"], ["PAMPLEMOUSSE", "pamplemousse"],
+];
 
 type Tuile = { l: string; x: number; y: number; tx: number; ty: number; place: number; i: number };
 
@@ -129,8 +131,9 @@ const def: DefJeu = {
   titre: "Lèt mélanzé",
   accroche: "Les lettres sont mélangées : retrouve le nom du fruit ou du légume !",
   regles: ["Regarde l'image, puis touche les lettres dans le bon ordre.", "Touche une lettre placée pour la retirer.", "Le bouton Indice place une bonne lettre, mais rapporte moins de points.", "Trois mots par niveau, de plus en plus longs."],
-  niveaux: 12,
+  niveaux: 20,
   theme: THEMES.marche,
+  visuels: "photos",
   creer: (c, n) => new LetMelanze(c, n),
 };
 export default def;

@@ -1,4 +1,5 @@
 // 2048 péi : on fait glisser les fruits ; deux fruits identiques fusionnent en un plus gros.
+import { couleurDe } from "../commun/photos";
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, arrondi, texteContour, etoilesPour } from "../commun/moteur2d";
 import { produit } from "../commun/produits";
 import { CHAINE } from "./fusion-pei";
@@ -52,7 +53,7 @@ class DeuxMille implements Jeu {
           o.k++; o.s = 1.35; fusionnees.add(o.id); t.k = -1; t.c = nc; t.r = nr;
           const gain = Math.pow(2, o.k + 1); this.score += gain;
           const x = this.ox + (nc + 0.5) * this.cell, y = this.oy + (nr + 0.5) * this.cell;
-          this.c.fx.gerbe(x, y, produit(CHAINE[o.k]).jus.couleur, 12, 180, 2);
+          this.c.fx.gerbe(x, y, couleurDe(CHAINE[o.k]), 12, 180, 2);
           this.c.fx.texte(`+${gain}`, x, y - this.cell * 0.4, "#ffe066", 22);
           this.c.sons.fusion(o.k);
           if (o.k >= 7) this.c.fx.etoiles(x, y, 20);
@@ -95,6 +96,7 @@ const def: DefJeu = {
   regles: ["Glisse le doigt : tous les fruits partent dans cette direction.", "Deux fruits identiques qui se rencontrent fusionnent.", "Du goyavier jusqu'au ti jacque : va le plus loin possible.", "La partie s'arrête quand plus rien ne bouge."],
   niveaux: 0,
   theme: THEMES.coucher,
+  visuels: "photos",
   creer: (c) => new DeuxMille(c),
 };
 export default def;

@@ -28,7 +28,7 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
     (async () => {
       try {
         const [{ Moteur2D, precharger }, d] = await Promise.all([import("@/lib/jeux/commun/moteur2d"), chargerJeu(id)]);
-        await precharger();
+        await precharger(d?.visuels);
         if (annule || !zone.current || !d) { if (!d) setEcran("erreur"); return; }
         try { if (localStorage.getItem("kw-son") === "0") setSon(false); } catch { /* rien */ }
         const m = new Moteur2D(zone.current, d, {

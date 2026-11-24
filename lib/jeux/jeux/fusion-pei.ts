@@ -1,8 +1,9 @@
 // Fusion péi : on lâche des fruits dans la tante ; deux fruits identiques fusionnent en un plus gros.
+import { couleurDe } from "../commun/photos";
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, texteContour, arrondi, etoilesPour } from "../commun/moteur2d";
 import { produit } from "../commun/produits";
 
-export const CHAINE = ["goyavier", "letchi", "bibasse", "mandarine", "goyave", "grenadine", "mangue", "papaye", "ananas", "pasteque", "tijacque"];
+export const CHAINE = ["goyavier", "letchi", "longani", "mandarine", "goyave", "grenadine", "mangue", "papaye", "coco", "pasteque", "durian"];
 const TAILLES = [0.055, 0.07, 0.085, 0.1, 0.115, 0.13, 0.15, 0.17, 0.19, 0.215, 0.245];
 
 type Boule = { k: number; x: number; y: number; vx: number; vy: number; r: number; rot: number; ne: number; dessus: number };
@@ -102,7 +103,7 @@ class Fusion implements Jeu {
     const gain = (k + 1) * (k + 2);
     this.score += gain;
     this.c.sons.fusion(k);
-    this.c.fx.gerbe(x, y, produit(CHAINE[k]).jus.couleur, 16 + k * 2, 200 + k * 20, 2);
+    this.c.fx.gerbe(x, y, couleurDe(CHAINE[k]), 16 + k * 2, 200 + k * 20, 2);
     this.c.fx.texte(`+${gain}`, x, y - r, "#ffe066", 22 + k * 2);
     if (k >= 8) { this.c.fx.etoiles(x, y, 30); this.c.fx.secouer(0.25); this.c.fx.texte("Gayar !", this.L / 2, this.H * 0.25, "#9cff9c", 40); }
     this.c.hud({ score: this.score });
@@ -147,6 +148,7 @@ const def: DefJeu = {
   regles: ["Glisse le doigt pour viser, lâche pour faire tomber le fruit.", "Deux fruits identiques qui se touchent fusionnent.", "Du goyavier jusqu'au ti jacque géant : vise le plus gros !", "Si un fruit reste au-dessus de la ligne, c'est fini."],
   niveaux: 0,
   theme: THEMES.lagon,
+  visuels: "photos",
   creer: (c) => new Fusion(c),
 };
 export default def;

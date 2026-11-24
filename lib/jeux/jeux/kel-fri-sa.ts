@@ -1,6 +1,7 @@
 // Kel fri sa ? : un fruit se dévoile peu à peu ; il faut le reconnaître le plus vite possible.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, arrondi, texteContour, melanger } from "../commun/moteur2d";
-import { PRODUITS, type Produit } from "../commun/produits";
+import { photosNommees } from "../commun/photos";
+type Produit = { id: string; nom?: string };
 import { dessinerBouton, dans, type Bouton } from "../commun/dessins";
 
 type Mode = "cases" | "zoom" | "ombre";
@@ -18,7 +19,7 @@ class KelFriSa implements Jeu {
   serie = 0;
   constructor(private c: Contexte, private niveau: number) {
     this.L = c.L; this.H = c.H;
-    this.questions = melanger(PRODUITS, c.rnd).slice(0, 6);
+    this.questions = melanger(photosNommees(), c.rnd).slice(0, 6);
     this.duree = Math.max(5, 10 - niveau * 0.3);
     this.preparer();
   }
@@ -29,9 +30,9 @@ class KelFriSa implements Jeu {
     this.revele = 0; this.reponse = null;
     this.cases = melanger(Array.from({ length: 36 }, (_, i) => i), this.c.rnd);
     const bonne = this.questions[this.q];
-    const autres = melanger(PRODUITS.filter((p) => p.id !== bonne.id), this.c.rnd).slice(0, 3);
+    const autres = melanger(photosNommees().filter((p) => p.id !== bonne.id && p.nom !== bonne.nom), this.c.rnd).slice(0, 3);
     const choix = melanger([bonne, ...autres], this.c.rnd);
-    this.boutons = choix.map((p) => ({ id: p.id, x: 0, y: 0, w: 0, h: 54, texte: p.nom, actif: true, appui: 0, couleur: "#6a4ab0" }));
+    this.boutons = choix.map((p) => ({ id: p.id, x: 0, y: 0, w: 0, h: 54, texte: p.nom!, actif: true, appui: 0, couleur: "#6a4ab0" }));
     this.disposer();
     this.c.hud({ score: this.score, objectif: `${this.q + 1}/6`, info: "❤".repeat(this.coeurs) + "♡".repeat(3 - this.coeurs) });
   }
@@ -103,7 +104,7 @@ class KelFriSa implements Jeu {
       }
     }
     ctx.restore();
-    if (fini) texteContour(ctx, p.nom, this.L / 2, C.y + C.t + 6, 22, this.reponse!.ok ? "#9cff9c" : "#ffd0c0");
+    if (fini) texteContour(ctx, p.nom!, this.L / 2, C.y + C.t + 6, 22, this.reponse!.ok ? "#9cff9c" : "#ffd0c0");
     const libelle = { cases: "Les cases s'envolent…", zoom: "Le zoom recule…", ombre: "L'ombre s'éclaire…" }[this.mode];
     if (!fini) texteContour(ctx, libelle, this.L / 2, C.y - 26, 16, "#fff");
     for (const b of this.boutons) dessinerBouton(ctx, b, this.temps);
@@ -117,6 +118,7 @@ const def: DefJeu = {
   regles: ["L'image se dévoile petit à petit.", "Touche le bon nom le plus vite possible : plus tu es rapide, plus tu gagnes.", "Trois erreurs et la partie s'arrête.", "Six fruits à trouver par niveau."],
   niveaux: 15,
   theme: THEMES.coucher,
+  visuels: "photos",
   creer: (c, n) => new KelFriSa(c, n),
 };
 export default def;

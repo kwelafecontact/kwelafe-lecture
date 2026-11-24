@@ -1,6 +1,7 @@
 // Rékolt la ! : les fruits sortent des buissons du jardin créole ; on ramasse les bons, on évite les guêpes.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, etoilesPour } from "../commun/moteur2d";
-import { fruitsSeuls } from "../commun/produits";
+import { PHOTOS } from "../commun/photos";
+const A_CUEILLIR = PHOTOS.filter((p) => p.id !== "vanille");
 import { guepe } from "../commun/dessins";
 
 type Sortie = { trou: number; type: "fruit" | "gate" | "guepe" | "or"; id: string; vie: number; max: number; touche: number };
@@ -64,7 +65,7 @@ class Rekolt implements Jeu {
         const trou = libres[Math.floor(this.c.rnd() * libres.length)];
         const r = this.c.rnd(), pg = Math.min(0.32, 0.12 + this.niveau * 0.01);
         const type: Sortie["type"] = r < pg ? "guepe" : r < pg + 0.12 ? "gate" : r > 0.97 ? "or" : "fruit";
-        const fr = fruitsSeuls();
+        const fr = A_CUEILLIR;
         const max = Math.max(0.7, 1.6 - this.niveau * 0.04);
         this.sorties.push({ trou, type, id: type === "or" ? "letchi-or" : fr[Math.floor(this.c.rnd() * fr.length)].id, vie: max, max, touche: 0 });
       }
@@ -114,6 +115,7 @@ const def: DefJeu = {
   regles: ["Touche les fruits avant qu'ils ne se cachent.", "Évite les guêpes : une piqûre te fait perdre un cœur.", "Les fruits gâtés font perdre des points.", "Le letchi doré rapporte gros !"],
   niveaux: 20,
   theme: THEMES.jardin,
+  visuels: "photos",
   creer: (c, n) => new Rekolt(c, n),
 };
 export default def;
