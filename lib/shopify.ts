@@ -62,7 +62,7 @@ export async function echangerCode(code: string, verifier: string) {
   }
   const r = await fetch(d.token_endpoint, { method: "POST", headers: entetes, body: corps });
   if (!r.ok) throw new Error("Échange du code Shopify refusé : " + (await r.text()));
-  return (await r.json()) as { access_token: string; id_token?: string };
+  return (await r.json()) as { access_token: string; refresh_token?: string; id_token?: string };
 }
 
 export async function profilClient(accessToken: string) {
@@ -80,7 +80,65 @@ export async function profilClient(accessToken: string) {
   return { id: c.id as string, prenom: (c.firstName as string) || "", email: c.emailAddress?.emailAddress as string };
 }
 
-/* ---------- API Admin ---------- */
+export async function renouvelerJeton(refreshToken: string) {
+  const d = await decouverte();
+  const entetes: Record<string, string> = { "Content-Type": "application/x-www-form-urlencoded" };
+  if (config.caClientSecret) {
+    entetes.Authorization = "Basic " + Buffer.from(`${config.caClientId}:${config.caClientSecret}`).toString("base64");
+  }
+  const r = await fetch(d.token_endpoint, {
+    method: "POST",
+    headers: entetes,
+    body: new URLSearchParams({ grant_type: "refresh_token", client_id: config.caClientId, refresh_token: refreshToken }),
+  });
+  if (!r.ok) throw new Error("Renouvellement refusé : " + (await r.text()));
+  return (await r.json()) as { access_token: string; refresh_token?: string };
+}
+
+export type DroitsClient = {
+  id: string;
+  email: string;
+  prenom: string;
+  achats: string[];
+  abonne: boolean;
+  cadeaux: { commande: string; sku: string; quantite: number }[];
+};
+
+/** Lit, avec le jeton du client lui-même, ses commandes payées et ses abonnements. */
+export async function droitsDepuisCompteClient(accessToken: string): Promise<DroitsClient> {
+  const url = await urlGraphqlClient();
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: accessToken },
+    body: JSON.stringify({
+      query: `{
+        customer {
+          id firstName emailAddress { emailAddress }
+          subscriptionContracts(first: 20) { nodes { status } }
+          orders(first: 100, sortKey: PROCESSED_AT, reverse: true) {
+            nodes { id cancelledAt financialStatus lineItems(first: 50) { nodes { productId sku quantity } } }
+          }
+        }
+      }`,
+    }),
+  });
+  const j = await r.json();
+  const c = j?.data?.customer;
+  if (!c?.id) throw new Error("Lecture du compte client impossible : " + JSON.stringify(j?.errors || j));
+  const achats = new Set<string>();
+  const cadeaux: DroitsClient["cadeaux"] = [];
+  for (const o of c.orders?.nodes || []) {
+    if (o.cancelledAt || !["PAID", "PARTIALLY_REFUNDED"].includes(o.financialStatus)) continue;
+    for (const l of o.lineItems?.nodes || []) {
+      if (l.productId) achats.add(l.productId);
+      if (l.sku && l.sku.startsWith("KW-BIB-CADEAU-")) cadeaux.push({ commande: o.id, sku: l.sku, quantite: l.quantity || 1 });
+    }
+  }
+  const abonne = (c.subscriptionContracts?.nodes || []).some((s: any) => s.status === "ACTIVE");
+  return { id: c.id, email: c.emailAddress?.emailAddress, prenom: c.firstName || "", achats: [...achats], abonne, cadeaux };
+}
+
+/* ---------- API Admin (facultative) ---------- */
 
 let jetonAdmin: { valeur: string; expire: number } | null = null;
 

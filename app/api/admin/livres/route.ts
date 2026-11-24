@@ -6,9 +6,10 @@ function slugifier(t: string) {
   return t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70) || "livre";
 }
 
+// Accepte un ou plusieurs liens / numéros de produits Shopify (PDF, EPUB, packs, coffrets…)
 function produitShopify(v: string | undefined | null) {
-  const n = String(v || "").match(/(\d{6,})/);
-  return n ? `gid://shopify/Product/${n[1]}` : null;
+  const nums = [...new Set(String(v || "").match(/\d{6,}/g) || [])];
+  return nums.length ? nums.map((n) => `gid://shopify/Product/${n}`).join(",") : null;
 }
 
 export async function POST(req: NextRequest) {

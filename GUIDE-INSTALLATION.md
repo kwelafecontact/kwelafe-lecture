@@ -43,33 +43,23 @@ Pourquoi 5 $ avec des clients : la formule gratuite limite le temps de calcul à
    Fais l'import depuis Chrome sur ordinateur, c'est plus rapide.
 7. Installe l'app sur ton téléphone : Safari > Partager > « Sur l'écran d'accueil ».
 
-## Étape 4 : Shopify, connexion des clients
+## Étape 4 : Shopify, connexion des clients (une seule chose à récupérer)
 
-1. Admin Shopify > **Paramètres > Comptes clients** : choisis les **comptes clients** (connexion par code e-mail).
+L'application lit les achats, les abonnements Appstle et les cadeaux **directement dans le compte du client** quand il se connecte. Aucune clé secrète Shopify n'est nécessaire.
+
+1. Les nouveaux comptes clients sont déjà activés sur la boutique ✓.
 2. Installe l'application gratuite **Headless** (Shopify App Store), puis **Créer un storefront** nommé « Kwélafé Lecture ».
 3. Dans ce storefront : **Customer Account API > Gérer** :
-   - Type de client : **Confidentiel**
-   - URI de rappel : `https://lire.kwelafeproduction.com/auth/callback`
-   - Origine JavaScript : `https://lire.kwelafeproduction.com`
-   - URL de déconnexion : `https://lire.kwelafeproduction.com/bienvenue`
-4. Dans le Worker Cloudflare, ajoute :
-   - Variable `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID` = l'ID client
-   - Secret `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET` = le secret
+   - Type de client : **Public**
+   - URI de rappel : `https://kwelafe-lecture.kwelafe-contact.workers.dev/auth/callback` (puis plus tard `https://lire.kwelafeproduction.com/auth/callback`)
+   - Origine JavaScript : `https://kwelafe-lecture.kwelafe-contact.workers.dev`
+   - URL de déconnexion : `https://kwelafe-lecture.kwelafe-contact.workers.dev/bienvenue`
+   - Autorisations : lecture des commandes et des abonnements du client.
+4. Copie l'**ID client** (il n'est pas secret) et donne-le à Claude : il l'inscrit dans `wrangler.jsonc` (`SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID`) et passe `DEMO_MODE` à `"0"`.
 
-## Étape 5 : Shopify, accès aux commandes et aux abonnements
+## Étape 5 : webhooks (facultatif)
 
-1. Crée une application dans le **Dev Dashboard** de Shopify (Paramètres > Applications > Développer des applications), installée sur ta boutique, avec les accès : `read_orders`, `read_customers`, `read_products`, `read_own_subscription_contracts`.
-2. Dans le Worker Cloudflare, ajoute :
-   - Variable `SHOPIFY_ADMIN_CLIENT_ID` = l'ID client de l'application
-   - Secret `SHOPIFY_ADMIN_CLIENT_SECRET` = son secret
-   - Secret `SHOPIFY_WEBHOOK_SECRET` = le même secret
-   - Variable `SHOPIFY_STORE_DOMAIN` = ton adresse en `.myshopify.com` (Paramètres > Domaines). À changer aussi dans `wrangler.jsonc` sur GitHub.
-   - Si Shopify te donne plutôt un jeton qui commence par `shpat_` : secret `SHOPIFY_ADMIN_TOKEN`.
-3. Webhooks, tous vers `https://lire.kwelafeproduction.com/api/webhooks/shopify`, format JSON :
-   - `orders/paid` (crée les codes cadeaux)
-   - `orders/cancelled`
-   - `customers/update`
-   - `subscription_contracts/create` et `subscription_contracts/update`
+Sans webhook, les droits d'un client se mettent à jour à chaque connexion et toutes les 6 heures. Les codes cadeaux sont créés dès que l'acheteur ouvre l'application. Les webhooks Shopify ne sont donc plus indispensables.
 
 ## Étape 6 : abonnements Appstle
 

@@ -29,7 +29,8 @@
     "DEMO_MODE": "1",
     "ADMIN_EMAILS": "kwelafe.contact@gmail.com",
     "SHOPIFY_SHOP_URL": "https://kwelafeproduction.com",
-    "SHOPIFY_STORE_DOMAIN": "ta-boutique.myshopify.com",
+    "SHOPIFY_STORE_DOMAIN": "hmsnue-1a.myshopify.com",
+    "SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID": "",
     "SHOPIFY_BOUTIQUE_ABONNEMENT_URL": "https://kwelafeproduction.com/products/abonnement-mensuel-kwelafe",
     "SHOPIFY_API_VERSION": "2026-10",
     "ABONNE_TAGS": "kwelafe-abonne,appstle_membership_active"

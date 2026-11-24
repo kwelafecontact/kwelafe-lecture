@@ -15,6 +15,10 @@ const DUREE = 60 * 60 * 24 * 30; // 30 jours
 
 let cacheCle: Uint8Array | null = null;
 
+export async function cleSecrete() {
+  return cle();
+}
+
 /** Clé de signature : SESSION_SECRET si fourni, sinon secret aléatoire créé une fois et rangé dans la base. */
 async function cle(): Promise<Uint8Array> {
   if (cacheCle) return cacheCle;

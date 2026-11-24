@@ -1,7 +1,9 @@
 // Accès aux données : livres, droits, progression.
 import { tous, premier, executer } from "./cf";
 import { config } from "./config";
-import { adminConfigure, droitsDepuisShopify } from "./shopify";
+import { adminConfigure, droitsDepuisShopify, droitsDepuisCompteClient, renouvelerJeton, type DroitsClient } from "./shopify";
+import { chiffrer, dechiffrer } from "./chiffre";
+import { creerCodesPourCommande } from "./cadeaux";
 import type { Session } from "./session";
 
 export type Manifeste =
@@ -63,12 +65,30 @@ async function enregistrerClient(c: { id: string; email: string; prenom: string 
   );
 }
 
+/** Enregistre les droits lus dans le compte client Shopify (et crée les codes des cadeaux achetés). */
+export async function enregistrerDroitsClient(d: DroitsClient, refreshToken?: string) {
+  await enregistrerClient({ id: d.id, email: d.email, prenom: d.prenom || null, achats: d.achats, abonne: d.abonne, maj: new Date().toISOString() });
+  if (refreshToken) await executer("UPDATE clients SET jeton_renouv = ? WHERE id = ?", await chiffrer(refreshToken), d.id);
+  const parCommande = new Map<string, { sku: string; quantite: number }[]>();
+  for (const c of d.cadeaux) parCommande.set(c.commande, [...(parCommande.get(c.commande) || []), c]);
+  for (const [commande, lignes] of parCommande) await creerCodesPourCommande(commande, lignes, d.id, d.email);
+}
+
 /** Récupère le client et rafraîchit ses droits depuis Shopify si besoin. */
 export async function client(session: Session, forcer = false): Promise<Client> {
   const ligne = await premier("SELECT * FROM clients WHERE id = ?", session.cid);
   let c = ligne ? versClient(ligne) : null;
   const perime = !c?.maj || Date.now() - new Date(c.maj).getTime() > SIX_HEURES;
-  if ((forcer || perime) && !config.demo && adminConfigure()) {
+  const brut: any = ligne;
+  if ((forcer || perime) && !config.demo && brut?.jeton_renouv && config.caClientId) {
+    try {
+      const jetons = await renouvelerJeton(await dechiffrer(brut.jeton_renouv));
+      await enregistrerDroitsClient(await droitsDepuisCompteClient(jetons.access_token), jetons.refresh_token);
+      c = versClient(await premier("SELECT * FROM clients WHERE id = ?", session.cid));
+    } catch (e) {
+      console.error("Mise à jour des droits par le compte client impossible", e);
+    }
+  } else if ((forcer || perime) && !config.demo && adminConfigure()) {
     try {
       const d = await droitsDepuisShopify(session.cid);
       await enregistrerClient({ id: session.cid, email: session.email, prenom: session.prenom || null, achats: d.achats, abonne: d.abonne, maj: new Date().toISOString() });
@@ -90,7 +110,8 @@ export function abonnementActif(c: Client) {
 
 export function aAcces(c: Client, l: Livre, session?: Session | null) {
   if (session?.admin || config.demo) return true;
-  if (l.shopify_product_id && c.achats.includes(l.shopify_product_id)) return true;
+  const produits = (l.shopify_product_id || "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (produits.some((p) => c.achats.includes(p))) return true;
   return l.inclus_abonnement && abonnementActif(c);
 }
 

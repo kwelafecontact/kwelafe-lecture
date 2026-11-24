@@ -6,6 +6,27 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { UNIVERS } from "@/lib/config";
+import CATALOGUE from "@/lib/catalogue-shopify.json";
+
+type FicheBoutique = { id: string; titre: string; univers: string; url: string; couverture: string | null; resume: string };
+const catalogue = CATALOGUE as FicheBoutique[];
+
+// Packs et coffrets : un livre dont le titre contient l'un de ces mots est aussi débloqué par le pack
+const PACKS: { id: string; mots: RegExp }[] = [
+  { id: "11046937297233", mots: /creole reunionnais tome (1|2)/ }, // Pack créole Tome I et II
+  { id: "11387035812177", mots: /creole reunionnais tome (1|2)|guide indispensable du voyageur/ }, // Coffret Apprendre le créole
+  { id: "10834500026705", mots: /100 proverbes expressions de la reunion volume (1|2)/ }, // Pack proverbes
+  { id: "11051251892561", mots: /superstitions interdits reunionnais/ }, // Pack 150 superstitions
+  { id: "11387035844945", mots: /superstitions interdits reunionnais|forces du mal|je vois ce qui vous suit|desenvouteur/ }, // Coffret Frissons péi
+  { id: "11387035877713", mots: /kosa in shoz|sirandanes|premiers mots|abecedaire/ }, // Coffret Rire et apprendre
+];
+// Titre de base, sans la mention du format (PDF, EPUB…), pour retrouver les versions d'un même livre
+const base = (t: string) =>
+  t.split("|")[0]
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/\d+\s*pages/g, "")
+    .replace(/\b(epub|pdf|interactif|iphone|ipad|et)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ").trim();
 
 type Envoi = { chemin: string; blob: Blob; type: string };
 
@@ -162,9 +183,27 @@ export default function ImportLivre() {
   const [urlBoutique, setUrlBoutique] = useState("");
   const [inclus, setInclus] = useState(true);
   const [interactifForce, setInteractifForce] = useState<"auto" | "oui" | "non">("auto");
+  const [ficheId, setFicheId] = useState("");
+  const [couvBoutique, setCouvBoutique] = useState<string | null>(null);
   const [etat, setEtat] = useState("");
   const [erreur, setErreur] = useState("");
   const [enCours, setEnCours] = useState(false);
+
+  // Choix d'un livre de la boutique : remplit le formulaire et relie toutes ses versions (PDF, EPUB…)
+  function choisirFiche(id: string) {
+    setFicheId(id);
+    const f = catalogue.find((x) => x.id === id);
+    if (!f) return;
+    const versions = catalogue.filter((x) => base(x.titre) === base(f.titre));
+    setTitre(f.titre.split(/\s\|\s/)[0].trim());
+    setResume(f.resume);
+    setUnivers(f.univers);
+    setUrlBoutique(f.url);
+    setCouvBoutique(f.couverture);
+    const ids = versions.map((v) => v.id.split("/").pop()!);
+    for (const p of PACKS) if (p.mots.test(base(f.titre)) && !ids.includes(p.id)) ids.push(p.id);
+    setProduit(ids.join(", "));
+  }
 
   async function importer(e: React.FormEvent) {
     e.preventDefault();
@@ -182,10 +221,10 @@ export default function ImportLivre() {
       setEtat(`Envoi des ${r.envois.length} morceaux du livre…`);
       await televerser(r.envois, false, (n) => setEtat(`Envoi : ${n} / ${r.envois.length}`));
 
-      let cheminCouv: string | null = null;
+      let cheminCouv: string | null = couvPerso ? null : couvBoutique;
       const couv = couvPerso
         ? { chemin: `${id}.${couvPerso.name.split(".").pop()}`, blob: couvPerso as Blob, type: couvPerso.type }
-        : r.couverture;
+        : couvBoutique ? null : r.couverture;
       if (couv) {
         setEtat("Envoi de la couverture…");
         await televerser([couv], true, () => {});
@@ -201,7 +240,7 @@ export default function ImportLivre() {
       const j = await rep.json();
       if (!rep.ok) throw new Error(j.erreur || "Enregistrement impossible");
       setEtat(`C'est fait ! « ${titre || r.titre} » est enregistré en brouillon. Prévisualise-le, puis publie-le.`);
-      setFichier(null); setCouvPerso(null); setTitre(""); setResume(""); setProduit(""); setUrlBoutique("");
+      setFichier(null); setCouvPerso(null); setTitre(""); setResume(""); setProduit(""); setUrlBoutique(""); setFicheId(""); setCouvBoutique(null);
       router.refresh();
     } catch (err) {
       setErreur(err instanceof Error ? err.message : String(err));
@@ -213,7 +252,17 @@ export default function ImportLivre() {
 
   return (
     <form className="formulaire" onSubmit={importer}>
-      <label>Fichier du livre (EPUB ou PDF)
+      <label>1. Choisis le livre dans ta boutique (remplit tout automatiquement)
+        <select value={ficheId} onChange={(e) => choisirFiche(e.target.value)}>
+          <option value="">— Livre de la boutique —</option>
+          {catalogue.map((f) => <option key={f.id} value={f.id}>{f.titre}</option>)}
+        </select>
+      </label>
+      {couvBoutique && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={couvBoutique} alt="Couverture de la boutique" style={{ width: 110, borderRadius: 8, boxShadow: "var(--ombre)" }} />
+      )}
+      <label>2. Fichier du livre (EPUB ou PDF)
         <input type="file" accept=".epub,.pdf,application/epub+zip,application/pdf" onChange={(e) => setFichier(e.target.files?.[0] || null)} required />
       </label>
       <label>Titre (laisser vide pour reprendre celui du fichier)
@@ -234,7 +283,7 @@ export default function ImportLivre() {
           <option value="non">Non, livre classique</option>
         </select>
       </label>
-      <label>Produit Shopify (lien de la fiche dans l'admin Shopify, ou son numéro)
+      <label>Produits Shopify qui donnent accès à ce livre (PDF, EPUB, packs, coffrets… séparés par des virgules)
         <input type="text" value={produit} onChange={(e) => setProduit(e.target.value)} placeholder="https://admin.shopify.com/store/…/products/1234567890" />
       </label>
       <label>Lien public de la fiche sur la boutique (pour le bouton « Découvrir »)
