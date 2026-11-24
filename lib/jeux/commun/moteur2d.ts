@@ -281,6 +281,19 @@ export class Moteur2D {
   /** Décor tropical animé : ciel, soleil, nuages, pitons en silhouette, feuillage. */
   private decor(ctx: CanvasRenderingContext2D) {
     const { L, H } = this, th = this.def.theme;
+    const fond = cacheImages.get("fond:" + this.def.id);
+    if (fond && fond.complete && fond.naturalWidth > 0) {
+      // fond aquarelle : recadré pour couvrir l'écran, avec une très lente respiration
+      const z = 1.04 + 0.02 * Math.sin(this.temps * 0.12);
+      const s = Math.max(L / fond.naturalWidth, H / fond.naturalHeight) * z;
+      const w = fond.naturalWidth * s, h = fond.naturalHeight * s;
+      ctx.drawImage(fond, (L - w) / 2 + Math.sin(this.temps * 0.07) * L * 0.01, (H - h) / 2, w, h);
+      ctx.fillStyle = "rgba(255,250,240,0.12)"; ctx.fillRect(0, 0, L, H);
+      const v = ctx.createRadialGradient(L / 2, H / 2, Math.min(L, H) * 0.4, L / 2, H / 2, Math.max(L, H) * 0.8);
+      v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.22)");
+      ctx.fillStyle = v; ctx.fillRect(0, 0, L, H);
+      return;
+    }
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, th.haut); g.addColorStop(1, th.bas);
     ctx.fillStyle = g; ctx.fillRect(0, 0, L, H);
@@ -323,6 +336,10 @@ export class Moteur2D {
 
 /** Calcule les étoiles d'après un score et trois paliers. */
 export const etoilesPour = (score: number, paliers: [number, number, number]) => (score >= paliers[2] ? 3 : score >= paliers[1] ? 2 : score >= paliers[0] ? 1 : 0);
+
+/** Jeux qui ont reçu leur fond aquarelle (fichier public/jeux/fonds/<id>.webp). */
+export const FONDS_AQUARELLE = new Set<string>([]);
+export const cheminFond = (id: string) => `/jeux/fonds/${id}.webp`;
 
 export const THEMES: Record<string, Theme> = {
   marche: { haut: "#ffcf8a", bas: "#e9845a", collines: ["#c8644a", "#9e4a3a", "#6e3226"], soleil: "rgba(255,240,180,0.8)" },
