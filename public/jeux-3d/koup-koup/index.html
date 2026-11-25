@@ -59,6 +59,19 @@
   @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 30% { transform:translate(-50%,-55%) scale(1); } 100% { opacity:0; transform:translate(-50%,-140%) scale(1); } }
   #flash { position:fixed; inset:0; background:#fff3d0; opacity:0; pointer-events:none; }
   #charge { position:fixed; left:0; right:0; bottom:calc(96px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; font-size:15px; opacity:.85; text-shadow:0 2px 6px rgba(0,0,0,.7); pointer-events:none; }
+  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
+  .bonus.on { display:flex; }
+  .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
+  .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
+  .bbtn.vide { opacity:.38; }
+  .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
+  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
+  .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
+  .niveauHud.saute { animation:sauteN .5s; } @keyframes sauteN { 40% { transform:scale(1.35); } }
+  .bandeau { position:fixed; left:50%; transform:translateX(-50%); top:max(150px, calc(env(safe-area-inset-top) + 136px)); padding:6px 20px; border-radius:14px; background:rgba(40,20,0,.6); color:#ffe27a; font-weight:800; font-size:clamp(16px,3.8vw,22px); text-shadow:0 2px 0 #5a2a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; z-index:6; }
+  .bandeau.on { opacity:1; }
   .logo { width:min(46vw, 230px); margin-top:14px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
 </style>
 </head>
@@ -75,7 +88,7 @@
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
-  <div class="vies" id="vies"></div>
+  <div><div class="vies" id="vies"></div><div class="niveauHud" id="niveauHud">Niveau 1</div></div>
 </div>
 
 <div class="ecran" id="menu">
@@ -93,6 +106,12 @@
   <button class="btn zone-interactive" id="rejouer">Rejouer</button>
 </div>
 
+<div class="bandeau" id="bandeau"></div>
+<div class="bonus" id="bonus">
+  <button class="bbtn zone-interactive" id="bCoup" aria-label="Grand coup de lame">🔪</button>
+  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
+  <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
+</div>
 <div id="charge">Chargement des fruits…</div>
 <button class="retour-jeux zone-interactive" id="retourJeux" aria-label="Retour aux jeux">‹ Jeux</button>
 <style>.retour-jeux{position:fixed;z-index:20;top:max(22px,env(safe-area-inset-top));left:max(26px,env(safe-area-inset-left));min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(20,10,2,.6);color:#fff;font:800 16px "Baloo 2",system-ui,sans-serif;cursor:pointer}</style>
@@ -105,12 +124,17 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
 <button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
-<script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
+<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
-import { GLTFLoader } from './lib/GLTFLoader.js';
-import { RoomEnvironment } from './lib/RoomEnvironment.js';
-import { MeshoptDecoder } from './lib/meshopt_decoder.module.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { GestionnairePerf, dprCible, appareil, afficherSecours, reveillerAudio, endormirAudio, journal, libererCanvas } from '../commun/performances.js';
 
 {
@@ -137,7 +161,8 @@ const qx = () => [0.45, 0.75, 1][QUALITE];
 
 // ---------------------------------------------------------------- rendu
 const glc = $('gl');
-const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true, alpha: true, preserveDrawingBuffer: TEST });
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: TEST });
+renderer.setClearColor(0x000000, 0);
 renderer.setPixelRatio(ratioRendu());
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
@@ -157,6 +182,11 @@ camera.position.set(0, 0, 14);
 const sun = new THREE.DirectionalLight(0xfff0d0, 2.8); sun.position.set(3, 6, 8); scene.add(sun);
 const rim = new THREE.DirectionalLight(0xbfdcff, 1.6); rim.position.set(-6, 3, -4); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xfff4dc, 0x6a4020, 0.4));
+// post-traitement : halo lumineux léger (seuls les éclats très clairs brillent) et contours lissés
+const cible = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, format: THREE.RGBAFormat });
+const composer = new EffectComposer(renderer, cible); const passeRendu = new RenderPass(scene, camera); passeRendu.clearAlpha = 0; composer.addPass(passeRendu);
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.35, 1.05); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(new SMAAPass());
+const POSTFX = !new URLSearchParams(location.search).has('simple');
 
 let W = 0, H = 0, viewH = 10, viewW = 10;
 const fond = $('fond'), taches = $('taches'), trace = $('trace'), vitre = $('vitre'), fanions = $('fanions');
@@ -169,7 +199,7 @@ function resize() {
   W = innerWidth; H = innerHeight;
   const dpr = dprCible(2); // 1,5 au plus sur iPhone : 7 calques plein écran
   for (const c of [fond, taches, trace, vitre, couche, coucheVitre, fanions]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
-  renderer.setSize(W, H, false);
+  renderer.setSize(W, H, false); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = MOBILE ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
   camera.aspect = W / H;
   // garder une largeur jouable en portrait
   camera.fov = W < H ? Math.min(62, 40 * Math.max(1, 0.75 / camera.aspect)) : 40;
@@ -242,7 +272,7 @@ function audio() {
     maitre.connect(filtreRalenti); filtreRalenti.connect(comp); comp.connect(actx.destination);
     bruit = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
     const d = bruit.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    ambianceMarche();
+    setTimeout(chargerSons, 0);
   } catch (e) { actx = null; }
 }
 const hauteur = () => 2 ** (rnd(-2.5, 2.5) / 12); // petite variation à chaque son
@@ -290,6 +320,13 @@ const son = {
   goutte: () => sTone(rnd(700, 1100), 0.09, 0.05, 'sine', 0, 0.55),
   ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
 };
+const sons = {}; let sonsDemandes = false;
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
+function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(maitre); s.start(); return true; }
+const _coupe = son.coupe, _roche = son.roche, _or = son.or;
+son.coupe = (id, rayon = 0.6) => { const v = Math.max(0.75, Math.min(1.25, 1.35 - rayon * 0.6)); const n = CROQUANTS.has(id) ? 'croquant-' + (1 + (Math.random() * 2 | 0)) : SOURDS.has(id) ? 'sourd' : 'juteux-' + (1 + (Math.random() * 2 | 0)); if (!jouer(n, 0.95, v)) _coupe(id); };
+son.roche = () => { if (!jouer('roche', 1)) _roche(); };
+son.or = () => { if (!jouer('or', 0.8)) _or(); else sTone(110, 1.2, 0.18, 'sine', 0, 0.5); };
 let dernierPloc = 0;
 function ploc() { const t = performance.now(); if (t - dernierPloc > 70) { dernierPloc = t; son.ploc(); } }
 // Ambiance très légère de marché forain : brouhaha lointain sans paroles et quelques oiseaux
@@ -685,7 +722,29 @@ const objets = [];   // fruits et roches en vol
 const moities = [];  // moitiés coupées
 let etat = 'menu', score = 0, vies = 3, record = 0, temps = 0, niveau = 0;
 let arret = 0, ralenti = 0, ralentiOr = 0, tremble = 0, zoom = 0, prochainLancer = 1, mangueMenu = null;
-let coupeSwipe = 0; // points gagnés pendant le geste en cours
+let coupeSwipe = 0;
+let niv = 1, phase = 'actif', phaseT = 0, charge = 0, serie = 0, ralentis = 0, frenesies = 0, frenesie = 0, ralentiBonus = 0;
+const RECHARGE = 12, dureePhase = () => Math.min(34, 20 + niv * 2);
+function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
+function majNiveauHud() { const e = $('niveauHud'); e.textContent = 'Niveau ' + niv; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
+function majBonus() {
+  const k = Math.min(1, charge / RECHARGE), pc = (k * 100).toFixed(1);
+  $('bCoup').style.background = `linear-gradient(to top, rgba(255,170,40,.75) ${pc}%, rgba(40,20,0,.55) ${pc}%)`; $('bCoup').classList.toggle('pret', k >= 1); $('bCoup').classList.toggle('vide', k < 1);
+  $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', !ralentis); $('bRalenti').classList.toggle('pret', ralentis > 0);
+  $('nFrenesie').textContent = frenesies; $('bFrenesie').classList.toggle('vide', !frenesies); $('bFrenesie').classList.toggle('pret', frenesies > 0);
+}
+function activerCoup() { if (etat !== 'jeu' || charge < RECHARGE) return; charge = 0; let n = 0; for (const o of [...objets]) if (o.vivant && !o.roche && !o.menu) { couper(o, new THREE.Vector3(Math.random() - .5, 1, 0).normalize(), 0.5); n++; } bandeau('Grand coup de lame ! ' + n + ' fruits'); tremble = 0.35; zoom = 1; majBonus(); }
+function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralentiBonus = 5; ralenti = Math.max(ralenti, 5); bandeau('Ralenti !', 5); majBonus(); }
+function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
+// fin de niveau : pluie de fruits spéciaux (letchis dorés, vanille), puis 4 secondes d'accalmie
+function finDeNiveau() {
+  phase = 'speciales'; phaseT = 0; bandeau('Pluie de fruits péi !', 2.2);
+  const n = 7 + Math.min(7, niv);
+  for (let i = 0; i < n; i++) setTimeout(() => { if (etat !== 'jeu' || !prets.length) return; const x = -viewW * 0.38 + (i / (n - 1)) * viewW * 0.76; lancer(prets[Math.floor(Math.random() * prets.length)], { x }); }, 200 + i * 170);
+  setTimeout(() => { if (etat === 'jeu' && cache['letchi']) lancer(cache['letchi'], { or: true, x: rnd(-viewW * 0.2, viewW * 0.2) }); }, 900);
+  if (cache['vanille']) setTimeout(() => { if (etat === 'jeu') lancer(cache['vanille']); }, 1300);
+  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); bandeau('Accalmie… Niveau ' + niv, 3.2); }, 4200);
+} // points gagnés pendant le geste en cours
 const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
 function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
 try { record = +(localStorage.getItem('koupkoup_record') || 0); } catch (e) {}
@@ -723,12 +782,12 @@ function couper(o, dir, precision = 1) {
   if (o.roche) {
     son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
     const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
-    popup('Aïe ! Une roche du volcan !', pos, 'aie');
+    popup('Aïe ! Une roche du volcan !', pos, 'aie'); serie = 0;
     perdreVie(); perdreVie();
     return;
   }
   const f = o.fruit;
-  son.coupe(f.d.id);
+  son.coupe(f.d.id, f.rayon);
   arret = 0.04;                                   // très courte pause d'impact
   tremble = Math.max(tremble, 0.05 + f.rayon * 0.06);
   eclats.push({ p: toScreen(pos), t: 0, c: f.jus });
@@ -754,6 +813,7 @@ function couper(o, dir, precision = 1) {
   if (o.menu) { demarrer(); return; }
   let pts = 1;
   if (o.vanille) pts = 3;
+  if (!o.menu && etat === 'jeu') { serie++; if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } son.bonus(); majBonus(); } }
   if (o.or) {
     pts = 5;
     ralenti = Math.max(ralenti, 4); ralentiOr = 4;
@@ -762,6 +822,7 @@ function couper(o, dir, precision = 1) {
   }
   const parfait = precision < 0.28 && !o.or;
   if (parfait) pts += 1;
+  if (frenesie > 0) pts *= 2;
   score += pts; coupeSwipe += pts; majScore();
   const clair = teinteTache(jus).offsetHSL(0, 0.15, 0.08);
   popup('+' + pts, pos, 'pts', '#' + clair.getHexString());
@@ -799,7 +860,9 @@ function demarrer(reprise) {
   if (etat === 'jeu') return;
   audio();
   etat = 'jeu'; score = 0; vies = 3; temps = 0; niveau = 0; prochainLancer = 1.0;
-  if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; }
+  niv = 1; phase = 'actif'; phaseT = 0; charge = 0; serie = 0; ralentis = 0; frenesies = 0; frenesie = 0; ralentiBonus = 0;
+  if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; niv = Math.max(1, reprise.niv | 0 || 1); }
+  majNiveauHud(); majBonus(); $('bonus').classList.add('on');
   masquerReprise();
   majScore(); majVies();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
@@ -807,7 +870,7 @@ function demarrer(reprise) {
   for (const o of objets) if (o.menu && o.vivant) { o.vivant = false; scene.remove(o.obj); }
 }
 function finPartie() {
-  etat = 'fin'; ralentiOr = 0;
+  etat = 'fin'; ralentiOr = 0; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
   try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {}
   if (score > record) { record = score; try { localStorage.setItem('koupkoup_record', record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
@@ -899,9 +962,9 @@ function dessinerTrait(dt = 0.016) {
 
 // ---------------------------------------------------------------- vagues de lancers
 function vague() {
-  niveau = Math.min(12, Math.floor(temps / 14));
+  niveau = Math.min(14, Math.floor((niv - 1) * 1.3 + phaseT / 16));
   const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5));
-  const chanceRoche = temps < 10 ? 0 : Math.min(0.08 + niveau * 0.018, 0.24);
+  const chanceRoche = temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
   for (let i = 0; i < n; i++) {
     setTimeout(() => {
       if (etat !== 'jeu' || !prets.length) return;
@@ -911,7 +974,7 @@ function vague() {
       if (i === 0 && temps > 12 && cache['letchi'] && !objets.some(x => x.or && x.vivant) && Math.random() < 0.07) setTimeout(() => etat === 'jeu' && lancer(cache['letchi'], { or: true }), 350);
     }, i * rnd(120, 300));
   }
-  prochainLancer = Math.max(0.9, 2.4 - niveau * 0.13) + rnd(0, 0.6);
+  prochainLancer = Math.max(0.7, 2.2 - niveau * 0.12) + rnd(0, 0.5);
 }
 
 // ---------------------------------------------------------------- gestionnaire de performances commun
@@ -920,7 +983,7 @@ function vague() {
 let contextePerdu = false, pauseAuto = false;
 function sauverPartie() {
   if (etat !== 'jeu') return;
-  try { localStorage.setItem('koupkoup2_partie', JSON.stringify({ score, vies, temps, t: Date.now() })); } catch (e) {}
+  try { localStorage.setItem('koupkoup2_partie', JSON.stringify({ score, vies, temps, niv, t: Date.now() })); } catch (e) {}
 }
 const perf = new GestionnairePerf({
   nom: 'koup-koup-2',
@@ -986,7 +1049,12 @@ function boucle() {
   $('dore').style.opacity = ralentiOr > 0 ? Math.min(1, ralentiOr * 2) : 0;
   $('barreOr').style.opacity = ralentiOr > 0 ? 1 : 0;
   if (ralentiOr > 0) $('barreOr').firstElementChild.style.width = (ralentiOr / 4 * 100) + '%';
-  if (etat === 'jeu') { temps += dt; prochainLancer -= dt; if (prochainLancer <= 0) vague(); }
+  if (ralentiBonus > 0) { ralentiBonus -= vrai; if (ralenti < 0.05 && ralentiBonus > 0) ralenti = ralentiBonus; }
+  if (etat === 'jeu') {
+    temps += dt; phaseT += dt; charge = Math.min(RECHARGE, charge + vrai); if (frenesie > 0) frenesie -= vrai; majBonus();
+    if (phase === 'actif') { prochainLancer -= dt; if (prochainLancer <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
+    else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochainLancer = 0.2; bandeau('Niveau ' + niv + ' ! Ça repart', 1.6); }
+  }
   if (comboN > 0 && performance.now() - comboT > 260) finCombo();
 
   for (let i = objets.length - 1; i >= 0; i--) {
@@ -1001,7 +1069,7 @@ function boucle() {
     if (o.roche && Math.random() < 0.5) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .5, 0)), new THREE.Vector3(rnd(-.5, .5), rnd(1, 2.5), 0), rnd(0.03, 0.06), fumee, 0.5, 0.15);
     if (o.vel.y < 0 && o.obj.position.y < -viewH / 2 - 1.5) {
       o.vivant = false; scene.remove(o.obj);
-      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
+      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); serie = 0; perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
     }
   }
   for (let i = moities.length - 1; i >= 0; i--) {
@@ -1017,7 +1085,7 @@ function boucle() {
   camera.position.z = 14 - 1.4 * Math.sin(zoom * Math.PI);
   if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
 
-  renderer.render(scene, camera);
+  if (POSTFX && QUALITE > 0) composer.render(); else renderer.render(scene, camera);
   majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai); dessinerFanions(performance.now() / 1000);
 }
 
@@ -1027,6 +1095,7 @@ $('btnSon').onclick = () => {
   sonCoupe = !sonCoupe; try { localStorage.setItem('koupkoup_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
   if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
 };
+$('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
 $('jouer').onclick = () => { audio(); masquerReprise(); try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {} demarrer(); };
 $('rejouer').onclick = () => { audio(); demarrer(); };
 // touchers : ne pas laisser passer aux couches inférieures
@@ -1098,7 +1167,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf };
+  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 }
 }
 </script>
