@@ -1,0 +1,591 @@
+{
+  "unite": "metre",
+  "fruits": [
+    {
+      "id": "mangue",
+      "nom": "Mangue José",
+      "fichier": "mangue.glb",
+      "taille_reelle_m": 0.11,
+      "couleur_jus": "#F2A51A",
+      "clearcoat": 0.5,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 738
+    },
+    {
+      "id": "letchi",
+      "nom": "Letchi",
+      "fichier": "letchi.glb",
+      "taille_reelle_m": 0.036,
+      "couleur_jus": "#F6F0DA",
+      "clearcoat": 0.0,
+      "sheen": 0.3,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1384
+    },
+    {
+      "id": "ananas",
+      "nom": "Ananas Victoria",
+      "fichier": "ananas.glb",
+      "taille_reelle_m": 0.13,
+      "couleur_jus": "#F5D447",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1749
+    },
+    {
+      "id": "papaye",
+      "nom": "Papaye",
+      "fichier": "papaye.glb",
+      "taille_reelle_m": 0.17,
+      "couleur_jus": "#F28A3A",
+      "clearcoat": 0.35,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 816
+    },
+    {
+      "id": "banane",
+      "nom": "Banane",
+      "fichier": "banane.glb",
+      "taille_reelle_m": 0.17,
+      "couleur_jus": "#F3E6B5",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 837
+    },
+    {
+      "id": "carambole",
+      "nom": "Carambole",
+      "fichier": "carambole.glb",
+      "taille_reelle_m": 0.11,
+      "couleur_jus": "#F2D24A",
+      "clearcoat": 0.7,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 858
+    },
+    {
+      "id": "fruit-de-la-passion",
+      "nom": "Fruit de la passion",
+      "fichier": "fruit-de-la-passion.glb",
+      "taille_reelle_m": 0.066,
+      "couleur_jus": "#F0A72A",
+      "clearcoat": 0.25,
+      "sheen": 0.2,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 971
+    },
+    {
+      "id": "goyavier",
+      "nom": "Goyavier rouge",
+      "fichier": "goyavier.glb",
+      "taille_reelle_m": 0.031,
+      "couleur_jus": "#E8C4C8",
+      "clearcoat": 0.4,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 650
+    },
+    {
+      "id": "jacque",
+      "nom": "Jacque",
+      "fichier": "jacque.glb",
+      "taille_reelle_m": 0.4,
+      "couleur_jus": "#F3C640",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 2355
+    },
+    {
+      "id": "chouchou",
+      "nom": "Chouchou",
+      "fichier": "chouchou.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#E4EEC4",
+      "clearcoat": 0.0,
+      "sheen": 0.25,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 694
+    },
+    {
+      "id": "piment",
+      "nom": "Piment",
+      "fichier": "piment.glb",
+      "taille_reelle_m": 0.065,
+      "couleur_jus": "#D8261F",
+      "clearcoat": 0.9,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 625
+    },
+    {
+      "id": "citrouille",
+      "nom": "Citrouille",
+      "fichier": "citrouille.glb",
+      "taille_reelle_m": 0.3,
+      "couleur_jus": "#EE8A1E",
+      "clearcoat": 0.15,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1061
+    },
+    {
+      "id": "fruit-a-pain",
+      "nom": "Fruit à pain",
+      "fichier": "fruit-a-pain.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#F2E8C6",
+      "clearcoat": 0.1,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1284
+    },
+    {
+      "id": "avocat",
+      "nom": "Avocat",
+      "fichier": "avocat.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#C9D97A",
+      "clearcoat": 0.3,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1368
+    },
+    {
+      "id": "corossol",
+      "nom": "Corossol",
+      "fichier": "corossol.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#F5F2E6",
+      "clearcoat": 0.15,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1418
+    },
+    {
+      "id": "pitaya",
+      "nom": "Pitaya",
+      "fichier": "pitaya.glb",
+      "taille_reelle_m": 0.11,
+      "couleur_jus": "#F5F0EC",
+      "clearcoat": 0.4,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 890
+    },
+    {
+      "id": "longani",
+      "nom": "Longani",
+      "fichier": "longani.glb",
+      "taille_reelle_m": 0.024,
+      "couleur_jus": "#F2ECDD",
+      "clearcoat": 0.0,
+      "sheen": 0.2,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 749
+    },
+    {
+      "id": "evi",
+      "nom": "Évi",
+      "fichier": "evi.glb",
+      "taille_reelle_m": 0.08,
+      "couleur_jus": "#EFE6B0",
+      "clearcoat": 0.5,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 558
+    },
+    {
+      "id": "goyave",
+      "nom": "Goyave rose",
+      "fichier": "goyave.glb",
+      "taille_reelle_m": 0.07,
+      "couleur_jus": "#F2909A",
+      "clearcoat": 0.2,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 695
+    },
+    {
+      "id": "tamarin",
+      "nom": "Tamarin",
+      "fichier": "tamarin.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#7A4220",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 927
+    },
+    {
+      "id": "bibasse",
+      "nom": "Bibasse",
+      "fichier": "bibasse.glb",
+      "taille_reelle_m": 0.045,
+      "couleur_jus": "#F4A23A",
+      "clearcoat": 0.0,
+      "sheen": 0.5,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 592
+    },
+    {
+      "id": "jamrosa",
+      "nom": "Jamrosat",
+      "fichier": "jamrosa.glb",
+      "taille_reelle_m": 0.045,
+      "couleur_jus": "#F4EBC2",
+      "clearcoat": 0.6,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 572
+    },
+    {
+      "id": "pomme-cannelle",
+      "nom": "Zatte",
+      "fichier": "pomme-cannelle.glb",
+      "taille_reelle_m": 0.086,
+      "couleur_jus": "#F4F0E2",
+      "clearcoat": 0.0,
+      "sheen": 0.2,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1103
+    },
+    {
+      "id": "coco",
+      "nom": "Noix de coco",
+      "fichier": "coco.glb",
+      "taille_reelle_m": 0.13,
+      "couleur_jus": "#F4F2EA",
+      "clearcoat": 0.0,
+      "sheen": 0.3,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1048
+    },
+    {
+      "id": "combava",
+      "nom": "Combava",
+      "fichier": "combava.glb",
+      "taille_reelle_m": 0.055,
+      "couleur_jus": "#D6E07A",
+      "clearcoat": 0.25,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1369
+    },
+    {
+      "id": "citron-galet",
+      "nom": "Citron galet",
+      "fichier": "citron-galet.glb",
+      "taille_reelle_m": 0.043,
+      "couleur_jus": "#E6EC9A",
+      "clearcoat": 0.6,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1399
+    },
+    {
+      "id": "mandarine",
+      "nom": "Mandarine",
+      "fichier": "mandarine.glb",
+      "taille_reelle_m": 0.068,
+      "couleur_jus": "#F49A2A",
+      "clearcoat": 0.35,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1551
+    },
+    {
+      "id": "margoze",
+      "nom": "Margoze",
+      "fichier": "margoze.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#E8F0D8",
+      "clearcoat": 0.5,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1370
+    },
+    {
+      "id": "bringelle",
+      "nom": "Bringelle",
+      "fichier": "bringelle.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#EFE9CC",
+      "clearcoat": 1.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 635
+    },
+    {
+      "id": "tomate",
+      "nom": "Tomate",
+      "fichier": "tomate.glb",
+      "taille_reelle_m": 0.072,
+      "couleur_jus": "#E8401E",
+      "clearcoat": 0.9,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 621
+    },
+    {
+      "id": "songe",
+      "nom": "Songe",
+      "fichier": "songe.glb",
+      "taille_reelle_m": 0.15,
+      "couleur_jus": "#F2EEE6",
+      "clearcoat": 0.0,
+      "sheen": 0.1,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1156
+    },
+    {
+      "id": "vanille",
+      "nom": "Vanille",
+      "fichier": "vanille.glb",
+      "taille_reelle_m": 0.17,
+      "couleur_jus": "#2A1A10",
+      "clearcoat": 0.6,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1242
+    },
+    {
+      "id": "mangue-carotte",
+      "nom": "Mangue Carotte",
+      "fichier": "mangue-carotte.glb",
+      "taille_reelle_m": 0.14,
+      "couleur_jus": "#F28C14",
+      "clearcoat": 0.45,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 753
+    },
+    {
+      "id": "mangue-auguste",
+      "nom": "Mangue Auguste",
+      "fichier": "mangue-auguste.glb",
+      "taille_reelle_m": 0.13,
+      "couleur_jus": "#F5A01E",
+      "clearcoat": 0.5,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 765
+    },
+    {
+      "id": "mangue-cogshall",
+      "nom": "Mangue américaine (Cogshall)",
+      "fichier": "mangue-cogshall.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#F5A524",
+      "clearcoat": 0.55,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 760
+    },
+    {
+      "id": "mangue-emile",
+      "nom": "Mangue Émile",
+      "fichier": "mangue-emile.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#F5B02A",
+      "clearcoat": 0.45,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 786
+    },
+    {
+      "id": "mangue-lucie",
+      "nom": "Mangue Lucie",
+      "fichier": "mangue-lucie.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#F7AC22",
+      "clearcoat": 0.5,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 772
+    },
+    {
+      "id": "figue-sucree",
+      "nom": "Figue sucrée",
+      "fichier": "figue-sucree.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#F3E2A8",
+      "clearcoat": 0,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 933
+    },
+    {
+      "id": "jambos-rouge",
+      "nom": "Jambos rouge",
+      "fichier": "jambos-rouge.glb",
+      "taille_reelle_m": 0.06,
+      "couleur_jus": "#F4E6E4",
+      "clearcoat": 0.8,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 569
+    }
+  ],
+  "compression": "meshopt (MeshoptDecoder requis dans GLTFLoader)"
+}
