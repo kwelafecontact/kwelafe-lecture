@@ -105,7 +105,7 @@
   <div class="titre">Bouclier volcan</div>
   <div class="sous">Dans l'Enclos Fouqué du Piton de la Fournaise</div>
   <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
-  <div class="consigne">Tranche les bombes de lave d'un geste ! Enchaîne les coupes pour gagner des bonus, et lance le bouclier 🛡️ dès qu'il est chargé.</div>
+  <div class="consigne">Tranche les bombes de lave d'un geste et protège les randonneurs et les paille-en-queue ! Enchaîne les coupes pour gagner des bonus, et lance le bouclier 🛡️ dès qu'il est chargé.</div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
@@ -289,6 +289,33 @@ function randonneur(i) {
   g.userData = { corps, hanches, torse, tete, jambes, bras };
   g.scale.setScalar(0.88); return g;
 }
+// paille-en-queue (Phaethon lepturus) : corps blanc, trait noir sur l'œil, barre noire sur l'aile, bec jaune orangé, deux longues plumes de queue
+function pailleEnQueue() {
+  const g = new THREE.Group(), blanc = new THREE.MeshStandardMaterial({ color: 0xa6a6a2, roughness: 0.8, envMapIntensity: 0.3 }), noir = new THREE.MeshStandardMaterial({ color: 0x15151a, roughness: 0.5 }), bec = new THREE.MeshStandardMaterial({ color: 0xf2a020, roughness: 0.35 });
+  const corps = new THREE.Mesh(G('pq-corps', () => new THREE.SphereGeometry(0.2, 24, 16)), blanc); corps.scale.set(1.9, 0.95, 0.95); corps.castShadow = true; g.add(corps);
+  const tete = new THREE.Mesh(G('pq-tete', () => new THREE.SphereGeometry(0.13, 20, 14)), blanc); tete.position.set(0.38, 0.06, 0); g.add(tete);
+  const b = new THREE.Mesh(G('pq-bec', () => { const c = new THREE.ConeGeometry(0.04, 0.2, 12); c.rotateZ(-Math.PI / 2); return c; }), bec); b.position.set(0.56, 0.04, 0); g.add(b);
+  for (const sz of [-1, 1]) { const tr = new THREE.Mesh(G('pq-trait', () => new RoundedBoxGeometry(0.14, 0.025, 0.02, 2, 0.008)), noir); tr.position.set(0.4, 0.09, 0.115 * sz); tr.rotation.z = -0.15; g.add(tr); const oe = new THREE.Mesh(G('pq-oeil', () => new THREE.SphereGeometry(0.02, 10, 8)), noir); oe.position.set(0.44, 0.09, 0.12 * sz); g.add(oe); }
+  // ailes longues et pointues, articulées à l'épaule
+  const forme = new THREE.Shape(); forme.moveTo(-0.12, 0); forme.quadraticCurveTo(0.05, 0.45, -0.05, 0.95); forme.quadraticCurveTo(-0.2, 0.5, -0.3, 0); forme.lineTo(-0.12, 0);
+  const geoAile = G('pq-aile', () => { const e = new THREE.ExtrudeGeometry(forme, { depth: 0.02, bevelEnabled: true, bevelSize: 0.01, bevelThickness: 0.01, bevelSegments: 2, curveSegments: 14 }); e.rotateX(-Math.PI / 2); return e; });
+  const geoBarre = G('pq-barre', () => { const f = new THREE.Shape(); f.moveTo(-0.13, 0.25); f.lineTo(-0.02, 0.32); f.lineTo(-0.1, 0.62); f.lineTo(-0.2, 0.55); f.lineTo(-0.13, 0.25); const e = new THREE.ExtrudeGeometry(f, { depth: 0.03, bevelEnabled: false }); e.rotateX(-Math.PI / 2); return e; });
+  const geoPointe = G('pq-pointe', () => { const f = new THREE.Shape(); f.moveTo(-0.03, 0.8); f.quadraticCurveTo(0.0, 0.9, -0.05, 0.96); f.quadraticCurveTo(-0.1, 0.85, -0.09, 0.78); f.lineTo(-0.03, 0.8); const e = new THREE.ExtrudeGeometry(f, { depth: 0.03, bevelEnabled: false }); e.rotateX(-Math.PI / 2); return e; });
+  const ailes = [];
+  for (const sz of [-1, 1]) {
+    const piv = new THREE.Group(); piv.position.set(0.05, 0.06, 0.1 * sz); g.add(piv);
+    const a = new THREE.Mesh(geoAile, blanc); a.castShadow = true; const br = new THREE.Mesh(geoBarre, noir); br.position.y = 0.012; const po = new THREE.Mesh(geoPointe, noir); po.position.y = 0.012;
+    const br2 = br.clone(), po2 = po.clone(); br2.position.y = po2.position.y = -0.04; const cont = new THREE.Group(); cont.add(a, br, po, br2, po2); if (sz > 0) cont.scale.z = -1; piv.add(cont); ailes.push(piv);
+  }
+  // queue : deux longues plumes blanches fines
+  const geoPlume = G('pq-plume', () => { const f = new THREE.Shape(); f.moveTo(0, 0); f.quadraticCurveTo(-0.5, 0.03, -1.0, 0.0); f.quadraticCurveTo(-0.5, -0.01, 0, -0.025); const e = new THREE.ExtrudeGeometry(f, { depth: 0.008, bevelEnabled: false, curveSegments: 10 }); return e; });
+  const plumes = [];
+  for (const sz of [-1, 1]) { const p = new THREE.Mesh(geoPlume, blanc); p.position.set(-0.32, 0.0, 0.015 * sz); g.add(p); plumes.push(p); }
+  const queue = new THREE.Mesh(G('pq-queue', () => { const c = new THREE.ConeGeometry(0.09, 0.22, 12); c.rotateZ(Math.PI / 2); return c; }), blanc); queue.position.set(-0.36, 0, 0); g.add(queue);
+  g.userData = { ailes, plumes }; g.scale.setScalar(0.95);
+  return g;
+}
+
 // cycle de marche (ou de course quand le randonneur a eu peur)
 function animer(o, t, peur) {
   const u = o.userData, w = peur ? 13 : 6.5, a = Math.sin(t * w), b = Math.cos(t * w);
@@ -338,11 +365,11 @@ const VOIX = ['p0', 'p1', 'p2', 'p3'], NB_PHRASES = 15, voixBuf = {}; let voixDe
 function chargerVoix() { if (voixDemandees || !actx) return; voixDemandees = true; for (const v of VOIX) { voixBuf[v] = []; for (let i = 1; i <= NB_PHRASES; i++) fetch(`./voix/${v}-${String(i).padStart(2, '0')}.mp3`).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => voixBuf[v].push(d)).catch(() => {}); } }
 function crier(m, urgent = false) {
   if (!actx || sonCoupe) return; const liste = voixBuf[VOIX[m.voix]]; if (!liste || !liste.length) return;
-  const now = performance.now() / 1000; if (!urgent && (now < m.cri || now < criGlobal)) return; if (urgent && now < m.cri - 1.6) return;
+  const now = performance.now() / 1000; if (!urgent && (now < m.cri || now < criGlobal)) return; if (urgent && now < m.cri - 2.2) return;
   let k; do { k = Math.floor(Math.random() * liste.length); } while (liste.length > 1 && k === m.derniere); m.derniere = k;
   const s = actx.createBufferSource(); s.buffer = liste[k]; s.playbackRate.value = rnd(0.97, 1.04); const g = actx.createGain(); g.gain.value = 0.95;
   const pan = actx.createStereoPanner ? actx.createStereoPanner() : null; if (pan) { pan.pan.value = Math.max(-0.8, Math.min(0.8, m.x / (viewW / 2))); s.connect(g).connect(pan).connect(maitre); } else s.connect(g).connect(maitre);
-  s.start(); m.cri = now + liste[k].duration + rnd(1.2, 2.4); criGlobal = now + liste[k].duration * 0.6;
+  s.start(); m.cri = now + liste[k].duration + rnd(1.2, 2.4); criGlobal = now + liste[k].duration * 0.5;
 }
 // trois explosions selon la grosseur de la pierre : grave et lourde, moyenne, petite et plus vive
 const sonsRoche = {}; let sonsDemandes = false;
@@ -361,7 +388,7 @@ const son = {
 // ---------------------------------------------------------------- partie
 const DUREE_ZEN = 90, PAR_NIVEAU = 15, RECHARGE_BOUCLIER = 12, DUREE_BOUCLIER = 5;
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupees = 0, niveau = 1, ficheIdx = 0, bouclier = 0, charge = 0, serie = 0, ralentis = 0, ondes = 0, ralenti = 0;
-const bombes = [], marcheurs = [];
+const bombes = [], marcheurs = [], oiseaux = []; let prochainOiseau = 6;
 const COULEURS = [0xd81e1e, 0x1e5ad8, 0x18a048, 0x8a2ad0];
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
@@ -386,7 +413,9 @@ function majNiveau() { $('niveau').textContent = 'Niveau ' + niveau + ' · ' + c
 function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
 function lancerBombe() {
   // tirée depuis le cratère (haut de l'écran), retombe vers le sentier en visant souvent un randonneur
-  const cible = Math.random() < 0.85 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)].x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45);
+  const vise = Math.random() < 0.85 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)] : null;
+  const cible = vise ? vise.x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45);
+  if (vise && etat === 'jeu' && Math.random() < 0.35) setTimeout(() => crier(vise), 400);
   const x0 = rnd(-viewW * (niveau > 3 ? .48 : .3), viewW * (niveau > 3 ? .48 : .3)), y0 = viewH / 2 + 0.8;
   const duree = Math.max(1.05, 2.5 - niveau * 0.12) + rnd(0, 0.4);
   const g = 3.8 + niveau * 0.22;
@@ -405,7 +434,7 @@ function vague() {
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupees = 0; niveau = 1; ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
   try { record = +localStorage.getItem('bouclier_record_' + mode) || 0; } catch (e) {}
-  bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; $('bandeau').classList.remove('on');
+  bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('niveau').classList.add('on'); $('lien').classList.add('discret');
 }
@@ -431,6 +460,20 @@ function majBonus() {
 function activerBouclier() { if (etat !== 'jeu' || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
 function activerRalenti() { if (etat !== 'jeu' || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
 function activerOnde() { if (etat !== 'jeu' || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); majNiveau(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
+function lancerOiseau() {
+  const dir = Math.random() < 0.5 ? 1 : -1, obj = pailleEnQueue();
+  obj.rotation.order = 'YXZ'; obj.rotation.y = dir > 0 ? -0.3 : Math.PI + 0.3; obj.rotation.x = 0.55;
+  const y0 = rnd(-viewH * 0.05, viewH * 0.25);
+  obj.position.set(-dir * (viewW / 2 + 2), y0, 0.7); scene.add(obj);
+  oiseaux.push({ obj, vx: dir * rnd(2.2, 3.2 + niveau * 0.12), y0, t: rnd(0, 6), chute: false });
+}
+function toucheOiseau(o, b) {
+  o.chute = true; o.vy = 2; eclater(b, new THREE.Vector3(0, 1, 0)); son.impact(b.obj.scale.x);
+  const p = o.obj.position; for (let i = 0; i < 26; i++) braise(p.x, p.y, p.z + 0.3, rnd(-2, 2), rnd(-1, 2.5), [1, 1, 0.95], rnd(0.6, 1.2), rnd(30, 50), 2);
+  ton(1800, 900, 0.18, 0.08, 'triangle'); ton(1500, 700, 0.2, 0.06, 'triangle', 0.12);
+  popup('Le paille-en-queue est touché !', p, 'aie');
+  if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); }
+}
 function eclater(b, dir) {
   b.vivant = false; scene.remove(b.obj);
   const p = b.obj.position; anneau(p);
@@ -534,7 +577,7 @@ function boucle() {
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
       const touche = marcheurs.find(m => Math.abs(m.x - p.x) < 0.75);
-      if (touche && joue) { crier(touche, true); son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; popup('Ouille ! Randonneur touché', new THREE.Vector3(touche.x, sol + 1.8, 0), 'aie'); if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); } }
+      if (touche && joue) { crier(touche, true); son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); } }
     }
   }
   const tps = performance.now() / 1000;
@@ -545,7 +588,19 @@ function boucle() {
   camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
   for (let i = taches.length - 1; i >= 0; i--) { const t = taches[i]; if (!fige) t.vie -= dt; const k = Math.max(0, t.vie / 3); t.m.material.color.setRGB(3 * k, 2.4 * k * k, 2 * k * k * k); if (t.vie <= 0) { scene.remove(t.m); t.m.geometry.dispose(); t.m.material.dispose(); taches.splice(i, 1); } }
   for (let i = anneaux.length - 1; i >= 0; i--) { const a = anneaux[i]; a.vie -= dt; const k = 1 - a.vie / 0.45; a.m.scale.setScalar(1 + k * 2.6); a.m.material.opacity = (1 - k) * (1 - k); if (a.vie <= 0) { scene.remove(a.m); a.m.geometry.dispose(); a.m.material.dispose(); anneaux.splice(i, 1); } }
-  if (joue && bouclier <= 0) for (const b of bombes) { if (!b.vivant || b.morceau || b.vy > 0 || b.obj.position.y > sol + 4.5) continue; const m = marcheurs.find(mm => Math.abs(mm.x - b.obj.position.x) < 1.4); if (m && Math.random() < 0.08) crier(m); }
+  if (joue && bouclier <= 0) for (const b of bombes) { if (!b.vivant || b.morceau || b.vy > 0 || b.obj.position.y > sol + 4.5) continue; const m = marcheurs.find(mm => Math.abs(mm.x - b.obj.position.x) < 1.8); if (m && Math.random() < dt * 2.5) crier(m); }
+  if (joue && bouclier <= 0 && marcheurs.length && Math.random() < dt * 0.15) crier(marcheurs[Math.floor(Math.random() * marcheurs.length)]);
+  if (joue) { prochainOiseau -= dt; if (prochainOiseau <= 0) { prochainOiseau = Math.max(4, 11 - niveau * 0.6) + rnd(0, 4); lancerOiseau(); } }
+  for (let i = oiseaux.length - 1; i >= 0; i--) {
+    const o = oiseaux[i], u = o.obj.userData; if (fige) continue;
+    o.t += dt;
+    if (o.chute) { o.vy -= 9 * dt; o.obj.position.y += o.vy * dt; o.obj.position.x += o.vx * 0.3 * dt; o.obj.rotation.z += 6 * dt; if (o.obj.position.y < -viewH / 2 - 2) { scene.remove(o.obj); oiseaux.splice(i, 1); } continue; }
+    o.obj.position.x += o.vx * dt; o.obj.position.y = o.y0 + Math.sin(o.t * 1.3) * 0.35;
+    const bat = Math.sin(o.t * 9) * 0.75 + 0.15; u.ailes[0].rotation.x = bat; u.ailes[1].rotation.x = -bat;
+    u.plumes.forEach((p, k) => p.rotation.y = Math.sin(o.t * 4 + k) * 0.08);
+    if (Math.abs(o.obj.position.x) > viewW / 2 + 3) { scene.remove(o.obj); oiseaux.splice(i, 1); continue; }
+    for (const b of bombes) { if (!b.vivant || b.morceau) continue; if (b.obj.position.distanceTo(o.obj.position) < 0.55 + b.rayon * 0.8) { toucheOiseau(o, b); break; } }
+  }
   const proches = bombes.filter(b => b.vivant && !b.morceau).sort((a, b) => a.obj.position.y - b.obj.position.y);
   lumLave.forEach((l, k) => { const b = proches[k]; if (b) { l.position.copy(b.obj.position); l.position.z += 0.6; l.intensity = 9 + Math.sin(tps * 20 + k) * 2; } else l.intensity = 0; });
   majParticules(dt);
@@ -569,7 +624,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); } };
+if (TEST) window.jeu = { bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, voixBuf, crier, oiseaux, lancerOiseau, get actx() { return actx; } };
 </script>
 </body>
 </html>
