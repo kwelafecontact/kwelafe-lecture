@@ -19,6 +19,7 @@ export default async function Bienvenue({ searchParams }: { searchParams: Promis
         <a className="btn secondaire large" href="/auth/visiteur">Essayer sans compte</a>
         <p className="texte-doux" style={{ fontSize: 14, margin: "0" }}>Mode visiteur : quelques livres et jeux gratuits, sans inscription.</p>
         <a className="lien" href={config.abonnementUrl} style={{ marginTop: 6 }}>Découvrir l'abonnement</a>
+        <a className="texte-doux" href="/test" style={{ fontSize: 14, marginTop: 10, textDecoration: "underline" }}>Accès équipe (code test)</a>
       </div>
       {erreur && (
         <p className="message erreur" style={{ maxWidth: 360 }}>

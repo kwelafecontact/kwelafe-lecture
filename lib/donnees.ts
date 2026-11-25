@@ -5,6 +5,7 @@ import { adminConfigure, droitsDepuisShopify, droitsDepuisCompteClient, renouvel
 import { chiffrer, dechiffrer } from "./chiffre";
 import { creerCodesPourCommande } from "./cadeaux";
 import type { Session } from "./session";
+import { codeTestValide } from "./codes-test";
 
 export type Manifeste =
   | {
@@ -79,6 +80,10 @@ export async function enregistrerDroitsClient(d: DroitsClient, refreshToken?: st
 
 /** Récupère le client et rafraîchit ses droits depuis Shopify si besoin. */
 export async function client(session: Session, forcer = false): Promise<Client> {
+  // Équipe avec un code test : lecture complète tant que le code est valable (vérifié à chaque fois)
+  if (session.testeur) {
+    return { id: session.cid, email: session.email, prenom: session.prenom || null, achats: [], abonne: await codeTestValide(session.testeur), cadeau_jusqu: null, maj: null };
+  }
   const ligne = await premier("SELECT * FROM clients WHERE id = ?", session.cid);
   let c = ligne ? versClient(ligne) : null;
   const perime = !c?.maj || Date.now() - new Date(c.maj).getTime() > SIX_HEURES;

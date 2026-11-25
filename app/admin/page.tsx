@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
 import ImportLivre from "@/components/ImportLivre";
 import ImportLot from "@/components/ImportLot";
+import CodesTest from "@/components/CodesTest";
 import { formatDe } from "@/lib/formats";
 import BasculeAdmin from "@/components/BasculeAdmin";
 import { sessionAdmin } from "@/lib/admin";
@@ -16,6 +17,7 @@ export default async function Admin() {
   if (!(await sessionAdmin())) redirect("/");
   const livres = await tousLesLivres();
   const codes = await tous("SELECT * FROM codes_cadeaux ORDER BY cree_le DESC LIMIT 50");
+  const codesTest = await tous("SELECT empreinte, nom, fin, revoque, dernier_usage, apercu FROM codes_test ORDER BY cree_le DESC LIMIT 100").catch(() => []);
 
   return (
     <>
@@ -57,6 +59,11 @@ export default async function Admin() {
             </tbody>
           </table>
           {!livres.length && <p className="texte-doux">Aucun livre pour l'instant.</p>}
+        </section>
+
+        <section className="panneau">
+          <h2>Accès test pour l'équipe</h2>
+          <CodesTest codes={codesTest as any} />
         </section>
 
         <section className="panneau">

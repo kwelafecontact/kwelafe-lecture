@@ -9,6 +9,7 @@ export type Session = {
   prenom?: string;
   admin?: boolean;
   visiteur?: boolean; // mode visiteur, sans compte
+  testeur?: string; // empreinte du code test de l'équipe
 };
 
 const NOM_COOKIE = "kw_session";
@@ -57,7 +58,7 @@ export async function verifier<T>(jeton: string): Promise<T | null> {
 }
 
 export async function ouvrirSession(s: Session) {
-  const jeton = await signer({ ...s, admin: !s.visiteur && config.adminEmails.includes(s.email.toLowerCase()) }, DUREE);
+  const jeton = await signer({ ...s, admin: !s.visiteur && !s.testeur && config.adminEmails.includes(s.email.toLowerCase()) }, DUREE);
   const jar = await cookies();
   jar.set(NOM_COOKIE, jeton, {
     httpOnly: true,
