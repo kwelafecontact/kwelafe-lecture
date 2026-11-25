@@ -5,6 +5,7 @@ import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
 import { CATALOGUE } from "@/lib/jeux/catalogue";
 import { JEUX_3D } from "@/lib/jeux/jeux3d";
+import { jeuGratuit } from "@/lib/jeux/gratuits";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function PageJeux() {
           <h2>{titre}</h2>
           <div className="jeux-grille">
             {CATALOGUE.filter((j) => j.serie === serie).map((j) => {
+              const ouvert = acces || jeuGratuit(j.id);
               const contenu = (
                 <>
                   <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
@@ -45,11 +47,11 @@ export default async function PageJeux() {
                   <div className="jeu-infos">
                     <h3>{j.titre}{j.troisD ? " 3D" : ""}</h3>
                     <p className="texte-doux">{j.accroche}</p>
-                    <span className="jeu-etiquette">{acces ? "Jouer" : "Abonnés"}</span>
+                    <span className="jeu-etiquette">{ouvert ? (acces ? "Jouer" : "Gratuit · Jouer") : "Abonnés"}</span>
                   </div>
                 </>
               );
-              return acces ? <Link key={j.id} href={`/jeux/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
+              return ouvert ? <Link key={j.id} href={`/jeux/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
             })}
           </div>
         </section>
@@ -59,6 +61,7 @@ export default async function PageJeux() {
           <h2>Jeux péi en 3D</h2>
           <div className="jeux-grille">
             {JEUX_3D.map((j) => {
+              const ouvert = acces || jeuGratuit(j.id, true);
               const contenu = (
                 <>
                   <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
@@ -67,11 +70,11 @@ export default async function PageJeux() {
                   <div className="jeu-infos">
                     <h3>{j.titre}</h3>
                     <p className="texte-doux">{j.accroche}</p>
-                    <span className="jeu-etiquette">{acces ? "Jouer" : "Abonnés"}</span>
+                    <span className="jeu-etiquette">{ouvert ? (acces ? "Jouer" : "Gratuit · Jouer") : "Abonnés"}</span>
                   </div>
                 </>
               );
-              return acces ? <Link key={j.id} href={`/jeux/3d/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
+              return ouvert ? <Link key={j.id} href={`/jeux/3d/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
             })}
           </div>
         </section>

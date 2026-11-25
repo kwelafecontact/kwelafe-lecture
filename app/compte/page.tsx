@@ -2,6 +2,7 @@ import NavBas from "@/components/NavBas";
 import ActiverCode from "@/components/ActiverCode";
 import GuideInstallation from "@/components/GuideInstallation";
 import LienSite from "@/components/LienSite";
+import BandeauVisiteur from "@/components/BandeauVisiteur";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
 import { tous } from "@/lib/cf";
@@ -24,10 +25,12 @@ export default async function Compte() {
       <main className="page">
         <header className="entete">
           <div>
-            <div className="sur-titre">{session.email}</div>
+            <div className="sur-titre">{session.visiteur ? "Mode visiteur" : session.email}</div>
             <h1>Mon compte</h1>
           </div>
         </header>
+
+        {session.visiteur && <BandeauVisiteur />}
 
         <section className="panneau panneau-stats">
           <h2>📊 Mes lectures</h2>

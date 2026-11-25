@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import CadreJeu from "@/components/jeux/CadreJeu";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
+import { jeuGratuit } from "@/lib/jeux/gratuits";
 import { premier } from "@/lib/cf";
 import { fiche } from "@/lib/jeux/catalogue";
 
@@ -12,7 +13,7 @@ export default async function PageJeu({ params }: { params: Promise<{ jeu: strin
   const f = fiche(jeu);
   if (!f || f.troisD) notFound();
   const { session, abonne } = await contexte();
-  if (!(abonne || session.admin || config.demo)) redirect("/jeux");
+  if (!(abonne || session.admin || config.demo || jeuGratuit(jeu))) redirect("/jeux");
   const r = await premier<{ record: number; donnees: string }>(
     "SELECT record, donnees FROM scores_jeux WHERE client_id = ? AND jeu = ?", session.cid, jeu
   ).catch(() => null);

@@ -49,6 +49,7 @@ export default async function Admin() {
                     <BasculeAdmin id={l.id} champ="publie" valeur={l.publie} libelle="Publié" />
                     <BasculeAdmin id={l.id} champ="inclus_abonnement" valeur={l.inclus_abonnement} libelle="Inclus abonnement" />
                     <BasculeAdmin id={l.id} champ="mystere_du_mois" valeur={l.mystere_du_mois} libelle="Mystère du mois" />
+                    <BasculeAdmin id={l.id} champ="gratuit" valeur={l.gratuit} libelle="Gratuit (découverte)" />
                   </td>
                   <td><Link className="lien" href={`/lire/${l.slug}`}>Prévisualiser</Link></td>
                 </tr>

@@ -53,7 +53,7 @@ export default function CarteLivre({
       )}
       <div className="badges">
         {montrerFormat && <BadgeFormat livre={livre} />}
-        {acces && livre.inclus_abonnement && <span className="badge inclus">Inclus</span>}
+        {livre.gratuit ? <span className="badge gratuit">Gratuit</span> : acces && livre.inclus_abonnement && <span className="badge inclus">Inclus</span>}
       </div>
     </Link>
   );

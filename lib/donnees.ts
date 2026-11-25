@@ -33,6 +33,7 @@ export type Livre = {
   couverture: string | null;
   manifeste: Manifeste;
   publie: boolean;
+  gratuit: boolean;
   cree_le: string;
 };
 
@@ -50,7 +51,7 @@ const SIX_HEURES = 6 * 3600 * 1000;
 
 /* Conversion des lignes SQLite (0/1, JSON en texte) en objets */
 export function versLivre(r: any): Livre {
-  return { ...r, inclus_abonnement: !!r.inclus_abonnement, mystere_du_mois: !!r.mystere_du_mois, publie: !!r.publie, manifeste: JSON.parse(r.manifeste) };
+  return { ...r, inclus_abonnement: !!r.inclus_abonnement, mystere_du_mois: !!r.mystere_du_mois, publie: !!r.publie, gratuit: !!r.gratuit, manifeste: JSON.parse(r.manifeste) };
 }
 function versClient(r: any): Client {
   return { ...r, abonne: !!r.abonne, achats: JSON.parse(r.achats || "[]") };
@@ -82,7 +83,7 @@ export async function client(session: Session, forcer = false): Promise<Client> 
   let c = ligne ? versClient(ligne) : null;
   const perime = !c?.maj || Date.now() - new Date(c.maj).getTime() > SIX_HEURES;
   const brut: any = ligne;
-  if ((forcer || perime) && !config.demo && brut?.jeton_renouv && config.caClientId) {
+  if ((forcer || perime) && !config.demo && !session.visiteur && brut?.jeton_renouv && config.caClientId) {
     try {
       const jetons = await renouvelerJeton(await dechiffrer(brut.jeton_renouv));
       await enregistrerDroitsClient(await droitsDepuisCompteClient(jetons.access_token), jetons.refresh_token);
@@ -90,7 +91,7 @@ export async function client(session: Session, forcer = false): Promise<Client> 
     } catch (e) {
       console.error("Mise à jour des droits par le compte client impossible", e);
     }
-  } else if ((forcer || perime) && !config.demo && adminConfigure()) {
+  } else if ((forcer || perime) && !config.demo && !session.visiteur && adminConfigure()) {
     try {
       const d = await droitsDepuisShopify(session.cid);
       await enregistrerClient({ id: session.cid, email: session.email, prenom: session.prenom || null, achats: d.achats, abonne: d.abonne, maj: new Date().toISOString() });
@@ -111,7 +112,7 @@ export function abonnementActif(c: Client) {
 }
 
 export function aAcces(c: Client, l: Livre, session?: Session | null) {
-  if (session?.admin || config.demo) return true;
+  if (session?.admin || config.demo || l.gratuit) return true;
   const produits = (l.shopify_product_id || "").split(",").map((x) => x.trim()).filter(Boolean);
   if (produits.some((p) => c.achats.includes(p))) return true;
   return l.inclus_abonnement && abonnementActif(c);

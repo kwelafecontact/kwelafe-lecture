@@ -2,6 +2,7 @@ import Link from "next/link";
 import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
 import LienSite from "@/components/LienSite";
+import BandeauVisiteur from "@/components/BandeauVisiteur";
 import { contexte } from "@/lib/contexte";
 import { statistiques } from "@/lib/stats";
 import { UNIVERS, config } from "@/lib/config";
@@ -45,6 +46,8 @@ export default async function Accueil() {
             <div className="stat-bulle"><b>{lus}</b><span>📚 livre{lus > 1 ? "s" : ""} fini{lus > 1 ? "s" : ""}</span></div>
           </div>
         </header>
+
+        {session.visiteur && <BandeauVisiteur />}
 
         {premier ? (
           <section aria-label="Continuer ma lecture">

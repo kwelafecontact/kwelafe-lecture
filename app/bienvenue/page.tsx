@@ -16,7 +16,9 @@ export default async function Bienvenue({ searchParams }: { searchParams: Promis
         <p className="texte-doux" style={{ fontSize: 15, margin: "4px 0 0" }}>
           Utilise la même adresse e-mail que sur la boutique Kwélafé. Tu recevras un code pour te connecter.
         </p>
-        <a className="btn secondaire large" href={config.abonnementUrl}>Découvrir l'abonnement</a>
+        <a className="btn secondaire large" href="/auth/visiteur">Essayer sans compte</a>
+        <p className="texte-doux" style={{ fontSize: 14, margin: "0" }}>Mode visiteur : quelques livres et jeux gratuits, sans inscription.</p>
+        <a className="lien" href={config.abonnementUrl} style={{ marginTop: 6 }}>Découvrir l'abonnement</a>
       </div>
       {erreur && (
         <p className="message erreur" style={{ maxWidth: 360 }}>

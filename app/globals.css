@@ -463,3 +463,11 @@ body { background: var(--ivoire); }
 .entete-collection { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .entete-collection b { font-family: var(--titre); font-size: 18px; color: var(--encre); }
 .entete-collection span { font-size: 13px; font-weight: 800; color: var(--doux); white-space: nowrap; }
+
+/* Mode visiteur */
+.bandeau-visiteur { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: #fdf2d6; border-radius: 18px; padding: 16px 18px; margin-bottom: 22px; box-shadow: inset 4px 0 0 var(--jaune); }
+.bandeau-visiteur b { display: block; color: var(--encre); font-size: 17px; }
+.bandeau-visiteur span { font-size: 14px; color: var(--texte); }
+.actions-visiteur { display: flex; gap: 10px; flex-wrap: wrap; }
+.actions-visiteur .btn { min-height: 44px; padding: 0 18px; font-size: 15px; }
+.badge.gratuit { background: #fdf2d6; color: #8a5a00; }
