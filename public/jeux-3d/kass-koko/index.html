@@ -171,6 +171,15 @@ soleil.shadow.mapSize.set(PETIT ? 1024 : 2048, PETIT ? 1024 : 2048); soleil.shad
 Object.assign(soleil.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 }); scene.add(soleil);
 scene.add(new THREE.HemisphereLight(0xbfe8ff, 0xf0d8a0, 0.9));
 const capteur = new THREE.Mesh(new THREE.PlaneGeometry(60, 14), new THREE.ShadowMaterial({ opacity: 0.3, color: 0x3a2a10 })); capteur.rotation.x = -Math.PI / 2; capteur.receiveShadow = true; scene.add(capteur);
+const texPlanche = (() => { const c = document.createElement('canvas'); c.width = 1024; c.height = 256; const g = c.getContext('2d');
+  const n = 7; for (let i = 0; i < n; i++) { const y = i * 256 / n, h = 256 / n; const base = [`#b07a44`, `#a06a38`, `#c08a50`, `#9a6434`][i % 4]; g.fillStyle = base; g.fillRect(0, y, 1024, h);
+    for (let k = 0; k < 40; k++) { g.strokeStyle = `rgba(60,30,10,${rnd(0.08, 0.25)})`; g.lineWidth = rnd(0.5, 2); g.beginPath(); const yy = y + rnd(2, h - 2); g.moveTo(0, yy); for (let x = 0; x <= 1024; x += 64) g.lineTo(x, yy + Math.sin(x * 0.01 + k) * rnd(0.5, 2.5)); g.stroke(); }
+    for (let k = 0; k < 3; k++) { const kx = rnd(40, 980), ky = y + h / 2; g.fillStyle = 'rgba(70,35,12,.45)'; g.beginPath(); g.ellipse(kx, ky, rnd(6, 12), rnd(3, 5), 0, 0, 7); g.fill(); }
+    g.fillStyle = 'rgba(30,15,5,.75)'; g.fillRect(0, y + h - 2, 1024, 2);
+    for (const x of [rnd(150, 300), rnd(600, 800)]) { g.fillRect(x, y, 2, h); g.fillStyle = '#5a5a5a'; for (const dy of [h * 0.3, h * 0.7]) { g.beginPath(); g.arc(x + 8, y + dy, 2.5, 0, 7); g.fill(); g.beginPath(); g.arc(x - 8, y + dy, 2.5, 0, 7); g.fill(); } g.fillStyle = 'rgba(30,15,5,.75)'; } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })();
+const planches = new THREE.Mesh(new THREE.BoxGeometry(1, 0.5, 3), [0, 1, 2, 3, 4, 5].map(i => new THREE.MeshStandardMaterial({ map: i === 2 || i === 4 ? texPlanche : null, color: i === 2 || i === 4 ? 0xffffff : 0x6a4422, roughness: 0.8 })));
+planches.receiveShadow = true; planches.castShadow = true; scene.add(planches);
 const texFond = new THREE.TextureLoader().load('./fond-plage.webp', () => { resize(); $('charge').textContent = ''; window.PRET = true; }); texFond.colorSpace = THREE.SRGBColorSpace;
 const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false }));
 planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
@@ -186,6 +195,7 @@ function resize() {
   camera.aspect = W / H; camera.updateProjectionMatrix();
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
   sol = -viewH * 0.36; capteur.position.set(0, sol + 0.005, -2);
+  planches.scale.x = viewW + 6; planches.position.set(0, sol + 0.05, 0.2);
   const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
   let pw = wF, ph = wF / (16 / 9); if (ph < hF) { ph = hF; pw = hF * 16 / 9; }
   planFond.scale.set(pw * 1.08, ph * 1.08, 1); planFond.position.y = (ph - hF) / 2;
@@ -237,7 +247,7 @@ function noix(t) {
 function forme2D(k) { const s = new THREE.Shape(); PROFIL.forEach((p, i) => i ? s.lineTo(p.x * k, p.y * k) : s.moveTo(p.x * k, p.y * k)); for (let i = PROFIL.length - 1; i >= 0; i--) s.lineTo(-PROFIL[i].x * k, PROFIL[i].y * k); return s; }
 const GEO_TRANCHES = [1, 0.78, 0.72, 0.6, 0.46].map(k => { const g = new THREE.ShapeGeometry(forme2D(k), 24); g.rotateY(-Math.PI / 2); return g; }); // dans le plan YZ (plan de coupe)
 const matCoque = new THREE.MeshStandardMaterial({ color: 0x4a2a14, roughness: 0.6, side: THREE.DoubleSide });
-const matChair = new THREE.MeshStandardMaterial({ color: 0xdcd4c2, roughness: 0.55, side: THREE.DoubleSide, envMapIntensity: 0.5 });
+const matChair = new THREE.MeshStandardMaterial({ color: 0xb8b09e, roughness: 0.85, side: THREE.DoubleSide, envMapIntensity: 0.25 });
 const matEau = new THREE.MeshStandardMaterial({ color: 0x9cc4dc, roughness: 0.4, metalness: 0, transparent: true, opacity: 0.85, side: THREE.DoubleSide, envMapIntensity: 0.35 });
 const matPourriDedans = new THREE.MeshStandardMaterial({ color: 0x3a3a1a, roughness: 1, side: THREE.DoubleSide });
 function demiNoix(t, cote) {
@@ -272,17 +282,32 @@ const hsl = (h, s, l) => { const c = new THREE.Color().setHSL(h, s, l); return [
 // ---------------------------------------------------------------- éclaboussures sur l'écran (gouttes qui glissent sur la vitre)
 const tachesEcran = [];
 function eclabousser(sx, sy, force, t) {
-  const n = Math.round(10 + force * 18), coul = t === 'pourri' ? 'pourri' : t === 'dore' ? 'or' : 'eau';
+  if (t === 'pourri') {
+    // le jus noir couvre une grande partie de l'écran pendant environ 5 secondes
+    const n = 24; for (let i = 0; i < n; i++) { const big = i < 7; tachesEcran.push({ x: sx + rnd(-W * 0.45, W * 0.45) * (big ? 0.8 : 1), y: sy + rnd(-H * 0.35, H * 0.35), r: big ? rnd(Math.min(W, H) * 0.12, Math.min(W, H) * 0.22) : rnd(18, 50), vie: rnd(4.5, 6), max: 6, vy: rnd(2, 8), coul: 'pourri', traine: [], forme: Array.from({ length: 12 }, () => rnd(0.8, 1.15)) }); }
+    return;
+  }
+  const n = Math.round(10 + force * 18), coul = t === 'dore' ? 'or' : 'eau';
   for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, d = Math.pow(Math.random(), 0.6) * (60 + force * 160); tachesEcran.push({ x: sx + Math.cos(a) * d, y: sy + Math.sin(a) * d * 0.8, r: rnd(3, 10) * (0.7 + force * 0.5) * (i < 2 ? 2 : 1), vie: rnd(2.2, 3.4), max: 3.4, vy: rnd(4, 18), coul, traine: [] }); }
 }
 function dessinerEcran(dt) {
   ectx.clearRect(0, 0, W, H);
   for (let i = tachesEcran.length - 1; i >= 0; i--) {
     const g = tachesEcran[i]; g.vie -= dt; if (g.vie <= 0) { tachesEcran.splice(i, 1); continue; }
-    g.vy += dt * (g.r > 12 ? 30 : 8); g.y += g.vy * dt; if (Math.random() < 0.3) g.traine.push([g.x, g.y]); if (g.traine.length > 18) g.traine.shift();
+    g.vy += dt * (g.coul === 'pourri' ? 3 : g.r > 12 ? 30 : 8); g.y += g.vy * dt; if (Math.random() < 0.3) g.traine.push([g.x, g.y]); if (g.traine.length > 18) g.traine.shift();
     const a = Math.min(1, g.vie / 0.8);
-    for (const [tx, ty] of g.traine) { ectx.fillStyle = g.coul === 'pourri' ? `rgba(70,50,20,${0.25 * a})` : g.coul === 'or' ? `rgba(255,210,90,${0.18 * a})` : `rgba(220,240,255,${0.16 * a})`; ectx.beginPath(); ectx.arc(tx, ty, g.r * 0.35, 0, 7); ectx.fill(); }
-    if (g.coul === 'pourri') { ectx.fillStyle = `rgba(74,56,24,${0.85 * a})`; ectx.beginPath(); ectx.arc(g.x, g.y, g.r, 0, 7); ectx.fill(); continue; }
+    if (g.coul !== 'pourri') for (const [tx, ty] of g.traine) { ectx.fillStyle = g.coul === 'pourri' ? `rgba(70,50,20,${0.25 * a})` : g.coul === 'or' ? `rgba(255,210,90,${0.18 * a})` : `rgba(220,240,255,${0.16 * a})`; ectx.beginPath(); ectx.arc(tx, ty, g.r * 0.35, 0, 7); ectx.fill(); }
+    if (g.coul === 'pourri') {
+      const ap = Math.min(1, g.vie / 1.5);
+      const F = g.forme, N = F.length, pt = j => { const an = j / N * Math.PI * 2, k = F[(j + N) % N]; return [g.x + Math.cos(an) * g.r * k, g.y + Math.sin(an) * g.r * k * 1.05]; };
+      ectx.fillStyle = `rgba(14,11,6,${0.94 * ap})`; ectx.beginPath();
+      for (let j = 0; j <= N; j++) { const [x1, y1] = pt(j), [x2, y2] = pt(j + 1); const mx = (x1 + x2) / 2, my = (y1 + y2) / 2; if (j === 0) ectx.moveTo(mx, my); else ectx.quadraticCurveTo(x1, y1, mx, my); }
+      ectx.closePath(); ectx.fill();
+      // coulures arrondies qui descendent lentement
+      for (let k = 0; k < 2; k++) { const cx = g.x + (k ? 0.35 : -0.2) * g.r, long = g.r * (0.5 + k * 0.3 + (g.max - g.vie) * 0.18), w = g.r * (k ? 0.09 : 0.13); ectx.beginPath(); ectx.moveTo(cx - w, g.y + g.r * 0.5); ectx.lineTo(cx - w * 0.7, g.y + g.r * 0.5 + long); ectx.arc(cx, g.y + g.r * 0.5 + long, w * 0.9, Math.PI, 0, true); ectx.lineTo(cx + w, g.y + g.r * 0.5); ectx.fill(); }
+      ectx.fillStyle = `rgba(90,80,50,${0.35 * ap})`; ectx.beginPath(); ectx.ellipse(g.x - g.r * 0.35, g.y - g.r * 0.4, g.r * 0.18, g.r * 0.1, -0.6, 0, 7); ectx.fill(); // reflet gras
+      continue;
+    }
     const rx = g.r, ry = g.r * (1.1 + Math.min(0.5, g.vy * 0.01));
     const gr = ectx.createRadialGradient(g.x, g.y - ry * 0.25, rx * 0.15, g.x, g.y + ry * 0.1, rx * 1.05);
     if (g.coul === 'or') { gr.addColorStop(0, `rgba(255,230,140,${0.35 * a})`); gr.addColorStop(0.8, `rgba(230,160,30,${0.55 * a})`); gr.addColorStop(1, `rgba(150,90,0,${0.75 * a})`); }
@@ -315,7 +340,9 @@ const son = {
 const DUREE_ZEN = 90, RECHARGE = 12;
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupes = 0, niveau = 1, phase = 'actif', phaseT = 0;
 let charge = 0, serie = 0, ralentis = 0, frenesies = 0, ralenti = 0, frenesie = 0, arret = 0;
-const cocos = [], morceaux = [], flashes = [];
+const cocos = [], morceaux = [], flashes = [], debris = [];
+const DESSUS = () => sol + 0.3;
+const texTache = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 4, 64, 64, 62); r.addColorStop(0, 'rgba(255,255,255,.9)'); r.addColorStop(0.7, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.beginPath(); for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, rr = 40 + Math.random() * 22; g.lineTo(64 + Math.cos(a) * rr, 64 + Math.sin(a) * rr); } g.fill(); return new THREE.CanvasTexture(c); })();
 const dureePhase = () => Math.min(34, 20 + niveau * 2);
 const intensite = () => (niveau - 1) * 1.5 + phaseT / 14;
 function lancer(t, x) {
@@ -362,12 +389,12 @@ function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupes = 0; niveau = 1; phase = 'actif'; phaseT = 0;
   charge = 0; serie = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0;
   try { record = +localStorage.getItem('kasskoko_record_' + mode) || 0; } catch (e) {}
-  cocos.forEach(c => scene.remove(c.obj)); cocos.length = 0; tachesEcran.length = 0;
+  cocos.forEach(c => scene.remove(c.obj)); cocos.length = 0; tachesEcran.length = 0; nettoyerDebris();
   majScore(); majVies(); majNiveauHud(); majBonus();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('bonus').classList.add('on'); $('lien').classList.add('discret');
 }
 function finPartie() {
-  etat = 'fin'; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
+  etat = 'fin'; setTimeout(nettoyerDebris, 900); $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
   const nouveau = score > record && score > 0;
   if (nouveau) { record = score; try { localStorage.setItem('kasskoko_record_' + mode, record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
@@ -380,6 +407,27 @@ function finPartie() {
 }
 
 // ---------------------------------------------------------------- la coupe : effets lumineux, eau qui gicle et qui coule, éclaboussures sur l'écran
+function nettoyerDebris() { for (const d of debris) { scene.remove(d); d.traverse(o => { if (o.isMesh && o.userData.jetable) { o.geometry.dispose(); o.material.dispose(); } }); } debris.length = 0; }
+// un coco qui tombe s'éclate sur les planches et y reste
+function eclater(c) {
+  const T = TYPES[c.t], p = c.obj.position, y0 = DESSUS();
+  // tache d'eau (ou de jus pourri) sur le bois
+  const tache = new THREE.Mesh(new THREE.PlaneGeometry(1.8 * T.taille, 1.8 * T.taille), new THREE.MeshBasicMaterial({ map: texTache, transparent: true, depthWrite: false, color: c.t === 'pourri' ? 0x1a1208 : c.t === 'dore' ? 0xc8902a : 0x5a3a1a, opacity: c.t === 'pourri' ? 0.85 : 0.45 }));
+  tache.userData.jetable = true; tache.rotation.x = -Math.PI / 2; tache.rotation.z = Math.random() * 6; tache.position.set(p.x, y0 + 0.006 + debris.length * 0.0004, rnd(0.4, 1.1)); scene.add(tache); debris.push(tache);
+  // les deux moitiés éclatées, posées sur le bois
+  for (const cote of [1, -1]) {
+    const m = demiNoix(c.t, cote); m.rotation.set(rnd(-0.6, 0.2), cote * rnd(0.6, 1.3), rnd(-0.4, 0.4) + (cote > 0 ? 0.3 : -0.3));
+    m.position.set(p.x + cote * rnd(0.35, 0.7) * T.taille, y0 + 0.3 * T.taille, tache.position.z + rnd(-0.2, 0.2)); scene.add(m); debris.push(m);
+  }
+  // petits éclats de coque et de bourre
+  for (let i = 0; i < 4; i++) { const e = new THREE.Mesh(new THREE.TetrahedronGeometry(rnd(0.07, 0.15) * T.taille), matBourre(c.t)); e.position.set(p.x + rnd(-1.1, 1.1), y0 + 0.06, tache.position.z + rnd(-0.4, 0.4)); e.rotation.set(rnd(0, 6), rnd(0, 6), rnd(0, 6)); e.castShadow = true; scene.add(e); debris.push(e); }
+  // gerbe d'eau à l'impact
+  const n = Math.round(30 + T.eau * 60);
+  for (let k = 0; k < n; k++) { const a = rnd(0.15, Math.PI - 0.15), v = rnd(1.5, 5) * (0.5 + T.eau * 0.5); gouttes.ajoute(p.x, y0 + 0.3, 0.9, Math.cos(a) * v, Math.sin(a) * v, c.t === 'pourri' ? [0.12, 0.1, 0.06] : c.t === 'dore' ? [1, 0.85, 0.35] : [0.6, 0.82, 1], rnd(0.5, 1), rnd(22, 46)); }
+  for (let k = 0; k < 14; k++) gouttes.ajoute(p.x, y0 + 0.3, 0.9, rnd(-2, 2), rnd(0.5, 2.5), [0.75, 0.5, 0.28], rnd(0.4, 0.7), rnd(14, 24));
+  // au-delà de 140 morceaux, les plus anciens s'en vont pour garder le jeu fluide
+  while (debris.length > 140) { const d = debris.shift(); scene.remove(d); }
+}
 function couper(c, dir, auto = false) {
   c.vivant = false; scene.remove(c.obj);
   const T = TYPES[c.t], p = c.obj.position.clone(), s = toScreen(p);
@@ -460,10 +508,10 @@ function boucle() {
     c.vy -= c.g * dc; c.obj.position.x += c.vx * dc; c.obj.position.y += c.vy * dc; c.obj.rotation.x += c.vr[0] * dc; c.obj.rotation.z += c.vr[1] * dc;
     if (c.t === 'pourri' && Math.random() < 0.3) { const a = performance.now() / 200 + Math.random() * 6; gouttes.ajoute(c.obj.position.x + Math.cos(a) * 0.8, c.obj.position.y + Math.sin(a) * 0.6 + 0.3, 1, rnd(-.5, .5), rnd(-.3, .3), [0.04, 0.04, 0.04], 0.4, 10, 0); } // mouches
     if (c.t === 'dore' && Math.random() < 0.5) eclats.ajoute(c.obj.position.x + rnd(-.6, .6), c.obj.position.y + rnd(-.6, .6), 1, 0, 0.3, [1, 0.85, 0.3], 0.6, 22, 0);
-    if (c.obj.position.y < sol + 0.55 * TYPES[c.t].taille) {
-      c.vivant = false; scene.remove(c.obj); son.sable();
-      const p = c.obj.position; for (let k = 0; k < 24; k++) gouttes.ajoute(p.x, sol + 0.4, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3), [0.96, 0.88, 0.68], rnd(0.4, 0.8), rnd(25, 45));
-      if (joue && c.t !== 'pourri') { serie = 0; popup('Tombé dans le sable', new THREE.Vector3(p.x, sol + 1.6, 0), 'aie'); if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 3); majScore(); } }
+    if (c.obj.position.y < DESSUS() + 0.6 * TYPES[c.t].taille) {
+      c.vivant = false; scene.remove(c.obj); son.coupe(c.t, TYPES[c.t].taille); son.sable(); eclater(c); secousse = Math.max(secousse, 0.15);
+      const p = c.obj.position;
+      if (joue && c.t !== 'pourri') { serie = 0; popup('Écrasé sur les planches', new THREE.Vector3(p.x, sol + 1.8, 0), 'aie'); if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 3); majScore(); } }
     }
   }
   for (let i = morceaux.length - 1; i >= 0; i--) {
