@@ -4,8 +4,17 @@ import Link from "next/link";
 import type { DefJeu, Hud, Resultat } from "@/lib/jeux/commun/moteur2d";
 import type { Moteur2D } from "@/lib/jeux/commun/moteur2d";
 import { chargerJeu, fiche } from "@/lib/jeux/catalogue";
+import { lireLocal, modifierLocal, envoyerScore, renvoyerEnAttente, type PartieEnCours, type Local } from "@/lib/jeux/commun/progression";
 
 type Donnees = { etoiles?: Record<string, number>; record?: number };
+
+/** Fusionne deux progressions : on garde toujours le meilleur des deux (étoiles par niveau, record). */
+function fusionner(a: Donnees, b: Donnees | undefined): Donnees {
+  if (!b) return a;
+  const etoiles: Record<string, number> = { ...(a.etoiles || {}) };
+  for (const [n, e] of Object.entries(b.etoiles || {})) etoiles[n] = Math.max(etoiles[n] || 0, e);
+  return { ...a, ...b, etoiles, record: Math.max(a.record || 0, b.record || 0) };
+}
 type Ecran = "chargement" | "accueil" | "niveaux" | "jeu" | "pause" | "fin" | "erreur";
 
 export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: string; recordInitial: number; donneesInitiales: Donnees }) {
@@ -19,8 +28,11 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
   const [donnees, setDonnees] = useState<Donnees>(donneesInitiales || {});
   const [record, setRecord] = useState(recordInitial || 0);
   const [son, setSon] = useState(true);
+  const [reprise, setReprise] = useState<PartieEnCours | null>(null);
   const etat = useRef({ donnees, record, niveau, def });
   etat.current = { donnees, record, niveau, def };
+  const ecranRef = useRef<Ecran>("chargement");
+  ecranRef.current = ecran;
   const f = fiche(id);
 
   useEffect(() => {
@@ -31,9 +43,23 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
         await precharger(d?.visuels, { ...(d?.images || {}), ...(d && FONDS_AQUARELLE.has(d.id) ? { ["fond:" + d.id]: cheminFond(d.id) } : {}) });
         if (annule || !zone.current || !d) { if (!d) setEcran("erreur"); return; }
         try { if (localStorage.getItem("kw-son") === "0") setSon(false); } catch { /* rien */ }
+        // Progression locale : protège contre une coupure réseau ou un arrêt brutal de l'onglet
+        const local: Local<Donnees> = await lireLocal<Donnees>(id).catch(() => ({}));
+        if (annule || !zone.current) return;
+        if (local.donnees) {
+          const fus = fusionner(etat.current.donnees, local.donnees);
+          setDonnees(fus);
+          setRecord((x) => Math.max(x, fus.record || 0));
+        }
+        if (local.partie) setReprise(local.partie);
+        renvoyerEnAttente<Donnees>(id).catch(() => {});
         const m = new Moteur2D(zone.current, d, {
           hud: (h) => setHud((x) => ({ ...x, ...h })),
           fin: (r) => terminer(r),
+          // Arrière-plan / verrouillage : l'écran de pause s'affiche (le jeu ne paraît plus figé)
+          interruption: () => { if (ecranRef.current === "jeu") setEcran("pause"); },
+          // Sauvegarde régulière et à chaque interruption de la partie en cours
+          sauvegarde: () => sauverPartie(),
         });
         try { if (localStorage.getItem("kw-son") === "0") m.sons.actif = false; } catch { /* rien */ }
         moteur.current = m;
@@ -44,9 +70,19 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
         setEcran("erreur");
       }
     })();
-    return () => { annule = true; moteur.current?.detruire(); moteur.current = null; };
+    const enLigne = () => { renvoyerEnAttente<Donnees>(id).catch(() => {}); };
+    window.addEventListener("online", enLigne);
+    return () => { annule = true; window.removeEventListener("online", enLigne); moteur.current?.detruire(); moteur.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  /** Photographie la partie en cours (niveau + état du jeu s'il sait le fournir). */
+  function sauverPartie() {
+    const m = moteur.current;
+    if (!m || !m.partieEnCours) return;
+    const p: PartieEnCours = { niveau: etat.current.niveau, etat: m.instantane(), t: Date.now() };
+    modifierLocal<Donnees>(id, (l) => ({ ...l, partie: p }));
+  }
 
   function terminer(r: Resultat) {
     const { donnees: d, record: rec, niveau: n, def: df } = etat.current;
@@ -57,16 +93,24 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
     setDonnees(suivantes);
     if (nouveauRecord) setRecord(r.score);
     setRes({ ...r, nouveauRecord });
+    setReprise(null);
     setTimeout(() => setEcran("fin"), 700);
-    fetch("/api/jeux/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jeu: id, score: r.score, donnees: suivantes }) }).catch(() => {});
+    // D'abord la copie locale (immédiate), puis le serveur (repart plus tard si le réseau manque)
+    modifierLocal<Donnees>(id, (l) => ({ ...l, donnees: fusionner(suivantes, l.donnees), partie: null }));
+    envoyerScore(id, r.score, suivantes).then((j) => { if (j && typeof j.record === "number") setRecord((x) => Math.max(x, j.record!)); });
   }
 
-  const jouer = (n: number) => {
+  const jouer = (n: number, etatRepris?: unknown) => {
+    etat.current.niveau = n;
     setNiveau(n); setRes(null); setHud({});
     moteur.current?.setPause(false);
     moteur.current?.lancer(n);
+    if (etatRepris != null) moteur.current?.restaurer(etatRepris);
+    setReprise(null);
     setEcran("jeu");
+    sauverPartie();
   };
+  const reprendrePartie = () => { if (reprise) jouer(reprise.niveau, reprise.etat); };
   const basculerPause = () => {
     if (ecran === "jeu") { moteur.current?.setPause(true); setEcran("pause"); }
     else if (ecran === "pause") { moteur.current?.setPause(false); setEcran("jeu"); }
@@ -112,9 +156,14 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
             <p className="kk-accroche">{def.accroche}</p>
             <ul className="kw-regles">{def.regles.map((r, i) => <li key={i}>{r}</li>)}</ul>
             <div className="kk-boutons">
+              {reprise && (
+                <button className="btn" onClick={reprendrePartie}>
+                  {reprise.etat != null ? "Reprendre ma partie" : def.niveaux > 0 ? `Reprendre le niveau ${reprise.niveau}` : "Reprendre"}
+                </button>
+              )}
               {def.niveaux > 0
-                ? <button className="btn" onClick={() => setEcran("niveaux")}>Jouer · {totalEtoiles}/{def.niveaux * 3} ★</button>
-                : <button className="btn" onClick={() => jouer(1)}>Jouer{record ? ` · record ${record}` : ""}</button>}
+                ? <button className={reprise ? "btn secondaire" : "btn"} onClick={() => setEcran("niveaux")}>Jouer · {totalEtoiles}/{def.niveaux * 3} ★</button>
+                : <button className={reprise ? "btn secondaire" : "btn"} onClick={() => jouer(1)}>{reprise ? "Nouvelle partie" : "Jouer"}{record ? ` · record ${record}` : ""}</button>}
             </div>
           </div>
         </div>

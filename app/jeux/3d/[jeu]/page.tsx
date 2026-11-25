@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
 import { jeu3d } from "@/lib/jeux/jeux3d";
+import CadreJeu3D from "@/components/jeux/CadreJeu3D";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +13,5 @@ export default async function PageJeu3D({ params }: { params: Promise<{ jeu: str
   if (!j) notFound();
   const { session, abonne } = await contexte();
   if (!(abonne || session.admin || config.demo)) redirect("/jeux");
-  return (
-    <iframe
-      src={`/jeux-3d/${j.id}/index.html`}
-      title={j.titre}
-      allow="fullscreen; autoplay"
-      style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", border: 0, background: "#0b1530", zIndex: 50 }}
-    />
-  );
+  return <CadreJeu3D src={`/jeux-3d/${j.id}/index.html`} titre={j.titre} />;
 }

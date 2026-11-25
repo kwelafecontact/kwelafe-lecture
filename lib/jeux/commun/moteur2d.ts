@@ -1,6 +1,7 @@
 // Moteur commun des jeux 2D Kwélafé : boucle, dessin haute définition, effets, sons, images.
 import { toutesLesImages } from "./produits";
 import { PHOTOS } from "./photos";
+import { GestionnairePerf, dprCible, libererCanvas, reveillerAudio, endormirAudio, journal } from "@/public/jeux-3d/commun/performances";
 
 export type Resultat = { gagne: boolean; score: number; etoiles: number };
 export type Hud = { score?: number; objectif?: string; temps?: number | null; info?: string };
@@ -23,6 +24,10 @@ export interface Jeu {
   move?(x: number, y: number): void;
   up?(x: number, y: number): void;
   redim?(L: number, H: number): void;
+  /** Photo de la partie en cours (données simples) pour la reprendre après une interruption. */
+  instantane?(): unknown;
+  /** Remet la partie dans l'état d'une photo prise par instantane(). */
+  restaurer?(etat: unknown): void;
 }
 
 export type Theme = { haut: string; bas: string; collines: string[]; soleil?: string };
@@ -59,8 +64,10 @@ export class SonsJeu {
       const d = this.bruitB.getChannelData(0);
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (this.ctx.state === "suspended") this.ctx.resume();
+    reveillerAudio(this.ctx);
   }
+  /** Arrière-plan : on endort le son (iOS le met parfois en état « interrompu »). */
+  endormir() { endormirAudio(this.ctx); }
   private ok() { return this.actif && this.ctx && this.out ? this.ctx : null; }
   private ton(t: number, d: number, f0: number, f1: number, v: number, type: OscillatorType = "sine") {
     const c = this.ctx!, o = c.createOscillator(), g = c.createGain();
@@ -188,6 +195,16 @@ export const melanger = <T,>(a: T[], rnd: () => number) => { const b = a.slice()
 // Moteur
 // ---------------------------------------------------------------------------
 const cacheImages = new Map<string, HTMLImageElement>();
+/** Retire des images du cache et libère leur mémoire décodée. */
+export function libererImages(ids: string[]) {
+  for (const id of ids) {
+    const im = cacheImages.get(id);
+    if (!im) continue;
+    im.onload = im.onerror = null;
+    im.removeAttribute("src");
+    cacheImages.delete(id);
+  }
+}
 export function precharger(visuels?: "photos", images?: Record<string, string>): Promise<void> {
   const liste = { ...toutesLesImages(), ...(images || {}) };
   if (visuels === "photos") for (const p of PHOTOS) liste["photo:" + p.id] = p.image;
@@ -203,7 +220,6 @@ export class Moteur2D {
   private cv: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private jeu: Jeu | null = null;
-  private raf = 0;
   private dernier = 0;
   private pause = false;
   private obs: ResizeObserver;
@@ -212,24 +228,55 @@ export class Moteur2D {
   L = 1; H = 1;
   sons = new SonsJeu();
   fx = new Effets();
+  private perf: GestionnairePerf;
+  private redessin = 0;
   private seed = Date.now() & 0xffff;
   private nuages = Array.from({ length: 6 }, (_, i) => ({ x: Math.random(), y: 0.05 + Math.random() * 0.25, s: 0.6 + Math.random() * 0.8, v: 0.004 + i * 0.002 }));
 
-  constructor(private conteneur: HTMLElement, private def: DefJeu, private rappels: { fin: (r: Resultat) => void; hud: (h: Hud) => void }) {
+  constructor(
+    private conteneur: HTMLElement,
+    private def: DefJeu,
+    private rappels: { fin: (r: Resultat) => void; hud: (h: Hud) => void; interruption?: (raison: string) => void; sauvegarde?: (raison: string) => void },
+  ) {
     this.cv = document.createElement("canvas");
     this.cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block";
     conteneur.appendChild(this.cv);
     this.ctx = this.cv.getContext("2d")!;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Résolution : 1,5 au plus sur iPhone, 2 ailleurs
+    this.dpr = dprCible(2);
+    this.perf = new GestionnairePerf({
+      nom: "jeu-" + def.id,
+      niveauInitial: 2,
+      surPause: (raison) => {
+        // Arrière-plan, verrouillage : la partie se met en pause ET l'écran de pause s'affiche
+        // (avant, le moteur se figeait sans que l'interface le sache : jeu « bloqué »).
+        if (this.jeu && !this.pause) { this.setPause(true); this.rappels.interruption?.(raison); }
+        this.sons.endormir();
+      },
+      surReprise: () => {
+        // Au retour, iOS a pu vider la mémoire du canvas : on la réalloue et on redessine.
+        this.redim();
+        this.dernier = performance.now();
+      },
+      surSauvegarde: (raison) => this.rappels.sauvegarde?.(raison),
+      surQualite: (niveau) => {
+        // Niveau bas : résolution 1 ; le mode 30 i/s est appliqué par le gestionnaire.
+        const d = niveau >= 2 ? dprCible(2) : niveau === 1 ? Math.min(dprCible(2), 1.25) : 1;
+        if (d !== this.dpr) { this.dpr = d; this.redim(); }
+      },
+    });
     this.obs = new ResizeObserver(() => this.redim());
     this.obs.observe(conteneur);
     this.redim();
-    this.cv.addEventListener("pointerdown", this.pd);
-    window.addEventListener("pointermove", this.pm);
-    window.addEventListener("pointerup", this.pu);
-    document.addEventListener("visibilitychange", this.vis);
+    this.perf.ecouter(this.cv, "pointerdown", this.pd);
+    this.perf.ecouter(window, "pointermove", this.pm);
+    this.perf.ecouter(window, "pointerup", this.pu);
+    this.perf.ecouter(window, "pointercancel", this.pc);
+    // Canvas 2D : certains navigateurs signalent la perte de sa mémoire
+    this.perf.ecouter(this.cv, "contextlost", () => journal("canvas2d-perdu", def.id));
+    this.perf.ecouter(this.cv, "contextrestored", () => { journal("canvas2d-restaure", def.id); this.redim(); });
     this.dernier = performance.now();
-    this.boucle();
+    this.perf.boucle(this.boucle);
   }
 
   private rnd = () => { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; return this.seed / 4294967296; };
@@ -248,24 +295,41 @@ export class Moteur2D {
   }
   arreter() { this.jeu = null; }
   setPause(p: boolean) { this.pause = p; this.dernier = performance.now(); }
+  get enPause() { return this.pause; }
+  get partieEnCours() { return !!this.jeu; }
+  /** Photo de la partie en cours (si le jeu sait la prendre). */
+  instantane(): unknown { try { return this.jeu?.instantane?.() ?? null; } catch (e) { console.error(e); return null; } }
+  /** Reprend une partie photographiée ; renvoie false si le jeu ne sait pas la reprendre. */
+  restaurer(etat: unknown): boolean {
+    if (!this.jeu?.restaurer || etat == null) return false;
+    try { this.jeu.restaurer(etat); return true; } catch (e) { console.error(e); return false; }
+  }
 
   private redim() {
     const r = this.conteneur.getBoundingClientRect();
-    this.L = Math.max(1, r.width); this.H = Math.max(1, r.height);
-    this.cv.width = Math.round(this.L * this.dpr); this.cv.height = Math.round(this.H * this.dpr);
-    this.jeu?.redim?.(this.L, this.H);
+    const L = Math.max(1, r.width), H = Math.max(1, r.height);
+    const w = Math.round(L * this.dpr), h = Math.round(H * this.dpr);
+    const change = L !== this.L || H !== this.H;
+    this.L = L; this.H = H;
+    // Réaffecter width/height recrée la mémoire du canvas (utile après un retour d'arrière-plan)
+    this.cv.width = w; this.cv.height = h;
+    if (change) this.jeu?.redim?.(this.L, this.H);
   }
   private pos(e: PointerEvent) { const r = this.cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const; }
   private appui = false;
   private pd = (e: PointerEvent) => { this.sons.reveiller(); if (this.pause) return; this.appui = true; const [x, y] = this.pos(e); this.jeu?.down?.(x, y); };
   private pm = (e: PointerEvent) => { if (this.pause || !this.appui) return; const [x, y] = this.pos(e); this.jeu?.move?.(x, y); };
   private pu = (e: PointerEvent) => { if (!this.appui) return; this.appui = false; if (this.pause) return; const [x, y] = this.pos(e); this.jeu?.up?.(x, y); };
-  private vis = () => { if (document.hidden) this.setPause(true); };
+  // Geste annulé par le système (centre de contrôle, appel…) : on relâche proprement
+  private pc = (e: PointerEvent) => { this.pu(e); };
 
-  private boucle = () => {
-    this.raf = requestAnimationFrame(this.boucle);
-    const now = performance.now();
-    const dt = Math.min(0.05, (now - this.dernier) / 1000);
+  private boucle = (now: number) => {
+    // Hors partie ou en pause, le décor n'a pas besoin de 60 images par seconde
+    if ((!this.jeu || this.pause) && this.fx.parts.length === 0) {
+      if (++this.redessin % 3 !== 0) return;
+    }
+    now = performance.now();
+    const dt = Math.max(0, Math.min(0.05, (now - this.dernier) / 1000));
     this.dernier = now;
     if (!this.pause) { this.temps += dt; this.jeu?.maj(dt); this.fx.maj(dt); }
     const ctx = this.ctx;
@@ -323,14 +387,17 @@ export class Moteur2D {
   }
 
   detruire() {
-    cancelAnimationFrame(this.raf);
+    this.perf.detruire();          // boucle, écouteurs et minuteries : tout est arrêté
     this.obs.disconnect();
-    this.cv.removeEventListener("pointerdown", this.pd);
-    window.removeEventListener("pointermove", this.pm);
-    window.removeEventListener("pointerup", this.pu);
-    document.removeEventListener("visibilitychange", this.vis);
+    this.jeu = null;
+    this.fx = new Effets();
     this.sons.detruire();
-    this.cv.remove();
+    libererCanvas(this.cv);        // iOS : rend la mémoire du canvas tout de suite
+    // Images propres à ce jeu (fond aquarelle, images spéciales, photos) : libérées en partant.
+    // Les visuels de fruits communs à presque tous les jeux restent en cache.
+    const propres = ["fond:" + this.def.id, ...Object.keys(this.def.images || {})];
+    if (this.def.visuels === "photos") for (const p of PHOTOS) propres.push("photo:" + p.id);
+    libererImages(propres);
   }
 }
 

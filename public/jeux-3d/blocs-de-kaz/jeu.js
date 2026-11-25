@@ -71,6 +71,7 @@ const texBloc = texPlanches('#ffffff', [1, 1]);
 const materiaux = TEINTES.map(t => new THREE.MeshPhysicalMaterial({ map: texBloc, color: t, roughness: 0.7, clearcoat: 0.5, clearcoatRoughness: 0.3 }));
 function bloc(teinte) { const m = new THREE.Mesh(geoBloc, materiaux[teinte]); m.castShadow = m.receiveShadow = true; return m; }
 const matFantome = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false });
+matFantome.userData.garder = true; // réutilisée à chaque glissement : jamais libérée par le ramasse-miettes
 
 // ---------- État ----------
 const centreCase = (c, r) => new THREE.Vector3((c - (N - 1) / 2) * CASE, 0, (r - (N - 1) / 2) * CASE);
@@ -135,10 +136,11 @@ function poseQuelquePart(forme) {
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (peutPoser(forme, c, r)) return true;
   return false;
 }
-function creerPiece(i) {
+function creerPiece(i, impose) {
   let forme;
-  for (let k = 0; k < 25; k++) { forme = choisir(FORMES); if (poseQuelquePart(forme)) break; }
-  const teinte = Math.floor(Math.random() * TEINTES.length);
+  if (impose) forme = FORMES[impose.f];
+  else for (let k = 0; k < 25; k++) { forme = choisir(FORMES); if (poseQuelquePart(forme)) break; }
+  const teinte = impose ? impose.t : Math.floor(Math.random() * TEINTES.length);
   const g = new THREE.Group();
   const lx = Math.max(...forme.map(f => f[0])), lz = Math.max(...forme.map(f => f[1]));
   for (const [x, z] of forme) { const b = bloc(teinte); b.position.set((x - lx / 2) * CASE, 0, (z - lz / 2) * CASE); g.add(b); }
@@ -148,7 +150,7 @@ function creerPiece(i) {
   anime(0.35, t => g.scale.setScalar(0.7 * t), ease.rebond);
   return { forme, teinte, g, lx, lz, utilisee: false };
 }
-function nouvellesPieces() { pieces = [0, 1, 2].map(creerPiece); }
+function nouvellesPieces() { pieces = [0, 1, 2].map(i => creerPiece(i)); }
 
 // ---------- Glisser-déposer ----------
 let prise = null;
@@ -203,7 +205,34 @@ canvas.addEventListener('pointerup', async () => {
   await verifierLignes();
   if (pieces.every(q => q.utilisee)) nouvellesPieces();
   if (!pieces.some(q => !q.utilisee && poseQuelquePart(q.forme))) finPartie();
+  else sauverPartie();
 });
+
+// ---------- Sauvegarde de la partie en cours (reprise après une interruption) ----------
+function sauverPartie() {
+  if (fini) return;
+  const cases = [];
+  grille.forEach((l, r) => l.forEach((b, c) => { if (b) cases.push([r, c, materiaux.indexOf(b.material)]); }));
+  stock.ecrire('blocs-partie', {
+    cases, score, serie, lignesTotal, numeroKaz, etape: maKaz ? maKaz.etape : 0,
+    pieces: pieces.map(p => ({ f: FORMES.indexOf(p.forme), t: p.teinte, u: p.utilisee })), t: Date.now(),
+  });
+}
+function restaurerPartie(e) {
+  try {
+    score = e.score | 0; serie = e.serie | 0; lignesTotal = e.lignesTotal | 0; numeroKaz = Math.max(1, e.numeroKaz | 0);
+    for (const [r, c, t] of e.cases) { const b = bloc(Math.max(0, t)); b.position.copy(centreCase(c, r)); scene.add(b); grille[r][c] = b; }
+    pieces.forEach(p => scene.remove(p.g));
+    pieces = e.pieces.map((q, i) => { const p = creerPiece(i, q); if (q.u) { p.utilisee = true; scene.remove(p.g); } return p; });
+    if (pieces.every(q => q.utilisee)) nouvellesPieces();
+    nouvelleKaz();
+    maKaz.etape = Math.min(ETAPES, e.etape | 0);
+    const visibles = Math.ceil((maKaz.morceaux.length - 1) * maKaz.etape / ETAPES) + 1;
+    maKaz.morceaux.forEach((m, i) => { m.visible = i < visibles; });
+    ui.maj('score', score); ui.maj('kaz', numeroKaz - 1);
+    return true;
+  } catch (er) { console.warn('partie illisible', er); nouvellePartie(); return false; }
+}
 
 async function verifierLignes() {
   const lignes = [], colonnes = [];
@@ -235,6 +264,7 @@ async function verifierLignes() {
 
 async function finPartie() {
   fini = true;
+  stock.ecrire('blocs-partie', null);
   if (score > meilleur) { meilleur = score; stock.ecrire('blocs-meilleur', meilleur); }
   son.erreur();
   const r = await ui.ecran({ titre: 'Plus de place !', sousTitre: `Score : ${score}`, texte: `Kaz construites : ${numeroKaz - 1}. Meilleur score : ${meilleur}.`, boutons: [{ id: 'ok', texte: 'Rejouer' }] });
@@ -256,8 +286,11 @@ ui.stat('kaz', 'Kaz', 0);
 ui.stat('record', 'Record', meilleur);
 son.ambiance('foret');
 nouvellePartie();
+const partieSauvee = stock.lire('blocs-partie', null);
+if (partieSauvee && partieSauvee.cases && Date.now() - (partieSauvee.t || 0) < 7 * 24 * 3600e3) restaurerPartie(partieSauvee);
 ui.chargementFini();
-ui.ecran({
+if (partieSauvee && partieSauvee.cases) ui.bulle('Ta partie reprend où tu l’avais laissée');
+else ui.ecran({
   titre: 'Blocs de kaz', sousTitre: 'Construis des kaz créoles, ligne après ligne',
   texte: 'Fais glisser les pièces sur la varangue. Une ligne ou une colonne pleine disparaît et fait avancer la construction de la kaz : soubassement, murs, toit en tôle, lambrequins, contrevents…',
   info: 'La kaz créole réunionnaise se reconnaît à sa toiture en tôle, à sa varangue (la véranda) et à ses lambrequins, ces frises de bois découpé qui ornent le bord du toit.',

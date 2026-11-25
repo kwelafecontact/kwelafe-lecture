@@ -31,6 +31,18 @@ class DeuxMille implements Jeu {
     const [c, r] = libres[Math.floor(this.c.rnd() * libres.length)];
     this.tuiles.push({ k: this.c.rnd() < 0.85 ? 0 : 1, c, r, x: c, y: r, s: 0, id: this.ids++ });
   }
+  // Reprise après interruption
+  instantane() {
+    if (this.fini) return null;
+    return { v: 1, score: this.score, tuiles: this.tuiles.filter((t) => t.k >= 0).map((t) => ({ k: t.k, c: t.c, r: t.r })) };
+  }
+  restaurer(e: unknown) {
+    const d = e as { v?: number; score: number; tuiles: { k: number; c: number; r: number }[] };
+    if (!d || d.v !== 1 || !Array.isArray(d.tuiles)) return;
+    this.score = d.score || 0;
+    this.tuiles = d.tuiles.map((t) => ({ k: t.k, c: t.c, r: t.r, x: t.c, y: t.r, s: 1, id: this.ids++ }));
+    this.c.hud({ score: this.score });
+  }
   down(x: number, y: number) { this.depart = { x, y }; }
   up(x: number, y: number) {
     if (!this.depart || this.fini) return;

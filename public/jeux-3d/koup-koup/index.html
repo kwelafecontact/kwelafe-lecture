@@ -103,6 +103,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from './lib/GLTFLoader.js';
 import { RoomEnvironment } from './lib/RoomEnvironment.js';
 import { MeshoptDecoder } from './lib/meshopt_decoder.module.js';
+import { GestionnairePerf, dprCible, appareil, afficherSecours, reveillerAudio, endormirAudio, journal, libererCanvas } from '../commun/performances.js';
 
 {
 const $ = id => document.getElementById(id);
@@ -111,20 +112,37 @@ const TEST = new URLSearchParams(location.search).has('test');
 // Qualité : 2 = haute, 1 = moyenne, 0 = basse. Baisse toute seule si le jeu ralentit.
 let QUALITE = (() => {
   const f = new URLSearchParams(location.search).get('qualite'); if (f !== null) return Math.max(0, Math.min(2, +f));
-  const c = navigator.hardwareConcurrency || 4; return c >= 6 ? 2 : c >= 4 ? 1 : 0;
+  const c = navigator.hardwareConcurrency || 4; const q = c >= 6 ? 2 : c >= 4 ? 1 : 0;
+  return appareil.iphone ? Math.min(q, 1) : q; // iPhone : on démarre en qualité moyenne
 })();
+// Mémoire : les 32 modèles d'origine (textures 1024 px) demandaient plus de 1 Go de mémoire graphique
+// une fois tous chargés, ce qui faisait planter Safari sur iPhone (écran noir puis rechargement).
+// Sur téléphone et tablette : modèles aux textures 512 px et nombre de fruits chargés limité,
+// renouvelés pendant la partie pour garder toute la variété.
+const MOBILE = appareil.ios || appareil.tactile;
+const PARAMS = new URLSearchParams(location.search);
+const DOSSIER_MODELES = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? './models/mobile/' : './models/';
+const MAX_CHARGES = +PARAMS.get('max') || (appareil.iphone ? 10 : MOBILE ? 14 : 20);
+const PROTEGES = new Set(['mangue', 'letchi']); // menu et letchi doré
+const ratioRendu = () => Math.min(dprCible(2), [1, 1.4, 1.75][QUALITE]);
 const qx = () => [0.45, 0.75, 1][QUALITE];
 
 // ---------------------------------------------------------------- rendu
 const glc = $('gl');
 const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true, alpha: true, preserveDrawingBuffer: TEST });
-renderer.setPixelRatio(Math.min(devicePixelRatio, [1, 1.4, 1.75][QUALITE]));
+renderer.setPixelRatio(ratioRendu());
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+function construireEnvironnement() {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const ancien = scene.environment;
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  if (ancien) ancien.dispose();
+  pmrem.dispose();
+}
+construireEnvironnement();
 scene.environmentIntensity = 0.8;
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
 camera.position.set(0, 0, 14);
@@ -141,7 +159,7 @@ const couche = document.createElement('canvas'), cctx = couche.getContext('2d');
 const coucheVitre = document.createElement('canvas'), cvctx = coucheVitre.getContext('2d');
 function resize() {
   W = innerWidth; H = innerHeight;
-  const dpr = Math.min(devicePixelRatio, 2);
+  const dpr = dprCible(2); // 1,5 au plus sur iPhone : 7 calques plein écran
   for (const c of [fond, taches, trace, vitre, couche, coucheVitre, fanions]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
@@ -206,7 +224,7 @@ function dessinerFanions(t) {
 let actx = null, maitre = null, bruit = null, filtreRalenti = null, sonCoupe = false;
 try { sonCoupe = localStorage.getItem('koupkoup_son') === 'non'; } catch (e) {}
 function audio() {
-  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  if (actx) { reveillerAudio(actx); return; } // iOS : « suspended » ou « interrupted »
   try {
     actx = new (window.AudioContext || window.webkitAudioContext)();
     // chaîne : sons -> maître -> filtre (ralenti) -> compresseur -> haut-parleurs
@@ -305,13 +323,26 @@ function preparer(d, g) {
   const k = taille / maxd;
   const make = name => { const o = g.scene.getObjectByName(name).clone(); o.position.sub(center); const w = new THREE.Group(); const s = new THREE.Group(); s.scale.setScalar(k); s.add(o); w.add(s); return w; };
   const rayon = Math.max(0.5 * taille * 0.9, 0.5);
-  return { d, entier: make('entier'), A: make('moitie_A'), B: make('moitie_B'), rayon, jus: new THREE.Color(d.couleur_jus) };
+  return { d, gltf: g.scene, entier: make('entier'), A: make('moitie_A'), B: make('moitie_B'), rayon, jus: new THREE.Color(d.couleur_jus), charge: performance.now() };
 }
 async function charger(d) {
   if (cache[d.id]) return cache[d.id];
-  const g = await loader.loadAsync('./models/' + (d.fichier_web || d.fichier));
+  const g = await loader.loadAsync(DOSSIER_MODELES + (d.fichier_web || d.fichier));
   return (cache[d.id] = preparer(d, g));
 }
+/** Libère un fruit chargé (géométries, matières, textures) quand on fait de la place. */
+function oublier(f) {
+  delete cache[f.d.id];
+  const i = prets.indexOf(f); if (i >= 0) prets.splice(i, 1);
+  const textures = new Set();
+  const vider = racine => racine.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) { for (const v of Object.values(o.material)) if (v && v.isTexture) textures.add(v); o.material.dispose(); }
+  });
+  [f.gltf, f.entier, f.A, f.B].forEach(vider);
+  textures.forEach(t => { t.dispose(); if (t.image && t.image.close) t.image.close(); });
+}
+const enVol = f => objets.some(o => o.vivant && o.fruit === f) || moities.some(m => m.fruit === f);
 
 // ---------------------------------------------------------------- roche du volcan (à ne pas couper)
 function rocheTexture() {
@@ -704,7 +735,7 @@ function couper(o, dir, precision = 1) {
     if (o.or) dorer(m);
     const cap = n.clone().multiplyScalar(-sgn);
     const axe = dir.clone(); const sens = Math.sign(new THREE.Vector3().crossVectors(axe, cap).z) || 1;
-    moities.push({ jus: o.or ? new THREE.Color(0xffd23a) : f.jus, obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4 });
+    moities.push({ fruit: f, jus: o.or ? new THREE.Color(0xffd23a) : f.jus, obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4 });
   }
   const jus = o.or ? new THREE.Color(0xffd23a) : f.jus;
   giclee(pos, dir, jus, o.or ? 60 : 34, f.d.id);
@@ -755,10 +786,12 @@ function menuMangue() {
   mangueMenu = lancer(m, { menu: true, y: W < H ? -0.9 : -0.9 });
   mangueMenu.obj.scale.setScalar(1.8); mangueMenu.rayon *= 1.8;
 }
-function demarrer() {
+function demarrer(reprise) {
   if (etat === 'jeu') return;
   audio();
   etat = 'jeu'; score = 0; vies = 3; temps = 0; niveau = 0; prochainLancer = 1.0;
+  if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; }
+  masquerReprise();
   majScore(); majVies();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
   $('lien').classList.add('discret');
@@ -766,6 +799,7 @@ function demarrer() {
 }
 function finPartie() {
   etat = 'fin'; ralentiOr = 0;
+  try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {}
   if (score > record) { record = score; try { localStorage.setItem('koupkoup_record', record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
   setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue(); }, 1200);
@@ -871,29 +905,75 @@ function vague() {
   prochainLancer = Math.max(0.9, 2.4 - niveau * 0.13) + rnd(0, 0.6);
 }
 
-// ---------------------------------------------------------------- qualité automatique
-let ipsCumul = 0, ipsImages = 0;
-function surveillerFluidite(dt) {
-  ipsCumul += dt; ipsImages++;
-  if (ipsCumul > 3) {
-    const ips = ipsImages / ipsCumul;
-    if (ips < 40 && QUALITE > 0) { QUALITE--; renderer.setPixelRatio(Math.min(devicePixelRatio, [1, 1.4, 1.75][QUALITE])); resize(); }
-    ipsCumul = 0; ipsImages = 0;
-  }
+// ---------------------------------------------------------------- gestionnaire de performances commun
+// Qualité par paliers puis mode 30 i/s, arrêt complet en arrière-plan, perte de contexte WebGL,
+// sauvegarde de la partie en cours (score, vies, temps) pour la reprendre après une interruption.
+let contextePerdu = false, pauseAuto = false;
+function sauverPartie() {
+  if (etat !== 'jeu') return;
+  try { localStorage.setItem('koupkoup2_partie', JSON.stringify({ score, vies, temps, t: Date.now() })); } catch (e) {}
+}
+const perf = new GestionnairePerf({
+  nom: 'koup-koup-2',
+  niveauInitial: QUALITE,
+  surPause: () => {
+    endormirAudio(actx);
+    if (etat === 'jeu') { pauseAuto = true; sauverPartie(); }
+  },
+  surReprise: () => {
+    horloge.getDelta(); // le temps passé en arrière-plan ne compte pas
+    resize();
+    if (pauseAuto) afficherPause();
+  },
+  surSauvegarde: sauverPartie,
+  surQualite: (niveau) => { if (niveau < QUALITE) { QUALITE = niveau; renderer.setPixelRatio(ratioRendu()); resize(); } },
+});
+perf.surveillerContexte(glc, {
+  perdu: () => { contextePerdu = true; if (etat === 'jeu') { pauseAuto = true; sauverPartie(); } },
+  restaure: () => {
+    contextePerdu = false;
+    construireEnvironnement();
+    if (rocheMat.emissiveMap) rocheMat.emissiveMap.needsUpdate = true;
+    resize();
+    if (pauseAuto) afficherPause();
+  },
+  secours: () => afficherSecours({
+    texte: "L'iPhone a libéré la mémoire graphique pendant la pause. Ton score est enregistré : tu pourras reprendre ta partie.",
+    action: () => location.reload(), // seul le jeu est relancé, à la demande du joueur
+  }),
+});
+// Pause au retour d'arrière-plan : la partie ne repart que quand le joueur touche l'écran
+function afficherPause() {
+  if ($('pauseAuto')) return;
+  const v = document.createElement('div'); v.id = 'pauseAuto';
+  v.style.cssText = 'position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(20,10,2,.55);text-align:center;touch-action:none';
+  v.innerHTML = '<div class="titre" style="font-size:clamp(44px,11vw,80px)">Pause</div><div class="sous">Touche l\'écran pour reprendre</div>';
+  v.addEventListener('pointerup', e => { e.stopPropagation(); pauseAuto = false; horloge.getDelta(); v.remove(); audio(); });
+  document.body.appendChild(v);
+}
+// Reprise d'une partie interrompue (rechargement, arrêt de l'onglet par iOS)
+let partieSauvee = null;
+try { const p = JSON.parse(localStorage.getItem('koupkoup2_partie') || 'null'); if (p && Date.now() - p.t < 48 * 3600e3 && p.vies > 0) partieSauvee = p; } catch (e) {}
+function masquerReprise() { const b = $('reprendre'); if (b) b.remove(); partieSauvee = null; }
+if (partieSauvee) {
+  const b = document.createElement('button'); b.id = 'reprendre'; b.className = 'btn zone-interactive';
+  b.textContent = `Reprendre ma partie (${partieSauvee.score} pts)`;
+  b.onclick = () => { const p = partieSauvee; masquerReprise(); demarrer(p); };
+  $('jouer').after(b);
 }
 
 // ---------------------------------------------------------------- boucle
 const horloge = new THREE.Clock();
 const fumee = new THREE.Color(0xff8a1e);
 function boucle() {
-  const vrai = Math.min(horloge.getDelta(), 0.05);
+  if (contextePerdu) return;
+  const vrai = pauseAuto ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
   if (ralenti > 0) ralenti -= vrai;
   if (ralentiOr > 0) ralentiOr -= vrai;
   let dt = vrai * (ralenti > 0 ? (ralentiOr > 0 ? 0.35 : 0.3) : 1);
   if (arret > 0) { arret -= vrai; dt = 0; }        // pause d'impact
   document.body.classList.toggle('ralenti-or', ralentiOr > 0);
   if (filtreRalenti) filtreRalenti.frequency.setTargetAtTime(ralentiOr > 0 ? 900 : 20000, actx.currentTime, 0.15);
-  surveillerFluidite(vrai);
   $('dore').style.opacity = ralentiOr > 0 ? Math.min(1, ralentiOr * 2) : 0;
   $('barreOr').style.opacity = ralentiOr > 0 ? 1 : 0;
   if (ralentiOr > 0) $('barreOr').firstElementChild.style.width = (ralentiOr / 4 * 100) + '%';
@@ -930,7 +1010,6 @@ function boucle() {
 
   renderer.render(scene, camera);
   majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai); dessinerFanions(performance.now() / 1000);
-  requestAnimationFrame(boucle);
 }
 
 // ---------------------------------------------------------------- démarrage
@@ -939,9 +1018,8 @@ $('btnSon').onclick = () => {
   sonCoupe = !sonCoupe; try { localStorage.setItem('koupkoup_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
   if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
 };
-$('jouer').onclick = () => { audio(); demarrer(); };
+$('jouer').onclick = () => { audio(); masquerReprise(); try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {} demarrer(); };
 $('rejouer').onclick = () => { audio(); demarrer(); };
-document.addEventListener('visibilitychange', () => { if (document.hidden) horloge.getDelta(); });
 // touchers : ne pas laisser passer aux couches inférieures
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function(event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
 
@@ -952,25 +1030,66 @@ document.querySelectorAll('.zone-interactive').forEach(element => { element.addE
   catalogue.sort((a, b) => (premiers.indexOf(b.id) >= 0) - (premiers.indexOf(a.id) >= 0) || Math.random() - 0.5);
   let fait = 0;
   const majCharge = () => { $('charge').textContent = fait < catalogue.length ? `Chargement des fruits… ${fait}/${catalogue.length}` : ''; };
-  const file = catalogue.slice();
+  // Seuls MAX_CHARGES fruits sont en mémoire ; les autres attendent leur tour (réserve)
+  const file = catalogue.slice(0, MAX_CHARGES);
+  reserve = catalogue.slice(MAX_CHARGES);
+  const total = file.length;
+  const majCharge2 = () => { $('charge').textContent = fait < total ? `Chargement des fruits… ${fait}/${total}` : ''; };
   async function ouvrier() {
     while (file.length) {
       const d = file.shift();
       try { prets.push(await charger(d)); } catch (e) { console.warn('fruit non chargé', d.id, e); }
-      fait++; majCharge();
+      fait++; majCharge2();
       if (d.id === 'mangue' && etat === 'menu') menuMangue();
     }
   }
-  majCharge();
+  majCharge2();
   await Promise.all([ouvrier(), ouvrier(), ouvrier()]);
   window.PRET = true;
+  journal('koupkoup2', `modèles ${DOSSIER_MODELES} · ${prets.length} chargés · ${reserve.length} en réserve`);
+  // Renouvellement : toutes les 20 s, un fruit de la réserve remplace le plus ancien
+  perf.intervalle(renouveler, 4000);
 })();
-boucle();
+let reserve = [], tempsRenouvellement = 0, renouvellementEnCours = false;
+async function renouveler() {
+  if (renouvellementEnCours || !reserve.length || !perf.actif || contextePerdu) return;
+  const maintenant = performance.now() / 1000; // (l'intervalle ne tourne pas en arrière-plan : perf.actif)
+  if (maintenant - tempsRenouvellement < 20) return;
+  tempsRenouvellement = maintenant;
+  if (!prets.some(f => !PROTEGES.has(f.d.id) && !enVol(f))) return;
+  renouvellementEnCours = true;
+  const d = reserve.shift();
+  try {
+    const nouveau = await charger(d);
+    const ancien = prets.filter(f => !PROTEGES.has(f.d.id) && !enVol(f)).sort((a, b) => a.charge - b.charge)[0];
+    if (ancien) { oublier(ancien); reserve.push(ancien.d); }
+    prets.push(nouveau);
+  } catch (e) { console.warn('fruit non chargé', d.id, e); reserve.push(d); }
+  renouvellementEnCours = false;
+}
+// Libération complète (appelée par le site avant de quitter le jeu, et à la fermeture de la page)
+let libere = false;
+function liberer() {
+  if (libere) return; libere = true;
+  perf.detruire();
+  [...prets].forEach(oublier);
+  scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+  if (rocheMat.emissiveMap) rocheMat.emissiveMap.dispose();
+  if (scene.environment) scene.environment.dispose();
+  renderer.dispose(); renderer.forceContextLoss();
+  [fond, taches, trace, vitre, couche, coucheVitre, fanions].forEach(libererCanvas);
+  if (actx) { try { actx.close(); } catch (e) {} }
+  journal('liberation', 'koup-koup-2');
+}
+window.kwelafeLiberer = liberer;
+window.kwelafeInfo = () => ({ ...renderer.info.memory, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
+addEventListener('pagehide', e => { if (!e.persisted) liberer(); });
+perf.boucle(boucle);
 
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait };
+  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf };
 }
 }
 </script>
