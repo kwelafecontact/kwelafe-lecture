@@ -20,9 +20,14 @@ export default function ImportLot({ dejaImportes, produitsImportes }: { dejaImpo
   const [enCours, setEnCours] = useState(false);
 
   const trouves = useMemo(() => lot.filter((e) => fichiers.has(e.fichier)), [fichiers]);
-  const deja = new Set(dejaImportes.map(cle));
-  const produitsDeja = new Set(produitsImportes.flatMap((p) => p.split(",")).map((p) => p.trim().split("/").pop()));
-  const estDeja = (l: Entree) => deja.has(cle(l.titre)) || l.produits.slice(0, 2).some((p) => produitsDeja.has(p));
+  // Un même livre peut exister en PDF et en EPUB : on ne saute que s'il est déjà là dans le même format
+  const formatFichier = (nom: string) => (/\.pdf$/i.test(nom) ? "pdf" : /\.zip$/i.test(nom) ? "interactif" : "epub");
+  const deja = new Set(dejaImportes.map((x) => { const [f, ...t] = x.split("|"); return `${f}|${cle(t.join("|"))}`; }));
+  const produitsDeja = new Set(produitsImportes.flatMap((x) => { const [f, p] = x.split("|"); return (p || "").split(",").filter(Boolean).map((id) => `${f}|${id.trim().split("/").pop()}`); }));
+  const estDeja = (l: Entree) => {
+    const f = formatFichier(l.fichier);
+    return deja.has(`${f}|${cle(l.titre)}`) || l.produits.slice(0, 2).some((p) => produitsDeja.has(`${f}|${p}`));
+  };
 
   function choisir(liste: FileList | null) {
     const m = new Map<string, File>(fichiers); // on ajoute aux fichiers déjà choisis

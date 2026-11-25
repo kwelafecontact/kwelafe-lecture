@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Manifeste } from "@/lib/donnees";
 
+type Marque = { i: number; f: number; titre: string; le: string };
+
 type Props = {
   livre: { id: string; slug: string; titre: string; manifeste: Exclude<Manifeste, { type: "web" }> };
   jetonInitial: string;
@@ -41,7 +43,21 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   const [debutChapitre, setDebutChapitre] = useState<number | "fin">(positionInitiale.f || 0);
   const [etatTexte, setEtatTexte] = useState({ page: 0, pages: 1 });
   const [barre, setBarre] = useState(true);
-  const [panneau, setPanneau] = useState<null | "sommaire" | "aa">(null);
+  const [panneau, setPanneau] = useState<null | "menu" | "aa">(null);
+  const [ongletMenu, setOngletMenu] = useState<"sommaire" | "pages" | "marques">("sommaire");
+  const [marques, setMarques] = useState<Marque[]>([]);
+  const [lumiere, setLumiere] = useState(1);
+  const [chaud, setChaud] = useState(0);
+  const [nuitPages, setNuitPages] = useState(false);
+  const [diaporama, setDiaporama] = useState(0);
+  const [rappel, setRappel] = useState(0);
+  const [pause, setPause] = useState(false);
+  const [pleinEcran, setPleinEcran] = useState(false);
+  const [toast, setToast] = useState("");
+  const [allerVers, setAllerVers] = useState("");
+  const [secondes, setSecondes] = useState(0);
+  const tours = useRef({ n: 0, depuis: Date.now() });
+  const raccourcis = useRef({ marque: () => {}, plein: () => {} });
   const [taille, setTaille] = useState(115);
   const [theme, setTheme] = useState<Theme>("clair");
   const [zoom, setZoom] = useState(false);
@@ -56,6 +72,10 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     window.addEventListener("resize", maj);
     setTaille(lirePref("kw_taille", 115));
     setTheme(lirePref<Theme>("kw_theme", "clair"));
+    setLumiere(lirePref("kw_lumiere", 1));
+    setChaud(lirePref("kw_chaud", 0));
+    setNuitPages(lirePref("kw_nuit_pages", false));
+    setRappel(lirePref("kw_rappel", 0));
     return () => window.removeEventListener("resize", maj);
   }, []);
 
@@ -89,9 +109,11 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     setI(double && premier > 1 ? premier - 2 : premier - 1);
   }, [mode, affichees, double]);
 
-  const allerA = (index: number) => {
+  const allerA = (index: number, fractionChapitre = 0) => {
     setFin(false);
-    setDebutChapitre(0);
+    // Même chapitre en mode texte : on demande simplement à la page de se placer
+    if (mode === "texte" && index === i) { envoyerAuCadre({ cmd: "fraction", f: fractionChapitre }); setPanneau(null); return; }
+    setDebutChapitre(fractionChapitre);
     setI(Math.min(Math.max(0, index), total - 1));
     setPanneau(null);
   };
@@ -135,12 +157,17 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [affichees, toucher, suivant, precedent, i, total]);
 
+  /* ---------- Rythme de lecture (pour estimer le temps restant) ---------- */
+  useEffect(() => { tours.current.n++; }, [i, etatTexte.page]);
+
   /* ---------- Clavier ---------- */
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") suivant();
       if (e.key === "ArrowLeft") precedent();
       if (e.key === "Escape") setPanneau(null);
+      if (e.key === "b" || e.key === "B") raccourcis.current.marque();
+      if (e.key === "f" || e.key === "F") raccourcis.current.plein();
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -168,18 +195,30 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     mode === "texte"
       ? ((i + (etatTexte.pages > 1 ? (etatTexte.page + 1) / etatTexte.pages : 1)) / total) * 100
       : ((affichees[affichees.length - 1] + 1) / total) * 100;
-  const aEnvoyer = useRef({ cle: "", corps: "" });
+  const aEnvoyer = useRef({ cle: "", corps: "", secondes: 0 });
   aEnvoyer.current.corps = JSON.stringify({ livre: livre.id, position: { i, f: fraction }, pourcentage: fin ? 100 : pourcentage });
+
+  /* ---------- Temps de lecture : compté seulement quand l'écran est visible ---------- */
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      aEnvoyer.current.secondes++;
+      setSecondes((x) => x + 1);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     const envoyer = (beacon = false) => {
-      const corps = aEnvoyer.current.corps;
-      if (corps === aEnvoyer.current.cle) return;
-      aEnvoyer.current.cle = corps;
+      const sec = aEnvoyer.current.secondes;
+      if (aEnvoyer.current.corps === aEnvoyer.current.cle && sec < 5) return;
+      aEnvoyer.current.cle = aEnvoyer.current.corps;
+      aEnvoyer.current.secondes = 0;
+      const corps = JSON.stringify({ ...JSON.parse(aEnvoyer.current.corps), secondes: sec });
       if (beacon && navigator.sendBeacon) navigator.sendBeacon("/api/progression", new Blob([corps], { type: "application/json" }));
       else fetch("/api/progression", { method: "POST", headers: { "Content-Type": "application/json" }, body: corps, keepalive: true }).catch(() => {});
     };
-    const t = setInterval(() => envoyer(), 10_000);
+    const t = setInterval(() => envoyer(), 20_000);
     const cacher = () => { if (document.visibilityState === "hidden") envoyer(true); };
     document.addEventListener("visibilitychange", cacher);
     window.addEventListener("pagehide", () => envoyer(true));
@@ -195,6 +234,63 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
       img.src = `/c/${jetonRef.current}/pdf/${p + 1}.${m.type === "pdf" ? m.ext || "webp" : "webp"}`;
     }
   }, [affichees, mode, total]);
+
+  /* ---------- Marque-pages (gardés sur le compte) ---------- */
+  useEffect(() => {
+    fetch(`/api/marques?livre=${livre.id}`).then((r) => (r.ok ? r.json() : { liste: [] })).then((j) => setMarques(j.liste || [])).catch(() => {});
+  }, [livre.id]);
+  const montrer = (t: string) => { setToast(t); setTimeout(() => setToast(""), 2200); };
+  const titrePosition = (index: number) => {
+    if (m.type === "epub") {
+      const chap = [...(m.sommaire || [])].reverse().find((x) => x.index <= index);
+      if (mode === "texte") return `${chap?.titre || m.pages[index]?.titre || `Chapitre ${index + 1}`} · page ${etatTexte.page + 1}`;
+      return `Page ${index + 1}${chap ? ` · ${chap.titre}` : ""}`;
+    }
+    return `Page ${index + 1}`;
+  };
+  const marqueIci = marques.findIndex((x) => x.i === i && (mode !== "texte" || Math.abs(x.f - fraction) < 0.02));
+  const enregistrerMarques = (liste: Marque[]) => {
+    setMarques(liste);
+    fetch("/api/marques", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ livre: livre.id, liste }) }).catch(() => {});
+  };
+  function basculerMarque() {
+    if (marqueIci >= 0) { enregistrerMarques(marques.filter((_, k) => k !== marqueIci)); montrer("Marque-page retiré"); }
+    else {
+      const liste = [...marques, { i, f: fraction, titre: titrePosition(i), le: new Date().toISOString() }].sort((a, b) => a.i - b.i || a.f - b.f);
+      enregistrerMarques(liste);
+      montrer("🔖 Marque-page ajouté");
+    }
+  }
+
+  /* ---------- Plein écran ---------- */
+  function basculerPleinEcran() {
+    const d: any = document;
+    if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+      const el: any = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+    } else (d.exitFullscreen || d.webkitExitFullscreen)?.call(d);
+  }
+  useEffect(() => {
+    const maj = () => setPleinEcran(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+    document.addEventListener("fullscreenchange", maj);
+    document.addEventListener("webkitfullscreenchange", maj);
+    return () => { document.removeEventListener("fullscreenchange", maj); document.removeEventListener("webkitfullscreenchange", maj); };
+  }, []);
+
+  /* ---------- Défilement automatique des pages ---------- */
+  useEffect(() => {
+    if (!diaporama || panneau || fin) return;
+    const t = setTimeout(() => suivant(), diaporama * 1000);
+    return () => clearTimeout(t);
+  }, [diaporama, i, etatTexte.page, panneau, fin, suivant]);
+
+  /* ---------- Rappel de pause ---------- */
+  useEffect(() => {
+    if (rappel && secondes > 0 && secondes % (rappel * 60) === 0) setPause(true);
+  }, [secondes, rappel]);
+
+  raccourcis.current = { marque: basculerMarque, plein: basculerPleinEcran };
+  const changerReglage = <T,>(cle: string, set: (v: T) => void) => (v: T) => { set(v); ecrirePref(cle, v); };
 
   /* ---------- Réglages du texte ---------- */
   const changerTaille = (delta: number) => {
@@ -259,8 +355,16 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
         ? `Pages ${affichees[0] + 1}-${affichees[1] + 1} sur ${total}`
         : `Page ${i + 1} sur ${total}`;
 
+  // Temps restant estimé : rythme réel de la séance, sinon environ 50 secondes par page
+  const pagesRestantes = mode === "texte" ? Math.max(0, (100 - pourcentage) / 100) * Math.max(total, 1) * 6 : Math.max(0, total - 1 - affichees[affichees.length - 1]);
+  const tempsParPage = tours.current.n >= 4 ? Math.min(240, Math.max(15, (Date.now() - tours.current.depuis) / 1000 / tours.current.n)) : 50;
+  const minutesRestantes = Math.round((pagesRestantes * tempsParPage) / 60);
+  const texteRestant = fin || pourcentage >= 99.5 ? "Terminé" : minutesRestantes < 1 ? "moins d'une minute" : minutesRestantes >= 60 ? `${Math.floor(minutesRestantes / 60)} h ${String(minutesRestantes % 60).padStart(2, "0")} restantes` : `${minutesRestantes} min restantes`;
+  const filtrePages = nuitPages && mode !== "texte" ? "invert(0.92) hue-rotate(180deg) brightness(0.95)" : undefined;
+  const fondFinal = nuitPages && mode !== "texte" ? "#121212" : fond;
+
   return (
-    <div className={`lecteur ${sombre ? "sombre" : ""}`} style={{ background: fond }}>
+    <div className={`lecteur ${sombre || (nuitPages && mode !== "texte") ? "sombre" : ""}`} style={{ background: fondFinal }}>
       {/* ----- Zone de lecture ----- */}
       <div
         className={`scene ${zoom ? "zoom" : ""}`}
@@ -281,7 +385,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
         )}
 
         {mode === "fixe" && m.type === "epub" && (
-          <div className="planche">
+          <div className="planche" style={{ filter: filtrePages }}>
             {affichees.map((p, k) => (
               <div key={p} className="feuille" style={{ width: larg * echelle, height: haut * echelle }}>
                 <iframe
@@ -297,7 +401,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
         )}
 
         {mode === "pdf" && (
-          <div className="planche">
+          <div className="planche" style={{ filter: filtrePages }}>
             {affichees.map((p) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -314,14 +418,20 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
 
         <div className="filigrane" aria-hidden>{email}</div>
       </div>
+      {chaud > 0 && <div className="calque-chaud" style={{ opacity: chaud * 0.35 }} aria-hidden />}
+      {lumiere < 1 && <div className="calque-lumiere" style={{ opacity: (1 - lumiere) * 0.85 }} aria-hidden />}
+      {marqueIci >= 0 && <div className="ruban-marque" aria-label="Page marquée">🔖</div>}
+      <div className={`progression-fine ${barre ? "cachee" : ""}`} aria-hidden><i style={{ width: `${Math.min(100, fin ? 100 : pourcentage)}%` }} /></div>
+      {toast && <div className="toast-lecteur" role="status">{toast}</div>}
 
       {/* ----- Barre du haut ----- */}
       <header className={`barre-haut ${barre ? "visible" : ""}`}>
         <Link href={`/livre/${livre.slug}`} className="bouton-rond" aria-label="Retour à ma bibliothèque">←</Link>
         <div className="titre-lecteur">{livre.titre}</div>
-        {sommaire.length > 0 ? (
-          <button className="bouton-rond" onClick={() => setPanneau(panneau === "sommaire" ? null : "sommaire")} aria-label="Sommaire">☰</button>
-        ) : <span style={{ width: 48 }} />}
+        <button className={`bouton-rond ${marqueIci >= 0 ? "actif" : ""}`} onClick={basculerMarque} aria-label={marqueIci >= 0 ? "Retirer le marque-page" : "Ajouter un marque-page"} title="Marque-page (B)">🔖</button>
+        <button className="bouton-rond" onClick={() => { setOngletMenu(sommaire.length ? "sommaire" : "pages"); setPanneau("menu"); }} aria-label="Sommaire, pages et marque-pages">☰</button>
+        <button className="bouton-rond" onClick={() => setPanneau("aa")} aria-label="Réglages de lecture">Aa</button>
+        <button className="bouton-rond cache-mobile" onClick={basculerPleinEcran} aria-label="Plein écran" title="Plein écran (F)">{pleinEcran ? "🗗" : "⛶"}</button>
       </header>
 
       {/* ----- Barre du bas ----- */}
@@ -340,42 +450,151 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
         </div>
         <div className="ligne-infos">
           <span>{libellePosition}{mode === "texte" && etatTexte.pages > 1 ? ` · page ${etatTexte.page + 1}/${etatTexte.pages}` : ""}</span>
-          {mode === "texte" && <button className="bouton-texte" onClick={() => setPanneau(panneau === "aa" ? null : "aa")}>Aa</button>}
-          {mode === "pdf" && <button className="bouton-texte" onClick={() => setZoom(!zoom)}>{zoom ? "Taille normale" : "🔍 Agrandir"}</button>}
+          <span className="pourcent">{Math.round(fin ? 100 : pourcentage)} % · ⏱ {texteRestant}</span>
+          <span className="outils-bas">
+            {diaporama > 0 && <button className="bouton-texte actif" onClick={() => setDiaporama(0)}>⏸ Arrêter</button>}
+            {mode === "pdf" && <button className="bouton-texte" onClick={() => setZoom(!zoom)}>{zoom ? "Taille normale" : "🔍 Agrandir"}</button>}
+          </span>
         </div>
       </footer>
 
       {/* ----- Panneaux ----- */}
-      {panneau === "sommaire" && (
+      {panneau === "menu" && (
         <div className="voile" onClick={() => setPanneau(null)}>
-          <div className="panneau-lecteur" onClick={(e) => e.stopPropagation()}>
-            <h2>Sommaire</h2>
-            <ul className="liste-sommaire">
-              {sommaire.map((s, k) => (
-                <li key={k}>
-                  <button className={s.index === i ? "actif" : ""} onClick={() => allerA(s.index)}>{s.titre}</button>
-                </li>
-              ))}
-            </ul>
+          <div className="panneau-lecteur large" onClick={(e) => e.stopPropagation()}>
+            <div className="onglets-lecteur" role="tablist">
+              {sommaire.length > 0 && <button role="tab" aria-selected={ongletMenu === "sommaire"} className={ongletMenu === "sommaire" ? "actif" : ""} onClick={() => setOngletMenu("sommaire")}>☰ Sommaire</button>}
+              {mode !== "texte" && <button role="tab" aria-selected={ongletMenu === "pages"} className={ongletMenu === "pages" ? "actif" : ""} onClick={() => setOngletMenu("pages")}>▦ Pages</button>}
+              <button role="tab" aria-selected={ongletMenu === "marques"} className={ongletMenu === "marques" ? "actif" : ""} onClick={() => setOngletMenu("marques")}>🔖 Marque-pages {marques.length > 0 && <small>{marques.length}</small>}</button>
+            </div>
+
+            {ongletMenu === "sommaire" && (
+              <ul className="liste-sommaire">
+                {sommaire.map((s, k) => {
+                  const suivantIdx = sommaire[k + 1]?.index ?? total;
+                  const ici = i >= s.index && i < suivantIdx;
+                  return (
+                    <li key={k}>
+                      <button className={ici ? "actif" : ""} onClick={() => allerA(s.index)}>
+                        <span>{s.titre}</span>{mode !== "texte" && <em>{s.index + 1}</em>}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {ongletMenu === "pages" && mode !== "texte" && (
+              <>
+                <form className="aller-page" onSubmit={(e) => { e.preventDefault(); const n = parseInt(allerVers, 10); if (n >= 1 && n <= total) allerA(n - 1); }}>
+                  <label>Aller à la page
+                    <input type="number" min={1} max={total} inputMode="numeric" value={allerVers} onChange={(e) => setAllerVers(e.target.value)} placeholder={`1 à ${total}`} />
+                  </label>
+                  <button className="btn">OK</button>
+                </form>
+                <div className="vignettes">
+                  {Array.from({ length: total }, (_, p) => (
+                    <button key={p} className={`vignette ${affichees.includes(p) ? "actif" : ""}`} onClick={() => allerA(p)} aria-label={`Page ${p + 1}`}>
+                      {m.type === "pdf" ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={`/c/${jetonRef.current}/pdf/${p + 1}.${m.ext || "webp"}`} alt="" loading="lazy" draggable={false} style={{ aspectRatio: `1 / ${m.ratio}` }} />
+                      ) : (
+                        <span className="vignette-texte">{m.type === "epub" && m.pages[p]?.titre ? m.pages[p].titre : ""}</span>
+                      )}
+                      <b>{p + 1}</b>
+                      {marques.some((x) => x.i === p) && <i className="mini-marque">🔖</i>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {ongletMenu === "marques" && (
+              marques.length ? (
+                <ul className="liste-marques">
+                  {marques.map((x, k) => (
+                    <li key={k}>
+                      <button className="aller" onClick={() => allerA(x.i, x.f)}>
+                        <span>🔖</span>
+                        <div><b>{x.titre}</b><small>{new Date(x.le).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</small></div>
+                      </button>
+                      <button className="retirer" onClick={() => enregistrerMarques(marques.filter((_, j) => j !== k))} aria-label="Retirer ce marque-page">✕</button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="vide" style={{ padding: "24px 10px" }}>
+                  <div style={{ fontSize: 44 }}>🔖</div>
+                  <p>Touche 🔖 en haut de l'écran pour marquer une page et la retrouver plus tard, sur tous tes appareils.</p>
+                  <button className="btn" onClick={() => { basculerMarque(); setPanneau(null); }}>Marquer cette page</button>
+                </div>
+              )
+            )}
           </div>
         </div>
       )}
       {panneau === "aa" && (
         <div className="voile" onClick={() => setPanneau(null)}>
           <div className="panneau-lecteur" onClick={(e) => e.stopPropagation()}>
-            <h2>Affichage</h2>
-            <div className="reglage">
-              <button className="btn secondaire" onClick={() => changerTaille(-10)} aria-label="Texte plus petit">A−</button>
-              <span>{taille} %</span>
-              <button className="btn secondaire" onClick={() => changerTaille(10)} aria-label="Texte plus grand" style={{ fontSize: 22 }}>A+</button>
-            </div>
-            <div className="reglage">
-              {(Object.keys(THEMES) as Theme[]).map((th) => (
-                <button key={th} className={`pastille-theme ${theme === th ? "active" : ""}`} style={{ background: THEMES[th].fond, color: th === "nuit" ? "#eee" : "#222" }} onClick={() => changerTheme(th)}>
-                  {THEMES[th].nom}
+            <h2>Réglages de lecture</h2>
+            {mode === "texte" && (
+              <>
+                <h3 className="titre-reglage">Taille du texte</h3>
+                <div className="reglage">
+                  <button className="btn secondaire" onClick={() => changerTaille(-10)} aria-label="Texte plus petit">A−</button>
+                  <span>{taille} %</span>
+                  <button className="btn secondaire" onClick={() => changerTaille(10)} aria-label="Texte plus grand" style={{ fontSize: 22 }}>A+</button>
+                </div>
+                <h3 className="titre-reglage">Couleur de la page</h3>
+                <div className="reglage">
+                  {(Object.keys(THEMES) as Theme[]).map((th) => (
+                    <button key={th} className={`pastille-theme ${theme === th ? "active" : ""}`} style={{ background: THEMES[th].fond, color: th === "nuit" ? "#eee" : "#222" }} onClick={() => changerTheme(th)}>
+                      {THEMES[th].nom}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {mode !== "texte" && (
+              <label className="interrupteur">
+                <span>🌙 Mode nuit <small>Pages sombres, plus douces pour les yeux le soir</small></span>
+                <input type="checkbox" checked={nuitPages} onChange={(e) => changerReglage("kw_nuit_pages", setNuitPages)(e.target.checked)} />
+              </label>
+            )}
+            <h3 className="titre-reglage">☀️ Luminosité</h3>
+            <input className="curseur" type="range" min={0.35} max={1} step={0.05} value={lumiere} onChange={(e) => changerReglage("kw_lumiere", setLumiere)(Number(e.target.value))} aria-label="Luminosité" />
+            <h3 className="titre-reglage">🕯️ Lumière chaude <small>(filtre anti-lumière bleue)</small></h3>
+            <input className="curseur chaud" type="range" min={0} max={1} step={0.05} value={chaud} onChange={(e) => changerReglage("kw_chaud", setChaud)(Number(e.target.value))} aria-label="Lumière chaude" />
+            <h3 className="titre-reglage">▶ Tourner les pages tout seul</h3>
+            <div className="choix-ligne">
+              {[0, 10, 20, 40, 60].map((sec) => (
+                <button key={sec} className={`pastille ${diaporama === sec ? "active" : ""}`} onClick={() => { setDiaporama(sec); if (sec) { setPanneau(null); montrer(`Page suivante toutes les ${sec} s`); } }}>
+                  {sec ? `${sec} s` : "Non"}
                 </button>
               ))}
             </div>
+            <h3 className="titre-reglage">⏰ Me rappeler de faire une pause</h3>
+            <div className="choix-ligne">
+              {[0, 20, 30, 45].map((mn) => (
+                <button key={mn} className={`pastille ${rappel === mn ? "active" : ""}`} onClick={() => changerReglage("kw_rappel", setRappel)(mn)}>
+                  {mn ? `${mn} min` : "Non"}
+                </button>
+              ))}
+            </div>
+            <p className="texte-doux" style={{ fontSize: 14, marginTop: 16 }}>
+              Lu pendant cette séance : <b>{Math.floor(secondes / 60)} min</b>. Raccourcis clavier : ← → pour tourner, B pour marquer, F pour le plein écran.
+            </p>
+            <button className="btn secondaire large cache-ordi" onClick={basculerPleinEcran} style={{ marginTop: 10 }}>{pleinEcran ? "Quitter le plein écran" : "⛶ Plein écran"}</button>
+          </div>
+        </div>
+      )}
+      {pause && (
+        <div className="voile">
+          <div className="panneau-lecteur" style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 54 }}>☕</div>
+            <h2>Une petite pause ?</h2>
+            <p className="texte-doux" style={{ margin: "8px 0 20px" }}>Tu lis depuis {Math.round(secondes / 60)} minutes. Repose tes yeux un instant, regarde au loin, bois un verre d'eau.</p>
+            <button className="btn large" onClick={() => setPause(false)}>Reprendre la lecture</button>
           </div>
         </div>
       )}

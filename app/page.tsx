@@ -3,90 +3,145 @@ import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
 import LienSite from "@/components/LienSite";
 import { contexte } from "@/lib/contexte";
+import { statistiques } from "@/lib/stats";
 import { UNIVERS, config } from "@/lib/config";
+import { FORMATS, formatDe, sansDoublon } from "@/lib/formats";
+import { leger } from "@/lib/leger";
 
 export const dynamic = "force-dynamic";
 
+function salut() {
+  const h = Number(new Date().toLocaleString("fr-FR", { hour: "numeric", hour12: false, timeZone: "Indian/Reunion" }));
+  return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+}
+
 export default async function Accueil() {
-  const { session, livres, progs, prog, acces, abonne } = await contexte();
+  const { session, livres, progs, prog, acces, favoris, abonne } = await contexte();
+  const stats = await statistiques(session.cid);
   const enCours = progs
     .filter((p) => !p.termine && p.pourcentage > 0)
     .map((p) => ({ p, l: livres.find((l) => l.id === p.livre_id) }))
-    .find((x) => x.l && acces.get(x.l.id));
+    .filter((x) => x.l && acces.get(x.l.id))
+    .slice(0, 6) as { p: (typeof progs)[number]; l: (typeof livres)[number] }[];
+  const premier = enCours[0];
   const mystere = livres.find((l) => l.mystere_du_mois);
-  const nouveautes = livres.slice(0, 10);
+  const mesFavoris = livres.filter((l) => favoris.has(l.id));
+  const lus = progs.filter((p) => p.termine).length;
+  const objectif = 15;
 
   return (
     <>
       <main className="page">
-        <header className="entete">
-          <div>
-            <div className="sur-titre">Bonjour{session.prenom ? ` ${session.prenom}` : ""} !</div>
+        <header className="hero-accueil">
+          <div className="hero-texte">
+            <div className="sur-titre">{salut()}{session.prenom ? ` ${session.prenom}` : ""} !</div>
             <h1>Mi lir</h1>
+            <p>Préserver aujourd'hui ce que nous voulons transmettre demain.</p>
+          </div>
+          <div className="hero-stats">
+            <div className="stat-bulle feu"><b>{stats.serie}</b><span>🔥 jour{stats.serie > 1 ? "s" : ""} de suite</span></div>
+            <div className="stat-bulle"><b>{stats.minutesAujourdhui}<small>/{objectif}</small></b><span>⏱ min aujourd'hui</span>
+              <i className="anneau" style={{ ["--p" as any]: `${Math.min(100, (stats.minutesAujourdhui / objectif) * 100)}%` }} /></div>
+            <div className="stat-bulle"><b>{lus}</b><span>📚 livre{lus > 1 ? "s" : ""} fini{lus > 1 ? "s" : ""}</span></div>
           </div>
         </header>
 
-        {enCours?.l ? (
+        {premier ? (
           <section aria-label="Continuer ma lecture">
             <div className="continuer">
-              <Couverture livre={enCours.l} />
+              <Couverture livre={premier.l} />
               <div className="infos">
                 <div className="texte-doux" style={{ fontSize: 14 }}>Continuer ma lecture</div>
-                <h3>{enCours.l.titre}</h3>
-                <div className="barre"><i style={{ width: `${enCours.p.pourcentage}%` }} /></div>
-                <div className="texte-doux" style={{ fontSize: 14, marginTop: 6 }}>Lu à {Math.round(enCours.p.pourcentage)} %</div>
-                <Link className="btn" href={`/lire/${enCours.l.slug}`}>Reprendre</Link>
+                <h3>{premier.l.titre}</h3>
+                <div className="barre"><i style={{ width: `${premier.p.pourcentage}%` }} /></div>
+                <div className="texte-doux" style={{ fontSize: 14, marginTop: 6 }}>Lu à {Math.round(premier.p.pourcentage)} %</div>
+                <Link className="btn" href={`/lire/${premier.l.slug}`}>▶ Reprendre</Link>
               </div>
             </div>
           </section>
         ) : (
-          <section className="panneau">
+          <section className="panneau panneau-couleur">
             <h2>Bienvenue dans ta bibliothèque</h2>
-            <p className="texte-doux" style={{ margin: "6px 0 16px" }}>
-              {abonne
-                ? "Ton abonnement est actif : tous les livres marqués « Inclus » t'attendent."
-                : "Retrouve ici les livres achetés sur la boutique Kwélafé."}
+            <p style={{ margin: "6px 0 16px" }}>
+              {abonne ? "Ton abonnement est actif : tous les livres marqués « Inclus » t'attendent." : "Retrouve ici les livres achetés sur la boutique Kwélafé."}
             </p>
             <Link className="btn" href="/livres">Voir mes livres</Link>
           </section>
         )}
 
-        {mystere && (
+        {enCours.length > 1 && (
           <section className="section">
-            <h2>Le livre mystère du mois</h2>
-            <div style={{ maxWidth: 170 }}>
-              <CarteLivre livre={mystere} acces={acces.get(mystere.id)!} pourcentage={prog.get(mystere.id)?.pourcentage} />
-            </div>
-          </section>
-        )}
-
-        {nouveautes.length > 0 && (
-          <section className="section">
-            <h2>Nouveautés</h2>
+            <h2>Mes lectures en cours</h2>
             <div className="rangee">
-              {nouveautes.map((l) => (
-                <CarteLivre key={l.id} livre={l} acces={acces.get(l.id)!} pourcentage={prog.get(l.id)?.pourcentage} />
+              {enCours.slice(1).map(({ l, p }) => (
+                <CarteLivre key={l.id} livre={leger(l)} acces pourcentage={p.pourcentage} favori={favoris.has(l.id)} />
               ))}
             </div>
           </section>
         )}
 
+        {mesFavoris.length > 0 && (
+          <section className="section">
+            <h2>❤ Mes favoris</h2>
+            <div className="rangee">
+              {mesFavoris.map((l) => (
+                <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {mystere && (
+          <section className="section mystere">
+            <div className="mystere-carte">
+              <div style={{ width: 130, flex: "0 0 130px" }}>
+                <CarteLivre livre={leger(mystere)} acces={!!acces.get(mystere.id)} pourcentage={prog.get(mystere.id)?.pourcentage} />
+              </div>
+              <div>
+                <div className="sur-titre">✨ Le livre mystère du mois</div>
+                <h2>{mystere.titre}</h2>
+                <Link className="btn" href={`/livre/${mystere.slug}`} style={{ marginTop: 14 }}>Découvrir</Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {FORMATS.map((f) => {
+          const liste = sansDoublon(livres.filter((l) => formatDe(l) === f.id), acces).slice(0, 12);
+          if (!liste.length) return null;
+          return (
+            <section key={f.id} className="section rayon" style={{ ["--c" as any]: f.couleur, ["--cc" as any]: f.clair }}>
+              <div className="entete-rayon">
+                <span className="pastille-rayon">{f.emoji}</span>
+                <div><h2>{f.nom}</h2><p>{f.texte}</p></div>
+                <Link href={`/catalogue?format=${f.id}`} className="voir-tout">Voir tout ›</Link>
+              </div>
+              <div className="rangee">
+                {liste.map((l) => (
+                  <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori={favoris.has(l.id)} montrerFormat={false} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+
         <section className="section">
           <h2>Les univers</h2>
           <div className="univers">
             {UNIVERS.map((u) => (
-              <Link key={u.id} href={`/catalogue?univers=${u.id}`} className="tuile">
+              <Link key={u.id} href={`/catalogue?univers=${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
                 <span className="emoji" aria-hidden>{u.emoji}</span>
                 <b>{u.nom}</b>
+                <small>{livres.filter((l) => l.univers === u.id).length ? `${sansDoublon(livres.filter((l) => l.univers === u.id)).length} livres` : "Bientôt"}</small>
               </Link>
             ))}
           </div>
         </section>
 
         {!abonne && (
-          <section className="section panneau" style={{ textAlign: "center" }}>
+          <section className="section panneau panneau-couleur" style={{ textAlign: "center" }}>
             <h2>Envie de tout lire ?</h2>
-            <p className="texte-doux" style={{ margin: "8px 0 16px" }}>Avec l'abonnement Kwélafé, toute la bibliothèque est à toi.</p>
+            <p style={{ margin: "8px 0 16px" }}>Avec l'abonnement Kwélafé, toute la bibliothèque est à toi.</p>
             <a className="btn" href={config.abonnementUrl}>Découvrir l'abonnement</a>
           </section>
         )}

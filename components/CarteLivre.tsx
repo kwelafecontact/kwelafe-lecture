@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { urlCouverture } from "@/lib/cf";
 import type { Livre } from "@/lib/donnees";
+import { formatDe, infoFormat } from "@/lib/formats";
 
 export function Couverture({ livre, verrouille }: { livre: Pick<Livre, "titre" | "couverture">; verrouille?: boolean }) {
   const src = urlCouverture(livre.couverture);
@@ -21,28 +22,39 @@ export function Couverture({ livre, verrouille }: { livre: Pick<Livre, "titre" |
   );
 }
 
+export function BadgeFormat({ livre }: { livre: Pick<Livre, "manifeste"> }) {
+  const f = infoFormat(formatDe(livre));
+  return <span className="badge format" style={{ background: f.clair, color: f.couleur }}>{f.emoji} {f.court}</span>;
+}
+
 export default function CarteLivre({
   livre,
   acces,
   pourcentage,
-  montrerInclus,
+  favori,
+  montrerFormat = true,
 }: {
   livre: Livre;
   acces: boolean;
   pourcentage?: number;
+  favori?: boolean;
+  montrerFormat?: boolean;
   montrerInclus?: boolean;
 }) {
   return (
     <Link href={`/livre/${livre.slug}`} className="carte-livre">
       <Couverture livre={livre} verrouille={!acces} />
+      {favori && <span className="coeur-carte" aria-label="Favori">❤</span>}
       <div className="titre">{livre.titre}</div>
       {typeof pourcentage === "number" && pourcentage > 0 && (
         <div className="barre" aria-label={`Lu à ${Math.round(pourcentage)} %`}>
           <i style={{ width: `${Math.min(100, pourcentage)}%` }} />
         </div>
       )}
-      {montrerInclus && acces && <span className="badge inclus">Inclus</span>}
-      {!montrerInclus && livre.type === "epub_interactif" && <span className="badge interactif">Interactif</span>}
+      <div className="badges">
+        {montrerFormat && <BadgeFormat livre={livre} />}
+        {acces && livre.inclus_abonnement && <span className="badge inclus">Inclus</span>}
+      </div>
     </Link>
   );
 }

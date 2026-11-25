@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
 import ImportLivre from "@/components/ImportLivre";
 import ImportLot from "@/components/ImportLot";
+import { formatDe } from "@/lib/formats";
 import BasculeAdmin from "@/components/BasculeAdmin";
 import { sessionAdmin } from "@/lib/admin";
 import { tous } from "@/lib/cf";
@@ -23,7 +24,7 @@ export default async function Admin() {
 
         <section className="panneau">
           <h2>📚 Importer toute la bibliothèque</h2>
-          <ImportLot dejaImportes={livres.map((l) => l.titre)} produitsImportes={livres.map((l) => l.shopify_product_id || "").filter(Boolean)} />
+          <ImportLot dejaImportes={livres.map((l) => `${formatDe(l)}|${l.titre}`)} produitsImportes={livres.map((l) => `${formatDe(l)}|${l.shopify_product_id || ""}`)} />
         </section>
 
         <section className="panneau">
@@ -40,7 +41,7 @@ export default async function Admin() {
                   <td>
                     <b>{l.titre}</b>
                     <div className="texte-doux" style={{ fontSize: 13 }}>
-                      {UNIVERS.find((u) => u.id === l.univers)?.nom} · {l.type === "pdf" ? "PDF" : l.type === "epub_interactif" ? "EPUB interactif" : "EPUB"}
+                      {UNIVERS.find((u) => u.id === l.univers)?.nom} · {formatDe(l) === "pdf" ? "PDF" : formatDe(l) === "interactif" ? "Livre interactif" : l.type === "epub_interactif" ? "EPUB animé" : "EPUB"}
                       {!l.shopify_product_id && " · pas de produit Shopify lié"}
                     </div>
                   </td>

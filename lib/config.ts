@@ -27,12 +27,12 @@ export const config = {
 };
 
 export const UNIVERS = [
-  { id: "horreur", nom: "Horreur et superstitions", emoji: "🌙" },
-  { id: "biodiversite", nom: "Biodiversité", emoji: "🌿" },
-  { id: "jeunesse", nom: "Enfants et jeunesse", emoji: "🧸" },
-  { id: "creole", nom: "Apprendre le créole", emoji: "💬" },
-  { id: "patrimoine", nom: "Culture et patrimoine", emoji: "🏡" },
-  { id: "cuisine", nom: "Cuisine et saveurs", emoji: "🍲" },
+  { id: "horreur", nom: "Horreur et superstitions", emoji: "🌙", couleur: "#4b3a78", clair: "#ece8f6" },
+  { id: "biodiversite", nom: "Biodiversité", emoji: "🌿", couleur: "#2e9d4f", clair: "#e2f4e7" },
+  { id: "jeunesse", nom: "Enfants et jeunesse", emoji: "🧸", couleur: "#e8a200", clair: "#fdf2d6" },
+  { id: "creole", nom: "Apprendre le créole", emoji: "💬", couleur: "#1f6fb2", clair: "#e3effa" },
+  { id: "patrimoine", nom: "Culture et patrimoine", emoji: "🏡", couleur: "#b5562e", clair: "#f8e7dd" },
+  { id: "cuisine", nom: "Cuisine et saveurs", emoji: "🍲", couleur: "#d6332a", clair: "#fde6e3" },
 ] as const;
 
 export const CADEAUX: Record<string, number> = {

@@ -105,6 +105,7 @@ export const SCRIPT_CHAPITRE = String.raw`
     if (d.cmd === "precedent") { if (page > 0) { page--; afficher(); } else envoyer({ k: "bord", dir: "precedent" }); }
     if (d.cmd === "police") { var fr = page / pages; document.documentElement.style.fontSize = d.t + "%"; calculer(); page = Math.round(fr * pages); afficher(); }
     if (d.cmd === "theme") theme(d.th);
+    if (d.cmd === "fraction") { page = Math.min(pages - 1, Math.max(0, Math.round((Number(d.f) || 0) * pages))); afficher(); }
   });
 
   function demarrer() {

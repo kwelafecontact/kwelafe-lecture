@@ -5,13 +5,17 @@ import LienSite from "@/components/LienSite";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
 import { tous } from "@/lib/cf";
+import { statistiques } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
 const dateFr = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export default async function Compte() {
-  const { session, client, abonne } = await contexte();
+  const { session, client, abonne, progs, favoris } = await contexte();
+  const stats = await statistiques(session.cid);
+  const max = Math.max(15, ...stats.derniers.map((d) => d.minutes));
+  const heures = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`);
   const codes = await tous("SELECT * FROM codes_cadeaux WHERE acheteur_id = ? ORDER BY cree_le DESC", session.cid);
   const cadeauActif = client.cadeau_jusqu && new Date(client.cadeau_jusqu) > new Date();
 
@@ -24,6 +28,27 @@ export default async function Compte() {
             <h1>Mon compte</h1>
           </div>
         </header>
+
+        <section className="panneau panneau-stats">
+          <h2>📊 Mes lectures</h2>
+          <div className="stats-grille">
+            <div><b>🔥 {stats.serie}</b><span>jour{stats.serie > 1 ? "s" : ""} de suite</span></div>
+            <div><b>{heures(stats.minutesSemaine)}</b><span>cette semaine</span></div>
+            <div><b>{heures(stats.minutesTotal)}</b><span>au total</span></div>
+            <div><b>{progs.filter((p) => p.termine).length}</b><span>livres terminés</span></div>
+            <div><b>{progs.filter((p) => !p.termine && p.pourcentage > 0).length}</b><span>en cours</span></div>
+            <div><b>❤ {favoris.size}</b><span>favoris</span></div>
+          </div>
+          <div className="graphe-jours" aria-label="Minutes de lecture des 7 derniers jours">
+            {stats.derniers.map((d, k) => (
+              <div key={k} className="colonne-jour">
+                <i style={{ height: `${Math.max(4, (d.minutes / max) * 100)}%` }} title={`${d.minutes} min`} />
+                <span>{d.jour}</span>
+              </div>
+            ))}
+          </div>
+          <p className="texte-doux" style={{ fontSize: 14, marginTop: 10 }}>Objectif conseillé : 15 minutes par jour. Lis un peu chaque jour pour faire grandir ta série 🔥</p>
+        </section>
 
         <section className="panneau">
           <h2>Mon abonnement</h2>
