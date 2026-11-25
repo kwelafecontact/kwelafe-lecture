@@ -5,6 +5,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "koup-koup", titre: "Koup Koup 2", accroche: "Coupe 32 fruits et légumes péi en vraie 3D.", emoji: "🥭", fond: "linear-gradient(135deg,#f39a12,#e8283a 55%,#6e2a5c)" },
   { id: "koup-rougail", titre: "Koup Rougail", accroche: "Tranche les bons ingrédients du rougail et du cari.", emoji: "🍲", fond: "linear-gradient(135deg,#e8452c,#f6a31b 55%,#3f7a2a)" },
   { id: "pete-petard", titre: "Pété Pétard", accroche: "Fais éclater les fusées de la nuit du 31 au Barachois.", emoji: "🎆", fond: "linear-gradient(135deg,#0b1450,#6a2a9a 55%,#ff9a1f)" },
+  { id: "mariaz-la-vanille", titre: "Mariaz la vanille", accroche: "Marie les fleurs de vanille comme Edmond Albius en 1841.", emoji: "🌼", fond: "linear-gradient(135deg,#2e5a1e,#8ab43a 55%,#e8c84a)" },
   { id: "route-littoral", titre: "Route du Littoral", accroche: "Libère les voitures coincées entre la falaise et l'océan.", emoji: "🚗", fond: "linear-gradient(135deg,#6a655d,#1f8fc4)" },
   { id: "kar-pei", titre: "Kar Péi", accroche: "Fais monter chaque voyageur dans le bon car jaune.", emoji: "🚌", fond: "linear-gradient(135deg,#ffd84a,#e0a000)" },
   { id: "blocs-de-kaz", titre: "Blocs de kaz", accroche: "Complète les lignes et construis des kaz créoles.", emoji: "🏠", fond: "linear-gradient(135deg,#f4c95d,#5fae46)" },
