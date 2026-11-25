@@ -4,6 +4,7 @@ import LienSite from "@/components/LienSite";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
 import { CATALOGUE } from "@/lib/jeux/catalogue";
+import { JEUX_3D } from "@/lib/jeux/jeux3d";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,27 @@ export default async function PageJeux() {
           </div>
         </section>
         ))}
+
+        <section className="section">
+          <h2>Jeux péi en 3D</h2>
+          <div className="jeux-grille">
+            {JEUX_3D.map((j) => {
+              const contenu = (
+                <>
+                  <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
+                    <span className="jeu-emoji">{j.emoji}</span>
+                  </div>
+                  <div className="jeu-infos">
+                    <h3>{j.titre}</h3>
+                    <p className="texte-doux">{j.accroche}</p>
+                    <span className="jeu-etiquette">{acces ? "Jouer" : "Abonnés"}</span>
+                  </div>
+                </>
+              );
+              return acces ? <Link key={j.id} href={`/jeux/3d/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
+            })}
+          </div>
+        </section>
         <LienSite />
       </main>
       <NavBas />
