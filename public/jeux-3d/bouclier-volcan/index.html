@@ -329,10 +329,21 @@ function majParticules(dt) {
 // ---------------------------------------------------------------- sons
 let actx = null, maitre = null, sonCoupe = false;
 try { sonCoupe = localStorage.getItem('bouclier_son') === 'non'; } catch (e) {}
-function audio() { setTimeout(chargerSon, 0); if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination);
+function audio() { setTimeout(() => { chargerSon(); chargerVoix(); }, 0); if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination);
   const b = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = actx.createBufferSource(); s.buffer = b; s.loop = true; const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 120; const g = actx.createGain(); g.gain.value = 0.18; s.connect(f).connect(g).connect(maitre); s.start(); } catch (e) {} }
 function bruit(dur, f, q, vol, when = 0, type = 'bandpass') { if (!actx) return; const t = actx.currentTime + when, b = actx.createBuffer(1, Math.ceil(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = actx.createBufferSource(); s.buffer = b; const fi = actx.createBiquadFilter(); fi.type = type; fi.frequency.value = f; fi.Q.value = q; const g = actx.createGain(); g.gain.value = vol; s.connect(fi).connect(g).connect(maitre); s.start(t); }
 function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
+// voix des randonneurs : 4 personnes, 15 phrases chacune (voix/p<personne>-<n>.mp3)
+const VOIX = ['p0', 'p1', 'p2', 'p3'], NB_PHRASES = 15, voixBuf = {}; let voixDemandees = false, criGlobal = 0;
+function chargerVoix() { if (voixDemandees || !actx) return; voixDemandees = true; for (const v of VOIX) { voixBuf[v] = []; for (let i = 1; i <= NB_PHRASES; i++) fetch(`./voix/${v}-${String(i).padStart(2, '0')}.mp3`).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => voixBuf[v].push(d)).catch(() => {}); } }
+function crier(m, urgent = false) {
+  if (!actx || sonCoupe) return; const liste = voixBuf[VOIX[m.voix]]; if (!liste || !liste.length) return;
+  const now = performance.now() / 1000; if (!urgent && (now < m.cri || now < criGlobal)) return; if (urgent && now < m.cri - 1.6) return;
+  let k; do { k = Math.floor(Math.random() * liste.length); } while (liste.length > 1 && k === m.derniere); m.derniere = k;
+  const s = actx.createBufferSource(); s.buffer = liste[k]; s.playbackRate.value = rnd(0.97, 1.04); const g = actx.createGain(); g.gain.value = 0.95;
+  const pan = actx.createStereoPanner ? actx.createStereoPanner() : null; if (pan) { pan.pan.value = Math.max(-0.8, Math.min(0.8, m.x / (viewW / 2))); s.connect(g).connect(pan).connect(maitre); } else s.connect(g).connect(maitre);
+  s.start(); m.cri = now + liste[k].duration + rnd(1.2, 2.4); criGlobal = now + liste[k].duration * 0.6;
+}
 // trois explosions selon la grosseur de la pierre : grave et lourde, moyenne, petite et plus vive
 const sonsRoche = {}; let sonsDemandes = false;
 function chargerSon() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const t of ['petite', 'moyenne', 'grosse']) fetch('./explosion-' + t + '.mp3').then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).then(d => { sonsRoche[t] = d; }).catch(() => {}); }
@@ -366,7 +377,7 @@ function resize() {
   marcheurs.forEach(m => scene.remove(m.obj)); marcheurs.length = 0;
   const n = viewW < 8 ? 2 : 3;
   const dep = Math.floor(Math.random() * 4);
-  for (let i = 0; i < n; i++) { const o = randonneur(dep + i); const m = { obj: o, x: rnd(-viewW * .4, viewW * .4), dir: Math.random() < .5 ? 1 : -1, v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0 }; o.position.set(m.x, sol, 0.8); scene.add(o); marcheurs.push(m); }
+  for (let i = 0; i < n; i++) { const o = randonneur(dep + i); const m = { obj: o, voix: (dep + i) % 4, cri: 0, derniere: -1, x: rnd(-viewW * .4, viewW * .4), dir: Math.random() < .5 ? 1 : -1, v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0 }; o.position.set(m.x, sol, 0.8); scene.add(o); marcheurs.push(m); }
 }
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
@@ -523,7 +534,7 @@ function boucle() {
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
       const touche = marcheurs.find(m => Math.abs(m.x - p.x) < 0.75);
-      if (touche && joue) { son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; popup('Ouille ! Randonneur touché', new THREE.Vector3(touche.x, sol + 1.8, 0), 'aie'); if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); } }
+      if (touche && joue) { crier(touche, true); son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; popup('Ouille ! Randonneur touché', new THREE.Vector3(touche.x, sol + 1.8, 0), 'aie'); if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); } }
     }
   }
   const tps = performance.now() / 1000;
@@ -534,6 +545,7 @@ function boucle() {
   camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
   for (let i = taches.length - 1; i >= 0; i--) { const t = taches[i]; if (!fige) t.vie -= dt; const k = Math.max(0, t.vie / 3); t.m.material.color.setRGB(3 * k, 2.4 * k * k, 2 * k * k * k); if (t.vie <= 0) { scene.remove(t.m); t.m.geometry.dispose(); t.m.material.dispose(); taches.splice(i, 1); } }
   for (let i = anneaux.length - 1; i >= 0; i--) { const a = anneaux[i]; a.vie -= dt; const k = 1 - a.vie / 0.45; a.m.scale.setScalar(1 + k * 2.6); a.m.material.opacity = (1 - k) * (1 - k); if (a.vie <= 0) { scene.remove(a.m); a.m.geometry.dispose(); a.m.material.dispose(); anneaux.splice(i, 1); } }
+  if (joue && bouclier <= 0) for (const b of bombes) { if (!b.vivant || b.morceau || b.vy > 0 || b.obj.position.y > sol + 4.5) continue; const m = marcheurs.find(mm => Math.abs(mm.x - b.obj.position.x) < 1.4); if (m && Math.random() < 0.08) crier(m); }
   const proches = bombes.filter(b => b.vivant && !b.morceau).sort((a, b) => a.obj.position.y - b.obj.position.y);
   lumLave.forEach((l, k) => { const b = proches[k]; if (b) { l.position.copy(b.obj.position); l.position.z += 0.6; l.intensity = 9 + Math.sin(tps * 20 + k) * 2; } else l.intensity = 0; });
   majParticules(dt);
