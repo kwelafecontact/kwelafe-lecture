@@ -6,5 +6,5 @@ import { ouvrirSession } from "@/lib/session";
 // le reste s'affiche verrouillé comme pour un lecteur sans abonnement. Aucun droit d'éditeur.
 export async function GET() {
   await ouvrirSession({ cid: `visiteur-${crypto.randomUUID()}`, email: "visiteur@kwelafe.invalid", prenom: "", visiteur: true });
-  return NextResponse.redirect(`${config.appUrl}/`);
+  return NextResponse.redirect(`${config.appUrl}/portails`);
 }

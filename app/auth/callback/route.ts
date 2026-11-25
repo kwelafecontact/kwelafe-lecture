@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (jetons.id_token) {
       jar.set("kw_idt", jetons.id_token, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
     }
-    return NextResponse.redirect(`${config.appUrl}/`);
+    return NextResponse.redirect(`${config.appUrl}/portails`);
   } catch (e) {
     console.error(e);
     return erreur("connexion");

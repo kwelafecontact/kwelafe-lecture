@@ -8,6 +8,7 @@ import { statistiques } from "@/lib/stats";
 import { UNIVERS, config } from "@/lib/config";
 import { FORMATS, formatDe, sansDoublon } from "@/lib/formats";
 import { leger } from "@/lib/leger";
+import { tous, urlCouverture } from "@/lib/cf";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,30 @@ export default async function Accueil() {
   const mesFavoris = livres.filter((l) => favoris.has(l.id));
   const lus = progs.filter((p) => p.termine).length;
   const objectif = 15;
+  const visibles = sansDoublon(livres, acces);
+  const une = mystere ?? [...visibles].sort((a, b) => b.cree_le.localeCompare(a.cree_le))[0];
+  const nouveautes = [...visibles].sort((a, b) => b.cree_le.localeCompare(a.cree_le)).slice(0, 12);
+  // Top 10 : les livres les plus ouverts par les lecteurs, complétés par les nouveautés
+  const populaires = await tous<{ livre_id: string; n: number }>("SELECT livre_id, COUNT(*) AS n FROM progression GROUP BY livre_id ORDER BY n DESC LIMIT 30").catch(() => []);
+  const top: typeof livres = [];
+  for (const id of [...populaires.map((p) => p.livre_id), ...nouveautes.map((l) => l.id), ...visibles.map((l) => l.id)]) {
+    const l = visibles.find((x) => x.id === id);
+    if (l && !top.includes(l)) top.push(l);
+    if (top.length === 10) break;
+  }
+  const fondUne = une ? urlCouverture(une.couverture) : null;
 
   return (
     <>
       <main className="page">
+        <div className="barre-haut">
+          <Link href="/portails" aria-label="Choisir un espace">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-kwelafe.webp" alt="Kwélafé Production" />
+          </Link>
+          <Link href="/portails" className="changer-espace">▦ Mes espaces</Link>
+        </div>
+
         <header className="hero-accueil">
           <div className="hero-texte">
             <div className="sur-titre">{salut()}{session.prenom ? ` ${session.prenom}` : ""} !</div>
@@ -48,6 +69,13 @@ export default async function Accueil() {
         </header>
 
         {session.visiteur && <BandeauVisiteur />}
+
+        <nav className="raccourcis" aria-label="Accès rapides">
+          <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📚</span>Mes livres</Link>
+          <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>🔎</span>Catalogue</Link>
+          <Link href="/jeux" style={{ ["--c" as any]: "#e8a200" }}><span aria-hidden>🎮</span>Jeux</Link>
+          <Link href="/compte" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>⭐</span>Mes progrès</Link>
+        </nav>
 
         {premier ? (
           <section aria-label="Continuer ma lecture">
@@ -69,6 +97,22 @@ export default async function Accueil() {
               {abonne ? "Ton abonnement est actif : tous les livres marqués « Inclus » t'attendent." : "Retrouve ici les livres achetés sur la boutique Kwélafé."}
             </p>
             <Link className="btn" href="/livres">Voir mes livres</Link>
+          </section>
+        )}
+
+        {une && (
+          <section className="une" aria-label="À la une">
+            {fondUne && <div className="une-fond" style={{ backgroundImage: `url(${fondUne})` }} aria-hidden />}
+            <Couverture livre={une} />
+            <div>
+              <div className="sur-titre">{mystere ? "Le livre mystère du mois" : "À la une"}</div>
+              <h2>{une.titre}</h2>
+              {une.resume && <p>{une.resume}</p>}
+              <div className="actions-une">
+                {acces.get(une.id) && <Link className="btn clair" href={`/lire/${une.slug}`}>▶ Lire</Link>}
+                <Link className="btn transp" href={`/livre/${une.slug}`}>ⓘ Plus d'infos</Link>
+              </div>
+            </div>
           </section>
         )}
 
@@ -94,17 +138,27 @@ export default async function Accueil() {
           </section>
         )}
 
-        {mystere && (
-          <section className="section mystere">
-            <div className="mystere-carte">
-              <div style={{ width: 130, flex: "0 0 130px" }}>
-                <CarteLivre livre={leger(mystere)} acces={!!acces.get(mystere.id)} pourcentage={prog.get(mystere.id)?.pourcentage} />
-              </div>
-              <div>
-                <div className="sur-titre">✨ Le livre mystère du mois</div>
-                <h2>{mystere.titre}</h2>
-                <Link className="btn" href={`/livre/${mystere.slug}`} style={{ marginTop: 14 }}>Découvrir</Link>
-              </div>
+        {top.length >= 3 && (
+          <section className="section">
+            <h2>🏆 Le top 10 Kwélafé</h2>
+            <div className="top10">
+              {top.map((l, k) => (
+                <Link key={l.id} href={`/livre/${l.slug}`} aria-label={`Numéro ${k + 1} : ${l.titre}`}>
+                  <span className="rang" aria-hidden>{k + 1}</span>
+                  <Couverture livre={l} verrouille={!acces.get(l.id)} />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {nouveautes.length > 0 && (
+          <section className="section">
+            <h2>✨ Nouveautés</h2>
+            <div className="rangee">
+              {nouveautes.map((l) => (
+                <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori={favoris.has(l.id)} />
+              ))}
             </div>
           </section>
         )}

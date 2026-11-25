@@ -12,7 +12,7 @@ export async function GET() {
       email: config.adminEmails[0] || "demo@kwelafeproduction.com",
       prenom: "Kwélafé",
     });
-    return NextResponse.redirect(`${config.appUrl}/`);
+    return NextResponse.redirect(`${config.appUrl}/portails`);
   }
 
   const d = await decouverte();

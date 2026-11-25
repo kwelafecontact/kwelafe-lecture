@@ -4,7 +4,7 @@ import { lireSession } from "@/lib/session";
 import { config } from "@/lib/config";
 
 export default async function Bienvenue({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
-  if (await lireSession()) redirect("/");
+  if (await lireSession()) redirect("/portails");
   const { erreur } = await searchParams;
   return (
     <main className="bienvenue">

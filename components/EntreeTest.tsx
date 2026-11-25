@@ -10,7 +10,7 @@ export default function EntreeTest() {
     setEnCours(true);
     setErreur("");
     const r = await fetch("/api/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
-    if (r.ok) { window.location.href = "/"; return; }
+    if (r.ok) { window.location.href = "/portails"; return; }
     setErreur((await r.json().catch(() => ({}))).erreur || "Code refusé.");
     setEnCours(false);
   }
