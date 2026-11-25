@@ -72,6 +72,15 @@
   .bandeau { position:fixed; left:50%; top:max(176px, calc(env(safe-area-inset-top) + 160px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
     padding:6px 20px; border-radius:14px; background:rgba(60,15,0,.6); color:#ffd27a; text-shadow:0 2px 0 #5a1a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
   .bandeau.on { opacity:1; }
+  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
+  .bonus.on { display:flex; }
+  .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
+  .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
+  .bbtn.vide { opacity:.38; }
+  .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
+  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
 </style>
 </head>
 <body>
@@ -85,13 +94,18 @@
   <div class="vies" id="vies"></div>
 </div>
 <div class="niveau" id="niveau"></div>
-<div class="bandeau" id="bandeau">Bouclier activé ! Les randonneurs sont protégés</div>
+<div class="bandeau" id="bandeau">Bouclier activé !</div>
+<div class="bonus" id="bonus">
+  <button class="bbtn zone-interactive" id="bBouclier" aria-label="Bouclier"><div class="rempli" id="rBouclier"></div>🛡️</button>
+  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
+  <button class="bbtn zone-interactive vide" id="bOnde" aria-label="Onde de choc">💥<span class="nb" id="nOnde">0</span></button>
+</div>
 
 <div class="ecran" id="menu">
   <div class="titre">Bouclier volcan</div>
   <div class="sous">Dans l'Enclos Fouqué du Piton de la Fournaise</div>
   <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
-  <div class="consigne">Tranche les bombes de lave d'un geste avant qu'elles ne tombent sur les randonneurs du sentier balisé !</div>
+  <div class="consigne">Tranche les bombes de lave d'un geste ! Enchaîne les coupes pour gagner des bonus, et lance le bouclier 🛡️ dès qu'il est chargé.</div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
@@ -315,22 +329,25 @@ function majParticules(dt) {
 // ---------------------------------------------------------------- sons
 let actx = null, maitre = null, sonCoupe = false;
 try { sonCoupe = localStorage.getItem('bouclier_son') === 'non'; } catch (e) {}
-function audio() { if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination);
+function audio() { setTimeout(chargerSon, 0); if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination);
   const b = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = actx.createBufferSource(); s.buffer = b; s.loop = true; const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 120; const g = actx.createGain(); g.gain.value = 0.18; s.connect(f).connect(g).connect(maitre); s.start(); } catch (e) {} }
 function bruit(dur, f, q, vol, when = 0, type = 'bandpass') { if (!actx) return; const t = actx.currentTime + when, b = actx.createBuffer(1, Math.ceil(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = actx.createBufferSource(); s.buffer = b; const fi = actx.createBiquadFilter(); fi.type = type; fi.frequency.value = f; fi.Q.value = q; const g = actx.createGain(); g.gain.value = vol; s.connect(fi).connect(g).connect(maitre); s.start(t); }
 function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
+let sonRoche = null;
+function chargerSon() { if (sonRoche || !actx) return; fetch('./explosion-roche.mp3').then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).then(d => { sonRoche = d; }).catch(() => {}); }
+function jouerRoche(vitesse, vol, debut = 0) { if (!actx || !sonRoche) return false; const s = actx.createBufferSource(); s.buffer = sonRoche; s.playbackRate.value = vitesse * rnd(0.93, 1.07); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(actx.currentTime, debut); return true; }
 const son = {
   tir: () => { bruit(0.5, 160, 0.7, 0.6, 0, 'lowpass'); },
-  coupe: () => { bruit(0.12, 2600, 2, 0.5); bruit(0.3, 500, 1, 0.4, 0.02); },
-  impact: () => { bruit(0.6, 200, 0.8, 0.8, 0, 'lowpass'); bruit(0.2, 1500, 1, 0.2); },
+  coupe: () => { bruit(0.08, 2600, 2, 0.25); if (!jouerRoche(1.18, 0.75)) bruit(0.3, 500, 1, 0.4, 0.02); },
+  impact: () => { if (!jouerRoche(0.82, 1.0)) { bruit(0.6, 200, 0.8, 0.8, 0, 'lowpass'); bruit(0.2, 1500, 1, 0.2); } },
   touche: () => { ton(400, 200, 0.35, 0.08, 'triangle'); ton(300, 150, 0.4, 0.06, 'triangle', 0.1); },
   bouclier: () => [0, 4, 7, 12].forEach((s, i) => ton(440 * 2 ** (s / 12), 440 * 2 ** (s / 12), 0.3, 0.06, 'sine', i * 0.07)),
   niveau: () => [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
 };
 
 // ---------------------------------------------------------------- partie
-const DUREE_ZEN = 90, PAR_NIVEAU = 20;
-let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupees = 0, niveau = 1, ficheIdx = 0, bouclier = 0, prochainBouclier = 25;
+const DUREE_ZEN = 90, PAR_NIVEAU = 15, RECHARGE_BOUCLIER = 12, DUREE_BOUCLIER = 5;
+let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupees = 0, niveau = 1, ficheIdx = 0, bouclier = 0, charge = 0, serie = 0, ralentis = 0, ondes = 0, ralenti = 0;
 const bombes = [], marcheurs = [];
 const COULEURS = [0xd81e1e, 0x1e5ad8, 0x18a048, 0x8a2ad0];
 function resize() {
@@ -356,10 +373,10 @@ function majNiveau() { $('niveau').textContent = 'Niveau ' + niveau + ' · ' + c
 function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
 function lancerBombe() {
   // tirée depuis le cratère (haut de l'écran), retombe vers le sentier en visant souvent un randonneur
-  const cible = Math.random() < 0.7 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)].x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45);
-  const x0 = rnd(-viewW * .25, viewW * .25), y0 = viewH / 2 + 0.8;
-  const duree = Math.max(1.6, 3.2 - niveau * 0.15) + rnd(0, 0.5);
-  const g = 3.2 + niveau * 0.15;
+  const cible = Math.random() < 0.85 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)].x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45);
+  const x0 = rnd(-viewW * (niveau > 3 ? .48 : .3), viewW * (niveau > 3 ? .48 : .3)), y0 = viewH / 2 + 0.8;
+  const duree = Math.max(1.05, 2.5 - niveau * 0.12) + rnd(0, 0.4);
+  const g = 3.8 + niveau * 0.22;
   const vy = ((sol + 0.6) - y0 + 0.5 * g * duree * duree) / duree, vx = (cible - x0) / duree;
   const m = new THREE.Mesh(rocheGeo, rocheMat); const s = rnd(0.7, 1.15); m.scale.setScalar(s);
   const h = new THREE.Sprite(halo); h.scale.setScalar(3); m.add(h);
@@ -368,19 +385,19 @@ function lancerBombe() {
   son.tir();
 }
 function vague() {
-  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.4, 4));
-  for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), i * rnd(200, 450));
-  prochain = Math.max(0.8, 2.2 - niveau * 0.12) + rnd(0, 0.5);
+  const n = 1 + Math.floor(Math.random() * Math.min(1.6 + niveau * 0.55, 6));
+  for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), i * rnd(140, 340));
+  prochain = Math.max(0.5, 1.6 - niveau * 0.1) + rnd(0, 0.35);
 }
 function demarrer(m) {
-  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupees = 0; niveau = 1; ficheIdx = 0; bouclier = 0; prochainBouclier = 25;
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupees = 0; niveau = 1; ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
   try { record = +localStorage.getItem('bouclier_record_' + mode) || 0; } catch (e) {}
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('niveau').classList.add('on'); $('lien').classList.add('discret');
 }
 function finPartie() {
-  etat = 'fin'; $('niveau').classList.remove('on'); $('bandeau').classList.remove('on');
+  etat = 'fin'; $('bonus').classList.remove('on'); $('niveau').classList.remove('on'); $('bandeau').classList.remove('on');
   const nouveau = score > record && score > 0;
   if (nouveau) { record = score; try { localStorage.setItem('bouclier_record_' + mode, record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
@@ -391,10 +408,22 @@ function finPartie() {
   setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
 }
 function montrerFiche() { etat = 'fiche'; $('ficheNum').textContent = 'Niveau ' + (niveau - 1) + ' réussi'; $('ficheTexte').textContent = FICHES[ficheIdx % FICHES.length]; ficheIdx++; $('fiche').classList.add('on'); }
+function majBonus() {
+  const k = Math.min(1, charge / RECHARGE_BOUCLIER);
+  const pc = (bouclier > 0 ? 100 : k * 100).toFixed(1); $('bBouclier').style.background = `linear-gradient(to top, rgba(90,180,255,.65) ${pc}%, rgba(40,10,0,.6) ${pc}%)`;
+  $('bBouclier').classList.toggle('pret', k >= 1 && bouclier <= 0); $('bBouclier').classList.toggle('vide', k < 1 && bouclier <= 0);
+  $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', ralentis === 0); $('bRalenti').classList.toggle('pret', ralentis > 0);
+  $('nOnde').textContent = ondes; $('bOnde').classList.toggle('vide', ondes === 0); $('bOnde').classList.toggle('pret', ondes > 0);
+}
+function activerBouclier() { if (etat !== 'jeu' || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
+function activerRalenti() { if (etat !== 'jeu' || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
+function activerOnde() { if (etat !== 'jeu' || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); majNiveau(); secousse = 0.5; son.impact(); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
 function eclater(b, dir) {
   b.vivant = false; scene.remove(b.obj);
   const p = b.obj.position; anneau(p);
-  for (let i = 0; i < 46; i++) braise(p.x, p.y, p.z + 0.4, rnd(-3.5, 3.5) + dir.x * 2, rnd(-1.5, 4) + dir.y, Math.random() < .5 ? [1, 0.55, 0.1] : [1, 0.85, 0.35], rnd(0.5, 1.1), rnd(30, 70), 6);
+  const nb = PETIT ? 130 : 190;
+  for (let i = 0; i < nb; i++) { const a = Math.random() * Math.PI * 2, v = Math.pow(Math.random(), 0.6) * rnd(4, 11); const c = Math.random(); braise(p.x, p.y, p.z + 0.4, Math.cos(a) * v + dir.x * 1.5, Math.sin(a) * v + dir.y * 1.5 + 1, c < .35 ? [1, 0.45, 0.06] : c < .75 ? [1, 0.72, 0.2] : [1, 0.95, 0.65], rnd(0.5, 1.4), rnd(18, 60), 5); }
+  for (let i = 0; i < 18; i++) { const a = Math.random() * Math.PI * 2, v = rnd(2, 6); braise(p.x, p.y, p.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 2, [1, 0.5, 0.1], rnd(0.9, 1.6), rnd(70, 110), 7); }
   for (let i = 0; i < 6; i++) fumee(p.x + rnd(-.3, .3), p.y, p.z, 120);
   // deux demi-scories qui tombent
   for (const s of [1, -1]) { const m = new THREE.Mesh(rocheGeo, rocheMat); m.scale.set(0.55 * b.obj.scale.x, 0.55 * b.obj.scale.x, 0.4 * b.obj.scale.x); m.position.copy(p); scene.add(m); bombes.push({ obj: m, vx: -dir.y * s * 2.5 + b.vx * 0.3, vy: dir.x * s * 2.5 + 1.5, g: 9, vr: rnd(-8, 8), rayon: 0, vivant: true, morceau: true }); }
@@ -416,12 +445,12 @@ function trancher(a, b) {
     const t = Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L));
     if ((a.x + t * dx - s.x) ** 2 + (a.y + t * dy - s.y) ** 2 < r * r) {
       const dir = new THREE.Vector3(dx, -dy, 0).normalize();
-      eclater(bo, dir); son.coupe(); coupees++; chaine++;
+      eclater(bo, dir); son.coupe(); coupees++; chaine++; serie++;
+      if (serie % 6 === 0) { if (serie % 12 === 0) { ondes = Math.min(3, ondes + 1); popup('Série de ' + serie + ' ! Bonus onde de choc 💥', new THREE.Vector3(0, 1.5, 0), 'chaine'); } else { ralentis = Math.min(3, ralentis + 1); popup('Série de ' + serie + ' ! Bonus ralenti ⏳', new THREE.Vector3(0, 1.5, 0), 'chaine'); } son.bouclier(); majBonus(); }
       const haut = bo.obj.position.y > 0; const pts = haut ? 3 : 2;
       score += pts; majScore(); majNiveau();
       popup('+' + pts, bo.obj.position, 'pts', '#ffd27a');
       if (coupees % PAR_NIVEAU === 0) { niveau++; son.niveau(); majNiveau(); setTimeout(() => { if (etat === 'jeu') montrerFiche(); }, 700); }
-      if (coupees >= prochainBouclier && bouclier <= 0) { bouclier = 6; prochainBouclier = coupees + 30; $('bandeau').classList.add('on'); son.bouclier(); }
     }
   }
 }
@@ -441,6 +470,7 @@ const anneaux = [];
 function anneau(p) { const m = new THREE.Mesh(new THREE.RingGeometry(0.36, 0.42, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 0.9, 0.2), transparent: true, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending })); m.position.copy(p); m.position.z += 0.5; scene.add(m); anneaux.push({ m, vie: 0.45 }); }
 
 // ---------------------------------------------------------------- boucle
+let impactBulle = 0;
 const horloge = new THREE.Clock(); let ambiance = 0;
 const bulle = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhysicalMaterial({ color: 0x7ad0ff, transparent: true, opacity: 0.22, roughness: 0.1, emissive: 0x2a8aff, emissiveIntensity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
 bulle.visible = false; scene.add(bulle);
@@ -450,7 +480,8 @@ function boucle() {
   const joue = etat === 'jeu', fige = etat === 'fiche';
   if (joue) { temps += dt; prochain -= dt; if (prochain <= 0) vague(); if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); } }
   else if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; lancerBombe(); } }
-  if (bouclier > 0 && !fige) { bouclier -= dt; if (bouclier <= 0) $('bandeau').classList.remove('on'); }
+  if (joue) { if (bouclier > 0) { bouclier -= dt; if (bouclier <= 0) $('bandeau').classList.remove('on'); } else charge = Math.min(RECHARGE_BOUCLIER, charge + dt); if (ralenti > 0) { ralenti -= dt; if (ralenti <= 0 && bouclier <= 0) $('bandeau').classList.remove('on'); } majBonus(); }
+  const tb = ralenti > 0 ? dt * 0.4 : dt;
   // fumerolles permanentes sur les côtés
   if (Math.random() < 0.35) fumee(rnd(-viewW / 2, -viewW / 2 + 1.2), sol + rnd(0, 0.5), -0.5, 160);
   if (Math.random() < 0.35) fumee(rnd(viewW / 2 - 1.2, viewW / 2), sol + rnd(0, 0.5), -0.5, 160);
@@ -461,18 +492,31 @@ function boucle() {
     m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * 8);
     animer(m.obj, m.t, m.choc > 0);
   }
-  bulle.visible = bouclier > 0; if (bouclier > 0) { bulle.position.set(0, sol, 0.5); bulle.scale.set(viewW * 0.5, 2.2, 1.6); bulle.material.opacity = 0.18 + Math.sin(performance.now() / 150) * 0.05; }
+  bulle.visible = bouclier > 0; if (bouclier > 0) { bulle.position.set(0, sol, 0.5); bulle.scale.set(viewW * 0.5, 2.2, 1.6); bulle.material.opacity = 0.18 + Math.sin(performance.now() / 150) * 0.05 + impactBulle * 0.4; bulle.material.emissiveIntensity = 0.4 + impactBulle * 3; } impactBulle = Math.max(0, impactBulle - dt);
   for (let i = bombes.length - 1; i >= 0; i--) {
     const b = bombes[i];
     if (!b.vivant) { bombes.splice(i, 1); continue; }
     if (fige) continue;
-    b.vy -= b.g * dt; b.obj.position.x += b.vx * dt; b.obj.position.y += b.vy * dt; b.obj.rotation.z += b.vr * dt; b.obj.rotation.x += b.vr * 0.6 * dt;
+    const dtb = b.morceau ? dt : tb;
+    b.vy -= b.g * dtb; b.obj.position.x += b.vx * dtb; b.obj.position.y += b.vy * dtb; b.obj.rotation.z += b.vr * dtb; b.obj.rotation.x += b.vr * 0.6 * dtb;
     const p = b.obj.position;
+    if (b.minuteur !== undefined) { b.minuteur -= dt; if (b.minuteur <= 0) { eclater(b, new THREE.Vector3(b.vx, b.vy, 0).normalize()); son.impact(); score += 1; majScore(); continue; } }
     if (!b.morceau && Math.random() < 0.8) braise(p.x + rnd(-.2, .2), p.y + rnd(-.2, .2), p.z, rnd(-.3, .3), rnd(0, .6), [1, rnd(0.4, 0.7), 0.1], rnd(0.3, 0.6), rnd(25, 45), 1);
     if (b.morceau) { if (p.y < -viewH / 2 - 2) { b.vivant = false; scene.remove(b.obj); } continue; }
-    if (bouclier > 0 && p.y < sol + 2.3) { eclater(b, new THREE.Vector3(0, 1, 0)); son.coupe(); popup('Bouclier !', p, 'chaine'); continue; }
+    if (bouclier > 0) {
+      const A = viewW * 0.5, B = 2.2, ex = p.x / A, ey = (p.y - sol) / B, q = ex * ex + ey * ey;
+      if (q < 1 && p.y > sol) {
+        if (b.minuteur !== undefined) { eclater(b, new THREE.Vector3(0, 1, 0)); son.impact(); score += 1; majScore(); continue; }
+        const n = new THREE.Vector3(p.x / (A * A), (p.y - sol) / (B * B), 0).normalize();
+        const vn = b.vx * n.x + b.vy * n.y;
+        if (vn < 0) { b.vx = (b.vx - 2 * vn * n.x) * 0.6; b.vy = (b.vy - 2 * vn * n.y) * 0.6 + 1.5; }
+        const k = 1 / Math.sqrt(q) * 1.01; p.x *= k; p.y = sol + (p.y - sol) * k;
+        b.minuteur = 0.32; b.vr *= -1.5;
+        anneau(p); impactBulle = 0.3; son.coupe(); popup('Bouclier !', p, 'chaine');
+      }
+    }
     if (p.y < sol + 0.5) {
-      b.vivant = false; scene.remove(b.obj); son.impact(); secousse = 0.35; $('flash').style.transition = 'none'; $('flash').style.opacity = 1; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .6s'; $('flash').style.opacity = 0; });
+      serie = 0; b.vivant = false; scene.remove(b.obj); son.impact(); secousse = 0.35; $('flash').style.transition = 'none'; $('flash').style.opacity = 1; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .6s'; $('flash').style.opacity = 0; });
       tache(p.x);
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
@@ -499,6 +543,7 @@ function boucle() {
 // ---------------------------------------------------------------- boutons
 const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; majSon();
 $('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('bouclier_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
+$('bBouclier').onclick = activerBouclier; $('bRalenti').onclick = activerRalenti; $('bOnde').onclick = activerOnde;
 $('jouer').onclick = () => demarrer('classique');
 $('jouerZen').onclick = () => demarrer('zen');
 $('rejouer').onclick = () => demarrer(mode);
@@ -510,7 +555,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher };
+if (TEST) window.jeu = { bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); } };
 </script>
 </body>
 </html>
