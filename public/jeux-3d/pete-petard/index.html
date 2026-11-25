@@ -152,9 +152,9 @@ addEventListener('resize', resize);
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
 
 // ---------------------------------------------------------------- particules lumineuses (GPU, mélange additif)
-const MAXP = PETIT ? 4000 : 8000;
+const MAXP = PETIT ? 6000 : 9000;
 const pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3), pTai = new Float32Array(MAXP), pAlp = new Float32Array(MAXP);
-const P = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, vz: 0, g: 1, frein: 1, t0: 1, scint: false, r: 1, gg: 1, b: 1, trainee: false }));
+const P = Array.from({ length: MAXP }, () => ({ forme: false, ox: 0, oy: 0, tx: 0, ty: 0, age: 0, tenue: 1.6, vie: 0, max: 1, vx: 0, vy: 0, vz: 0, g: 1, frein: 1, t0: 1, scint: false, r: 1, gg: 1, b: 1, trainee: false }));
 const geo = new THREE.BufferGeometry();
 geo.setAttribute('position', new THREE.BufferAttribute(pPos, 3).setUsage(THREE.DynamicDrawUsage));
 geo.setAttribute('couleur', new THREE.BufferAttribute(pCol, 3).setUsage(THREE.DynamicDrawUsage));
@@ -172,7 +172,7 @@ const points = new THREE.Points(geo, matP); points.frustumCulled = false; scene.
 let pIdx = 0;
 function etincelle(x, y, z, vx, vy, vz, c, vie, taille, opts = {}) {
   const p = P[pIdx]; const i = pIdx; pIdx = (pIdx + 1) % MAXP;
-  p.vie = p.max = vie; p.vx = vx; p.vy = vy; p.vz = vz; p.g = opts.g ?? 1.6; p.frein = opts.frein ?? 0.985; p.t0 = taille; p.scint = !!opts.scint; p.trainee = !!opts.trainee;
+  p.vie = p.max = vie; p.vx = vx; p.vy = vy; p.vz = vz; p.g = opts.g ?? 1.6; p.frein = opts.frein ?? 0.985; p.t0 = taille; p.scint = !!opts.scint; p.trainee = !!opts.trainee; p.forme = false;
   p.r = c.r; p.gg = c.g; p.b = c.b;
   pPos[i * 3] = x; pPos[i * 3 + 1] = y; pPos[i * 3 + 2] = z;
 }
@@ -181,6 +181,14 @@ function majParticules(dt) {
     const p = P[i];
     if (p.vie <= 0) { pAlp[i] = 0; continue; }
     p.vie -= dt;
+    if (p.forme) {
+      p.age += dt; const t = Math.min(1, p.age / 0.45), e = 1 - Math.pow(1 - t, 3);
+      pPos[i * 3] = p.ox + (p.tx - p.ox) * e; pPos[i * 3 + 1] = p.oy + (p.ty - p.oy) * e - Math.max(0, p.age - 0.45) * 0.12;
+      if (p.age > p.tenue) { p.forme = false; p.vx = rnd(-0.3, 0.3); p.vy = rnd(-0.2, 0.3); p.g = 1.1; p.frein = 0.98; }
+      pAlp[i] = Math.min(1, p.vie / p.max * 2) * (0.7 + 0.25 * Math.sin(p.age * 30 + i)); pTai[i] = p.t0;
+      pCol[i * 3] = p.r; pCol[i * 3 + 1] = p.gg; pCol[i * 3 + 2] = p.b;
+      continue;
+    }
     const f = Math.pow(p.frein, dt * 60);
     p.vx *= f; p.vy = p.vy * f - p.g * dt; p.vz *= f;
     pPos[i * 3] += p.vx * dt; pPos[i * 3 + 1] += p.vy * dt; pPos[i * 3 + 2] += p.vz * dt;
@@ -288,6 +296,7 @@ function corpsBombe() {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2a })); m.position.y = 0.4; g.add(m);
   return g;
 }
+const matIris = new THREE.MeshPhysicalMaterial({ color: 0xe8f0ff, metalness: 1, roughness: 0.15, iridescence: 1, iridescenceIOR: 1.6, iridescenceThicknessRange: [200, 900], emissive: 0x3a3a6a, emissiveIntensity: 0.6 });
 const matOr = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.2, emissive: 0x6a4200, emissiveIntensity: 0.6 });
 
 const engins = [];
@@ -300,6 +309,7 @@ function lancer(type) {
   if (type === 'fusee') obj = corpsFusee(pal[0], rnd(0.9, 1.15));
   else if (type === 'doree') { obj = corpsFusee(0xffc83a, 1.2); obj.traverse(m => { if (m.isMesh) m.material = matOr; }); rayon = 0.9; }
   else if (type === 'petard') { obj = corpsPetard(); rayon = 0.7; }
+  else if (type === 'brillante') { obj = corpsFusee(0xffffff, 1.1); obj.traverse(m => { if (m.isMesh) m.material = matIris; }); rayon = 0.85; }
   else { obj = corpsBombe(); rayon = 0.65; }
   const x0 = rnd(-viewW * 0.4, viewW * 0.4), y0 = -viewH / 2 - 1;
   const niveau = Math.min(14, temps / 10);
@@ -320,7 +330,7 @@ function vague() {
   for (let i = 0; i < n; i++) setTimeout(() => {
     if (etat !== 'jeu') return;
     const r = Math.random(), pB = temps < 6 || vent > 0 ? 0 : Math.min(0.12 + niveau * 0.018, 0.28);
-    lancer(r < pB ? 'bombe' : r < pB + 0.05 && !engins.some(e => e.vivant && e.type === 'doree') ? 'doree' : r < pB + 0.4 ? 'petard' : 'fusee');
+    lancer(r < pB ? 'bombe' : r < pB + 0.05 && !engins.some(e => e.vivant && e.type === 'doree') ? 'doree' : r < pB + 0.15 && !engins.some(e => e.vivant && e.type === 'brillante') ? 'brillante' : r < pB + 0.45 ? 'petard' : 'fusee');
   }, i * rnd(120, 300));
   prochain = Math.max(0.5, 1.7 - niveau * 0.11) + rnd(0, 0.4);
 }
@@ -337,10 +347,26 @@ function eclater(e, enChaine = false) {
     if (mode === 'classique') perdreVie();
     return;
   }
-  const gros = e.type === 'doree' ? 1.8 : e.type === 'petard' ? 0.7 : 1;
+  const gros = e.type === 'doree' ? 3.2 : e.type === 'brillante' ? 1.2 : e.type === 'petard' ? 0.7 : 1;
   const forme = e.type === 'petard' ? 'petard' : ['sphere', 'anneau', 'palmier', 'saule', 'coeur'][Math.floor(Math.random() * 5)];
-  feu(p.x, p.y, p.z, e.type === 'doree' ? [new THREE.Color('#ffd24a'), new THREE.Color('#fff4c0'), new THREE.Color('#ff9a1f')] : e.pal, forme, gros);
+  const DRAPEAU = [new THREE.Color('#2f6fff'), new THREE.Color('#ffe23a'), new THREE.Color('#ff2a2a')];
+  if (e.type === 'doree') {
+    // la plus grosse explosion du jeu : immense bouquet bleu, jaune, rouge, puis le drapeau Lö Mahavéli dessiné dans le ciel, et des répliques autour
+    const cx = Math.max(-viewW * 0.3, Math.min(viewW * 0.3, p.x)), cy = Math.max(-viewH * 0.05, Math.min(viewH * 0.22, p.y));
+    feu(p.x, p.y, p.z, DRAPEAU, 'sphere', gros);
+    setTimeout(() => feu(p.x, p.y, p.z, DRAPEAU, 'anneau', 2.4), 120);
+    for (let k = 0; k < 6; k++) setTimeout(() => { const a = k / 6 * Math.PI * 2; feu(cx + Math.cos(a) * viewW * 0.38, cy + Math.sin(a) * viewH * 0.3, -1, [DRAPEAU[k % 3]], 'palmier', 1.1); son.boum(1); }, 300 + k * 120);
+    setTimeout(() => { dessinCiel(cx, cy, 'drapeau', Math.min(viewW * 0.75, 7), PETIT ? 650 : 900); son.boum(3); secousse = 0.7; }, 1100);
+    secousse = 1.0;
+  } else if (e.type === 'brillante') {
+    for (let i = 0; i < 10; i++) etincelle(p.x, p.y, p.z, rnd(-1, 1), rnd(-1, 1), 0, tmpC.setRGB(1, 1, 1), 0.2, 60, { g: 0, frein: 0.9 });
+    const cle = ['dodo', 'paille', 'hibiscus', 'vanille'][Math.floor(Math.random() * 4)];
+    const cx = Math.max(-viewW * 0.32, Math.min(viewW * 0.32, p.x)), cy = Math.max(-viewH * 0.1, Math.min(viewH * 0.25, p.y));
+    const nom = dessinCiel(cx, cy, cle, Math.min(viewW * 0.7, 5.2), PETIT ? 300 : 420);
+    setTimeout(() => popup(nom, new THREE.Vector3(cx, cy - 2.6, 0), 'chaine'), 300);
+  } else feu(p.x, p.y, p.z, e.pal, forme, gros);
   if (e.type === 'petard') son.pet(); else { son.boum(gros); son.crepite(); }
+  if (e.type === 'doree') { lueur(DRAPEAU[0], 3); }
   lumiere.color.copy(e.pal[0]); lumiere.intensity = 60 * gros; lumiere.position.set(p.x, p.y, 4);
   lueur(e.pal[0], gros);
   // chaîne : chaque éclat dans le geste ou la réaction augmente le multiplicateur
@@ -348,12 +374,12 @@ function eclater(e, enChaine = false) {
   if (now - chaineT < 900) chaineN++; else chaineN = 1;
   chaineT = now; chainePos = p.clone();
   const mult = Math.min(8, chaineN);
-  const base = e.type === 'doree' ? 10 : e.type === 'petard' ? 3 : 2;
+  const base = e.type === 'doree' ? 25 : e.type === 'brillante' ? 8 : e.type === 'petard' ? 3 : 2;
   const pts = base * mult;
   if (etat === 'jeu') { score += pts; majScore(); serie++; if (serie % 6 === 0) { if (serie % 12 === 0) { vents = Math.min(3, vents + 1); bandeau('Série de ' + serie + ' ! Bonus coup de vent 💨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } majBonus(); } }
   secousse = Math.max(secousse, 0.12 * gros);
   popup('+' + pts, p, 'pts', '#' + e.pal[0].getHexString());
-  if (e.type === 'doree') setTimeout(() => popup('Fusée dorée !', p.clone().add(new THREE.Vector3(0, -0.9, 0)), 'chaine'), 100);
+  if (e.type === 'doree') setTimeout(() => popup('Fusée dorée ! Lö Mahavéli !', new THREE.Vector3(0, -viewH * 0.18, 0), 'chaine'), 400);
   // réaction en chaîne : les engins proches s'allument aussi (sauf les bombes)
   const portee = 1.7 * gros;
   for (const o of engins) if (o.vivant && o.type !== 'bombe' && o.obj.position.distanceTo(p) < portee) setTimeout(() => { if (o.vivant) { eclater(o, true); } }, 90);
@@ -368,6 +394,55 @@ function bandeau(t, d = 1.6) { const e = $('bandeau'); e.textContent = t; e.clas
 function activerAllumage() { if (etat !== 'jeu' || charge < RECHARGE) return; charge = 0; let n = 0; for (const e of engins) if (e.vivant) { if (e.type === 'bombe') { e.vivant = false; scene.remove(e.obj); for (let i = 0; i < 20; i++) fumee(e.obj.position.x, e.obj.position.y, e.obj.position.z, 120); } else { eclater(e, true); n++; } } bandeau('Allumage ! ' + n + ' feux'); secousse = 0.4; son.chaine(5); majBonus(); }
 function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralenti = 5; bandeau('Ralenti !', 5); son.chaine(3); majBonus(); }
 function activerVent() { if (etat !== 'jeu' || !vents) return; vents--; vent = 8; for (const e of engins) if (e.vivant && e.type === 'bombe') { e.vivant = false; scene.remove(e.obj); for (let i = 0; i < 25; i++) fumee(e.obj.position.x, e.obj.position.y, e.obj.position.z, 140); } bandeau('Coup de vent ! Plus de fumée', 3); son.chaine(4); majBonus(); }
+// ---------------------------------------------------------------- dessins dans le ciel (dodo, paille-en-queue, hibiscus, fleur de vanille, drapeau)
+function echantillons(dessin, n, taille = 220) {
+  const c = document.createElement('canvas'); c.width = c.height = taille; const g = c.getContext('2d'); g.lineCap = g.lineJoin = 'round'; dessin(g, taille);
+  const d = g.getImageData(0, 0, taille, taille).data, pts = [];
+  for (let y = 0; y < taille; y += 2) for (let x = 0; x < taille; x += 2) { const k = (y * taille + x) * 4; if (d[k + 3] > 128) pts.push([x / taille - 0.5, 0.5 - y / taille, d[k] / 255, d[k + 1] / 255, d[k + 2] / 255]); }
+  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  return pts.slice(0, n);
+}
+const DESSINS = {
+  dodo: { nom: 'Le dodo !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 5;
+    g.strokeStyle = '#c8c8d0'; g.beginPath(); g.ellipse(115, 125, 58, 48, 0, 0, 7); g.stroke();             // corps dodu
+    g.beginPath(); g.ellipse(70, 70, 22, 20, 0, 0, 7); g.stroke();                                              // tête
+    g.strokeStyle = '#ffd24a'; g.beginPath(); g.moveTo(52, 62); g.quadraticCurveTo(20, 66, 22, 88); g.quadraticCurveTo(34, 84, 50, 80); g.stroke(); // gros bec crochu
+    g.fillStyle = '#ffffff'; g.beginPath(); g.arc(68, 66, 4, 0, 7); g.fill();
+    g.strokeStyle = '#a8a8b8'; g.beginPath(); g.ellipse(125, 118, 26, 16, -0.3, 0, 7); g.stroke();             // petite aile
+    g.strokeStyle = '#ffffff'; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(170, 115 + i * 6); g.quadraticCurveTo(190, 100 + i * 8, 196, 92 + i * 10); g.stroke(); } // touffe de queue
+    g.strokeStyle = '#ffb030'; for (const x of [100, 128]) { g.beginPath(); g.moveTo(x, 170); g.lineTo(x, 196); g.lineTo(x - 10, 200); g.moveTo(x, 196); g.lineTo(x + 10, 200); g.stroke(); } } },
+  paille: { nom: 'Le paille-en-queue !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 5;
+    g.strokeStyle = '#ffffff'; g.beginPath(); g.ellipse(110, 100, 30, 14, 0, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(100, 95); g.quadraticCurveTo(60, 50, 18, 40); g.quadraticCurveTo(60, 70, 96, 104); g.stroke();      // aile gauche
+    g.beginPath(); g.moveTo(120, 95); g.quadraticCurveTo(160, 50, 202, 40); g.quadraticCurveTo(160, 70, 124, 104); g.stroke();  // aile droite
+    g.strokeStyle = '#3a3a48'; g.beginPath(); g.moveTo(52, 58); g.lineTo(70, 74); g.moveTo(168, 58); g.lineTo(150, 74); g.stroke(); // barres noires
+    g.strokeStyle = '#ffd24a'; g.beginPath(); g.moveTo(140, 98); g.lineTo(156, 100); g.stroke();                                   // bec
+    g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.beginPath(); g.moveTo(82, 104); g.quadraticCurveTo(50, 150, 30, 205); g.moveTo(84, 108); g.quadraticCurveTo(62, 155, 48, 210); g.stroke(); } }, // longues plumes de queue
+  hibiscus: { nom: "L'hibiscus !", f: (g, T) => { const s = T / 220; g.scale(s, s); g.translate(110, 110); g.lineWidth = 5;
+    g.strokeStyle = '#ff2a3a'; for (let i = 0; i < 5; i++) { g.save(); g.rotate(i * Math.PI * 2 / 5); g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(-55, -30, -45, -95, 0, -88); g.bezierCurveTo(45, -95, 55, -30, 0, 0); g.stroke(); g.restore(); }
+    g.strokeStyle = '#ff7a8a'; for (let i = 0; i < 5; i++) { g.save(); g.rotate(i * Math.PI * 2 / 5); g.beginPath(); g.moveTo(0, -12); g.lineTo(0, -55); g.stroke(); g.restore(); }
+    g.strokeStyle = '#ffe23a'; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(25, -30, 48, -62); g.stroke(); g.fillStyle = '#ffe23a'; for (let i = 0; i < 8; i++) { g.beginPath(); g.arc(40 + Math.cos(i) * 9, -60 + Math.sin(i) * 9, 3.5, 0, 7); g.fill(); } } },
+  vanille: { nom: 'La fleur de vanille !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.translate(110, 115); g.lineWidth = 5;
+    g.strokeStyle = '#d8f07a'; for (const a of [-1.25, -0.4, 0.4, 1.25, Math.PI]) { g.save(); g.rotate(a); g.beginPath(); g.moveTo(0, -10); g.quadraticCurveTo(-14, -55, 0, -92); g.quadraticCurveTo(14, -55, 0, -10); g.stroke(); g.restore(); } // 5 tépales étroits vert-jaune
+    g.strokeStyle = '#fff2a8'; g.beginPath(); g.moveTo(-20, 0); g.quadraticCurveTo(-26, 40, 0, 50); g.quadraticCurveTo(26, 40, 20, 0); g.stroke(); // labelle en trompette
+    g.strokeStyle = '#ffb030'; g.beginPath(); g.moveTo(-10, 30); g.quadraticCurveTo(0, 40, 10, 30); g.stroke();
+    g.strokeStyle = '#5aa83a'; g.beginPath(); g.moveTo(0, 50); g.quadraticCurveTo(10, 85, 4, 105); g.stroke(); } },
+  // Lö Mahavéli : ciel bleu, volcan rouge, rayons jaunes
+  drapeau: { nom: 'Lö Mahavéli !', f: (g, T) => { const s = T / 220; g.scale(s, s);
+    g.fillStyle = '#1e5aff'; g.fillRect(10, 40, 200, 140);
+    g.fillStyle = '#ffe23a'; for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * 0.42; g.beginPath(); g.moveTo(110, 120); g.lineTo(110 + Math.cos(a - 0.09) * 150, 120 + Math.sin(a - 0.09) * 150); g.lineTo(110 + Math.cos(a + 0.09) * 150, 120 + Math.sin(a + 0.09) * 150); g.fill(); }
+    g.save(); g.beginPath(); g.rect(10, 40, 200, 140); g.clip(); g.restore();
+    g.fillStyle = '#ff2020'; g.beginPath(); g.moveTo(110, 110); g.lineTo(190, 180); g.lineTo(30, 180); g.fill();
+    g.globalCompositeOperation = 'destination-in'; g.fillRect(10, 40, 200, 140); } },
+};
+function dessinCiel(x, y, cle, taille, n) {
+  const D = DESSINS[cle], pts = echantillons(D.f, n);
+  for (const [px, py, cr, cg, cb] of pts) {
+    const i = pIdx; etincelle(x, y, 0.5, 0, 0, 0, tmpC.setRGB(cr, cg, cb, THREE.SRGBColorSpace), 3.4, PETIT ? 40 : 46, { g: 0 });
+    const p = P[i]; p.forme = true; p.ox = x; p.oy = y; p.tx = x + px * taille; p.ty = y + py * taille; p.age = rnd(0, 0.08); p.tenue = 1.9 + rnd(0, 0.4);
+  }
+  return D.nom;
+}
 function feu(x, y, z, pal, forme, gros = 1) {
   const n = Math.round((PETIT ? 170 : 260) * gros * (forme === 'petard' ? 0.6 : 1));
   const v0 = (forme === 'petard' ? 3.2 : 5.2) * Math.sqrt(gros);
@@ -472,7 +547,7 @@ function boucle() {
       if (e.type !== 'bombe' && etat === 'jeu') {
         for (let k = 0; k < 14; k++) etincelle(p.x, p.y, p.z, rnd(-.6, .6), rnd(-.3, .5), 0, tmpC.setRGB(.6, .5, .4), 0.6, 60, { g: 1 });
         son.rate(); popup('Pschitt !', p, 'aie'); serie = 0;
-        if (mode === 'classique' && e.type !== 'doree') perdreVie();
+        if (mode === 'classique' && e.type !== 'doree' && e.type !== 'brillante') perdreVie();
       }
     }
   }
@@ -506,7 +581,7 @@ resize();
 majVies(); majScore();
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
+if (TEST) window.jeu = { engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
 </script>
 </body>
 </html>
