@@ -1,0 +1,239 @@
+{
+  "fruits": [
+    {
+      "id": "oignon",
+      "nom": "Oignon",
+      "fichier": "oignon.glb",
+      "taille_reelle_m": 0.07,
+      "couleur_jus": "#F2EEDC",
+      "clearcoat": 0.25,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1127
+    },
+    {
+      "id": "ail",
+      "nom": "Ail",
+      "fichier": "ail.glb",
+      "taille_reelle_m": 0.05,
+      "couleur_jus": "#F4EED6",
+      "clearcoat": 0.15,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1103
+    },
+    {
+      "id": "gingembre",
+      "nom": "Gingembre",
+      "fichier": "gingembre.glb",
+      "taille_reelle_m": 0.09,
+      "couleur_jus": "#F3DC98",
+      "clearcoat": 0.1,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 846
+    },
+    {
+      "id": "curcuma",
+      "nom": "Curcuma",
+      "fichier": "curcuma.glb",
+      "taille_reelle_m": 0.06,
+      "couleur_jus": "#FF8A00",
+      "clearcoat": 0.1,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 837
+    },
+    {
+      "id": "mangue-verte",
+      "nom": "Mangue verte",
+      "fichier": "mangue-verte.glb",
+      "taille_reelle_m": 0.11,
+      "couleur_jus": "#E8E6A0",
+      "clearcoat": 0.4,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 690
+    },
+    {
+      "id": "tomate",
+      "nom": "Tomate",
+      "fichier": "tomate.glb",
+      "taille_reelle_m": 0.072,
+      "couleur_jus": "#E8401E",
+      "clearcoat": 0.9,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 621,
+      "source": "koup-koup"
+    },
+    {
+      "id": "piment",
+      "nom": "Piment",
+      "fichier": "piment.glb",
+      "taille_reelle_m": 0.065,
+      "couleur_jus": "#D8261F",
+      "clearcoat": 0.9,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 625,
+      "source": "koup-koup"
+    },
+    {
+      "id": "combava",
+      "nom": "Combava",
+      "fichier": "combava.glb",
+      "taille_reelle_m": 0.055,
+      "couleur_jus": "#D6E07A",
+      "clearcoat": 0.25,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1369,
+      "source": "koup-koup"
+    },
+    {
+      "id": "tamarin",
+      "nom": "Tamarin",
+      "fichier": "tamarin.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#7A4220",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 927,
+      "source": "koup-koup"
+    },
+    {
+      "id": "avocat",
+      "nom": "Avocat",
+      "fichier": "avocat.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#C9D97A",
+      "clearcoat": 0.3,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1368,
+      "source": "koup-koup"
+    },
+    {
+      "id": "songe",
+      "nom": "Songe",
+      "fichier": "songe.glb",
+      "taille_reelle_m": 0.15,
+      "couleur_jus": "#F2EEE6",
+      "clearcoat": 0.0,
+      "sheen": 0.1,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1156,
+      "source": "koup-koup"
+    },
+    {
+      "id": "chouchou",
+      "nom": "Chouchou",
+      "fichier": "chouchou.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#E4EEC4",
+      "clearcoat": 0.0,
+      "sheen": 0.25,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 694,
+      "source": "koup-koup"
+    },
+    {
+      "id": "bringelle",
+      "nom": "Bringelle",
+      "fichier": "bringelle.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#EFE9CC",
+      "clearcoat": 1.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 635,
+      "source": "koup-koup"
+    },
+    {
+      "id": "margoze",
+      "nom": "Margoze",
+      "fichier": "margoze.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#E8F0D8",
+      "clearcoat": 0.5,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1370,
+      "source": "koup-koup"
+    },
+    {
+      "id": "citrouille",
+      "nom": "Citrouille",
+      "fichier": "citrouille.glb",
+      "taille_reelle_m": 0.3,
+      "couleur_jus": "#EE8A1E",
+      "clearcoat": 0.15,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 1061,
+      "source": "koup-koup"
+    }
+  ]
+}
