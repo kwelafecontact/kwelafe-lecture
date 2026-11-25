@@ -9,6 +9,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "koup-kann", titre: "Koup Kann", accroche: "Coupe la canne au ras du sol pendant la campagne sucrière.", emoji: "🌾", fond: "linear-gradient(135deg,#6a8a2a,#c8a040 55%,#a83a1a)" },
   { id: "tap-tap-moustik", titre: "Tap Tap Moustik", accroche: "Chasse les moustiques du jardin et vide les gîtes.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
   { id: "bichik-rush", titre: "Bichik Rush", accroche: "Ramasse les bichiques à la vouve, laisse passer les espèces protégées.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a7a)" },
+  { id: "bouclier-volcan", titre: "Bouclier volcan", accroche: "Tranche les bombes de lave et protège les randonneurs de l'Enclos.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
   { id: "route-littoral", titre: "Route du Littoral", accroche: "Libère les voitures coincées entre la falaise et l'océan.", emoji: "🚗", fond: "linear-gradient(135deg,#6a655d,#1f8fc4)" },
   { id: "kar-pei", titre: "Kar Péi", accroche: "Fais monter chaque voyageur dans le bon car jaune.", emoji: "🚌", fond: "linear-gradient(135deg,#ffd84a,#e0a000)" },
   { id: "blocs-de-kaz", titre: "Blocs de kaz", accroche: "Complète les lignes et construis des kaz créoles.", emoji: "🏠", fond: "linear-gradient(135deg,#f4c95d,#5fae46)" },
