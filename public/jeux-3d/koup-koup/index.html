@@ -254,7 +254,7 @@ function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
   o.connect(g); g.connect(maitre); o.start(t); o.stop(t + dur + 0.02);
 }
 // Familles de fruits pour le son de la découpe
-const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi']);
+const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
 const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
 const son = {
   // le « whoosh » suit la vitesse du doigt
@@ -390,7 +390,7 @@ pulpe.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXQ *
 pulpe.frustumCulled = false; scene.add(pulpe);
 const Q = Array.from({ length: MAXQ }, () => ({ vie: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.05, rx: 0, ry: 0, vr: 0, plat: 0.4 }));
 let qIdx = 0;
-const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
+const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'jambos-rouge': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
 const tmpM = new THREE.Matrix4(), tmpC = new THREE.Color(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3(), tmpE = new THREE.Euler();
 function goutte(pos, vel, s, color, vie, grav = 1, impact = false) {
   const i = pIdx, p = P[i]; pIdx = (pIdx + 1) % MAXP;
