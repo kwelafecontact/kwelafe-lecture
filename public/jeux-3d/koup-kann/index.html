@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Koup Kann · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="../koup-koup/lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family:"Bangers"; src:url("../koup-koup/lib/bangers.woff2") format("woff2"); font-display:swap; }
+  :root { --or:#ffd24a; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#2a3a10; font-family:"Baloo 2", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  #fond { position:fixed; inset:0; background:#2a3a10 url("./fond-cannes.webp") center bottom / cover no-repeat; }
+  #fond::after { content:""; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 30%, rgba(30,20,0,0) 40%, rgba(20,10,0,.45) 100%); }
+  #lueur { position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:0; }
+  #gl { position:fixed; inset:0; width:100%; height:100%; }
+  .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .hud.on { opacity:1; }
+  .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
+  .score.saute { animation:saute .3s ease-out; }
+  @keyframes saute { 40% { transform:scale(1.25); } }
+  .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:2px; }
+  .vies { font-size:30px; letter-spacing:4px; text-align:right; }
+  .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .temps { font-family:"Bangers", sans-serif; font-size:clamp(32px, 6.5vw, 46px); color:#b8f0ff; text-shadow:0 3px 0 #1f4f94; letter-spacing:.05em; }
+  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 32px; pointer-events:none; transition:opacity .35s; }
+  .ecran.cache { opacity:0; }
+  .ecran.cache * { pointer-events:none !important; }
+  .titre { font-family:"Bangers", sans-serif; font-size:clamp(62px, 15vw, 124px); line-height:.95; letter-spacing:.04em; transform:rotate(-3deg);
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.45)); }
+  .sous { margin-top:14px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  .modes { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
+  .btn { pointer-events:auto; border:0; border-radius:999px; padding:14px 30px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.45); cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .btn2 { background:linear-gradient(#b8f0ff, #3fb4e6); box-shadow:0 5px 0 #1f6f94, 0 10px 22px rgba(0,0,0,.45); color:#0b2a3a; }
+  .consigne { margin-top:22px; font-size:clamp(16px, 3.6vw, 20px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.9); max-width:520px; }
+  .voile { padding:22px 26px 26px; border-radius:26px; background:rgba(6,6,24,.62); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+  .gros { font-family:"Bangers", sans-serif; font-size:clamp(70px, 17vw, 120px); color:var(--or); line-height:1; text-shadow:0 5px 0 #8a4a08, 0 0 30px rgba(255,190,60,.5); }
+  .etoiles { font-size:clamp(42px, 10vw, 64px); letter-spacing:.12em; color:#ffd24a; text-shadow:0 3px 0 #8a5a00, 0 0 18px rgba(255,200,60,.6); }
+  .etoiles .vide { color:rgba(255,255,255,.22); text-shadow:none; }
+  .nouveau { font-family:"Bangers", sans-serif; font-size:clamp(26px, 6vw, 38px); letter-spacing:.06em; color:#7bf0ff; text-shadow:0 0 16px #2fb4ff; }
+  .pop { position:fixed; pointer-events:none; font-family:"Bangers", sans-serif; letter-spacing:.05em; transform:translate(-50%,-50%); white-space:nowrap; animation:monte 1s ease-out forwards; }
+  .pop.pts { font-size:clamp(28px, 6vw, 40px); color:#fff; text-shadow:0 0 12px currentColor, 0 3px 0 rgba(0,0,0,.5); }
+  .pop.chaine { font-size:clamp(30px, 7vw, 48px); background:linear-gradient(90deg, #ffe23a, #ff9a1f, #ff4fb4, #2fb4ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 #1a0830); animation-duration:1.3s; }
+  .pop.aie { font-size:clamp(26px, 6vw, 38px); color:#c8c8d0; text-shadow:0 3px 0 rgba(0,0,0,.6); }
+  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 100% { opacity:0; transform:translate(-50%,-150%) scale(1); } }
+  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; transition:opacity .3s; }
+  .lien.discret { opacity:0; pointer-events:none; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+  .coin { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); min-height:44px; padding:0 18px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(10,8,30,.6); color:#fff; font:800 16px "Baloo 2", system-ui, sans-serif; cursor:pointer; }
+  #retour { left:max(26px, env(safe-area-inset-left)); }
+  #btnSon { right:max(26px, env(safe-area-inset-right)); width:48px; padding:0; }
+  #charge { position:fixed; left:0; right:0; bottom:calc(100px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; opacity:.85; }
+
+  #trace { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+  .bandeau { position:fixed; left:50%; top:max(140px, calc(env(safe-area-inset-top) + 124px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
+    padding:6px 20px; border-radius:14px; background:rgba(40,20,0,.55); color:#ffe27a; text-shadow:0 2px 0 #5a2a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .bandeau.on { opacity:1; }
+  .pop.pts { color:#e8ffb0; }
+</style>
+</head>
+<body>
+<div id="fond"></div>
+<canvas id="gl"></canvas>
+<canvas id="trace"></canvas>
+
+<div class="hud" id="hud">
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div class="vies" id="vies"></div>
+</div>
+<div class="bandeau" id="bandeau">Le cachalot arrive ! Points doublés</div>
+
+<div class="ecran" id="menu">
+  <div class="titre">Koup Kann</div>
+  <div class="sous">La campagne sucrière dans les hauts de l'Est</div>
+  <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
+  <div class="consigne">Tranche les cannes d'un geste, le plus près du sol possible. Attention aux guêpes et aux cailloux !</div>
+</div>
+
+<div class="ecran cache" id="fin"><div class="voile">
+  <div class="sous" style="margin-top:0">Fin de la coupe</div>
+  <div class="gros" id="scoreFin">0</div>
+  <div class="etoiles" id="etoilesFin"></div>
+  <div class="nouveau" id="nouveauRecord"></div>
+  <div class="sous" id="cannesFin"></div>
+  <div class="sous" id="recordFin">Record : 0</div>
+  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
+</div></div>
+
+<div id="charge">On affûte le sabre à canne…</div>
+<button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
+<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script type="importmap">{ "imports": { "three": "../koup-koup/lib/three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from '../koup-koup/lib/RoomEnvironment.js';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
+const PETIT = Math.min(innerWidth, innerHeight) < 500 || /iPhone/.test(navigator.userAgent);
+
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true, preserveDrawingBuffer: TEST });
+renderer.setPixelRatio(Math.min(devicePixelRatio, PETIT ? 1.75 : 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
+const soleil = new THREE.DirectionalLight(0xffd8a0, 2.6); soleil.position.set(-5, 6, 8); scene.add(soleil);
+scene.add(new THREE.HemisphereLight(0xfff0d0, 0x5a3010, 0.8));
+let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3;
+const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
+const trace = $('trace'), tctx = trace.getContext('2d');
+function resize() {
+  W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
+  const d = Math.min(devicePixelRatio, 2); trace.width = W * d; trace.height = H * d; tctx.setTransform(d, 0, 0, d, 0, 0);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
+  sol = -viewH * 0.3;
+}
+
+// ---------------------------------------------------------------- canne à sucre en 3D (entrenœuds, nœuds, feuilles)
+const texCanne = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 256; const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 64, 0); grd.addColorStop(0, '#5a7a1e'); grd.addColorStop(.4, '#a8b83a'); grd.addColorStop(.7, '#8a6a2a'); grd.addColorStop(1, '#4a3a18');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 256);
+  for (let i = 0; i < 40; i++) { g.strokeStyle = `rgba(60,40,10,${Math.random() * .25})`; g.beginPath(); const x = Math.random() * 64; g.moveTo(x, 0); g.lineTo(x + rnd(-2, 2), 256); g.stroke(); }
+  g.fillStyle = 'rgba(230,230,200,.25)'; g.fillRect(0, 0, 64, 18); // pruine blanche sous le nœud
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })();
+const matTige = new THREE.MeshStandardMaterial({ map: texCanne, roughness: 0.4 });
+const matNoeud = new THREE.MeshStandardMaterial({ color: 0x6a4a1e, roughness: 0.6 });
+const matFeuilleC = new THREE.MeshStandardMaterial({ color: 0x5a9a2a, roughness: 0.5, side: THREE.DoubleSide });
+const matChair = new THREE.MeshStandardMaterial({ color: 0xf0ecc8, roughness: 0.7 });
+const SEG = 0.45, RAY = 0.11;
+const geoSeg = new THREE.CylinderGeometry(RAY, RAY * 1.04, SEG, 12); geoSeg.translate(0, SEG / 2, 0);
+const geoNoeud = new THREE.CylinderGeometry(RAY * 1.12, RAY * 1.12, 0.05, 12);
+const geoFeuilleC = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.quadraticCurveTo(0.09, 0.8, 0.02, 1.9); s.lineTo(-0.02, 1.9); s.quadraticCurveTo(-0.09, 0.8, 0, 0); const g = new THREE.ShapeGeometry(s, 8); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setZ(i, 0.25 * y * y); } g.computeVertexNormals(); return g; })();
+const geoCoupe = new THREE.CircleGeometry(RAY, 12);
+function construireCanne(n) {
+  const g = new THREE.Group();
+  for (let i = 0; i < n; i++) { const s = new THREE.Mesh(geoSeg, matTige); s.position.y = i * SEG; s.rotation.y = rnd(0, 6); g.add(s); const nd = new THREE.Mesh(geoNoeud, matNoeud); nd.position.y = i * SEG; g.add(nd); }
+  const tete = new THREE.Group(); tete.position.y = n * SEG;
+  for (let k = 0; k < 7; k++) { const f = new THREE.Mesh(geoFeuilleC, matFeuilleC); f.rotation.set(rnd(-0.5, 0.5), k / 7 * Math.PI * 2, rnd(-0.9, 0.9)); tete.add(f); }
+  g.add(tete); return g;
+}
+
+// guêpe : abdomen rayé jaune et noir, ailes translucides
+const matJaune = new THREE.MeshStandardMaterial({ color: 0xf2c418, roughness: 0.4 }), matNoir = new THREE.MeshStandardMaterial({ color: 0x1a1408, roughness: 0.5 });
+const matAile = new THREE.MeshPhysicalMaterial({ color: 0xddeeff, transparent: true, opacity: 0.45, roughness: 0.1, side: THREE.DoubleSide });
+function construireGuepe() {
+  const g = new THREE.Group();
+  for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.12 - i * 0.012, 10, 8), i % 2 ? matNoir : matJaune); b.scale.set(1, 1, 1.2); b.position.x = -0.1 - i * 0.1; g.add(b); }
+  const tho = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), matNoir); tho.position.x = 0.08; g.add(tho);
+  const tet = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), matJaune); tet.position.x = 0.22; g.add(tet);
+  const ailes = []; for (const s of [1, -1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(0.18, 10), matAile); a.scale.set(1.6, 0.6, 1); a.position.set(0, 0.12, 0.1 * s); a.rotation.x = -Math.PI / 2 + s * 0.4; g.add(a); ailes.push(a); }
+  g.userData.ailes = ailes; g.scale.setScalar(1.6); return g;
+}
+const matCaillou = new THREE.MeshStandardMaterial({ color: 0x3a3632, roughness: 0.95, flatShading: true });
+function construireCaillou() { const geo = new THREE.IcosahedronGeometry(0.42, 1); const p = geo.attributes.position; for (let i = 0; i < p.count; i++) { const k = 0.8 + Math.random() * 0.35; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.8, p.getZ(i) * k); } geo.computeVertexNormals(); return new THREE.Mesh(geo, matCaillou); }
+// camion cachalot : cabine et grande benne chargée de cannes
+function construireCachalot() {
+  const g = new THREE.Group();
+  const rouge = new THREE.MeshStandardMaterial({ color: 0xc8281e, roughness: 0.5 }), gris = new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.6 }), noir = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 }), vitre = new THREE.MeshStandardMaterial({ color: 0x8ab8d8, roughness: 0.1, metalness: 0.3 });
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 1.0), rouge); cab.position.set(1.6, 0.7, 0); g.add(cab);
+  const vit = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.8), vitre); vit.position.set(2.16, 0.9, 0); g.add(vit);
+  const benne = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.2, 1.2), gris); benne.position.set(-0.5, 0.85, 0); g.add(benne);
+  for (let i = 0; i < 26; i++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.0, 6), matTige); c.rotation.z = Math.PI / 2 + rnd(-0.1, 0.1); c.position.set(-0.5 + rnd(-0.1, 0.1), 1.5 + rnd(0, 0.4), rnd(-0.5, 0.5)); g.add(c); }
+  for (const x of [1.6, 0.2, -1.4]) for (const z of [0.55, -0.55]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 14), noir); r.rotation.x = Math.PI / 2; r.position.set(x, 0.3, z); g.add(r); }
+  g.scale.setScalar(0.9); return g;
+}
+
+// ---------------------------------------------------------------- particules (copeaux, jus, poussière)
+const MAXP = 1600, pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3), pAlp = new Float32Array(MAXP), pTai = new Float32Array(MAXP);
+const PP = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, t0: 1, g: 6 }));
+const geoP = new THREE.BufferGeometry();
+geoP.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); geoP.setAttribute('couleur', new THREE.BufferAttribute(pCol, 3)); geoP.setAttribute('alpha', new THREE.BufferAttribute(pAlp, 1)); geoP.setAttribute('taille', new THREE.BufferAttribute(pTai, 1));
+const matP = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { echelle: { value: 1 } },
+  vertexShader: `attribute vec3 couleur; attribute float alpha; attribute float taille; varying vec3 vC; varying float vA; uniform float echelle; void main() { vC = couleur; vA = alpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main() { float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.5, 0.2, r)); }` });
+const ptsP = new THREE.Points(geoP, matP); ptsP.frustumCulled = false; scene.add(ptsP);
+let pI = 0;
+function eclats(p, c, n, v = 3, taille = 40, g = 7) { for (let i = 0; i < n; i++) { const q = PP[pI], k = pI; pI = (pI + 1) % MAXP; q.vie = q.max = rnd(0.4, 0.9); q.vx = rnd(-v, v); q.vy = rnd(0, v * 1.2); q.t0 = taille * rnd(0.5, 1.2); q.g = g; pPos[k * 3] = p.x; pPos[k * 3 + 1] = p.y; pPos[k * 3 + 2] = p.z + 0.4; const cc = c[Math.floor(Math.random() * c.length)]; pCol[k * 3] = cc[0]; pCol[k * 3 + 1] = cc[1]; pCol[k * 3 + 2] = cc[2]; } }
+function majParticules(dt) { for (let i = 0; i < MAXP; i++) { const q = PP[i]; if (q.vie <= 0) { pAlp[i] = 0; continue; } q.vie -= dt; q.vy -= q.g * dt; pPos[i * 3] += q.vx * dt; pPos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; pAlp[i] = Math.min(1, k * 2); pTai[i] = q.t0; } for (const n of ['position', 'alpha', 'taille', 'couleur']) geoP.attributes[n].needsUpdate = true; }
+
+// ---------------------------------------------------------------- sons
+let actx = null, maitre = null, sonCoupe = false;
+try { sonCoupe = localStorage.getItem('koupkann_son') === 'non'; } catch (e) {}
+function audio() { if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination); } catch (e) {} }
+function bruit(dur, f, q, vol, when = 0, type = 'bandpass') { if (!actx) return; const t = actx.currentTime + when, b = actx.createBuffer(1, Math.ceil(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = actx.createBufferSource(); s.buffer = b; const fi = actx.createBiquadFilter(); fi.type = type; fi.frequency.value = f; fi.Q.value = q; const g = actx.createGain(); g.gain.value = vol; s.connect(fi).connect(g).connect(maitre); s.start(t); }
+function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
+const son = {
+  sabre: () => bruit(0.18, 2600, 0.8, 0.12),
+  coupe: (ras) => { bruit(0.08, 1800, 3, 0.7); bruit(0.12, 600, 1.5, 0.5, 0.01); if (ras) ton(880, 1320, 0.15, 0.05, 'triangle', 0.03); },
+  pique: () => { ton(240, 240, 0.25, 0.08, 'sawtooth'); ton(180, 120, 0.3, 0.08, 'square', 0.1); },
+  caillou: () => { bruit(0.15, 4000, 6, 0.6); ton(1800, 1200, 0.25, 0.06, 'triangle'); },
+  rate: () => ton(330, 200, 0.35, 0.06, 'triangle'),
+  klaxon: () => { ton(320, 320, 0.25, 0.08, 'square'); ton(400, 400, 0.3, 0.08, 'square', 0.3); },
+};
+
+// ---------------------------------------------------------------- partie
+const DUREE_ZEN = 90;
+let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, cannes = 0, cachalot = 0, camion = null, prochainCachalot = 25;
+const objets = [], morceaux = [];
+function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
+function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
+function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🌾</span>`).join(''); }
+function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
+function niveau() { return Math.min(10, temps / 12); }
+function surgir(type) {
+  const x = rnd(-viewW * 0.42, viewW * 0.42), z = rnd(-0.4, 0.4);
+  if (type === 'canne') {
+    const n = Math.floor(rnd(6, 9)), g = construireCanne(n);
+    g.position.set(x, sol - n * SEG, z); g.rotation.z = rnd(-0.08, 0.08); scene.add(g);
+    objets.push({ type, obj: g, n, haut: n * SEG, t: 0, monte: rnd(0.45, 0.6) / (1 + niveau() * 0.05), reste: Math.max(1.3, 2.6 - niveau() * 0.12), vivant: true });
+  } else if (type === 'caillou') {
+    const m = construireCaillou(); m.position.set(x, sol - 0.5, z + 0.5); scene.add(m);
+    objets.push({ type, obj: m, t: 0, vy: rnd(6.5, 8), vivant: true });
+  } else {
+    const m = construireGuepe(); const dir = Math.random() < .5 ? 1 : -1;
+    m.position.set(-dir * (viewW / 2 + 1), rnd(sol + 1.5, viewH * 0.3), 1); m.rotation.y = dir > 0 ? 0 : Math.PI; scene.add(m);
+    objets.push({ type, obj: m, t: 0, dir, vx: dir * rnd(2.2, 3.4), y0: m.position.y, vivant: true });
+  }
+}
+function vague() {
+  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau() * 0.5, 4));
+  for (let i = 0; i < n; i++) setTimeout(() => { if (etat === 'jeu') surgir('canne'); }, i * rnd(120, 300));
+  if (temps > 8 && Math.random() < Math.min(0.15 + niveau() * 0.03, 0.4)) setTimeout(() => etat === 'jeu' && surgir(Math.random() < .55 ? 'guepe' : 'caillou'), rnd(200, 600));
+  prochain = Math.max(0.8, 2.0 - niveau() * 0.12) + rnd(0, 0.4);
+}
+function couperCanne(o, yMonde, dir) {
+  o.vivant = false;
+  const base = o.obj.position.y + 0.0, hauteurCoupe = yMonde - Math.max(base, sol);
+  const ratio = Math.max(0, hauteurCoupe) / Math.max(0.5, (o.obj.position.y + o.haut) - Math.max(base, sol));
+  const ras = ratio < 0.18, milieu = ratio < 0.5;
+  let pts = ras ? 5 : milieu ? 3 : 1;
+  if (cachalot > 0) pts *= 2;
+  score += pts; cannes++; majScore();
+  // le morceau du haut s'envole, la souche reste
+  const yLocal = yMonde - o.obj.position.y;
+  const haut = new THREE.Group(), bas = new THREE.Group();
+  [...o.obj.children].forEach(c => { (c.position.y >= yLocal ? haut : bas).add(c); });
+  haut.position.copy(o.obj.position); bas.position.copy(o.obj.position); bas.rotation.copy(o.obj.rotation); haut.rotation.copy(o.obj.rotation);
+  const face = new THREE.Mesh(geoCoupe, matChair); face.rotation.x = -Math.PI / 2; face.position.y = yLocal; bas.add(face);
+  scene.remove(o.obj); scene.add(haut, bas);
+  morceaux.push({ obj: haut, vx: dir.x * 3 + rnd(-1, 1), vy: rnd(2.5, 4.5), vr: rnd(-6, 6), t: 0 });
+  morceaux.push({ obj: bas, vx: 0, vy: 0, vr: 0, t: 0, souche: true });
+  const p = new THREE.Vector3(o.obj.position.x, yMonde, o.obj.position.z);
+  eclats(p, [[0.94, 0.92, 0.75], [0.7, 0.8, 0.3], [0.85, 0.85, 0.6]], 24, 3, 36);
+  son.coupe(ras);
+  popup('+' + pts, p, 'pts');
+  if (ras) setTimeout(() => popup('Au ras du sol !', p.clone().add(new THREE.Vector3(0, -0.8, 0)), 'chaine'), 80);
+  if (cannes >= prochainCachalot && cachalot <= 0) lancerCachalot();
+}
+function lancerCachalot() {
+  prochainCachalot = cannes + 30; cachalot = 8; son.klaxon();
+  camion = construireCachalot(); camion.position.set(-viewW / 2 - 4, sol - 0.15, -2.5); scene.add(camion);
+  $('bandeau').classList.add('on');
+}
+function demarrer(m) {
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; cannes = 0; cachalot = 0; prochainCachalot = 25;
+  try { record = +localStorage.getItem('koupkann_record_' + mode) || 0; } catch (e) {}
+  [...objets, ...morceaux].forEach(o => scene.remove(o.obj)); objets.length = 0; morceaux.length = 0;
+  if (camion) { scene.remove(camion); camion = null; } $('bandeau').classList.remove('on');
+  majScore(); majVies();
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('lien').classList.add('discret');
+}
+function finPartie() {
+  etat = 'fin'; $('bandeau').classList.remove('on');
+  const nouveau = score > record && score > 0;
+  if (nouveau) { record = score; try { localStorage.setItem('koupkann_record_' + mode, record); } catch (e) {} }
+  $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
+  $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
+  $('cannesFin').textContent = cannes + (cannes > 1 ? ' cannes coupées' : ' canne coupée');
+  const et = score >= 400 ? 3 : score >= 150 ? 2 : score >= 40 ? 1 : 0;
+  $('etoilesFin').innerHTML = [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
+  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
+}
+
+// ---------------------------------------------------------------- geste du sabre
+let appui = false, dernier = null; const trait = [];
+const pointeur = e => ({ x: e.clientX, y: e.clientY, t: performance.now() });
+addEventListener('pointerdown', e => { if (e.target.closest('.zone-interactive')) return; audio(); appui = true; dernier = pointeur(e); trait.length = 0; trait.push(dernier); });
+addEventListener('pointermove', e => { if (!appui) return; const p = pointeur(e); trait.push(p); if (trait.length > 14) trait.shift(); tester(dernier, p); dernier = p; });
+addEventListener('pointerup', () => { appui = false; }); addEventListener('pointercancel', () => { appui = false; });
+const versMonde = (x, y) => { const v = new THREE.Vector3(x / W * 2 - 1, -(y / H) * 2 + 1, 0.5).unproject(camera); const d = v.sub(camera.position).normalize(); const t = -camera.position.z / d.z; return camera.position.clone().addScaledVector(d, t); };
+function tester(a, b) {
+  if (etat !== 'jeu') return;
+  const dist = Math.hypot(b.x - a.x, b.y - a.y); if (dist < 4) return;
+  if (dist > 25 && Math.random() < 0.3) son.sabre();
+  const A = versMonde(a.x, a.y), B = versMonde(b.x, b.y), dir = B.clone().sub(A).normalize();
+  for (const o of objets) {
+    if (!o.vivant) continue;
+    const p = o.obj.position;
+    if (o.type === 'canne') {
+      // le geste doit traverser la tige (segment vertical visible au-dessus du sol)
+      const bas = Math.max(p.y, sol), haut = p.y + o.haut;
+      if ((A.x - p.x) * (B.x - p.x) > 0 || Math.abs(B.x - A.x) < 1e-3) continue;
+      const t = (p.x - A.x) / (B.x - A.x), y = A.y + t * (B.y - A.y);
+      if (y > bas + 0.02 && y < haut - 0.1) couperCanne(o, y, dir);
+    } else {
+      const s = toScreen(p), r = (o.type === 'guepe' ? 0.5 : 0.55) * H / viewH;
+      const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy, t = Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L));
+      if ((a.x + t * dx - s.x) ** 2 + (a.y + t * dy - s.y) ** 2 < r * r) {
+        o.vivant = false; scene.remove(o.obj);
+        if (o.type === 'guepe') { son.pique(); popup('Aïe, piqué !', p, 'aie'); eclats(p, [[0.95, 0.8, 0.1], [0.1, 0.1, 0.1]], 16, 2, 30); }
+        else { son.caillou(); popup('Cling ! La lame !', p, 'aie'); eclats(p, [[1, 0.85, 0.4], [0.3, 0.3, 0.3]], 20, 3, 26); }
+        if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); }
+      }
+    }
+  }
+}
+function dessinerTrait() {
+  tctx.clearRect(0, 0, W, H);
+  const now = performance.now(); while (trait.length && now - trait[0].t > 160) trait.shift();
+  if (trait.length < 2) return;
+  for (let i = 1; i < trait.length; i++) {
+    const k = i / trait.length; tctx.strokeStyle = `rgba(255,248,220,${k * 0.9})`; tctx.lineWidth = 2 + k * 8; tctx.lineCap = 'round';
+    tctx.shadowColor = 'rgba(255,220,140,.9)'; tctx.shadowBlur = 12;
+    tctx.beginPath(); tctx.moveTo(trait[i - 1].x, trait[i - 1].y); tctx.lineTo(trait[i].x, trait[i].y); tctx.stroke();
+  }
+}
+
+// ---------------------------------------------------------------- boucle
+const horloge = new THREE.Clock(); let ambiance = 0;
+function boucle() {
+  const dt = Math.min(horloge.getDelta(), 0.05);
+  matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
+  if (etat === 'jeu') { temps += dt; prochain -= dt; if (prochain <= 0) vague(); if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); } }
+  else { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; if (objets.filter(o => o.vivant).length < 3) surgir('canne'); } }
+  if (cachalot > 0) { cachalot -= dt; if (camion) camion.position.x += dt * (viewW + 8) / 8; if (cachalot <= 0) { $('bandeau').classList.remove('on'); if (camion) { scene.remove(camion); camion = null; } } }
+  for (let i = objets.length - 1; i >= 0; i--) {
+    const o = objets[i];
+    if (!o.vivant) { objets.splice(i, 1); continue; }
+    o.t += dt;
+    if (o.type === 'canne') {
+      const cible = sol - 0.05, depart = sol - o.haut;
+      if (o.t < o.monte) o.obj.position.y = depart + (cible - depart) * (1 - Math.pow(1 - o.t / o.monte, 3));
+      else if (o.t < o.monte + o.reste) { o.obj.position.y = cible; o.obj.rotation.z = Math.sin(o.t * 2 + o.n) * 0.03; }
+      else { o.obj.position.y -= dt * o.haut / 0.45; if (o.obj.position.y < depart) { o.vivant = false; scene.remove(o.obj); if (etat === 'jeu') { son.rate(); popup('Ratée !', new THREE.Vector3(o.obj.position.x, sol + 0.6, 0), 'aie'); if (mode === 'classique') perdreVie(); } } }
+    } else if (o.type === 'caillou') {
+      o.vy -= 9 * dt; o.obj.position.y += o.vy * dt; o.obj.rotation.x += dt * 2; o.obj.rotation.z += dt * 1.4;
+      if (o.vy < 0 && o.obj.position.y < sol - 0.8) { o.vivant = false; scene.remove(o.obj); }
+    } else {
+      o.obj.position.x += o.vx * dt; o.obj.position.y = o.y0 + Math.sin(o.t * 4) * 0.4;
+      o.obj.userData.ailes.forEach((a, k) => a.rotation.y = Math.sin(o.t * 60 + k * Math.PI) * 0.6);
+      if (Math.abs(o.obj.position.x) > viewW / 2 + 2) { o.vivant = false; scene.remove(o.obj); }
+    }
+  }
+  for (let i = morceaux.length - 1; i >= 0; i--) {
+    const m = morceaux[i]; m.t += dt;
+    if (m.souche) { if (m.t > 0.6) m.obj.position.y -= dt * 2.5; if (m.t > 2.2) { scene.remove(m.obj); morceaux.splice(i, 1); } continue; }
+    m.vy -= 9.5 * dt; m.obj.position.x += m.vx * dt; m.obj.position.y += m.vy * dt; m.obj.rotation.z += m.vr * dt;
+    if (m.obj.position.y < -viewH / 2 - 4) { scene.remove(m.obj); morceaux.splice(i, 1); }
+  }
+  majParticules(dt);
+  renderer.render(scene, camera);
+  dessinerTrait();
+  requestAnimationFrame(boucle);
+}
+
+// ---------------------------------------------------------------- boutons
+const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; majSon();
+$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('koupkann_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
+$('jouer').onclick = () => demarrer('classique');
+$('jouerZen').onclick = () => demarrer('zen');
+$('rejouer').onclick = () => demarrer(mode);
+$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
+$('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
+document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
+addEventListener('resize', resize); resize(); majVies(); majScore();
+const img = new Image(); img.src = './fond-cannes.webp'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
+requestAnimationFrame(boucle);
+window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
+if (TEST) window.jeu = { objets, toScreen, get etat() { return etat; }, demarrer, finPartie, tester, get sol() { return sol; }, lancerCachalot };
+</script>
+</body>
+</html>
