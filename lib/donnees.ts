@@ -15,7 +15,9 @@ export type Manifeste =
       pages: { href: string; titre?: string }[];
       sommaire: { titre: string; index: number }[];
     }
-  | { type: "pdf"; pages: number; ratio: number; ext?: "webp" | "jpg" };
+  | { type: "pdf"; pages: number; ratio: number; ext?: "webp" | "jpg" }
+  // Livre-application web (index.html + pages) affiché tel quel dans une iframe isolée
+  | { type: "web"; entree: string; pages?: number };
 
 export type Livre = {
   id: string;

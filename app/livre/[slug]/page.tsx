@@ -15,7 +15,8 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
   const ok = acces.get(livre.id);
   const p = prog.get(livre.id);
   const univers = UNIVERS.find((u) => u.id === livre.univers);
-  const nbPages = livre.manifeste.type === "pdf" ? livre.manifeste.pages : livre.manifeste.fixe ? livre.manifeste.pages.length : null;
+  const m = livre.manifeste;
+  const nbPages = m.type === "pdf" ? m.pages : m.type === "web" ? m.pages || null : m.fixe ? m.pages.length : null;
   const typeTexte = livre.type === "epub_interactif" ? "Livre interactif" : "Livre";
 
   return (

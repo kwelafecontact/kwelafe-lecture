@@ -115,3 +115,24 @@ export const SCRIPT_CHAPITRE = String.raw`
   if (document.readyState === "complete") demarrer(); else window.addEventListener("load", demarrer);
 })();
 `;
+
+// Script injecté dans les pages d'un livre-application web (dossier web/).
+// L'iframe isolée n'a pas de localStorage : on en fournit un, gardé par le lecteur de l'app
+// (la page d'accueil du livre reçoit ses données dans l'adresse et renvoie chaque changement).
+export const SCRIPT_WEB = String.raw`
+(function () {
+  try { window.localStorage.getItem("_kw"); return; } catch (e) {}
+  var m = {}, principal = false;
+  try {
+    var h = location.hash.match(/kwls=([^&]*)/);
+    if (h) { m = JSON.parse(decodeURIComponent(h[1])) || {}; principal = true; }
+  } catch (_) {}
+  function sauver() { if (principal) { try { parent.postMessage({ kwStore: m }, "*"); } catch (_) {} } }
+  var s = { getItem: function (k) { return k in m ? m[k] : null; }, setItem: function (k, v) { m[k] = String(v); sauver(); },
+    removeItem: function (k) { delete m[k]; sauver(); }, clear: function () { m = {}; sauver(); },
+    key: function (i) { return Object.keys(m)[i] || null; }, get length() { return Object.keys(m).length; } };
+  try { Object.defineProperty(window, "localStorage", { value: s, configurable: true }); } catch (_) {}
+  try { Object.defineProperty(window, "sessionStorage", { value: s, configurable: true }); } catch (_) {}
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+`;

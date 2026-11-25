@@ -267,3 +267,11 @@ img { max-width: 100%; display: block; }
 .kw-info { position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 84px); background: rgba(20,10,4,.55); color: #fff; padding: 8px 16px; border-radius: 999px; font-weight: 800; font-size: 15px; pointer-events: none; backdrop-filter: blur(6px); white-space: nowrap; }
 
 .jeu-emoji { font-size: 64px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
+
+/* Lecteur des livres-applications web */
+.lecteur-web { position: fixed; inset: 0; display: flex; flex-direction: column; background: #14201b; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.lecteur-web-barre { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: calc(env(safe-area-inset-top, 0px) + 6px) 14px 6px; background: #0d1612; color: #f7f1e4; }
+.lecteur-web-retour { color: #f7f1e4; text-decoration: none; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.12); white-space: nowrap; }
+.lecteur-web-titre { font-size: 14px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lecteur-web-cadre { flex: 1 1 auto; width: 100%; border: 0; display: block; }
+.lecteur-web-filigrane { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 10px; color: #fff; opacity: .08; pointer-events: none; }

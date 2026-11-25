@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lireJetonContenu } from "@/lib/jeton-contenu";
 import { stockage } from "@/lib/cf";
-import { SCRIPT_CHAPITRE } from "@/lib/script-chapitre";
+import { SCRIPT_CHAPITRE, SCRIPT_WEB } from "@/lib/script-chapitre";
 
 const TYPES: Record<string, string> = {
   xhtml: "application/xhtml+xml; charset=utf-8", html: "text/html; charset=utf-8", htm: "text/html; charset=utf-8",
@@ -36,7 +36,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ jet
 
   if (ext === "xhtml" || ext === "html" || ext === "htm") {
     let texte = await data.text();
-    const bloc = `<script>//<![CDATA[\n${SCRIPT_CHAPITRE}\n//]]></script>`;
+    // Livre-application web : on garde son propre fonctionnement, on ajoute seulement la mémoire de lecture
+    const script = relatif.startsWith("web/") ? SCRIPT_WEB : SCRIPT_CHAPITRE;
+    const bloc = `<script>//<![CDATA[\n${script}\n//]]></script>`;
     texte = /<\/head>/i.test(texte) ? texte.replace(/<\/head>/i, `${bloc}</head>`) : bloc + texte;
     // Les pages sont affichées dans une iframe isolée : elles ne peuvent pas lire l'application.
     entetes["Content-Security-Policy"] = "frame-ancestors 'self'";

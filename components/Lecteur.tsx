@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { Manifeste } from "@/lib/donnees";
 
 type Props = {
-  livre: { id: string; slug: string; titre: string; manifeste: Manifeste };
+  livre: { id: string; slug: string; titre: string; manifeste: Exclude<Manifeste, { type: "web" }> };
   jetonInitial: string;
   positionInitiale: { i: number; f: number };
   email: string;

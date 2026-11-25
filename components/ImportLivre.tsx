@@ -172,6 +172,31 @@ export async function preparerPdf(fichier: File, id: string, etape: (t: string) 
   return { titre: fichier.name.replace(/\.pdf$/i, ""), manifeste: { type: "pdf" as const, pages: doc.numPages, ratio, ext }, envois, couverture, typeLivre: "pdf" };
 }
 
+// Livre-application web (.zip avec un index.html) : tous les fichiers partent dans livres/{id}/web/
+export async function preparerWeb(fichier: File, id: string) {
+  const zip = await JSZip.loadAsync(fichier);
+  const noms = Object.keys(zip.files).filter((n) => !zip.files[n].dir && !/(^|\/)(__MACOSX|\.DS_Store)/.test(n));
+  const index = noms.filter((n) => /(^|\/)index\.html?$/i.test(n)).sort((a, b) => a.length - b.length)[0];
+  if (!index) throw new Error("Ce fichier .zip ne contient pas de page index.html : ce n'est pas un livre web.");
+  const racine = dossier(index);
+  const envois: Envoi[] = [];
+  for (const n of noms) {
+    if (!n.startsWith(racine)) continue;
+    const rel = n.slice(racine.length);
+    envois.push({ chemin: `${id}/web/${rel}`, blob: await zip.files[n].async("blob"), type: typeMime(n) });
+  }
+  const html = await zip.files[index].async("string");
+  const titre = (html.match(/<title>([^<]*)<\/title>/i)?.[1] || fichier.name.replace(/\.zip$/i, ""))
+    .split(/\s[·|–-]\s/)[0].trim();
+  const pages = (html.match(/"f"\s*:\s*"[^"]+\.x?html"/g) || []).length || undefined;
+  // Couverture : une image nommée « couverture » ou « cover » dans le livre
+  const nomCouv = noms.find((n) => /(^|\/)(couverture|cover)\.(jpe?g|png|webp)$/i.test(n));
+  const couverture = nomCouv
+    ? { chemin: `${id}.${nomCouv.split(".").pop()!.toLowerCase()}`, blob: await zip.files[nomCouv].async("blob"), type: typeMime(nomCouv) }
+    : null;
+  return { titre, manifeste: { type: "web" as const, entree: `web/${index.slice(racine.length)}`, pages }, envois, couverture, typeLivre: "epub_interactif" };
+}
+
 export default function ImportLivre() {
   const router = useRouter();
   const [fichier, setFichier] = useState<File | null>(null);
@@ -214,9 +239,10 @@ export default function ImportLivre() {
       const id = crypto.randomUUID();
       setEtat("Lecture du fichier…");
       const estPdf = /\.pdf$/i.test(fichier.name);
-      const r = estPdf ? await preparerPdf(fichier, id, setEtat) : await preparerEpub(fichier, id);
+      const estZip = /\.zip$/i.test(fichier.name);
+      const r = estPdf ? await preparerPdf(fichier, id, setEtat) : estZip ? await preparerWeb(fichier, id) : await preparerEpub(fichier, id);
       let typeLivre = r.typeLivre;
-      if (!estPdf && interactifForce !== "auto") typeLivre = interactifForce === "oui" ? "epub_interactif" : "epub_texte";
+      if (!estPdf && !estZip && interactifForce !== "auto") typeLivre = interactifForce === "oui" ? "epub_interactif" : "epub_texte";
 
       setEtat(`Envoi des ${r.envois.length} morceaux du livre…`);
       await televerser(r.envois, false, (n) => setEtat(`Envoi : ${n} / ${r.envois.length}`));
@@ -262,8 +288,8 @@ export default function ImportLivre() {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={couvBoutique} alt="Couverture de la boutique" style={{ width: 110, borderRadius: 8, boxShadow: "var(--ombre)" }} />
       )}
-      <label>2. Fichier du livre (EPUB ou PDF)
-        <input type="file" accept=".epub,.pdf,application/epub+zip,application/pdf" onChange={(e) => setFichier(e.target.files?.[0] || null)} required />
+      <label>2. Fichier du livre (EPUB, PDF, ou .zip d'un livre web interactif)
+        <input type="file" accept=".epub,.pdf,.zip,application/epub+zip,application/pdf,application/zip" onChange={(e) => setFichier(e.target.files?.[0] || null)} required />
       </label>
       <label>Titre (laisser vide pour reprendre celui du fichier)
         <input type="text" value={titre} onChange={(e) => setTitre(e.target.value)} />
