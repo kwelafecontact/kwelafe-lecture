@@ -12,10 +12,23 @@
   @font-face { font-family:"Bangers"; src:url("../koup-koup/lib/bangers.woff2") format("woff2"); font-display:swap; }
   :root { --or:#ffd24a; }
   html, body { margin:0; height:100%; overflow:hidden; background:#070a1e; font-family:"Baloo 2", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
-  #fond { position:fixed; inset:0; background:#070a1e url("./fond-barachois.webp") center bottom / cover no-repeat; }
+  #fond { position:fixed; inset:0; background:#070a1e; }
   #fond::after { content:""; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 30%, rgba(20,30,90,0) 30%, rgba(3,4,16,.55) 100%); }
   #lueur { position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:0; }
   #gl { position:fixed; inset:0; width:100%; height:100%; }
+  .bandeau { position:fixed; left:50%; top:max(176px, calc(env(safe-area-inset-top) + 160px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
+    padding:6px 20px; border-radius:14px; background:rgba(60,15,0,.6); color:#ffd27a; text-shadow:0 2px 0 #5a1a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .bandeau.on { opacity:1; }
+  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
+  .bonus.on { display:flex; }
+  .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
+  .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
+  .bbtn.vide { opacity:.38; }
+  .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
+  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
+
   .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
   .hud.on { opacity:1; }
   .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
@@ -60,6 +73,12 @@
 <div id="fond"></div>
 <canvas id="gl"></canvas>
 <div id="lueur"></div>
+<div class="bandeau" id="bandeau"></div>
+<div class="bonus" id="bonus">
+  <button class="bbtn zone-interactive" id="bAllumage" aria-label="Allumage">🔥</button>
+  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
+  <button class="bbtn zone-interactive vide" id="bVent" aria-label="Coup de vent">💨<span class="nb" id="nVent">0</span></button>
+</div>
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
@@ -70,7 +89,7 @@
   <div class="titre">Pété Pétard</div>
   <div class="sous">La nuit du 31 au-dessus du Barachois</div>
   <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
-  <div class="consigne">Touche les fusées et les pétards avant qu'ils n'arrivent en haut. Évite les bombes de fumée !</div>
+  <div class="consigne">Touche les fusées et les pétards avant qu'ils n'arrivent en haut. Évite les bombes de fumée ! Enchaîne pour gagner des bonus, et lance l'allumage 🔥 dès qu'il est chargé.</div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
@@ -87,16 +106,22 @@
 <button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
-<script type="importmap">{ "imports": { "three": "../koup-koup/lib/three.module.js" } }</script>
+<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 const $ = id => document.getElementById(id);
 const rnd = (a, b) => a + Math.random() * (b - a);
 const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
 const PETIT = Math.min(innerWidth, innerHeight) < 500 || /iPhone/.test(navigator.userAgent);
 
 // ---------------------------------------------------------------- rendu
-const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: !PETIT, alpha: true, preserveDrawingBuffer: TEST });
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: TEST });
 renderer.setPixelRatio(Math.min(devicePixelRatio, PETIT ? 1.75 : 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
@@ -104,13 +129,26 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
 scene.add(new THREE.HemisphereLight(0x8fa0ff, 0x101020, 1.4));
 const lumiere = new THREE.PointLight(0xffc070, 0, 30, 1.5); lumiere.position.set(0, 0, 4); scene.add(lumiere);
+const lune = new THREE.DirectionalLight(0xb8c8ff, 1.2); lune.position.set(-4, 6, 8); scene.add(lune);
+const texFond = new THREE.TextureLoader().load('./fond-barachois.webp', () => { $('charge').textContent = ''; window.PRET = true; resize(); }); texFond.colorSpace = THREE.SRGBColorSpace;
+const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false, color: new THREE.Color(0.85, 0.85, 0.9) }));
+planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.7, 0.45, 0.78); composer.addPass(bloom);
+composer.addPass(new OutputPass()); composer.addPass(new SMAAPass());
+let secousse = 0;
 let W = 0, H = 0, viewH = 10, viewW = 10;
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
   camera.aspect = W / H; camera.updateProjectionMatrix();
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
+  const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
+  let pw = wF, ph = wF / (16 / 9); if (ph < hF) { ph = hF; pw = hF * 16 / 9; }
+  planFond.scale.set(pw * 1.08, ph * 1.08, 1); planFond.position.y = (ph - hF) / 2;
+  composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
 }
-addEventListener('resize', resize); resize();
+
+addEventListener('resize', resize);
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
 
 // ---------------------------------------------------------------- particules lumineuses (GPU, mélange additif)
@@ -128,7 +166,7 @@ const matP = new THREE.ShaderMaterial({
   vertexShader: `attribute vec3 couleur; attribute float taille; attribute float alpha; varying vec3 vC; varying float vA; uniform float echelle;
     void main() { vC = couleur; vA = alpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
   fragmentShader: `varying vec3 vC; varying float vA; void main() { vec2 d = gl_PointCoord - 0.5; float r = length(d); if (r > 0.5) discard;
-    float coeur = exp(-r * r * 70.0), halo = exp(-r * r * 14.0); gl_FragColor = vec4(vC * (halo * 0.5 + coeur * 1.4) + vec3(coeur * 0.35), vA * (halo * 0.8 + coeur)); }`
+    float coeur = exp(-r * r * 70.0), halo = exp(-r * r * 14.0); gl_FragColor = vec4(vC * (halo * 0.5 + coeur * 1.45) + vec3(coeur * 0.2), vA * (halo * 0.8 + coeur)); }`
 });
 const points = new THREE.Points(geo, matP); points.frustumCulled = false; scene.add(points);
 let pIdx = 0;
@@ -150,7 +188,7 @@ function majParticules(dt) {
     let a = Math.min(1, k * 1.6);
     if (p.scint) a *= 0.45 + 0.55 * (Math.sin((p.vie * 40) + i) > 0 ? 1 : 0.2);
     pAlp[i] = a; pTai[i] = p.t0 * (0.5 + 0.5 * k);
-    const chaud = Math.max(0, k - 0.75) * 3; // les éclats démarrent presque blancs
+    const chaud = Math.max(0, k - 0.86) * 4; // les éclats démarrent presque blancs
     pCol[i * 3] = p.r + (1 - p.r) * chaud; pCol[i * 3 + 1] = p.gg + (1 - p.gg) * chaud; pCol[i * 3 + 2] = p.b + (1 - p.b) * chaud;
     if (p.trainee && Math.random() < 0.25) {
       const j = pIdx; etincelle(pPos[i * 3], pPos[i * 3 + 1], pPos[i * 3 + 2], 0, 0, 0, tmpC.setRGB(p.r * .6, p.gg * .5, p.b * .4), 0.5, p.t0 * 0.5, { g: 0.4 }); P[j].trainee = false;
@@ -159,11 +197,20 @@ function majParticules(dt) {
   for (const n of ['position', 'couleur', 'taille', 'alpha']) geo.attributes[n].needsUpdate = true;
 }
 const tmpC = new THREE.Color();
+const MAXF = 700, fPos = new Float32Array(MAXF * 3), fAlp = new Float32Array(MAXF), fTai = new Float32Array(MAXF), FF = Array.from({ length: MAXF }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, t0: 1 }));
+const geoF = new THREE.BufferGeometry(); geoF.setAttribute('position', new THREE.BufferAttribute(fPos, 3)); geoF.setAttribute('alpha', new THREE.BufferAttribute(fAlp, 1)); geoF.setAttribute('taille', new THREE.BufferAttribute(fTai, 1));
+const matF = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { echelle: { value: 1 } },
+  vertexShader: `attribute float alpha; attribute float taille; varying float vA; uniform float echelle; void main() { vA = alpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying float vA; void main() { float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; gl_FragColor = vec4(vec3(0.55, 0.55, 0.62), vA * smoothstep(0.5, 0.0, r) * 0.35); }` });
+const ptsF = new THREE.Points(geoF, matF); ptsF.frustumCulled = false; ptsF.renderOrder = 1; scene.add(ptsF); let fI = 0;
+function fumee(x, y, z, t = 70, vie = 1.6) { const q = FF[fI], k = fI; fI = (fI + 1) % MAXF; q.vie = q.max = vie * rnd(0.7, 1.3); q.vx = rnd(-0.15, 0.15); q.vy = rnd(0.05, 0.3); q.t0 = t * rnd(0.7, 1.3); fPos[k * 3] = x; fPos[k * 3 + 1] = y; fPos[k * 3 + 2] = z; }
+function majFumee(dt) { for (let i = 0; i < MAXF; i++) { const q = FF[i]; if (q.vie <= 0) { fAlp[i] = 0; continue; } q.vie -= dt; fPos[i * 3] += q.vx * dt; fPos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; fAlp[i] = Math.min(1, k) * Math.min(1, (1 - k) * 5); fTai[i] = q.t0 * (1.8 - k); } for (const n of ['position', 'alpha', 'taille']) geoF.attributes[n].needsUpdate = true; }
 
 // ---------------------------------------------------------------- sons (synthétisés, aucune voix)
 let actx = null, maitre = null, sonCoupe = false;
 try { sonCoupe = localStorage.getItem('petepetard_son') === 'non'; } catch (e) {}
 function audio() {
+  setTimeout(chargerSons, 0);
   if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination); } catch (e) {}
 }
@@ -181,11 +228,14 @@ function ton(f0, f1, dur, vol, type = 'sine', when = 0) {
   const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05);
 }
+const sons = {}; let sonsDemandes = false;
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['boum-petit', 'boum-moyen', 'boum-gros', 'sifflet-1', 'sifflet-2', 'petard-1', 'petard-2']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; }).catch(() => {}); }
+function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * rnd(0.94, 1.06); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
 const son = {
-  sifflet: () => ton(rnd(500, 700), rnd(1600, 2400), rnd(0.6, 0.9), 0.035, 'sine'),
-  boum: (gros = 1) => { bruit(0.9 * gros, 600, 0.7, 0.9 * gros); bruit(0.25, 2400, 1, 0.25); },
-  pet: () => { bruit(0.12, 3000, 2, 0.5, 0, 'bandpass'); bruit(0.18, 900, 1, 0.5, 0.05); },
-  crepite: () => { for (let i = 0; i < 10; i++) bruit(0.03, rnd(3000, 6000), 4, 0.12, 0.25 + i * rnd(0.03, 0.08), 'bandpass'); },
+  sifflet: () => { if (!jouer(Math.random() < .5 ? 'sifflet-1' : 'sifflet-2', 0.28)) ton(rnd(500, 700), rnd(1600, 2400), rnd(0.6, 0.9), 0.035, 'sine'); },
+  boum: (gros = 1) => { if (!jouer(gros >= 1.4 ? 'boum-gros' : gros >= 0.9 ? 'boum-moyen' : 'boum-petit', Math.min(1, 0.55 + gros * 0.3))) { bruit(0.9 * gros, 600, 0.7, 0.9 * gros); bruit(0.25, 2400, 1, 0.25); } },
+  pet: () => { if (!jouer(Math.random() < .5 ? 'petard-1' : 'petard-2', 0.8)) { bruit(0.12, 3000, 2, 0.5, 0, 'bandpass'); bruit(0.18, 900, 1, 0.5, 0.05); } },
+  crepite: () => { if (sons['boum-moyen']) return; for (let i = 0; i < 10; i++) bruit(0.03, rnd(3000, 6000), 4, 0.12, 0.25 + i * rnd(0.03, 0.08), 'bandpass'); },
   fumee: () => { bruit(0.8, 300, 0.5, 0.5); ton(180, 70, 0.5, 0.15, 'sawtooth'); },
   rate: () => ton(420, 180, 0.35, 0.08, 'triangle'),
   chaine: n => { [0, 4, 7, 12, 16].slice(0, Math.min(5, n)).forEach((st, i) => ton(523 * 2 ** (st / 12), 523 * 2 ** (st / 12), 0.2, 0.06, 'triangle', i * 0.06)); },
@@ -196,7 +246,23 @@ const PALETTES = [
   ['#2f6fff', '#ffe23a', '#ff3030', '#2fd04a'],       // drapeau réunionnais (lo mahavéli)
   ['#ff4fb4', '#ffd0f0'], ['#ffd24a', '#fff4c0'], ['#2fe0ff', '#c8f8ff'], ['#ff6a1a', '#ffd24a'], ['#b45cff', '#ffffff'], ['#5fe04a', '#e8ffc0'], ['#ff3030', '#ffffff'],
 ].map(p => p.map(c => new THREE.Color(c)));
+const texPapier = {};
+function papier(c) { const k = new THREE.Color(c).getHexString(); if (texPapier[k]) return texPapier[k]; const cv = document.createElement('canvas'); cv.width = 128; cv.height = 256; const g = cv.getContext('2d');
+  g.fillStyle = '#' + k; g.fillRect(0, 0, 128, 256); g.fillStyle = 'rgba(255,255,255,.85)'; for (let y = 20; y < 256; y += 46) g.fillRect(0, y, 128, 7);
+  g.fillStyle = '#ffe23a'; for (let i = 0; i < 14; i++) { const x = Math.random() * 128, y = Math.random() * 256, r = 5 + Math.random() * 5; g.beginPath(); for (let j = 0; j < 10; j++) { const a = j * Math.PI / 5, rr = j % 2 ? r * 0.45 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill(); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return texPapier[k] = t; }
 function corpsFusee(couleur, long = 1) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ map: papier(couleur), roughness: 0.55, metalness: 0.05 });
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.8 * long, 24), mat);
+  const coiffe = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.38, 24), new THREE.MeshStandardMaterial({ color: 0xf2e8d0, roughness: 0.4, metalness: 0.2 })); coiffe.position.y = 0.4 * long + 0.19;
+  const bague = new THREE.Mesh(new THREE.TorusGeometry(0.145, 0.025, 8, 24), new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 0.8, roughness: 0.25 })); bague.rotation.x = Math.PI / 2; bague.position.y = 0.4 * long;
+  const fond = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.08, 20), new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.8 })); fond.position.y = -0.4 * long - 0.04;
+  for (let i = 0; i < 3; i++) { const a = new THREE.Mesh(new RoundedBoxGeometry(0.02, 0.22, 0.14, 2, 0.008), new THREE.MeshStandardMaterial({ color: 0xf2e8d0, roughness: 0.5 })); const ang = i * Math.PI * 2 / 3; a.position.set(Math.cos(ang) * 0.17, -0.33 * long, Math.sin(ang) * 0.17); a.rotation.y = -ang; g.add(a); }
+  const baguette = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.014, 1.1, 8), new THREE.MeshStandardMaterial({ color: 0xc8a060, roughness: 0.8 })); baguette.position.set(0.16, -0.62 * long, 0);
+  g.add(tube, coiffe, bague, fond, baguette); return g;
+}
+function ancienCorpsFusee(couleur, long = 1) {
   const g = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color: couleur, roughness: 0.5, metalness: 0.1 });
   const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.75 * long, 14), mat);
@@ -210,7 +276,7 @@ function corpsFusee(couleur, long = 1) {
 }
 function corpsPetard() {
   const g = new THREE.Group();
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 16), new THREE.MeshStandardMaterial({ color: 0xd8141e, roughness: 0.45 }));
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 24), new THREE.MeshStandardMaterial({ map: papier('#d8141e'), roughness: 0.45 }));
   const fil = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.08, 16), new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 0.6, roughness: 0.3 }));
   const meche = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.25, 6), new THREE.MeshStandardMaterial({ color: 0x3a2a1a }));
   meche.position.y = 0.38; g.add(tube, fil, meche); return g;
@@ -225,6 +291,7 @@ function corpsBombe() {
 const matOr = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.2, emissive: 0x6a4200, emissiveIntensity: 0.6 });
 
 const engins = [];
+const RECHARGE = 12; let charge = 0, serie = 0, ralentis = 0, vents = 0, ralenti = 0, vent = 0;
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, chaineN = 0, chaineT = 0, chainePos = null, finale = 0;
 const DUREE_ZEN = 90;
 function lancer(type) {
@@ -235,7 +302,7 @@ function lancer(type) {
   else if (type === 'petard') { obj = corpsPetard(); rayon = 0.7; }
   else { obj = corpsBombe(); rayon = 0.65; }
   const x0 = rnd(-viewW * 0.4, viewW * 0.4), y0 = -viewH / 2 - 1;
-  const niveau = Math.min(10, temps / 12);
+  const niveau = Math.min(14, temps / 10);
   const sommet = rnd(viewH * 0.12, viewH * 0.42);
   const g = type === 'petard' ? 5.5 : 4.2;
   const vy = Math.sqrt(2 * g * (sommet - y0)) * (1 + niveau * 0.02);
@@ -248,14 +315,14 @@ function lancer(type) {
   return e;
 }
 function vague() {
-  const niveau = Math.min(10, temps / 12);
-  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.45, 5));
+  const niveau = Math.min(14, temps / 10);
+  const n = 1 + Math.floor(Math.random() * Math.min(1.5 + niveau * 0.5, 7));
   for (let i = 0; i < n; i++) setTimeout(() => {
     if (etat !== 'jeu') return;
-    const r = Math.random(), pB = temps < 8 ? 0 : Math.min(0.1 + niveau * 0.015, 0.22);
+    const r = Math.random(), pB = temps < 6 || vent > 0 ? 0 : Math.min(0.12 + niveau * 0.018, 0.28);
     lancer(r < pB ? 'bombe' : r < pB + 0.05 && !engins.some(e => e.vivant && e.type === 'doree') ? 'doree' : r < pB + 0.4 ? 'petard' : 'fusee');
-  }, i * rnd(150, 380));
-  prochain = Math.max(0.75, 2.1 - niveau * 0.13) + rnd(0, 0.5);
+  }, i * rnd(120, 300));
+  prochain = Math.max(0.5, 1.7 - niveau * 0.11) + rnd(0, 0.4);
 }
 
 // ---------------------------------------------------------------- éclats
@@ -265,7 +332,7 @@ function eclater(e, enChaine = false) {
   if (e.type === 'bombe') {
     son.fumee();
     for (let i = 0; i < 70; i++) etincelle(p.x, p.y, p.z, rnd(-1.6, 1.6), rnd(-0.6, 1.8), rnd(-.5, .5), tmpC.setRGB(0.22, 0.22, 0.25), rnd(1.2, 2.2), rnd(160, 260), { g: -0.3, frein: 0.96 });
-    popup('Pfff… fumée ! −5', p, 'aie');
+    popup('Pfff… fumée ! −5', p, 'aie'); serie = 0;
     score = Math.max(0, score - 5); majScore();
     if (mode === 'classique') perdreVie();
     return;
@@ -283,15 +350,26 @@ function eclater(e, enChaine = false) {
   const mult = Math.min(8, chaineN);
   const base = e.type === 'doree' ? 10 : e.type === 'petard' ? 3 : 2;
   const pts = base * mult;
-  if (etat === 'jeu') { score += pts; majScore(); }
+  if (etat === 'jeu') { score += pts; majScore(); serie++; if (serie % 6 === 0) { if (serie % 12 === 0) { vents = Math.min(3, vents + 1); bandeau('Série de ' + serie + ' ! Bonus coup de vent 💨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } majBonus(); } }
+  secousse = Math.max(secousse, 0.12 * gros);
   popup('+' + pts, p, 'pts', '#' + e.pal[0].getHexString());
   if (e.type === 'doree') setTimeout(() => popup('Fusée dorée !', p.clone().add(new THREE.Vector3(0, -0.9, 0)), 'chaine'), 100);
   // réaction en chaîne : les engins proches s'allument aussi (sauf les bombes)
   const portee = 1.7 * gros;
   for (const o of engins) if (o.vivant && o.type !== 'bombe' && o.obj.position.distanceTo(p) < portee) setTimeout(() => { if (o.vivant) { eclater(o, true); } }, 90);
 }
+function majBonus() {
+  const k = Math.min(1, charge / RECHARGE), pc = (k * 100).toFixed(1);
+  $('bAllumage').style.background = `linear-gradient(to top, rgba(255,150,40,.7) ${pc}%, rgba(20,10,40,.6) ${pc}%)`; $('bAllumage').classList.toggle('pret', k >= 1); $('bAllumage').classList.toggle('vide', k < 1);
+  $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', !ralentis); $('bRalenti').classList.toggle('pret', ralentis > 0);
+  $('nVent').textContent = vents; $('bVent').classList.toggle('vide', !vents); $('bVent').classList.toggle('pret', vents > 0);
+}
+function bandeau(t, d = 1.6) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
+function activerAllumage() { if (etat !== 'jeu' || charge < RECHARGE) return; charge = 0; let n = 0; for (const e of engins) if (e.vivant) { if (e.type === 'bombe') { e.vivant = false; scene.remove(e.obj); for (let i = 0; i < 20; i++) fumee(e.obj.position.x, e.obj.position.y, e.obj.position.z, 120); } else { eclater(e, true); n++; } } bandeau('Allumage ! ' + n + ' feux'); secousse = 0.4; son.chaine(5); majBonus(); }
+function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralenti = 5; bandeau('Ralenti !', 5); son.chaine(3); majBonus(); }
+function activerVent() { if (etat !== 'jeu' || !vents) return; vents--; vent = 8; for (const e of engins) if (e.vivant && e.type === 'bombe') { e.vivant = false; scene.remove(e.obj); for (let i = 0; i < 25; i++) fumee(e.obj.position.x, e.obj.position.y, e.obj.position.z, 140); } bandeau('Coup de vent ! Plus de fumée', 3); son.chaine(4); majBonus(); }
 function feu(x, y, z, pal, forme, gros = 1) {
-  const n = Math.round((PETIT ? 110 : 170) * gros * (forme === 'petard' ? 0.5 : 1));
+  const n = Math.round((PETIT ? 170 : 260) * gros * (forme === 'petard' ? 0.6 : 1));
   const v0 = (forme === 'petard' ? 3.2 : 5.2) * Math.sqrt(gros);
   for (let i = 0; i < n; i++) {
     const c = pal[i % pal.length];
@@ -304,7 +382,7 @@ function feu(x, y, z, pal, forme, gros = 1) {
     etincelle(x, y, z, dx * v, dy * v, dz * v, c, rnd(1.2, 1.9) * (saule ? 1.6 : 1), rnd(90, 150) * (forme === 'petard' ? 0.8 : 1),
       { g: saule ? 2.6 : 1.4, frein: saule ? 0.975 : 0.965, scint: Math.random() < 0.3, trainee: saule || Math.random() < 0.15 });
   }
-  for (let i = 0; i < 18; i++) etincelle(x, y, z, rnd(-1, 1), rnd(-1, 1), 0, tmpC.setRGB(1, 0.95, 0.85), 0.18, 160 * gros, { g: 0, frein: 0.9 });
+  for (let i = 0; i < 8; i++) etincelle(x, y, z, rnd(-1, 1), rnd(-1, 1), 0, tmpC.setRGB(1, 0.9, 0.75), 0.15, 70 * gros, { g: 0, frein: 0.9 });
 }
 let lueurT = 0;
 function lueur(c, gros) { const e = $('lueur'); e.style.background = `radial-gradient(circle at 50% 35%, #${c.getHexString()}88, transparent 70%)`; lueurT = 0.5 * gros; }
@@ -341,14 +419,14 @@ function majVies() {
 }
 function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
 function demarrer(m) {
-  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.8; chaineN = 0;
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; chaineN = 0; charge = 0; serie = 0; ralentis = 0; vents = 0; ralenti = 0; vent = 0; majBonus(); $('bonus').classList.add('on');
   try { record = +localStorage.getItem('petepetard_record_' + mode) || 0; } catch (e) {}
   for (const e of engins) if (e.vivant) { e.vivant = false; scene.remove(e.obj); }
   majScore(); majVies();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('lien').classList.add('discret');
 }
 function finPartie() {
-  etat = 'fin';
+  etat = 'fin'; $('bonus').classList.remove('on');
   const nouveau = score > record && score > 0;
   if (nouveau) { record = score; try { localStorage.setItem('petepetard_record_' + mode, record); } catch (e) {} finale = 5; }
   $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
@@ -365,6 +443,7 @@ function boucle() {
   const dt = Math.min(horloge.getDelta(), 0.05);
   matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.032;
   if (etat === 'jeu') {
+    charge = Math.min(RECHARGE, charge + dt); if (ralenti > 0) ralenti -= dt; if (vent > 0) vent -= dt; majBonus();
     temps += dt; prochain -= dt; if (prochain <= 0) vague();
     if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
   } else {
@@ -378,8 +457,10 @@ function boucle() {
   for (let i = engins.length - 1; i >= 0; i--) {
     const e = engins[i];
     if (!e.vivant) { engins.splice(i, 1); continue; }
-    e.t += dt; e.vy -= e.g * dt;
-    e.obj.position.x += e.vx * dt; e.obj.position.y += e.vy * dt;
+    const de = ralenti > 0 ? dt * 0.4 : dt;
+    e.t += de; e.vy -= e.g * de;
+    e.obj.position.x += e.vx * de; e.obj.position.y += e.vy * de;
+    if (e.type !== 'bombe' && Math.random() < 0.5) fumee(e.obj.position.x, e.obj.position.y - 0.5, e.obj.position.z, 45, 1.2);
     if (e.type === 'petard') { e.obj.rotation.z += e.vrot * dt; e.obj.position.x += Math.sin(e.t * 9) * 0.02; }
     else if (e.type !== 'bombe') e.obj.rotation.z = -Math.atan2(e.vx, Math.max(0.5, e.vy)) * 0.8;
     const p = e.obj.position, bas = new THREE.Vector3(0, -0.5, 0).applyEuler(e.obj.rotation).add(p);
@@ -390,7 +471,7 @@ function boucle() {
       e.vivant = false; scene.remove(e.obj);
       if (e.type !== 'bombe' && etat === 'jeu') {
         for (let k = 0; k < 14; k++) etincelle(p.x, p.y, p.z, rnd(-.6, .6), rnd(-.3, .5), 0, tmpC.setRGB(.6, .5, .4), 0.6, 60, { g: 1 });
-        son.rate(); popup('Pschitt !', p, 'aie');
+        son.rate(); popup('Pschitt !', p, 'aie'); serie = 0;
         if (mode === 'classique' && e.type !== 'doree') perdreVie();
       }
     }
@@ -400,10 +481,13 @@ function boucle() {
     if (etat === 'jeu') { score += bonus; majScore(); }
     popup(`Chaîne ×${chaineN} ! +${bonus}`, chainePos || new THREE.Vector3(), 'chaine'); son.chaine(chaineN); chaineN = 0;
   } else if (performance.now() - chaineT > 900) chaineN = 0;
-  majParticules(dt);
+  majParticules(dt); majFumee(dt);
+  const tps = performance.now() / 1000; secousse = Math.max(0, secousse - dt);
+  camera.position.x = Math.sin(tps * 0.21) * 0.3 + (Math.random() - .5) * secousse * 0.4; camera.position.y = Math.sin(tps * 0.15) * 0.15 + (Math.random() - .5) * secousse * 0.4; camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
+  matF.uniforms.echelle.value = matP.uniforms.echelle.value;
   lumiere.intensity *= Math.pow(0.02, dt);
   if (lueurT > 0) { lueurT -= dt; } $('lueur').style.opacity = Math.max(0, lueurT) * 0.9;
-  renderer.render(scene, camera);
+  composer.render();
   requestAnimationFrame(boucle);
 }
 
@@ -411,17 +495,18 @@ function boucle() {
 const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; };
 majSon();
 $('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('petepetard_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
+$('bAllumage').onclick = activerAllumage; $('bRalenti').onclick = activerRalenti; $('bVent').onclick = activerVent;
 $('jouer').onclick = () => demarrer('classique');
 $('jouerZen').onclick = () => demarrer('zen');
 $('rejouer').onclick = () => demarrer(mode);
 $('menuFin').onclick = () => { finale = 0; etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
 $('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
-const img = new Image(); img.src = './fond-barachois.webp'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
+resize();
 majVies(); majScore();
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie };
+if (TEST) window.jeu = { engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
 </script>
 </body>
 </html>
