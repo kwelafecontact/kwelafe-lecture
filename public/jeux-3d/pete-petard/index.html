@@ -37,6 +37,8 @@
   .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:2px; }
   .vies { font-size:30px; letter-spacing:4px; text-align:right; }
   .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .niveauHud { text-align:right; margin-top:4px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
+  .niveauHud.saute { animation:saute .5s; }
   .temps { font-family:"Bangers", sans-serif; font-size:clamp(32px, 6.5vw, 46px); color:#b8f0ff; text-shadow:0 3px 0 #1f4f94; letter-spacing:.05em; }
   .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 32px; pointer-events:none; transition:opacity .35s; }
   .ecran.cache { opacity:0; }
@@ -82,7 +84,7 @@
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
-  <div class="vies" id="vies"></div>
+  <div><div class="vies" id="vies"></div><div class="niveauHud" id="niveauHud">Niveau 1</div></div>
 </div>
 
 <div class="ecran" id="menu">
@@ -300,7 +302,9 @@ const matIris = new THREE.MeshPhysicalMaterial({ color: 0xe8f0ff, metalness: 1, 
 const matOr = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.2, emissive: 0x6a4200, emissiveIntensity: 0.6 });
 
 const engins = [];
-const RECHARGE = 12; let charge = 0, serie = 0, ralentis = 0, vents = 0, ralenti = 0, vent = 0;
+const RECHARGE = 12; let niveauJeu = 1, phase = 'actif', phaseT = 0;
+const dureePhase = () => Math.min(32, 18 + niveauJeu * 2);
+const RECHARGE_ = 0; let charge = 0, serie = 0, ralentis = 0, vents = 0, ralenti = 0, vent = 0;
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, chaineN = 0, chaineT = 0, chainePos = null, finale = 0;
 const DUREE_ZEN = 90;
 function lancer(type) {
@@ -312,7 +316,7 @@ function lancer(type) {
   else if (type === 'brillante') { obj = corpsFusee(0xffffff, 1.1); obj.traverse(m => { if (m.isMesh) m.material = matIris; }); rayon = 0.85; }
   else { obj = corpsBombe(); rayon = 0.65; }
   const x0 = rnd(-viewW * 0.4, viewW * 0.4), y0 = -viewH / 2 - 1;
-  const niveau = Math.min(14, temps / 10);
+  const niveau = Math.min(16, (niveauJeu - 1) * 1.6 + phaseT / 12);
   const sommet = rnd(viewH * 0.12, viewH * 0.42);
   const g = type === 'petard' ? 5.5 : 4.2;
   const vy = Math.sqrt(2 * g * (sommet - y0)) * (1 + niveau * 0.02);
@@ -325,12 +329,12 @@ function lancer(type) {
   return e;
 }
 function vague() {
-  const niveau = Math.min(14, temps / 10);
+  const niveau = Math.min(16, (niveauJeu - 1) * 1.6 + phaseT / 12);
   const n = 1 + Math.floor(Math.random() * Math.min(1.5 + niveau * 0.5, 7));
   for (let i = 0; i < n; i++) setTimeout(() => {
     if (etat !== 'jeu') return;
     const r = Math.random(), pB = temps < 6 || vent > 0 ? 0 : Math.min(0.12 + niveau * 0.018, 0.28);
-    lancer(r < pB ? 'bombe' : r < pB + 0.05 && !engins.some(e => e.vivant && e.type === 'doree') ? 'doree' : r < pB + 0.15 && !engins.some(e => e.vivant && e.type === 'brillante') ? 'brillante' : r < pB + 0.45 ? 'petard' : 'fusee');
+    lancer(r < pB ? 'bombe' : r < pB + 0.05 && !engins.some(e => e.vivant && e.type === 'doree') ? 'doree' : r < pB + 0.45 ? 'petard' : 'fusee');
   }, i * rnd(120, 300));
   prochain = Math.max(0.5, 1.7 - niveau * 0.11) + rnd(0, 0.4);
 }
@@ -360,9 +364,10 @@ function eclater(e, enChaine = false) {
     secousse = 1.0;
   } else if (e.type === 'brillante') {
     for (let i = 0; i < 10; i++) etincelle(p.x, p.y, p.z, rnd(-1, 1), rnd(-1, 1), 0, tmpC.setRGB(1, 1, 1), 0.2, 60, { g: 0, frein: 0.9 });
-    const cle = ['dodo', 'paille', 'hibiscus', 'vanille'][Math.floor(Math.random() * 4)];
+    const cle = e.cle || FORMES[Math.floor(Math.random() * FORMES.length)];
     const cx = Math.max(-viewW * 0.32, Math.min(viewW * 0.32, p.x)), cy = Math.max(-viewH * 0.1, Math.min(viewH * 0.25, p.y));
-    const nom = dessinCiel(cx, cy, cle, Math.min(viewW * 0.7, 5.2), PETIT ? 300 : 420);
+    const msg = cle[0] === 'm' && cle !== 'm974' ? 1.25 : 1;
+    const nom = dessinCiel(cx, cy, cle, Math.min(viewW * (cle[0] === 'm' ? 0.85 : 0.7), 5.2 * msg), (PETIT ? 300 : 420) * (cle[0] === 'm' ? 2.6 : 1));
     setTimeout(() => popup(nom, new THREE.Vector3(cx, cy - 2.6, 0), 'chaine'), 300);
   } else feu(p.x, p.y, p.z, e.pal, forme, gros);
   if (e.type === 'petard') son.pet(); else { son.boum(gros); son.crepite(); }
@@ -395,14 +400,19 @@ function activerAllumage() { if (etat !== 'jeu' || charge < RECHARGE) return; ch
 function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralenti = 5; bandeau('Ralenti !', 5); son.chaine(3); majBonus(); }
 function activerVent() { if (etat !== 'jeu' || !vents) return; vents--; vent = 8; for (const e of engins) if (e.vivant && e.type === 'bombe') { e.vivant = false; scene.remove(e.obj); for (let i = 0; i < 25; i++) fumee(e.obj.position.x, e.obj.position.y, e.obj.position.z, 140); } bandeau('Coup de vent ! Plus de fumée', 3); son.chaine(4); majBonus(); }
 // ---------------------------------------------------------------- dessins dans le ciel (dodo, paille-en-queue, hibiscus, fleur de vanille, drapeau)
-function echantillons(dessin, n, taille = 220) {
-  const c = document.createElement('canvas'); c.width = c.height = taille; const g = c.getContext('2d'); g.lineCap = g.lineJoin = 'round'; dessin(g, taille);
-  const d = g.getImageData(0, 0, taille, taille).data, pts = [];
-  for (let y = 0; y < taille; y += 2) for (let x = 0; x < taille; x += 2) { const k = (y * taille + x) * 4; if (d[k + 3] > 128) pts.push([x / taille - 0.5, 0.5 - y / taille, d[k] / 255, d[k + 1] / 255, d[k + 2] / 255]); }
+function echantillons(dessin, n, taille = 220, haut = taille) {
+  const c = document.createElement('canvas'); c.width = taille; c.height = haut; const g = c.getContext('2d'); g.lineCap = g.lineJoin = 'round'; dessin(g, taille, haut);
+  const d = g.getImageData(0, 0, taille, haut).data, pts = [];
+  for (let y = 0; y < haut; y += 2) for (let x = 0; x < taille; x += 2) { const k = (y * taille + x) * 4; if (d[k + 3] > 128) pts.push([x / taille - 0.5, (haut / 2 - y) / taille, d[k] / 255, d[k + 1] / 255, d[k + 2] / 255]); }
   for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
   return pts.slice(0, n);
 }
+// messages lumineux, écrits tels que fournis par KWélafé
+function message(txt) { return { nom: txt + ' !', w: 440, h: 150, f: (g, W, H) => { let t = 120; g.font = `900 ${t}px "Arial Black", Impact, system-ui`; while (g.measureText(txt).width > W - 30 && t > 30) { t -= 6; g.font = `900 ${t}px "Arial Black", Impact, system-ui`; }
+  const gr = g.createLinearGradient(0, 0, W, 0); gr.addColorStop(0, '#3a7aff'); gr.addColorStop(0.35, '#ffe23a'); gr.addColorStop(0.7, '#ff3a3a'); gr.addColorStop(1, '#ff6ad8');
+  g.fillStyle = gr; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, W / 2, H / 2 + 4); } }; }
 const DESSINS = {
+  m974: message('974'), mLela: message('NOU LÉ LA'), mAzot: message('NOU ÈM AZOT'), mAou: message('MI YÈM AOU'),
   dodo: { nom: 'Le dodo !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 5;
     g.strokeStyle = '#c8c8d0'; g.beginPath(); g.ellipse(115, 125, 58, 48, 0, 0, 7); g.stroke();             // corps dodu
     g.beginPath(); g.ellipse(70, 70, 22, 20, 0, 0, 7); g.stroke();                                              // tête
@@ -427,6 +437,22 @@ const DESSINS = {
     g.strokeStyle = '#fff2a8'; g.beginPath(); g.moveTo(-20, 0); g.quadraticCurveTo(-26, 40, 0, 50); g.quadraticCurveTo(26, 40, 20, 0); g.stroke(); // labelle en trompette
     g.strokeStyle = '#ffb030'; g.beginPath(); g.moveTo(-10, 30); g.quadraticCurveTo(0, 40, 10, 30); g.stroke();
     g.strokeStyle = '#5aa83a'; g.beginPath(); g.moveTo(0, 50); g.quadraticCurveTo(10, 85, 4, 105); g.stroke(); } },
+  reunion: { nom: 'La Réunion !', f: (g, T) => { const s = T / 220; g.scale(s, s);
+    const L = [[55.45,-20.87],[55.53,-20.89],[55.60,-20.90],[55.66,-20.94],[55.70,-20.98],[55.74,-21.04],[55.78,-21.10],[55.81,-21.18],[55.84,-21.27],[55.82,-21.33],[55.79,-21.37],[55.68,-21.385],[55.55,-21.37],[55.48,-21.345],[55.42,-21.30],[55.38,-21.28],[55.32,-21.22],[55.28,-21.17],[55.24,-21.10],[55.22,-21.03],[55.25,-20.97],[55.28,-20.94],[55.33,-20.93],[55.38,-20.91],[55.45,-20.87]];
+    const P2 = ([lo, la]) => [20 + (lo - 55.2) / 0.66 * 180, 30 + (-20.85 - la) / 0.56 * 160];
+    g.beginPath(); L.forEach((p, i) => { const [x, y] = P2(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
+    g.fillStyle = 'rgba(60,200,90,0.35)'; g.fill(); g.lineWidth = 6; g.strokeStyle = '#3ae0ff'; g.stroke();
+    g.fillStyle = '#ff3a1a'; const [vx, vy] = P2([55.71, -21.24]); g.beginPath(); g.arc(vx, vy, 7, 0, 7); g.fill();       // Piton de la Fournaise
+    g.fillStyle = '#ffffff'; const [nx, ny] = P2([55.48, -21.10]); g.beginPath(); g.arc(nx, ny, 6, 0, 7); g.fill(); } }, // Piton des Neiges
+  cocotier: { nom: 'Le cocotier !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 6;
+    g.strokeStyle = '#d88a3a'; g.beginPath(); g.moveTo(90, 210); g.quadraticCurveTo(80, 140, 118, 72); g.stroke();
+    g.strokeStyle = '#5ae05a'; for (const [ax, ay, bx, by] of [[118,72,30,60],[118,72,50,110],[118,72,200,58],[118,72,185,110],[118,72,95,20],[118,72,150,22]]) { g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo((ax + bx) / 2, Math.min(ay, by) - 30, bx, by); g.stroke(); }
+    g.fillStyle = '#c8783a'; for (const [x, y] of [[110, 84], [124, 86], [117, 94]]) { g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); } } },
+  kaz: { nom: 'La kaz créole !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 6;
+    g.strokeStyle = '#ff3a3a'; g.beginPath(); g.moveTo(25, 100); g.lineTo(110, 35); g.lineTo(195, 100); g.closePath(); g.stroke();   // toit de tôle rouge
+    g.strokeStyle = '#ffe23a'; g.strokeRect(40, 100, 140, 90);                                                                        // murs
+    g.strokeStyle = '#ffffff'; for (let x = 40; x < 180; x += 14) { g.beginPath(); g.moveTo(x, 100); g.lineTo(x + 7, 112); g.lineTo(x + 14, 100); g.stroke(); } // lambrequins
+    g.strokeStyle = '#3ae07a'; g.strokeRect(95, 135, 30, 55); g.strokeRect(55, 125, 26, 26); g.strokeRect(139, 125, 26, 26); } },     // porte et fenêtres
   // Lö Mahavéli : ciel bleu, volcan rouge, rayons jaunes
   drapeau: { nom: 'Lö Mahavéli !', f: (g, T) => { const s = T / 220; g.scale(s, s);
     g.fillStyle = '#1e5aff'; g.fillRect(10, 40, 200, 140);
@@ -435,14 +461,24 @@ const DESSINS = {
     g.fillStyle = '#ff2020'; g.beginPath(); g.moveTo(110, 110); g.lineTo(190, 180); g.lineTo(30, 180); g.fill();
     g.globalCompositeOperation = 'destination-in'; g.fillRect(10, 40, 200, 140); } },
 };
+const FORMES = ['dodo', 'paille', 'hibiscus', 'vanille', 'reunion', 'cocotier', 'kaz'], MESSAGES = ['m974', 'mLela', 'mAzot', 'mAou'];
 function dessinCiel(x, y, cle, taille, n) {
-  const D = DESSINS[cle], pts = echantillons(D.f, n);
+  const D = DESSINS[cle], pts = echantillons(D.f, n, D.w || 220, D.h || D.w || 220);
   for (const [px, py, cr, cg, cb] of pts) {
-    const i = pIdx; etincelle(x, y, 0.5, 0, 0, 0, tmpC.setRGB(cr, cg, cb, THREE.SRGBColorSpace), 3.4, PETIT ? 40 : 46, { g: 0 });
+    const i = pIdx; etincelle(x, y, 0.5, 0, 0, 0, tmpC.setRGB(cr, cg, cb, THREE.SRGBColorSpace), 3.4, (PETIT ? 40 : 46) * (D.w ? 0.72 : 1), { g: 0 });
     const p = P[i]; p.forme = true; p.ox = x; p.oy = y; p.tx = x + px * taille; p.ty = y + py * taille; p.age = rnd(0, 0.08); p.tenue = 1.9 + rnd(0, 0.4);
   }
   return D.nom;
 }
+// fin de niveau : les fusées spéciales (dessins et messages), puis l'accalmie de 4 secondes
+function finDeNiveau() {
+  phase = 'speciales'; phaseT = 0;
+  const liste = [FORMES[Math.floor(Math.random() * FORMES.length)], MESSAGES[(niveauJeu - 1) % MESSAGES.length]];
+  if (niveauJeu % 2 === 0) liste.push(FORMES[Math.floor(Math.random() * FORMES.length)]);
+  liste.forEach((cle, i) => setTimeout(() => { if (etat !== 'jeu') return; const e = lancer('brillante'); e.cle = cle; e.obj.position.x = (i - (liste.length - 1) / 2) * Math.min(3.2, viewW * 0.3); }, i * 650));
+  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niveauJeu++; majNiveauHud(); bandeau('Accalmie… Niveau ' + niveauJeu, 3.2); }, liste.length * 650 + 1400);
+}
+function majNiveauHud() { $('niveauHud').textContent = 'Niveau ' + niveauJeu; $('niveauHud').classList.remove('saute'); void $('niveauHud').offsetWidth; $('niveauHud').classList.add('saute'); }
 function feu(x, y, z, pal, forme, gros = 1) {
   const n = Math.round((PETIT ? 170 : 260) * gros * (forme === 'petard' ? 0.6 : 1));
   const v0 = (forme === 'petard' ? 3.2 : 5.2) * Math.sqrt(gros);
@@ -494,7 +530,7 @@ function majVies() {
 }
 function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
 function demarrer(m) {
-  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; chaineN = 0; charge = 0; serie = 0; ralentis = 0; vents = 0; ralenti = 0; vent = 0; majBonus(); $('bonus').classList.add('on');
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; chaineN = 0; charge = 0; serie = 0; ralentis = 0; vents = 0; ralenti = 0; vent = 0; niveauJeu = 1; phase = 'actif'; phaseT = 0; majNiveauHud(); majBonus(); $('bonus').classList.add('on');
   try { record = +localStorage.getItem('petepetard_record_' + mode) || 0; } catch (e) {}
   for (const e of engins) if (e.vivant) { e.vivant = false; scene.remove(e.obj); }
   majScore(); majVies();
@@ -519,7 +555,9 @@ function boucle() {
   matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.032;
   if (etat === 'jeu') {
     charge = Math.min(RECHARGE, charge + dt); if (ralenti > 0) ralenti -= dt; if (vent > 0) vent -= dt; majBonus();
-    temps += dt; prochain -= dt; if (prochain <= 0) vague();
+    temps += dt; phaseT += dt;
+    if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
+    else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochain = 0.2; bandeau('Niveau ' + niveauJeu + ' ! Ça repart', 1.6); }
     if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
   } else {
     // au menu : quelques fusées lointaines pour l'ambiance
@@ -581,7 +619,7 @@ resize();
 majVies(); majScore();
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
+if (TEST) window.jeu = { engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, finDeNiveau, get phase() { return phase; }, get niveauJeu() { return niveauJeu; }, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
 </script>
 </body>
 </html>
