@@ -287,11 +287,77 @@ function eclabousser(sx, sy, force, t) {
     const n = 24; for (let i = 0; i < n; i++) { const big = i < 7; tachesEcran.push({ x: sx + rnd(-W * 0.45, W * 0.45) * (big ? 0.8 : 1), y: sy + rnd(-H * 0.35, H * 0.35), r: big ? rnd(Math.min(W, H) * 0.12, Math.min(W, H) * 0.22) : rnd(18, 50), vie: rnd(4.5, 6), max: 6, vy: rnd(2, 8), coul: 'pourri', traine: [], forme: Array.from({ length: 12 }, () => rnd(0.8, 1.15)) }); }
     return;
   }
-  const n = Math.round(10 + force * 18), coul = t === 'dore' ? 'or' : 'eau';
-  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, d = Math.pow(Math.random(), 0.6) * (60 + force * 160); tachesEcran.push({ x: sx + Math.cos(a) * d, y: sy + Math.sin(a) * d * 0.8, r: rnd(3, 10) * (0.7 + force * 0.5) * (i < 2 ? 2 : 1), vie: rnd(2.2, 3.4), max: 3.4, vy: rnd(4, 18), coul, traine: [] }); }
+  // impact : quelques grosses gouttes au centre, une couronne de gouttelettes projetées autour
+  const k = Math.min(W, H) / 400, or = t === 'dore';
+  const grosses = Math.round(1 + force * 2.5), petites = Math.round(14 + force * 26);
+  for (let i = 0; i < grosses; i++) ajouterGoutte(sx + rnd(-30, 30) * k, sy + rnd(-25, 25) * k, rnd(9, 16) * k * (0.8 + force * 0.4), or);
+  for (let i = 0; i < petites; i++) { const a = Math.random() * Math.PI * 2, d = Math.pow(Math.random(), 0.7) * (50 + force * 130) * k; ajouterGoutte(sx + Math.cos(a) * d, sy + Math.sin(a) * d * 0.85, rnd(1.8, 6) * k, or); }
+}
+// gouttes d'eau sur la vitre : lentilles qui inversent l'image derrière elles, plus claires que la vitre,
+// les grosses glissent par à-coups en zigzag, s'étirent, laissent un chapelet de gouttelettes, fusionnent
+const vitre = [], MAX_VITRE = 170;
+function ajouterGoutte(x, y, r, or = false, statique = false) {
+  if (vitre.length >= MAX_VITRE) vitre.shift();
+  vitre.push({ x, y, r, or, vy: 0, pause: rnd(0.15, 0.6), bouge: false, derive: rnd(-1, 1), seche: statique ? rnd(5, 9) : rnd(7, 12), age: 0, dernierDepot: y, etire: 1 });
+}
+function majVitre(dt) {
+  const k = Math.min(W, H) / 400, critique = 7.5 * k;
+  for (let i = vitre.length - 1; i >= 0; i--) {
+    const g = vitre[i]; g.age += dt; g.seche -= dt;
+    if (g.seche <= 0) { g.r -= dt * 3 * k; if (g.r < 0.8) { vitre.splice(i, 1); continue; } }
+    if (g.r > critique) {
+      // à-coups : la goutte s'arrête, repart, accélère un peu, change légèrement de direction
+      if (g.pause > 0) { g.pause -= dt; g.vy *= 0.7; g.etire += (1 - g.etire) * dt * 6; }
+      else { g.vy = Math.min(g.vy + dt * (40 + g.r * 6) * k, (60 + g.r * 7) * k); if (Math.random() < dt * 2.2) { g.pause = rnd(0.05, 0.45); g.derive = rnd(-1, 1); } }
+      const dy = g.vy * dt; g.y += dy; g.x += g.derive * dy * 0.25; g.etire += (Math.min(1.45, 1 + g.vy / (160 * k)) - g.etire) * dt * 6;
+      // chapelet de gouttelettes laissé derrière ; la goutte perd un peu d'eau
+      if (g.y - g.dernierDepot > g.r * 0.9) { g.dernierDepot = g.y; ajouterGoutte(g.x + rnd(-0.25, 0.25) * g.r, g.y - g.r * rnd(1, 1.6), g.r * rnd(0.18, 0.32), g.or, true); g.r *= 0.985; }
+      if (g.y - g.r > H + 20) { vitre.splice(i, 1); continue; }
+    }
+  }
+  // fusion : deux gouttes qui se touchent n'en font plus qu'une (le volume s'additionne)
+  for (let i = 0; i < vitre.length; i++) for (let j = i + 1; j < vitre.length; j++) {
+    const a = vitre[i], b = vitre[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d < (a.r + b.r) * 0.75) { const [g, p] = a.r >= b.r ? [a, b] : [b, a]; g.r = Math.cbrt(g.r ** 3 + p.r ** 3); g.seche = Math.max(g.seche, p.seche); g.pause = Math.min(g.pause, 0.05); vitre.splice(vitre.indexOf(p), 1); j--; if (p === a) break; }
+  }
+}
+function cheminGoutte(g) {
+  // forme de larme : ronde en bas, étirée vers le haut quand elle glisse
+  const r = g.r, e = g.etire - 1;
+  ectx.beginPath();
+  if (e < 0.08) { ectx.ellipse(g.x, g.y, r, r * 0.94, 0, 0, Math.PI * 2); return; } // goutte posée : presque ronde, un peu aplatie
+  const top = g.y - r - r * e * 1.1;                                                   // goutte qui glisse : la queue s'étire vers le haut
+  ectx.moveTo(g.x, top);
+  ectx.bezierCurveTo(g.x + r * 0.6, top, g.x + r, g.y - r * 0.75, g.x + r, g.y);
+  ectx.arc(g.x, g.y, r, 0, Math.PI, false);
+  ectx.bezierCurveTo(g.x - r, g.y - r * 0.75, g.x - r * 0.6, top, g.x, top); ectx.closePath();
+}
+function dessinerVitre() {
+  const src = renderer.domElement, sc = src.width / W;
+  for (const g of vitre) {
+    const r = g.r, a = Math.min(1, g.r / 2);
+    ectx.save(); cheminGoutte(g); ectx.clip();
+    // la lentille : l'image derrière la goutte, retournée et resserrée
+    if (r > 2.2) { const z = r * 2.6; ectx.translate(g.x, g.y); ectx.scale(-1, -1); ectx.globalAlpha = 0.95; ectx.drawImage(src, (g.x - z) * sc, (g.y - z) * sc, z * 2 * sc, z * 2 * sc, -r * 1.05, -r * g.etire * 1.1, r * 2.1, r * 2.2 * g.etire); }
+    ectx.restore(); ectx.save(); const d = Math.min(devicePixelRatio, 2); ectx.setTransform(d, 0, 0, d, 0, 0);
+    // une goutte collecte la lumière : plus claire que la vitre autour
+    ectx.globalCompositeOperation = 'screen'; cheminGoutte(g); ectx.fillStyle = g.or ? 'rgba(255,200,80,.35)' : 'rgba(200,225,240,.18)'; ectx.fill();
+    ectx.globalCompositeOperation = 'source-over';
+    // bord sombre (réfraction), plus marqué en haut, et ombre portée légère sous la goutte
+    const gr = ectx.createRadialGradient(g.x, g.y + r * 0.15, r * 0.55, g.x, g.y, r * 1.08);
+    gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.82, `rgba(10,30,45,${0.18 * a})`); gr.addColorStop(1, `rgba(5,15,25,${0.5 * a})`);
+    cheminGoutte(g); ectx.fillStyle = gr; ectx.fill();
+    // reflet vif en haut à gauche et lumière concentrée en bas (caustique)
+    if (r > 1.6) {
+      ectx.fillStyle = `rgba(255,255,255,${0.85 * a})`; ectx.beginPath(); ectx.ellipse(g.x - r * 0.34, g.y - r * 0.4, r * 0.16, r * 0.1, -0.7, 0, 7); ectx.fill(); ectx.fillStyle = `rgba(255,255,255,${0.4 * a})`; ectx.beginPath(); ectx.arc(g.x - r * 0.1, g.y - r * 0.55, r * 0.05, 0, 7); ectx.fill();
+      const cg = ectx.createRadialGradient(g.x, g.y + r * 0.55, 0, g.x, g.y + r * 0.55, r * 0.55); cg.addColorStop(0, `rgba(255,255,255,${0.35 * a})`); cg.addColorStop(1, 'rgba(255,255,255,0)'); ectx.fillStyle = cg; ectx.beginPath(); ectx.ellipse(g.x, g.y + r * 0.55, r * 0.55, r * 0.3, 0, 0, 7); ectx.fill();
+    }
+    ectx.restore();
+  }
 }
 function dessinerEcran(dt) {
   ectx.clearRect(0, 0, W, H);
+  majVitre(dt); dessinerVitre();
   for (let i = tachesEcran.length - 1; i >= 0; i--) {
     const g = tachesEcran[i]; g.vie -= dt; if (g.vie <= 0) { tachesEcran.splice(i, 1); continue; }
     g.vy += dt * (g.coul === 'pourri' ? 3 : g.r > 12 ? 30 : 8); g.y += g.vy * dt; if (Math.random() < 0.3) g.traine.push([g.x, g.y]); if (g.traine.length > 18) g.traine.shift();
@@ -389,7 +455,7 @@ function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupes = 0; niveau = 1; phase = 'actif'; phaseT = 0;
   charge = 0; serie = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0;
   try { record = +localStorage.getItem('kasskoko_record_' + mode) || 0; } catch (e) {}
-  cocos.forEach(c => scene.remove(c.obj)); cocos.length = 0; tachesEcran.length = 0; nettoyerDebris();
+  cocos.forEach(c => scene.remove(c.obj)); cocos.length = 0; tachesEcran.length = 0; vitre.length = 0; nettoyerDebris();
   majScore(); majVies(); majNiveauHud(); majBonus();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('bonus').classList.add('on'); $('lien').classList.add('discret');
 }
@@ -542,7 +608,7 @@ document.querySelectorAll('.zone-interactive').forEach(element => { element.addE
 addEventListener('resize', resize); resize(); majVies(); majScore();
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { cocos, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, lancer, finDeNiveau, get niveau() { return niveau; }, get phase() { return phase; } };
+if (TEST) window.jeu = { eclabousser, vitre, cocos, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, lancer, finDeNiveau, get niveau() { return niveau; }, get phase() { return phase; } };
 </script>
 </body>
 </html>
