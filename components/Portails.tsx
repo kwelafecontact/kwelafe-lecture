@@ -16,6 +16,7 @@ export default function Portails({ prenom, visiteur, nbLivres, nbJeux, enCours, 
   const [phase, setPhase] = useState<"intro" | "choix">("intro");
 
   useEffect(() => {
+    try { sessionStorage.setItem("kw-portail", "1"); } catch {}
     let dejaVu = false;
     try { dejaVu = sessionStorage.getItem("kw-intro") === "1"; sessionStorage.setItem("kw-intro", "1"); } catch {}
     if (dejaVu) { setPhase("choix"); return; }

@@ -3,6 +3,7 @@ import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
 import LienSite from "@/components/LienSite";
 import BandeauVisiteur from "@/components/BandeauVisiteur";
+import VersPortails from "@/components/VersPortails";
 import { contexte } from "@/lib/contexte";
 import { statistiques } from "@/lib/stats";
 import { UNIVERS, config } from "@/lib/config";
@@ -45,6 +46,7 @@ export default async function Accueil() {
 
   return (
     <>
+      <VersPortails />
       <main className="page">
         <div className="barre-haut">
           <Link href="/portails" aria-label="Choisir un espace">
