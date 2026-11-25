@@ -474,19 +474,19 @@ body { background: var(--ivoire); }
 
 /* Entrée façon Netflix : logo animé puis choix de l'espace */
 .portails { min-height: 100dvh; background: #0f1626; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 18px 40px; overflow: hidden; position: relative; }
-.portails-logo { position: absolute; left: 50%; top: 50%; width: min(78vw, 560px); transform: translate(-50%, -50%); transition: top .7s cubic-bezier(.6,0,.2,1), width .7s cubic-bezier(.6,0,.2,1); z-index: 2; }
-.portails-logo img { width: 100%; height: auto; display: block; }
-.portails-logo { background: #fff; border-radius: 26px; padding: 18px 26px 14px; box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 18px 60px rgba(242,183,5,.18); box-sizing: border-box; }
-.portails.choix .portails-logo { padding: 10px 16px 8px; border-radius: 18px; }
-.portails.intro .portails-logo img { animation: kw-logo 2.2s cubic-bezier(.2,.8,.2,1) both; }
-.portails.choix .portails-logo { top: 62px; width: min(46vw, 220px); }
+.portails-logo { position: absolute; left: 50%; top: 50%; width: min(62vw, 340px); aspect-ratio: 1; transform: translate(-50%, -50%); transition: top .7s cubic-bezier(.6,0,.2,1), width .7s cubic-bezier(.6,0,.2,1); z-index: 2; border-radius: 50%; }
+.portails-logo img { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.portails-logo::after { content: ""; position: absolute; inset: -6%; border-radius: 50%; z-index: -1; background: conic-gradient(#1f6fb2, #2e9d4f, #f2b705, #d6332a, #8e44ad, #1f6fb2); filter: blur(26px); opacity: .45; animation: kw-halo 6s linear infinite; }
+@keyframes kw-halo { to { transform: rotate(360deg); } }
+.portails.choix .portails-logo { top: 72px; width: 112px; }
+.portails.choix .portails-logo::after { opacity: .3; filter: blur(16px); }
 @keyframes kw-logo {
   0% { opacity: 0; transform: scale(.55); filter: blur(14px) brightness(2.2); }
   35% { opacity: 1; transform: scale(1.06); filter: blur(0) brightness(1.4) drop-shadow(0 0 30px rgba(242,183,5,.55)); }
   60% { transform: scale(1); filter: brightness(1.05) drop-shadow(0 0 18px rgba(31,111,178,.5)); }
   100% { transform: scale(1); filter: none; }
 }
-.portails-choix { width: 100%; max-width: 760px; text-align: center; margin-top: 110px; opacity: 0; transform: translateY(20px); transition: opacity .6s .35s, transform .6s .35s; pointer-events: none; }
+.portails-choix { width: 100%; max-width: 760px; text-align: center; margin-top: 130px; opacity: 0; transform: translateY(20px); transition: opacity .6s .35s, transform .6s .35s; pointer-events: none; }
 .portails.choix .portails-choix { opacity: 1; transform: none; pointer-events: auto; }
 .portails-choix h1 { color: #fff; font-size: clamp(28px, 6vw, 40px); margin: 0 0 4px; }
 .portails-choix > p { margin: 0 0 26px; font-size: 18px; color: rgba(255,255,255,.75); }

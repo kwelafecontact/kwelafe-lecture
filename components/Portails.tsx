@@ -34,7 +34,7 @@ export default function Portails({ prenom, visiteur, nbLivres, nbJeux, enCours, 
     <main className={`portails ${phase}`} onClick={() => phase === "intro" && setPhase("choix")}>
       <div className="portails-logo">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-kwelafe.webp" alt="Kwélafé Production" />
+        <img src="/logo-kw-rond.webp" alt="Kwélafé" />
       </div>
 
       <section className="portails-choix" aria-hidden={phase === "intro"}>
