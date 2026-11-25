@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Jeux péi Kwélafé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE : joyeuse, familiale, fière de l'île
+   IDEA : une affiche de kermesse péi, chaque jeu est une carte de stand
+   PICTURE : bandeau lagon/volcan avec paille-en-queue, cartes illustrées
+   COLOUR and TYPE : bleu nuit, jaune soleil, rouge flamboyant, vert canne ; Baloo 2 + Nunito
+   LAYOUT : bandeau plein écran, grille de cartes qui passe en une colonne sur téléphone */
+:root{color-scheme:light dark;--bg:light-dark(#fff8ea,#0d1a3a);--ink:light-dark(#1b1a2e,#fff8ea);--carte:light-dark(#ffffff,#16285a);--doux:light-dark(#6a5d48,#c9c2b0);--jaune:#ffc928;--rouge:#e8402a;--vert:#2fa84f;--bleu:#1f6fd1;--nuit:#10204a}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Nunito,system-ui,sans-serif;overflow-x:clip}
+.bandeau{position:relative;overflow:hidden;background:linear-gradient(180deg,#59b7ef 0%,#9fd8f5 55%,#1f8fc4 56%,#0e6f9e 100%);color:#fff;padding:max(28px,env(safe-area-inset-top)) max(5vw,20px) 36px;min-height:300px}
+.bandeau svg.decor{position:absolute;inset:auto 0 0 0;width:100%;height:72%;pointer-events:none}
+.bandeau .texte{position:relative;max-width:1240px;margin:0 auto}
+.logo{font:800 20px 'Baloo 2',sans-serif;letter-spacing:.3px;text-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo i{font-style:normal}.logo i:nth-child(1){color:#1f4fbf}.logo i:nth-child(2){color:var(--jaune)}.logo i:nth-child(3){color:var(--rouge)}.logo i:nth-child(4){color:#2a9a48}
+h1{font:800 clamp(34px,7vw,56px)/1.02 'Baloo 2',sans-serif;margin:10px 0 8px;text-wrap:balance;text-shadow:0 3px 14px rgba(16,32,74,.35)}
+.bandeau p{margin:0;max-width:540px;font-weight:700;font-size:17px;text-shadow:0 2px 8px rgba(16,32,74,.4)}
+.grille{max-width:1240px;margin:0 auto;padding:28px max(5vw,16px) 120px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:18px}
+.jeu{display:flex;flex-direction:column;background:var(--carte);border-radius:24px;text-decoration:none;color:inherit;overflow:hidden;box-shadow:0 10px 26px rgba(16,32,74,.14);transition:transform .15s,box-shadow .15s;min-height:44px}
+.jeu:hover,.jeu:focus-visible{transform:translateY(-4px);box-shadow:0 16px 34px rgba(16,32,74,.22);outline:none}
+.jeu:focus-visible{outline:3px solid var(--jaune);outline-offset:3px}
+.illu{height:150px;display:block}
+.illu svg{width:100%;height:100%;display:block}
+.corps{padding:14px 18px 18px;display:flex;flex-direction:column;gap:4px;flex:1}
+.jeu h2{margin:0;font:800 23px/1.1 'Baloo 2',sans-serif}
+.inspi{font-size:13px;font-weight:800;color:var(--rouge)}
+.jeu p{margin:2px 0 0;color:var(--doux);font-size:15px}
+.jouer{margin-top:auto;padding-top:10px;font:800 15px 'Baloo 2',sans-serif;color:var(--bleu)}
+@media (prefers-color-scheme:dark){.jouer{color:#7fb8ff}}
+:root[data-theme=dark] .jouer{color:#7fb8ff}
+.lien{position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));font:800 13.5px Nunito,sans-serif;color:#fff6dc;text-decoration:none;padding:9px 20px;border-radius:999px;background:linear-gradient(90deg,rgba(60,14,0,.88),rgba(110,30,0,.88),rgba(60,14,0,.88));border:1.5px solid #ffb347;box-shadow:0 0 10px #ff7a00,0 0 22px rgba(255,90,0,.55);animation:flamme 1.6s ease-in-out infinite alternate;white-space:nowrap}
+@keyframes flamme{to{box-shadow:0 0 14px #ffb300,0 0 32px rgba(255,60,0,.7)}}
+.note{max-width:1240px;margin:-90px auto 0;padding:0 max(5vw,16px) 110px;color:var(--doux);font-size:14px}
+</style>
+</head>
+<body>
+<header class="bandeau">
+  <svg class="decor" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <path d="M0 175 L180 150 L330 100 L420 55 L470 48 L520 60 L640 120 L800 140 L1000 115 L1200 150 L1200 190 L0 190Z" fill="#2f6b3a"/>
+    <path d="M420 55 L470 48 L520 60 L500 75 L440 72Z" fill="#4a3428"/>
+    <path d="M462 52 q8 -30 -6 -46 q20 14 12 46" fill="#ff6a1a" opacity=".9"/>
+    <path d="M0 188 L1200 188 L1200 300 L0 300Z" fill="#0e6f9e"/>
+    <path d="M0 200 q60 -8 120 0 t120 0 t120 0 t120 0 t120 0 t120 0 t120 0 t120 0 t120 0 t120 0" stroke="#bfe9ff" stroke-width="3" fill="none" opacity=".5"/>
+    <g transform="translate(860 70)">
+      <path d="M0 10 q30 -26 60 0 q-30 -8 -60 0Z" fill="#fff"/><path d="M60 10 q30 -26 60 0 q-30 -8 -60 0Z" fill="#fff"/>
+      <ellipse cx="60" cy="12" rx="16" ry="7" fill="#fff"/><path d="M76 12 l10 -2 -10 4z" fill="#ff9a1f"/>
+      <path d="M46 14 q-40 18 -90 30" stroke="#fff" stroke-width="2.5" fill="none"/><path d="M46 12 q-40 22 -86 38" stroke="#fff" stroke-width="2.5" fill="none"/>
+    </g>
+    <g transform="translate(1040 112)"><path d="M0 70 q6 -40 22 -70" stroke="#7a5a3a" stroke-width="7" fill="none"/>
+      <path d="M22 0 q-30 -6 -48 14 M22 0 q-26 10 -34 34 M22 0 q30 -10 48 8 M22 0 q24 10 30 34 M22 0 q4 -20 -6 -34" stroke="#3f8a35" stroke-width="7" fill="none" stroke-linecap="round"/></g>
+  </svg>
+  <div class="texte">
+    <div class="logo"><i>Kw</i><i>él</i><i>a</i><i>fé</i> Production</div>
+    <h1>Jeux péi</h1>
+    <p>Dix jeux en 3D pour jouer à La Réunion : sur iPhone, iPad et ordinateur.</p>
+  </div>
+</header>
+
+<main class="grille" id="grille"></main>
+<a class="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script>
+{
+  const JEUX = [
+    ['route-littoral', 'Route du Littoral', 'Dans l’esprit de Arrows Puzzle', 'Les voitures sont bloquées entre la falaise et l’océan. Fais-les partir dans le bon ordre.',
+      '<rect width="300" height="150" fill="#5a524a"/><rect y="0" width="300" height="40" fill="#3a332c"/><rect y="118" width="300" height="32" fill="#1f8fc4"/><rect x="0" y="40" width="300" height="78" fill="#3d4145"/><path d="M0 79h300" stroke="#fff" stroke-width="3" stroke-dasharray="16 12"/><g transform="translate(60 52)"><rect width="56" height="24" rx="8" fill="#d32f2f"/><path d="M44 12 l-10 -7 v4 h-14 v6 h14 v4z" fill="#fff"/></g><g transform="translate(160 86)"><rect width="56" height="24" rx="8" fill="#ffc928"/><path d="M12 12 l10 -7 v4 h14 v6 h-14 v4z" fill="#10204a"/></g><g transform="translate(232 46)"><rect width="24" height="56" rx="8" fill="#1f6fd1"/><path d="M12 10 l7 10 h-4 v14 h-6 v-14 h-4z" fill="#fff"/></g>'],
+    ['kar-pei', 'Kar Péi', 'Dans l’esprit de Bus Jam', 'À la gare routière, fais monter chaque voyageur dans le car jaune de sa ville.',
+      '<rect width="300" height="150" fill="#a99f8e"/><rect y="20" width="300" height="46" fill="#41454a"/><g transform="translate(70 24)"><rect width="160" height="38" rx="9" fill="#ffc400"/><rect x="10" y="8" width="120" height="14" rx="3" fill="#0b1620"/><rect x="0" y="26" width="160" height="5" fill="#1f6fd1"/><circle cx="34" cy="40" r="7" fill="#151515"/><circle cx="130" cy="40" r="7" fill="#151515"/></g><g fill="#1f6fd1"><circle cx="80" cy="100" r="10"/><circle cx="130" cy="122" r="10"/></g><g fill="#e8402a"><circle cx="110" cy="96" r="10"/><circle cx="190" cy="118" r="10"/></g><g fill="#2fa84f"><circle cx="160" cy="98" r="10"/><circle cx="220" cy="100" r="10"/></g>'],
+    ['blocs-de-kaz', 'Blocs de kaz', 'Dans l’esprit de Block Blast', 'Complète des lignes sur la varangue et construis des kaz créoles, une pièce après l’autre.',
+      '<rect width="300" height="150" fill="#5fae46"/><rect x="40" y="20" width="110" height="110" rx="6" fill="#a8743f"/><g stroke="#7a4a24" stroke-width="2"><path d="M67 20v110M95 20v110M122 20v110M40 47h110M40 75h110M40 102h110"/></g><rect x="42" y="104" width="25" height="24" rx="5" fill="#f4c95d"/><rect x="69" y="104" width="25" height="24" rx="5" fill="#f4c95d"/><rect x="97" y="104" width="24" height="24" rx="5" fill="#8fd3e8"/><rect x="124" y="76" width="24" height="24" rx="5" fill="#f28db2"/><g transform="translate(180 40)"><path d="M0 40 L45 8 L90 40Z" fill="#b8352a"/><rect x="8" y="40" width="74" height="46" fill="#f4c95d"/><rect x="36" y="56" width="18" height="30" fill="#2f8f5b"/><path d="M4 40h82" stroke="#fff" stroke-width="5" stroke-dasharray="4 4"/></g>'],
+    ['pixel-pei', 'Pixel Péi', 'Dans l’esprit de Pixel Flow', 'Lance les pots de peinture sur le tapis roulant pour révéler les images de l’île.',
+      '<rect width="300" height="150" fill="#6ec6f0"/><rect x="95" y="15" width="110" height="110" fill="#2a2f34"/><rect x="105" y="25" width="90" height="90" fill="#7cc8f2"/><path d="M113 105 L150 45 L187 105Z" fill="#6b4a36"/><path d="M143 56 L150 45 L157 56Z" fill="#3b2a24"/><path d="M148 50 L153 50 L160 105 L152 105Z" fill="#ff4b1f"/><rect x="105" y="105" width="90" height="10" fill="#3f8a35"/><g transform="translate(220 100)"><rect width="22" height="26" rx="5" fill="#ff4b1f"/></g><g transform="translate(58 100)"><rect width="22" height="26" rx="5" fill="#3f8a35"/></g>'],
+    ['kaz-gramoun', 'La kaz gramoun', 'Dans l’esprit de Gossip Harbor', 'Fusionne les objets lontan et réponds aux demandes de gramoun pour restaurer sa kaz.',
+      '<rect width="300" height="150" fill="#5fae46"/><g transform="translate(30 50)"><rect width="80" height="56" rx="6" fill="#7a4a24"/><path d="M0 14 Q40 -16 80 14Z" fill="#5b3519"/><rect x="18" y="0" width="6" height="56" fill="#c9a43a"/><rect x="56" y="0" width="6" height="56" fill="#c9a43a"/></g><g transform="translate(150 40)"><circle cx="30" cy="34" r="30" fill="#fffaf0" stroke="#e0a21b" stroke-width="5"/><path d="M22 50 h16 l-3 -26 h-10z" fill="#fff6dc" stroke="#c9a43a"/><ellipse cx="30" cy="20" rx="5" ry="9" fill="#ffb000"/></g><g transform="translate(220 52)"><circle cx="26" cy="30" r="26" fill="#fffaf0" stroke="#2f7fc1" stroke-width="5"/><path d="M8 40 h36 q4 -14 -10 -16 h-22z" fill="#3a3a3a"/></g>'],
+    ['zoizodoku', 'Zoizodoku', 'Dans l’esprit de Meowdoku', 'Le sudoku des oiseaux endémiques : tec-tec, zoizo blan, merle pays, papangue…',
+      '<rect width="300" height="150" fill="#3d5a2a"/><rect x="75" y="10" width="150" height="130" rx="10" fill="#d8c7a3"/><g stroke="#8a6a3a" stroke-width="2"><path d="M125 10v130M175 10v130M75 53h150M75 97h150"/></g><g><circle cx="100" cy="32" r="16" fill="#f3dcc0"/><circle cx="100" cy="30" r="9" fill="#1b1612"/><circle cx="102" cy="36" r="8" fill="#e08a46"/></g><g><circle cx="200" cy="75" r="16" fill="#e4efcf"/><circle cx="200" cy="74" r="9" fill="#7d9a34"/><circle cx="203" cy="72" r="3.5" fill="#fff"/></g><g><circle cx="150" cy="118" r="16" fill="#efe1cc"/><circle cx="150" cy="117" r="10" fill="#5d4636"/><path d="M158 115 q8 2 4 8" stroke="#2a2a2a" stroke-width="3" fill="none"/></g>'],
+    ['mot-pei', 'Le mot péi du jour', 'Dans l’esprit de Wordle', 'Un mot créole réunionnais à trouver chaque jour en six essais.',
+      '<rect width="300" height="150" fill="#f0a35a"/><g font-family="Baloo 2, sans-serif" font-weight="800" font-size="30" text-anchor="middle"><rect x="48" y="45" width="38" height="44" rx="6" fill="#2fa84f"/><text x="67" y="78" fill="#fff">K</text><rect x="91" y="45" width="38" height="44" rx="6" fill="#f0b323"/><text x="110" y="78" fill="#fff">A</text><rect x="134" y="45" width="38" height="44" rx="6" fill="#2fa84f"/><text x="153" y="78" fill="#fff">B</text><rect x="177" y="45" width="38" height="44" rx="6" fill="#5d6670"/><text x="196" y="78" fill="#fff">A</text><rect x="220" y="45" width="38" height="44" rx="6" fill="#2fa84f"/><text x="239" y="78" fill="#fff">R</text></g>'],
+    ['kosa-in-shoz', 'Kosa in shoz ?', 'Dans l’esprit de Brain Puzzle', 'Devinettes rapides : touche le bon objet de La Réunion avant la fin du temps.',
+      '<rect width="300" height="150" fill="#d9c49a"/><g transform="translate(40 70)"><ellipse cx="30" cy="50" rx="30" ry="9" fill="#fff6e6"/><circle cx="30" cy="30" r="16" fill="#b3172e"/></g><g transform="translate(120 70)"><ellipse cx="30" cy="50" rx="30" ry="9" fill="#fff6e6"/><path d="M10 44 L30 10 L50 44Z" fill="#4a3428"/><path d="M27 14 h6 l2 30 h-8z" fill="#ff4b1f"/></g><g transform="translate(200 70)"><ellipse cx="30" cy="50" rx="30" ry="9" fill="#fff6e6"/><rect x="6" y="22" width="48" height="22" rx="5" fill="#ffc400"/></g><text x="150" y="44" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="34" fill="#c0392b">?</text>'],
+    ['tang-i-kour', 'Tang i kour', 'Dans l’esprit de Subway Surfers', 'Le tangue court entre les champs de cannes : saute, esquive, ramasse les letchis.',
+      '<rect width="300" height="150" fill="#9fd8f5"/><path d="M0 70 h300 v80 H0z" fill="#5fae46"/><path d="M120 70 L180 70 L240 150 L60 150Z" fill="#c9b08a"/><g stroke="#a9b060" stroke-width="3"><path d="M20 70v-30M30 70v-34M40 70v-28M260 70v-32M270 70v-28M280 70v-34"/></g><g transform="translate(130 96)"><ellipse cx="20" cy="22" rx="22" ry="16" fill="#5b4a3a"/><path d="M4 14 l-4 -8 M12 8 l-2 -9 M22 6 l0 -9 M32 8 l3 -8" stroke="#e8d9b8" stroke-width="3"/><path d="M40 24 l14 4 -14 4z" fill="#6e5644"/></g><circle cx="200" cy="96" r="8" fill="#b3172e"/><circle cx="214" cy="106" r="8" fill="#b3172e"/>'],
+    ['apres-cyclone', 'Après le cyclone', 'Un jeu « ASMR » de remise en état', 'Ramasse les débris, recloue les tôles et nettoie la façade : le soleil revient.',
+      '<rect width="300" height="150" fill="#8d99a3"/><path d="M0 110 h300 v40 H0z" fill="#4f8f32"/><g transform="translate(90 40)"><path d="M0 34 L60 4 L120 34Z" fill="#b8352a"/><path d="M70 6 L104 -6 L112 18Z" fill="#c0392b"/><rect x="8" y="34" width="104" height="44" fill="#f4c95d"/><path d="M8 60 h104 v18 H8z" fill="#7a5a36" opacity=".8"/></g><g stroke="#cfe0ee" stroke-width="2" opacity=".8"><path d="M20 10l-6 18M50 20l-6 18M250 14l-6 18M280 30l-6 18M220 50l-6 18"/></g>'],
+  ];
+  const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  document.getElementById('grille').innerHTML = JEUX.map(([dossier, nom, inspi, texte, svg]) => `
+    <a class="jeu" href="${dossier}/index.html">
+      <span class="illu"><svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${svg}</svg></span>
+      <span class="corps"><span class="inspi">${esc(inspi)}</span><h2>${esc(nom)}</h2><p>${esc(texte)}</p><span class="jouer">Jouer →</span></span>
+    </a>`).join('');
+}
+</script>
+</body>
+</html>
