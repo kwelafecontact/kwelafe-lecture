@@ -36,7 +36,13 @@
   @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
   .pop { position:fixed; pointer-events:none; font-weight:800; transform:translate(-50%,-50%); text-shadow:0 3px 0 rgba(0,0,0,.35), 0 0 14px rgba(0,0,0,.4); animation:monte .9s ease-out forwards; white-space:nowrap; }
   .pop.combo { color:var(--or); font-size:clamp(30px, 7vw, 48px); animation-duration:1.3s; }
-  .pop.pts { color:#fff; font-size:24px; }
+  .pop.pts { color:#fff; font-size:clamp(34px, 8vw, 52px); -webkit-text-stroke:2px rgba(40,14,0,.55); text-shadow:0 4px 0 rgba(0,0,0,.35), 0 0 22px currentColor; }
+  .pop.bonus { color:#ffe27a; font-size:clamp(24px, 5.6vw, 34px); -webkit-text-stroke:1.5px rgba(60,20,0,.6); }
+  .pop.or { color:#ffd84a; font-size:clamp(34px, 8vw, 56px); text-shadow:0 4px 0 #8a5a00, 0 0 30px #ffcf4a; }
+  #dore { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(ellipse at center, rgba(255,215,90,0) 45%, rgba(255,190,40,.38) 100%); box-shadow:inset 0 0 60px 10px rgba(255,200,60,.5); }
+  #barreOr { position:fixed; left:50%; transform:translateX(-50%); top:max(26px, calc(env(safe-area-inset-top) + 10px)); width:min(46vw, 260px); height:10px; border-radius:9px; background:rgba(0,0,0,.35); overflow:hidden; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #barreOr div { height:100%; width:100%; background:linear-gradient(90deg, #fff1a8, #ffc21e); box-shadow:0 0 12px #ffcf4a; }
+  #vitre { pointer-events:none; }
   .pop.aie { color:#ff5a3a; font-size:clamp(26px, 6vw, 40px); }
   @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 30% { transform:translate(-50%,-55%) scale(1); } 100% { opacity:0; transform:translate(-50%,-140%) scale(1); } }
   #flash { position:fixed; inset:0; background:#fff3d0; opacity:0; pointer-events:none; }
@@ -48,8 +54,11 @@
 <canvas id="fond"></canvas>
 <canvas id="taches"></canvas>
 <canvas id="gl"></canvas>
+<canvas id="vitre"></canvas>
 <canvas id="trace"></canvas>
 <div id="flash"></div>
+<div id="dore"></div>
+<div id="barreOr"><div></div></div>
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
@@ -112,12 +121,15 @@ const rim = new THREE.DirectionalLight(0xbfdcff, 1.6); rim.position.set(-6, 3, -
 scene.add(new THREE.HemisphereLight(0xfff4dc, 0x6a4020, 0.4));
 
 let W = 0, H = 0, viewH = 10, viewW = 10;
-const fond = $('fond'), taches = $('taches'), trace = $('trace');
-const fctx = fond.getContext('2d'), tctx = taches.getContext('2d'), bctx = trace.getContext('2d');
+const fond = $('fond'), taches = $('taches'), trace = $('trace'), vitre = $('vitre');
+const fctx = fond.getContext('2d'), tctx = taches.getContext('2d'), bctx = trace.getContext('2d'), vctx = vitre.getContext('2d');
+// calques hors écran qui gardent les taches (étal) et les traînées (vitre) d'une image à l'autre
+const couche = document.createElement('canvas'), cctx = couche.getContext('2d');
+const coucheVitre = document.createElement('canvas'), cvctx = coucheVitre.getContext('2d');
 function resize() {
   W = innerWidth; H = innerHeight;
   const dpr = Math.min(devicePixelRatio, 2);
-  for (const c of [fond, taches, trace]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
+  for (const c of [fond, taches, trace, vitre, couche, coucheVitre]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
   // garder une largeur jouable en portrait
@@ -203,6 +215,9 @@ const son = {
   rate: () => sTone(220, 0.35, 0.25, 'sawtooth', 0, 0.5),
   roche: () => { sNoise(0.9, 900, 60, 0.7, 0.9, 'lowpass'); sTone(70, 0.6, 0.6, 'sine', 0, 0.4); },
   lance: () => sNoise(0.12, 300, 900, 0.8, 0.06),
+  or: () => { [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => sTone(660 * 2 ** (s / 12), 0.35, 0.16, 'triangle', i * 0.05)); sTone(110, 1.2, 0.25, 'sine', 0, 0.5); },
+  bonus: () => { sTone(988, 0.08, 0.14, 'square'); sTone(1318, 0.18, 0.14, 'square', 0.07); },
+  goutte: () => sTone(rnd(700, 1100), 0.09, 0.05, 'sine', 0, 0.55),
 };
 
 // ---------------------------------------------------------------- chargement des fruits
@@ -304,34 +319,161 @@ function majParticules(dt) {
   parts.instanceMatrix.needsUpdate = true;
 }
 
-// ---------------------------------------------------------------- taches de jus sur l'étal (2 secondes)
-const lesTaches = [];
-function tache(sx, sy, color, taille) {
-  const blobs = Array.from({ length: 9 }, (_, i) => ({ dx: i ? rnd(-1, 1) * taille * 1.4 : 0, dy: i ? rnd(-1, 1) * taille * 1.4 : 0, r: i ? rnd(0.12, 0.38) * taille : taille * 0.75 }));
-  lesTaches.push({ sx, sy, c: '#' + color.getHexString(), t: performance.now(), blobs });
+// ---------------------------------------------------------------- taches de jus sur l'étal
+// Chaque fruit coupé projette son jus dans le sens du geste. Les taches restent,
+// s'accumulent (les couleurs se superposent), puis des coulures descendent
+// lentement vers le bas avant de pâlir doucement.
+const coulures = [];      // filets de jus qui coulent sur l'étal
+const gouttesVitre = [];  // grosses gouttes qui glissent sur l'écran
+function teinteTache(c) {
+  // les jus très pâles (letchi, coco…) restent visibles : on les teinte légèrement
+  const t = c.clone(), hsl = {}; t.getHSL(hsl);
+  if (hsl.l > 0.82) t.setHSL(hsl.h, Math.max(hsl.s, 0.38), 0.74);
+  return t;
+}
+const rgba = (c, a) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+function blob(ctx, x, y, r, ang, allonge, couleur, alpha) {
+  // forme irrégulière (pas un rond parfait)
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(allonge, 1);
+  ctx.beginPath();
+  const n = 14;
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * Math.PI * 2, rr = r * (0.78 + Math.random() * 0.36);
+    const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+  const g = ctx.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r * 1.1);
+  g.addColorStop(0, rgba(couleur.clone().offsetHSL(0, 0.05, 0.08), alpha));
+  g.addColorStop(0.75, rgba(couleur, alpha));
+  g.addColorStop(1, rgba(couleur.clone().offsetHSL(0, 0, -0.18), alpha * 0.95));
+  ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
+}
+function tache(sx, sy, color, taille, dir) {
+  const c = teinteTache(color);
+  // dir : sens du geste à l'écran (y vers le bas)
+  const ang = Math.atan2(-dir.y, dir.x);
+  const cx = sx + Math.cos(ang) * taille * 0.45, cy = sy + Math.sin(ang) * taille * 0.45;
+  cctx.globalCompositeOperation = 'source-over';
+  blob(cctx, cx, cy, taille * 0.8, ang, 1.35, c, 0.82);
+  // éclaboussures projetées dans la direction de la coupe (et quelques-unes en arrière)
+  for (let i = 0; i < 26; i++) {
+    const arriere = Math.random() < 0.15;
+    const a = ang + (arriere ? Math.PI : 0) + rnd(-0.45, 0.45);
+    const d = taille * rnd(0.9, arriere ? 1.8 : 3.6);
+    const r = Math.max(1.5, taille * 0.22 * (1 - d / (taille * 4.2)) * rnd(0.4, 1.1));
+    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    blob(cctx, x, y, r, a, rnd(1.2, 2.4), c, rnd(0.7, 0.9));
+    if (r > taille * 0.11 && Math.random() < 0.35) nouvelleCoulure(x, y + r * 0.6, r * 0.42, c, rnd(30, 120));
+  }
+  // reflet brillant sur la flaque principale
+  cctx.save(); cctx.globalAlpha = 0.22; cctx.fillStyle = '#fff';
+  cctx.beginPath(); cctx.ellipse(cx - taille * 0.25, cy - taille * 0.3, taille * 0.28, taille * 0.11, ang - 0.4, 0, 7); cctx.fill(); cctx.restore();
+  // les coulures partent du bas de la flaque
+  const nb = 3 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < nb; i++) nouvelleCoulure(cx + rnd(-0.75, 0.75) * taille, cy + taille * rnd(0.35, 0.6), rnd(1.8, Math.max(2.6, taille * 0.13)), c, rnd(70, 300));
+}
+function nouvelleCoulure(x, y, largeur, c, longueur) {
+  if (coulures.length > 160) coulures.shift();
+  coulures.push({ x, y, x0: x, l: largeur, c, reste: longueur, v: rnd(16, 46), attente: rnd(0.05, 0.6), phase: rnd(0, 6) });
+}
+function majTaches(dt) {
+  // les vieilles taches pâlissent très lentement (environ 40 secondes)
+  cctx.globalCompositeOperation = 'destination-out';
+  cctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.028)})`; cctx.fillRect(0, 0, W, H);
+  cctx.globalCompositeOperation = 'source-over';
+  cctx.lineCap = 'round';
+  for (let i = coulures.length - 1; i >= 0; i--) {
+    const k = coulures[i];
+    if (k.attente > 0) { k.attente -= dt; continue; }
+    const py = k.y, px = k.x;
+    k.v = Math.max(4, k.v * (1 - 0.22 * dt));                     // le jus ralentit en s'étalant
+    const dy = k.v * dt; k.y += dy; k.reste -= dy;
+    k.x = k.x0 + Math.sin(k.y * 0.035 + k.phase) * 1.6;         // léger zigzag naturel
+    k.l = Math.max(1.2, k.l - dy * 0.006);
+    cctx.strokeStyle = rgba(k.c, 0.78); cctx.lineWidth = k.l * 1.6;
+    cctx.beginPath(); cctx.moveTo(px, py); cctx.lineTo(k.x, k.y); cctx.stroke();
+    if (k.reste <= 0 || k.y > H - 3) {
+      // une petite goutte se forme au bout du filet
+      cctx.fillStyle = rgba(k.c.clone().offsetHSL(0, 0, -0.08), 0.9);
+      cctx.beginPath(); cctx.arc(k.x, k.y + k.l * 0.4, k.l * 1.35, 0, 7); cctx.fill();
+      coulures.splice(i, 1);
+    }
+  }
 }
 function dessinerTaches() {
   tctx.clearRect(0, 0, W, H);
-  const now = performance.now();
-  for (let i = lesTaches.length - 1; i >= 0; i--) {
-    const t = lesTaches[i], age = (now - t.t) / 2000;
-    if (age >= 1) { lesTaches.splice(i, 1); continue; }
-    tctx.globalAlpha = 0.75 * (1 - age * age); tctx.fillStyle = t.c;
-    for (const b of t.blobs) { tctx.beginPath(); tctx.arc(t.sx + b.dx, t.sy + b.dy + age * 18, b.r, 0, 7); tctx.fill(); }
+  tctx.globalAlpha = 0.92; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
+  // tête brillante des filets qui coulent encore
+  for (const k of coulures) {
+    if (k.attente > 0) continue;
+    const r = k.l * 1.25;
+    tctx.fillStyle = rgba(k.c, 0.95); tctx.beginPath(); tctx.arc(k.x, k.y, r, 0, 7); tctx.fill();
+    tctx.fillStyle = 'rgba(255,255,255,.55)'; tctx.beginPath(); tctx.arc(k.x - r * 0.35, k.y - r * 0.35, r * 0.35, 0, 7); tctx.fill();
   }
-  tctx.globalAlpha = 1;
+}
+// ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
+function gouttesEcran(sx, sy, color, dir) {
+  const c = teinteTache(color);
+  const n = 1 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < n; i++) {
+    const r = rnd(7, 16);
+    gouttesVitre.push({
+      x: Math.min(W - 30, Math.max(30, sx + dir.x * rnd(30, 140) + rnd(-40, 40))),
+      y: Math.min(H - 80, Math.max(60, sy - dir.y * rnd(30, 140) + rnd(-40, 40))),
+      r, c, apparition: 0, attente: rnd(0.35, 1.2), v: 0, vmax: rnd(50, 130), phase: rnd(0, 6),
+    });
+  }
+  son.goutte();
+}
+function majVitre(dt) {
+  cvctx.globalCompositeOperation = 'destination-out';
+  cvctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.45)})`; cvctx.fillRect(0, 0, W, H);   // traînées qui sèchent vite
+  cvctx.globalCompositeOperation = 'source-over'; cvctx.lineCap = 'round';
+  vctx.clearRect(0, 0, W, H);
+  vctx.drawImage(coucheVitre, 0, 0, W, H);
+  for (let i = gouttesVitre.length - 1; i >= 0; i--) {
+    const g = gouttesVitre[i];
+    g.apparition = Math.min(1, g.apparition + dt * 6);
+    if (g.attente > 0) g.attente -= dt;
+    else {
+      const py = g.y, px = g.x;
+      g.v = Math.min(g.vmax, g.v + 140 * dt); g.y += g.v * dt;
+      g.x += Math.sin(g.y * 0.03 + g.phase) * 0.6;
+      g.r = Math.max(4, g.r - dt * 1.5);
+      cvctx.strokeStyle = rgba(g.c, 0.32); cvctx.lineWidth = g.r * 0.9;
+      cvctx.beginPath(); cvctx.moveTo(px, py); cvctx.lineTo(g.x, g.y); cvctx.stroke();
+    }
+    const r = g.r * (0.4 + 0.6 * g.apparition);
+    // goutte en forme de lentille : bord sombre, cœur clair, reflet
+    const grd = vctx.createRadialGradient(g.x - r * 0.3, g.y - r * 0.3, r * 0.1, g.x, g.y, r);
+    grd.addColorStop(0, rgba(g.c.clone().offsetHSL(0, 0, 0.15), 0.55));
+    grd.addColorStop(0.7, rgba(g.c, 0.62));
+    grd.addColorStop(1, rgba(g.c.clone().offsetHSL(0, 0, -0.25), 0.85));
+    vctx.fillStyle = grd;
+    vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.fill();
+    vctx.fillStyle = 'rgba(255,255,255,.75)';
+    vctx.beginPath(); vctx.ellipse(g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6, 0, 7); vctx.fill();
+    if (g.y - r > H) gouttesVitre.splice(i, 1);
+  }
 }
 
 // ---------------------------------------------------------------- objets du jeu
 const objets = [];   // fruits et roches en vol
 const moities = [];  // moitiés coupées
 let etat = 'menu', score = 0, vies = 3, record = 0, temps = 0, niveau = 0;
-let ralenti = 0, tremble = 0, zoom = 0, prochainLancer = 1, mangueMenu = null;
+let ralenti = 0, ralentiOr = 0, tremble = 0, zoom = 0, prochainLancer = 1, mangueMenu = null;
+let coupeSwipe = 0; // points gagnés pendant le geste en cours
+const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
+function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
 try { record = +(localStorage.getItem('koupkoup_record') || 0); } catch (e) {}
 
 function lancer(fruit, opts = {}) {
   const roche = !fruit;
   const grp = roche ? new THREE.Mesh(rocheGeo, rocheMat) : fruit.entier.clone();
+  if (opts.or) { dorer(grp); grp.scale.multiplyScalar(1.15); }
+  const vanille = !roche && !opts.menu && fruit.d.id === 'vanille';
   const x0 = opts.x ?? rnd(-viewW * 0.38, viewW * 0.38);
   const y0 = -viewH / 2 - 1.2;
   const sommet = rnd(viewH * 0.08, viewH * 0.38);
@@ -342,18 +484,23 @@ function lancer(fruit, opts = {}) {
   grp.position.set(x0, y0, rnd(-0.6, 0.6));
   grp.rotation.set(rnd(0, 6), rnd(0, 6), rnd(0, 6));
   scene.add(grp);
-  const o = { roche, fruit, obj: grp, vel: new THREE.Vector3(vx, vy, 0), axe: new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(), vrot: rnd(1.5, 4.5), rayon: roche ? 0.62 : fruit.rayon, g, vivant: true, menu: !!opts.menu };
+  const o = { roche, fruit, obj: grp, vel: new THREE.Vector3(vx, vy, 0), axe: new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(), vrot: rnd(1.5, 4.5), rayon: roche ? 0.62 : fruit.rayon * (opts.or ? 1.25 : 1), g, vivant: true, menu: !!opts.menu, or: !!opts.or, vanille };
+  if (vanille) {
+    // la gousse de vanille tombe toujours depuis le haut de l'écran, en virevoltant
+    grp.position.set(rnd(-viewW * 0.36, viewW * 0.36), viewH / 2 + 1.2, rnd(-0.3, 0.3));
+    o.vel.set(rnd(-0.7, 0.7), -rnd(0.6, 1.6), 0); o.g = 3.2; o.vrot = rnd(1, 2.2); o.rayon = Math.max(o.rayon, 0.75);
+  }
   if (opts.menu) { o.vel.set(0, 0, 0); grp.position.set(0, opts.y ?? 0.3, 0); o.vrot = 0.9; o.axe.set(0.2, 1, 0.1).normalize(); }
   objets.push(o);
   if (!opts.menu) son.lance();
   return o;
 }
 
-function couper(o, dir) {
+function couper(o, dir, precision = 1) {
   o.vivant = false; scene.remove(o.obj);
   const pos = o.obj.position.clone();
   if (o.roche) {
-    son.roche(); tremble = 0.5; etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
+    son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
     const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
     popup('Aïe ! Une roche du volcan !', pos, 'aie');
     perdreVie(); perdreVie();
@@ -369,16 +516,33 @@ function couper(o, dir) {
   q.premultiply(new THREE.Quaternion().setFromAxisAngle(n, ang + rnd(-0.3, 0.3)));
   for (const [nom, sgn] of [['A', 1], ['B', -1]]) {
     const m = f[nom].clone(); m.position.copy(pos); m.quaternion.copy(q); scene.add(m);
+    if (o.or) dorer(m);
     const cap = n.clone().multiplyScalar(-sgn);
     const axe = dir.clone(); const sens = Math.sign(new THREE.Vector3().crossVectors(axe, cap).z) || 1;
     moities.push({ obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4 });
   }
-  giclee(pos, dir, f.jus);
+  const jus = o.or ? new THREE.Color(0xffd23a) : f.jus;
+  giclee(pos, dir, jus, o.or ? 60 : 34);
   const s = toScreen(pos);
-  tache(s.x, s.y, f.jus, pxRayon(f.rayon) * 0.9);
+  tache(s.x, s.y, jus, pxRayon(f.rayon) * 0.9, dir);
+  if (Math.random() < (o.or ? 1 : 0.3)) gouttesEcran(s.x, s.y, jus, dir);
+  try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
   if (o.menu) { demarrer(); return; }
-  score += 1; majScore();
-  popup('+1', pos, 'pts');
+  let pts = 1;
+  if (o.vanille) pts = 3;
+  if (o.or) {
+    pts = 5;
+    ralenti = Math.max(ralenti, 4); ralentiOr = 4;
+    son.or(); etincelles(pos, 90, 0xffd84a); etincelles(pos, 40, 0xffffff);
+    popup('Ralenti doré !', pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 'or');
+  }
+  const parfait = precision < 0.28 && !o.or;
+  if (parfait) pts += 1;
+  score += pts; coupeSwipe += pts; majScore();
+  const clair = teinteTache(jus).offsetHSL(0, 0.15, 0.08);
+  popup('+' + pts, pos, 'pts', '#' + clair.getHexString());
+  if (parfait) setTimeout(() => popup('Pile au centre !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
+  if (o.vanille) setTimeout(() => popup('Vanille !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
 }
 
 function perdreVie() {
@@ -391,8 +555,9 @@ function perdreVie() {
 const SVG_VIE = c => `<svg viewBox="0 0 32 32"><path d="M16 9c-5-6-13-3-13 4 0 8 13 15 13 15s13-7 13-15c0-7-8-10-13-4z" fill="${c}" stroke="#4a1a04" stroke-width="1.5"/><path d="M15 9c0-3 2-5 5-6" stroke="#2f7a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/><g class="x" opacity="0"><path d="M8 8l16 16M24 8L8 24" stroke="#e8322a" stroke-width="4" stroke-linecap="round"/></g></svg>`;
 function majVies() { $('vies').innerHTML = [0, 1, 2].map(i => SVG_VIE('#ffb21e').replace('<svg', `<svg class="${i >= vies ? 'perdue' : ''}"`)).join(''); }
 function majScore() { $('score').textContent = score; $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
-function popup(txt, pos, cls) {
+function popup(txt, pos, cls, couleur) {
   const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt;
+  if (couleur) e.style.color = couleur;
   e.style.left = Math.min(Math.max(s.x, 120), W - 120) + 'px'; e.style.top = Math.min(Math.max(s.y, 120), H - 160) + 'px';
   document.body.appendChild(e); setTimeout(() => e.remove(), 1400);
 }
@@ -415,7 +580,7 @@ function demarrer() {
   for (const o of objets) if (o.menu && o.vivant) { o.vivant = false; scene.remove(o.obj); }
 }
 function finPartie() {
-  etat = 'fin';
+  etat = 'fin'; ralentiOr = 0;
   if (score > record) { record = score; try { localStorage.setItem('koupkoup_record', record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
   setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue(); }, 1200);
@@ -424,7 +589,7 @@ function finPartie() {
 // ---------------------------------------------------------------- geste de découpe
 const trait = []; let appui = false, dernier = null, comboN = 0, comboT = 0, comboPos = null, swooshT = 0;
 function pointer(e) { return { x: e.clientX, y: e.clientY, t: performance.now() }; }
-glc.addEventListener('pointerdown', e => { audio(); appui = true; dernier = pointer(e); trait.length = 0; trait.push(dernier); comboN = 0; });
+glc.addEventListener('pointerdown', e => { audio(); appui = true; dernier = pointer(e); trait.length = 0; trait.push(dernier); comboN = 0; coupeSwipe = 0; });
 addEventListener('pointermove', e => {
   if (!appui) return;
   const p = pointer(e);
@@ -447,18 +612,21 @@ function testerCoupe(a, b) {
     const d = Math.hypot(a.x + dx * t - c.x, a.y + dy * t - c.y);
     if (d < r) {
       const dir = new THREE.Vector3(dx, -dy, 0).normalize();
-      couper(o, dir);
+      couper(o, dir, d / r);
       if (!o.roche && !o.menu) { comboN++; comboT = performance.now(); comboPos = o.obj.position.clone(); }
     }
   }
 }
 function finCombo() {
-  if (comboN >= 3 && etat === 'jeu') {
-    score += comboN; majScore(); son.combo(comboN);
-    popup(`Combo ×${comboN} ! +${comboN}`, comboPos, 'combo');
-    etincelles(comboPos, 50); ralenti = 0.35; zoom = 1;
+  // plusieurs fruits d'un seul geste : les points du geste sont multipliés
+  if (comboN >= 2 && etat === 'jeu') {
+    const bonus = coupeSwipe * (comboN - 1);
+    score += bonus; majScore(); son.combo(comboN);
+    popup(`Multi ×${comboN} ! +${bonus}`, comboPos, 'combo');
+    etincelles(comboPos, 30 + comboN * 12);
+    if (comboN >= 3) { ralenti = Math.max(ralenti, 0.35); zoom = 1; }
   }
-  comboN = 0;
+  comboN = 0; coupeSwipe = 0;
 }
 
 function dessinerTrait() {
@@ -487,6 +655,8 @@ function vague() {
       if (etat !== 'jeu' || !prets.length) return;
       if (Math.random() < chanceRoche) lancer(null);
       else lancer(prets[Math.floor(Math.random() * prets.length)]);
+      // de temps en temps, un letchi doré (un seul à la fois)
+      if (i === 0 && temps > 12 && cache['letchi'] && !objets.some(x => x.or && x.vivant) && Math.random() < 0.07) setTimeout(() => etat === 'jeu' && lancer(cache['letchi'], { or: true }), 350);
     }, i * rnd(120, 300));
   }
   prochainLancer = Math.max(0.9, 2.4 - niveau * 0.13) + rnd(0, 0.6);
@@ -498,7 +668,11 @@ const fumee = new THREE.Color(0xff8a1e);
 function boucle() {
   const vrai = Math.min(horloge.getDelta(), 0.05);
   if (ralenti > 0) ralenti -= vrai;
-  const dt = vrai * (ralenti > 0 ? 0.3 : 1);
+  if (ralentiOr > 0) ralentiOr -= vrai;
+  const dt = vrai * (ralenti > 0 ? (ralentiOr > 0 ? 0.35 : 0.3) : 1);
+  $('dore').style.opacity = ralentiOr > 0 ? Math.min(1, ralentiOr * 2) : 0;
+  $('barreOr').style.opacity = ralentiOr > 0 ? 1 : 0;
+  if (ralentiOr > 0) $('barreOr').firstElementChild.style.width = (ralentiOr / 4 * 100) + '%';
   if (etat === 'jeu') { temps += dt; prochainLancer -= dt; if (prochainLancer <= 0) vague(); }
   if (comboN > 0 && performance.now() - comboT > 260) finCombo();
 
@@ -508,10 +682,11 @@ function boucle() {
     if (o.menu) { o.obj.position.y += Math.sin(performance.now() / 600) * 0.004; o.obj.rotateOnWorldAxis(o.axe, o.vrot * dt); continue; }
     o.vel.y -= o.g * dt; o.obj.position.addScaledVector(o.vel, dt);
     o.obj.rotateOnWorldAxis(o.axe, o.vrot * dt);
+    if (o.or && Math.random() < 0.7) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.4, .4), rnd(-.4, .4), 0.3)), new THREE.Vector3(rnd(-.6, .6), rnd(-.2, .8), 0), rnd(0.03, 0.06), new THREE.Color(0xffe27a).multiplyScalar(1.4), 0.6, 0.1);
     if (o.roche && Math.random() < 0.5) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .5, 0)), new THREE.Vector3(rnd(-.5, .5), rnd(1, 2.5), 0), rnd(0.03, 0.06), fumee, 0.5, 0.15);
     if (o.vel.y < 0 && o.obj.position.y < -viewH / 2 - 1.5) {
       o.vivant = false; scene.remove(o.obj);
-      if (!o.roche && etat === 'jeu') { son.rate(); perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
+      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
     }
   }
   for (let i = moities.length - 1; i >= 0; i--) {
@@ -526,7 +701,7 @@ function boucle() {
   if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
 
   renderer.render(scene, camera);
-  dessinerTaches(); dessinerTrait();
+  majTaches(vrai); dessinerTaches(); majVitre(vrai); dessinerTrait();
   requestAnimationFrame(boucle);
 }
 
