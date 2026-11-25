@@ -536,3 +536,18 @@ body { background: var(--ivoire); }
 .top10 a { flex: 0 0 auto; display: flex; align-items: flex-end; scroll-snap-align: start; text-decoration: none; }
 .top10 .rang { font-family: var(--titre); font-size: 96px; line-height: .8; font-weight: 900; color: var(--ivoire); -webkit-text-stroke: 3px var(--nuit); margin-right: -14px; z-index: 0; }
 .top10 .couv { width: 104px; position: relative; z-index: 1; }
+
+/* Espace École */
+.bandeau-ecole { background: #2e9d4f; margin-bottom: 8px; }
+.bandeau-ecole p { margin: 6px 0 0; opacity: .92; }
+.ecole-niveaux { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 720px) { .ecole-niveaux { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ecole-niveau { display: flex; flex-direction: column; gap: 2px; padding: 14px; border-radius: 18px; background: var(--blanc); box-shadow: var(--ombre); text-decoration: none; color: var(--texte); border: 3px solid transparent; }
+.ecole-niveau span { font-size: 26px; }
+.ecole-niveau b { font-family: var(--titre); font-size: 18px; color: var(--c); }
+.ecole-niveau small { font-size: 13px; opacity: .75; }
+.ecole-niveau.actif { border-color: var(--c); background: var(--c); color: #fff; }
+.ecole-niveau.actif b { color: #fff; }
+.tuile-active { outline: 3px solid var(--c); outline-offset: 2px; }
+.ecole-jeux { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.ecole-jeux .pastille { display: inline-flex; align-items: center; text-decoration: none; font-size: 14px; }

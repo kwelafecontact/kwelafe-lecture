@@ -24,10 +24,10 @@ export default function Portails({ prenom, visiteur, nbLivres, nbJeux, enCours, 
     return () => clearTimeout(t);
   }, []);
 
-  const portails = [
+  const portails: { href: string; nom: string; ico: string; c: string; detail: string; couv?: string[]; bientot?: boolean }[] = [
     { href: "/", nom: "Bibliothèque", ico: "📚", c: "#1f6fb2", detail: `${nbLivres} livres à lire`, couv: couvertures },
     { href: "/jeux", nom: "Jeux", ico: "🎮", c: "#e8a200", detail: `${nbJeux} jeux péi` },
-    { href: "/ecole", nom: "École", ico: "🎒", c: "#2e9d4f", detail: "Par niveau et par thème", bientot: true },
+    { href: "/ecole", nom: "École", ico: "🎒", c: "#2e9d4f", detail: "Par niveau et par thème" },
     { href: "/compte", nom: "Mon espace", ico: "⭐", c: "#d6332a", detail: visiteur ? "Créer mon compte" : "Mes progrès, mes favoris" },
   ];
 
