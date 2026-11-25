@@ -1,11 +1,20 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { MoteurKoupKoup, Mode, Resultat } from "@/lib/jeux/koupkoup/moteur";
+import type { MoteurKoupKoup, Mode, Resultat, InstantaneKK } from "@/lib/jeux/koupkoup/moteur";
 import { FRUITS } from "@/lib/jeux/koupkoup/fruits";
+import { lireLocal, modifierLocal, envoyerScore, renvoyerEnAttente } from "@/lib/jeux/commun/progression";
 
-type Donnees = { panier?: Record<string, number>; meilleurCombo?: number };
-type Phase = "chargement" | "menu" | "jeu" | "pause" | "fin" | "erreur";
+type Donnees = { panier?: Record<string, number>; meilleurCombo?: number; record?: number };
+type Phase = "chargement" | "menu" | "jeu" | "pause" | "fin" | "erreur" | "graphique";
+
+/** Fusionne deux paniers : on garde le plus grand nombre de coupes pour chaque fruit. */
+function fusionner(a: Donnees, b?: Donnees): Donnees {
+  if (!b) return a;
+  const panier = { ...(a.panier || {}) };
+  for (const [id, n] of Object.entries(b.panier || {})) panier[id] = Math.max(panier[id] || 0, n);
+  return { ...a, panier, meilleurCombo: Math.max(a.meilleurCombo || 0, b.meilleurCombo || 0), record: Math.max(a.record || 0, b.record || 0) };
+}
 
 const A_DECOUVRIR = FRUITS.filter((f) => f.special !== "lave");
 
@@ -19,6 +28,11 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
   const [resultat, setResultat] = useState<(Resultat & { nouveauRecord: boolean; nouveaux: string[] }) | null>(null);
   const [son, setSon] = useState(true);
   const [panierOuvert, setPanierOuvert] = useState(false);
+  // Incrémenté pour recréer le moteur graphique (sans recharger la page) si le contexte WebGL ne revient pas
+  const [generation, setGeneration] = useState(0);
+  const [reprise, setReprise] = useState<InstantaneKK | null>(null);
+  const phaseRef = useRef<Phase>("chargement");
+  phaseRef.current = phase;
   const modeRef = useRef<Mode>("classique");
   const donneesRef = useRef(donnees);
   donneesRef.current = donnees;
@@ -33,23 +47,34 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
       if (!avant[id]) nouveaux.push(id);
       panier[id] = (panier[id] || 0) + n;
     }
-    const suivantes: Donnees = { ...donneesRef.current, panier, meilleurCombo: Math.max(donneesRef.current.meilleurCombo || 0, r.meilleurCombo) };
     const nouveauRecord = r.score > recordRef.current;
+    const suivantes: Donnees = { ...donneesRef.current, panier, meilleurCombo: Math.max(donneesRef.current.meilleurCombo || 0, r.meilleurCombo), record: Math.max(recordRef.current, r.score) };
     setDonnees(suivantes);
     if (nouveauRecord) setRecord(r.score);
     setResultat({ ...r, nouveauRecord, nouveaux });
     setPhase("fin");
-    try {
-      const rep = await fetch("/api/jeux/score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jeu: "koup-koup", score: r.score, donnees: suivantes }),
-      });
-      const j = await rep.json();
-      if (typeof j.record === "number") setRecord((x) => Math.max(x, j.record));
-    } catch {
-      /* hors ligne : le score reste affiché, il sera perdu au rechargement */
-    }
+    // Copie locale immédiate, puis serveur : hors ligne, le score repart au retour du réseau
+    modifierLocal<Donnees>("koup-koup", (l) => ({ ...l, donnees: fusionner(suivantes, l.donnees), partie: null }));
+    const j = await envoyerScore("koup-koup", r.score, suivantes);
+    if (j && typeof j.record === "number") setRecord((x) => Math.max(x, j.record!));
+  }, []);
+
+  // Progression locale : fusion avec celle du serveur, et renvoi d'un score resté en attente
+  useEffect(() => {
+    let annule = false;
+    lireLocal<Donnees>("koup-koup").then((l) => {
+      if (annule) return;
+      const p = l.partie?.etat as InstantaneKK | undefined;
+      if (p && p.vies > 0) setReprise(p);
+      if (!l.donnees) return;
+      const fus = fusionner(donneesRef.current, l.donnees);
+      setDonnees(fus);
+      setRecord((x) => Math.max(x, fus.record || 0));
+    }).catch(() => {});
+    renvoyerEnAttente<Donnees>("koup-koup").catch(() => {});
+    const enLigne = () => { renvoyerEnAttente<Donnees>("koup-koup").catch(() => {}); };
+    window.addEventListener("online", enLigne);
+    return () => { annule = true; window.removeEventListener("online", enLigne); };
   }, []);
 
   useEffect(() => {
@@ -65,6 +90,11 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
         const m = new MoteurKoupKoup(scene.current, {
           etat: (e) => setHud({ score: e.score, vies: e.vies, temps: e.temps }),
           fin: (r) => finPartie(r),
+          // Arrière-plan, verrouillage ou perte graphique : l'écran de pause s'affiche
+          interruption: () => { if (phaseRef.current === "jeu") setPhase("pause"); },
+          secours: () => setPhase("graphique"),
+          // Partie en cours enregistrée régulièrement : reprise possible après un arrêt brutal
+          sauvegarde: (p) => { if (p) modifierLocal<Donnees>("koup-koup", (l) => ({ ...l, partie: { niveau: 1, etat: p, t: Date.now() } })); },
         });
         moteur.current = m;
         try { if (localStorage.getItem("kk-son") === "0") m.setSon(false); } catch { /* rien */ }
@@ -79,13 +109,22 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
       moteur.current?.detruire();
       moteur.current = null;
     };
-  }, [finPartie]);
+  }, [finPartie, generation]);
 
   const jouer = (mode: Mode) => {
     modeRef.current = mode;
     setResultat(null);
+    setReprise(null);
     setHud({ score: 0, vies: 3, temps: mode === "zen" ? 90 : null });
     moteur.current?.demarrer(mode);
+    setPhase("jeu");
+  };
+  const reprendrePartie = () => {
+    if (!reprise || !moteur.current) return;
+    modeRef.current = reprise.mode;
+    setResultat(null);
+    moteur.current.restaurer(reprise);
+    setReprise(null);
     setPhase("jeu");
   };
 
@@ -136,6 +175,16 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
 
       {phase === "chargement" && <div className="kk-centre"><div className="kk-chargement">Préparation des fruits…</div></div>}
 
+      {phase === "graphique" && (
+        <div className="kk-centre">
+          <div className="kk-panneau">
+            <h2>Affichage interrompu</h2>
+            <p>L'iPhone a libéré la mémoire graphique pendant la pause. Ton panier et ton record sont enregistrés.</p>
+            <button className="btn" onClick={() => { setPhase("chargement"); setGeneration((g) => g + 1); }}>Relancer l'affichage</button>
+          </div>
+        </div>
+      )}
+
       {phase === "erreur" && (
         <div className="kk-centre">
           <div className="kk-panneau">
@@ -152,7 +201,8 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
             <div className="kk-titre">Koup Koup</div>
             <p className="kk-accroche">Coupe les fruits péi d'un geste, fais gicler le jus… et surtout, ne touche pas la lave !</p>
             <div className="kk-boutons">
-              <button className="btn" onClick={() => jouer("classique")}>Classique · 3 vies</button>
+              {reprise && <button className="btn" onClick={reprendrePartie}>Reprendre ma partie · {reprise.score} pts</button>}
+              <button className={reprise ? "btn secondaire" : "btn"} onClick={() => jouer("classique")}>Classique · 3 vies</button>
               <button className="btn secondaire" onClick={() => jouer("zen")}>Zen · 90 secondes</button>
               <button className="btn secondaire" onClick={() => setPanierOuvert(true)}>Mon panier ({decouverts}/{A_DECOUVRIR.length})</button>
             </div>

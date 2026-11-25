@@ -124,3 +124,13 @@ Aucune protection n'est parfaite sur le web. Mais ici, il n'y a aucun bouton de 
 - Les records et le « panier » de fruits découverts sont enregistrés dans la table `scores_jeux` (migration `0003_jeux.sql`, déjà appliquée sur la base en ligne par Claude).
 - Accès : abonnés, éditeur, ou tout le monde tant que `DEMO_MODE` vaut `1`.
 - Sur un appareil trop lent, le jeu retire tout seul le halo lumineux et baisse la définition pour rester fluide.
+
+## Stabilité des jeux sur iPhone (nov. 2026)
+
+- Tous les jeux passent par un gestionnaire commun : `public/jeux-3d/commun/performances.js` (importé par le site et par les jeux 3D).
+- Résolution limitée à 1,5 sur iPhone, qualité qui baisse par paliers puis passe en 30 images/s si l'appareil peine.
+- En arrière-plan ou écran verrouillé : le jeu se met en pause (écran « Pause »), plus rien ne tourne.
+- Progression : copie locale (IndexedDB) + envoi au serveur, renvoyé automatiquement si le réseau manquait. Une partie interrompue propose « Reprendre ma partie ».
+- Koup Koup 2 : sur téléphone et tablette, modèles allégés (`koup-koup/models/mobile/`, textures 512 px) et 10 fruits en mémoire à la fois, renouvelés pendant la partie. Pour forcer les modèles HD : ajouter `?hd` à l'adresse du jeu.
+- Diagnostic sur iPhone (Safari > Développement) : taper `kwelafeJournal()` dans la console du jeu pour voir les pertes graphiques, rechargements et arrêts ; `kwelafeInfo()` donne la mémoire graphique utilisée.
+- Si de nouveaux modèles GLB sont ajoutés à Koup Koup 2, il faut aussi créer leur version mobile (textures 512 px) dans `models/mobile/`.

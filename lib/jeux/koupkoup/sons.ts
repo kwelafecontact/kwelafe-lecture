@@ -37,7 +37,7 @@ export class Sons {
       const d = this.bruitBlanc.getChannelData(0);
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (this.ctx.state === "suspended") this.ctx.resume();
+    if (this.ctx.state !== "running" && this.ctx.state !== "closed") this.ctx.resume().catch(() => {}); // iOS : « suspended » ou « interrupted »
   }
 
   private pret() {
@@ -270,6 +270,11 @@ export class Sons {
     if (!ctx) return;
     const t = ctx.currentTime;
     [523, 440, 349, 262].forEach((f, i) => this.ton(t + i * 0.16, 0.45, "triangle", f, f * 0.98, 0.14));
+  }
+
+  /** Arrière-plan : le son s'endort (il se réveille au prochain toucher). */
+  endormir() {
+    if (this.ctx && this.ctx.state === "running") this.ctx.suspend().catch(() => {});
   }
 
   detruire() {

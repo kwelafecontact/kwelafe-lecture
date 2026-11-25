@@ -8,6 +8,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { FRUITS, type DefFruit, modele, textureChair, fruitParId } from "./fruits";
 import { Sons } from "./sons";
 import { fbm, graine } from "./bruit";
+import { GestionnairePerf, dprCible, libererCanvas } from "@/public/jeux-3d/commun/performances";
 
 export type Mode = "classique" | "zen";
 export type Resultat = { mode: Mode; score: number; coupes: Record<string, number>; meilleurCombo: number; duree: number };
@@ -15,7 +16,14 @@ export type Rappels = {
   etat: (e: { score: number; vies: number; temps: number | null; combo: number }) => void;
   fin: (r: Resultat) => void;
   decouverte?: (id: string) => void;
+  /** L'application est passée en arrière-plan pendant la partie : l'interface affiche la pause. */
+  interruption?: (raison: string) => void;
+  /** Le contexte graphique n'est pas revenu : l'interface propose de relancer l'affichage. */
+  secours?: () => void;
+  /** Photo de la partie en cours, à enregistrer (arrière-plan, minuterie, fermeture). */
+  sauvegarde?: (p: InstantaneKK | null) => void;
 };
+export type InstantaneKK = { mode: Mode; score: number; vies: number; tempsJeu: number; coupes: Record<string, number>; meilleurCombo: number };
 
 const GRAVITE = 17;
 const CAM_Z = 16;
@@ -36,7 +44,7 @@ type Fruit = {
   monte: boolean;
   lumiere?: THREE.PointLight;
 };
-type Moitie = { groupe: THREE.Group; vel: THREE.Vector3; rot: THREE.Vector3; planLocal: THREE.Plane; plan: THREE.Plane };
+type Moitie = { groupe: THREE.Group; vel: THREE.Vector3; rot: THREE.Vector3; planLocal: THREE.Plane; plan: THREE.Plane; liberer: () => void };
 type Goutte = { pos: THREE.Vector3; vel: THREE.Vector3; vie: number; taille: number; couleur: THREE.Color; versPlanche: boolean; graine: boolean; allonge: number };
 type Particule = { pos: THREE.Vector3; vel: THREE.Vector3; vie: number; vieMax: number; couleur: THREE.Color; trainee?: number };
 type Coulure = { x: number; y: number; v: number; l: number; w: number; couleur: string };
@@ -62,8 +70,9 @@ export class MoteurKoupKoup {
   private o2d: CanvasRenderingContext2D;
   private sons = new Sons();
   private dernierT = 0;
-  private raf = 0;
   private enPause = false;
+  private perf!: GestionnairePerf;
+  private ombresCoupees = false;
   private obs: ResizeObserver;
   private dpr = 1;
   private largeur = 1;
@@ -125,8 +134,8 @@ export class MoteurKoupKoup {
   constructor(conteneur: HTMLElement, rappels: Rappels) {
     this.conteneur = conteneur;
     this.rappels = rappels;
-    const tactile = matchMedia("(pointer: coarse)").matches;
-    this.dpr = Math.min(window.devicePixelRatio || 1, tactile ? 1.75 : 2);
+    // Résolution : 1,5 au plus sur iPhone (gestionnaire commun), 1,75 sur tablette, 2 sur ordinateur
+    this.dpr = dprCible(2);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(this.dpr);
@@ -156,16 +165,62 @@ export class MoteurKoupKoup {
     this.obs.observe(conteneur);
     this.redimensionner();
 
-    cv.addEventListener("pointerdown", this.surDown);
-    window.addEventListener("pointermove", this.surMove, { passive: true });
-    window.addEventListener("pointerup", this.surUp);
-    window.addEventListener("pointercancel", this.surUp);
-    document.addEventListener("visibilitychange", this.surVisibilite);
+    this.perf = new GestionnairePerf({
+      nom: "koup-koup",
+      niveauInitial: 2,
+      surPause: (raison) => {
+        // Arrière-plan / verrouillage : pause, et l'interface affiche l'écran de pause
+        // (avant, le jeu repartait tout seul au retour et faisait perdre des vies).
+        if (this.etat === "jeu" && !this.enPause) { this.pause(); this.rappels.interruption?.(raison); }
+        this.sons.endormir();
+      },
+      surReprise: () => { this.dernierT = performance.now(); this.redimensionner(); },
+      surSauvegarde: () => this.rappels.sauvegarde?.(this.instantane()),
+      surQualite: (niveau) => this.appliquerQualite(niveau),
+    });
+    this.perf.ecouter(cv, "pointerdown", this.surDown);
+    this.perf.ecouter(window, "pointermove", this.surMove, { passive: true });
+    this.perf.ecouter(window, "pointerup", this.surUp);
+    this.perf.ecouter(window, "pointercancel", this.surUp);
+    // Perte du contexte WebGL (fréquente sur iOS après un passage en arrière-plan)
+    this.perf.surveillerContexte(cv, {
+      perdu: () => { if (this.etat === "jeu" && !this.enPause) { this.pause(); this.rappels.interruption?.("graphique"); } },
+      restaure: () => this.apresRestauration(),
+      secours: () => this.rappels.secours?.(),
+    });
 
     this.prechauffer();
 
     this.dernierT = performance.now();
-    this.boucle();
+    this.perf.boucle(this.boucle);
+  }
+
+  /** Qualité : 2 = complète, 1 = sans halo et résolution réduite, 0 = sans ombres, résolution 1. */
+  private appliquerQualite(niveau: number) {
+    if (niveau <= 1) this.qualiteBaissee = true;
+    if (niveau === 0 && !this.ombresCoupees) {
+      this.ombresCoupees = true;
+      this.renderer.shadowMap.enabled = false;
+      this.scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m) m.needsUpdate = true; });
+    }
+    this.renderer.setPixelRatio(niveau >= 2 ? this.dpr : niveau === 1 ? Math.min(this.dpr, 1.25) : 1);
+    this.redimensionner();
+  }
+
+  /** Après une restauration du contexte : ce qui vivait seulement dans la carte graphique est recréé. */
+  private apresRestauration() {
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const ancien = this.scene.environment;
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    ancien?.dispose();
+    pmrem.dispose();
+    this.texTaches.needsUpdate = true;
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as (THREE.Material & { map?: THREE.Texture | null }) | undefined;
+      if (m && m.map) m.map.needsUpdate = true;
+    });
+    this.redimensionner();
+    this.dernierT = performance.now();
   }
 
   // -------------------------------------------------------------------------
@@ -324,7 +379,7 @@ export class MoteurKoupKoup {
   demarrer(mode: Mode) {
     this.sons.reveiller();
     [...this.fruits].forEach((f) => this.retirerFruit(f));
-    this.moities.forEach((m) => this.scene.remove(m.groupe));
+    this.moities.forEach((m) => { this.scene.remove(m.groupe); m.liberer(); });
     this.moities = [];
     this.t2d.clearRect(0, 0, 1024, 1024);
     this.coulures = [];
@@ -339,6 +394,23 @@ export class MoteurKoupKoup {
     this.coupes = {};
     this.meilleurCombo = 0;
     this.ralenti = 0;
+    this.envoyerEtat();
+  }
+
+  /** Photo de la partie en cours (null hors partie). */
+  instantane(): InstantaneKK | null {
+    if (this.etat !== "jeu") return null;
+    return { mode: this.mode, score: this.score, vies: this.vies, tempsJeu: this.tempsJeu, coupes: { ...this.coupes }, meilleurCombo: this.meilleurCombo };
+  }
+
+  /** Reprend une partie interrompue (rechargement, arrêt de l'onglet). */
+  restaurer(p: InstantaneKK) {
+    this.demarrer(p.mode);
+    this.score = p.score | 0;
+    this.vies = Math.max(1, Math.min(VIES, p.vies | 0));
+    this.tempsJeu = Math.max(0, Math.min(p.mode === "zen" ? DUREE_ZEN - 5 : 1e6, +p.tempsJeu || 0));
+    this.coupes = { ...(p.coupes || {}) };
+    this.meilleurCombo = p.meilleurCombo | 0;
     this.envoyerEtat();
   }
 
@@ -357,20 +429,31 @@ export class MoteurKoupKoup {
   }
 
   detruire() {
-    cancelAnimationFrame(this.raf);
+    this.perf.detruire();      // boucle, écouteurs, minuteries
     this.obs.disconnect();
     const cv = this.renderer.domElement;
-    cv.removeEventListener("pointerdown", this.surDown);
-    window.removeEventListener("pointermove", this.surMove);
-    window.removeEventListener("pointerup", this.surUp);
-    window.removeEventListener("pointercancel", this.surUp);
-    document.removeEventListener("visibilitychange", this.surVisibilite);
+    this.moities.forEach((m) => m.liberer());
+    this.moities = [];
     this.sons.detruire();
     this.composer?.dispose();
+    // Toutes les géométries, matières et textures de la scène
+    const textures = new Set<THREE.Texture>();
+    this.scene.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      mesh.geometry?.dispose();
+      const mats = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
+      for (const m of mats) {
+        for (const v of Object.values(m)) if (v && (v as THREE.Texture).isTexture) textures.add(v as THREE.Texture);
+        m.dispose();
+      }
+    });
+    textures.forEach((t) => t.dispose());
+    this.scene.environment?.dispose();
     this.renderer.dispose();
-    this.renderer.forceContextLoss();
-    cv.remove();
-    this.overlay.remove();
+    this.renderer.forceContextLoss(); // rend le contexte WebGL tout de suite (iOS en limite le nombre)
+    libererCanvas(cv);
+    libererCanvas(this.overlay);
+    libererCanvas(this.taches);
   }
 
   // -------------------------------------------------------------------------
@@ -382,10 +465,6 @@ export class MoteurKoupKoup {
     return { x: clientX - r.left, y: clientY - r.top };
   }
 
-  private surVisibilite = () => {
-    if (document.hidden) this.pause();
-    else this.reprendre();
-  };
 
   private surDown = (e: PointerEvent) => {
     this.sons.reveiller();
@@ -476,6 +555,8 @@ export class MoteurKoupKoup {
     const geoCoupe = sectionCoupe(f.corps.geometry, planLocal);
     const matChair = this.materiauChair(f.def);
     const accessoires = f.groupe.children.filter((o) => o !== f.corps);
+    // Ressources créées pour CETTE coupe : libérées quand les deux moitiés ont disparu
+    let restantes = 2;
 
     for (const sens of [1, -1]) {
       const g = new THREE.Group();
@@ -507,7 +588,13 @@ export class MoteurKoupKoup {
       const rot = f.rot.clone().multiplyScalar(0.5).addScaledVector(dirM, sens * (4 + this.rnd() * 4));
       g.rotateOnWorldAxis(dirM, sens * 0.35);
       this.scene.add(g);
-      this.moities.push({ groupe: g, vel, rot, planLocal: plan, plan: planClip });
+      let libere = false;
+      const liberer = () => {
+        if (libere) return; libere = true;
+        mat.dispose();
+        if (--restantes === 0) geoCoupe?.dispose();
+      };
+      this.moities.push({ groupe: g, vel, rot, planLocal: plan, plan: planClip, liberer });
     }
 
     // Jus, taches, sons et score
@@ -1004,12 +1091,11 @@ export class MoteurKoupKoup {
   // -------------------------------------------------------------------------
 
   private boucle = () => {
-    this.raf = requestAnimationFrame(this.boucle);
     if (this.enPause) return;
     const maintenantT = performance.now();
     const dtReel = Math.min(0.05, (maintenantT - this.dernierT) / 1000);
     this.dernierT = maintenantT;
-    this.surveillerPerformance(dtReel);
+    // (la qualité est pilotée par le gestionnaire commun : niveaux, puis mode 30 i/s)
     if (this.ralenti > 0) this.ralenti -= dtReel;
     const echelle = this.ralenti > 0 ? 0.35 : 1;
     const dt = dtReel * echelle;
@@ -1105,7 +1191,7 @@ export class MoteurKoupKoup {
     }
     const restantes: Moitie[] = [];
     for (const m of this.moities) {
-      if (m.groupe.position.y < limite) this.scene.remove(m.groupe);
+      if (m.groupe.position.y < limite) { this.scene.remove(m.groupe); m.liberer(); }
       else restantes.push(m);
     }
     this.moities = restantes;

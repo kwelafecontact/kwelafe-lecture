@@ -11,6 +11,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Sky } from 'three/addons/objects/Sky.js';
+import { GestionnairePerf, dprCible, appareil, journal, reveillerAudio, endormirAudio, afficherSecours, libererCanvas } from './performances.js';
 
 export { THREE };
 
@@ -34,7 +35,13 @@ function detecterQualite() {
     const gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
     if (/Apple GPU|Apple M|RTX|Radeon RX|Arc/i.test(gpu)) note = Math.max(note, 2);
     if (/Mali-4|Adreno \(TM\) [3-5]|PowerVR SGX|SwiftShader|llvmpipe/i.test(gpu)) note = 0;
+    // Le contexte de test est rendu tout de suite : iOS limite le nombre de contextes WebGL actifs
+    const perte = gl && gl.getExtension('WEBGL_lose_context');
+    if (perte) perte.loseContext();
+    c.width = c.height = 0;
   } catch (e) { /* rien */ }
+  // iPhone : on démarre en qualité moyenne (mémoire limitée), elle ne remonte pas toute seule
+  if (appareil.iphone) note = Math.min(note, 1);
   return note;
 }
 export const qualite = detecterQualite();
@@ -83,7 +90,8 @@ export function creerMonde(opts = {}) {
   const conteneur = document.getElementById('scene');
   const renderer = new THREE.WebGLRenderer({ antialias: qualite > 0, powerPreference: 'high-performance' });
   const ratioMax = [1.25, 1.75, 2][qualite];
-  let ratioPixels = Math.min(window.devicePixelRatio || 1, ratioMax);
+  // DPR : plafonné par le gestionnaire commun (1,5 sur iPhone)
+  let ratioPixels = dprCible(ratioMax);
   renderer.setPixelRatio(ratioPixels);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -127,7 +135,16 @@ export function creerMonde(opts = {}) {
       }`,
   }));
   sceneCiel.add(dome);
-  scene.environment = pmrem.fromScene(sceneCiel, 0.03).texture;
+  // L'environnement vit seulement dans la carte graphique : on sait le recréer après une perte de contexte
+  function construireEnvironnement() {
+    const gen = new THREE.PMREMGenerator(renderer);
+    const ancien = scene.environment;
+    scene.environment = gen.fromScene(sceneCiel, 0.03).texture;
+    if (ancien) ancien.dispose();
+    gen.dispose();
+  }
+  pmrem.dispose();
+  construireEnvironnement();
   scene.environmentIntensity = opts.intensiteEnv ?? 0.6;
   if (opts.ciel === false) scene.background = new THREE.Color(opts.fond ?? 0x87c6ec);
   else scene.add(ciel);
@@ -140,7 +157,7 @@ export function creerMonde(opts = {}) {
   const soleil = new THREE.DirectionalLight(0xffe0b0, s.intensite ?? 2.4);
   soleil.position.copy(dirSoleil).multiplyScalar(60);
   soleil.castShadow = true;
-  const tailleOmbre = [1024, 2048, 2048][qualite];
+  const tailleOmbre = appareil.iphone ? 1024 : [1024, 2048, 2048][qualite];
   soleil.shadow.mapSize.set(tailleOmbre, tailleOmbre);
   const o = opts.ombre || {};
   const t = o.taille ?? 14;
@@ -188,33 +205,95 @@ export function creerMonde(opts = {}) {
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', redimensionner);
-  window.addEventListener('orientationchange', () => setTimeout(redimensionner, 250));
+  // iOS met parfois à jour les dimensions bien après la rotation : deux mesures décalées
+  window.addEventListener('orientationchange', () => { setTimeout(redimensionner, 250); setTimeout(redimensionner, 700); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', redimensionner);
   redimensionner();
 
-  // Boucle de rendu + surveillance des images par seconde (qualité qui s'ajuste seule)
+  // Boucle de rendu, pilotée par le gestionnaire de performances commun :
+  // qualité qui baisse par paliers, puis mode 30 i/s ; arrêt complet en arrière-plan.
   const fonctions = new Set();
   const horloge = new THREE.Timer();
-  let tempsTotal = 0, cumul = 0, images = 0, niveauAuto = 0;
-  renderer.setAnimationLoop(() => {
-    horloge.update(); const dt = Math.min(horloge.getDelta(), 1 / 20);
-    tempsTotal += dt;
-    for (const f of fonctions) f(dt, tempsTotal);
-    majAnimations(dt);
-    composer.render(dt);
-    cumul += dt; images++;
-    if (cumul > 2.5) {
-      const ips = images / cumul;
-      if (ips < 38 && niveauAuto < 3) {
-        niveauAuto++;
+  let tempsTotal = 0, contextePerdu = false, niveauAuto = 0;
+  const nomJeu = location.pathname.replace(/index\.html$/, '').split('/').filter(Boolean).pop() || 'jeu-3d';
+  const perf = new GestionnairePerf({
+    nom: '3d-' + nomJeu,
+    niveauInitial: 3,
+    surPause: () => {
+      renderer.setAnimationLoop(null);   // plus aucun calcul ni rendu en arrière-plan
+      endormirAudio(actx);
+    },
+    surReprise: () => {
+      horloge.reset && horloge.reset();
+      horloge.update(); horloge.getDelta(); // le temps passé en arrière-plan ne compte pas
+      redimensionner();
+      if (!contextePerdu) renderer.setAnimationLoop(rendu);
+    },
+    surQualite: (niveau, mode30) => {
+      // Paliers : résolution réduite, puis sans halo et résolution 1, puis sans ombres, puis 30 i/s
+      const palier = 3 - niveau;
+      if (palier > niveauAuto) {
+        niveauAuto = palier;
         if (niveauAuto === 1) ratioPixels = Math.max(1, ratioPixels * 0.8);
         if (niveauAuto === 2) { bloom.enabled = false; ratioPixels = 1; }
         if (niveauAuto === 3) { renderer.shadowMap.enabled = false; scene.traverse(m => { if (m.material) m.material.needsUpdate = true; }); }
         renderer.setPixelRatio(ratioPixels);
         redimensionner();
       }
-      cumul = 0; images = 0;
-    }
+      if (mode30) journal('qualite', nomJeu + ' en 30 i/s');
+    },
   });
+  function rendu(now) {
+    if (!perf.doitDessiner(now)) return;
+    horloge.update(now); const dt = Math.min(horloge.getDelta(), 1 / 20);
+    tempsTotal += dt;
+    for (const f of fonctions) f(dt, tempsTotal);
+    majAnimations(dt);
+    composer.render(dt);
+  }
+  renderer.setAnimationLoop(rendu);
+
+  // Perte / restauration du contexte WebGL (iOS : arrière-plan, mémoire saturée)
+  perf.surveillerContexte(renderer.domElement, {
+    perdu: () => { contextePerdu = true; renderer.setAnimationLoop(null); },
+    restaure: () => {
+      contextePerdu = false;
+      construireEnvironnement();
+      scene.traverse(o => { const m = o.material; if (m && m.map) m.map.needsUpdate = true; });
+      redimensionner();
+      if (perf.actif) renderer.setAnimationLoop(rendu);
+    },
+    secours: () => afficherSecours({
+      texte: "L'iPhone a libéré la mémoire graphique pendant que le jeu était en pause. Ton niveau est enregistré : le jeu reprend là où tu en étais.",
+      action: () => location.reload(), // seul le jeu est relancé, à la demande du joueur
+    }),
+  });
+
+  // Libération complète, appelée par le site avant de fermer le jeu (et à la fermeture de la page)
+  let libere = false;
+  function liberer() {
+    if (libere) return; libere = true;
+    perf.detruire();
+    renderer.setAnimationLoop(null);
+    const textures = new Set();
+    scene.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+      for (const m of mats) { for (const v of Object.values(m)) if (v && v.isTexture) textures.add(v); m.dispose(); }
+    });
+    textures.forEach(t => { t.dispose(); if (t.userData && t.userData.canvas) libererCanvas(t.userData.canvas); });
+    if (scene.environment) scene.environment.dispose();
+    composer.dispose && composer.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+    if (actx) { try { actx.close(); } catch (e) { /* rien */ } }
+    journal('liberation', nomJeu);
+  }
+  window.kwelafeLiberer = liberer;
+  // Diagnostic (console Safari) : mémoire graphique utilisée par le jeu
+  window.kwelafeInfo = () => ({ ...renderer.info.memory, programmes: renderer.info.programs ? renderer.info.programs.length : 0, qualite: perf.niveau, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
+  window.addEventListener('pagehide', e => { if (!e.persisted) liberer(); });
+  activerRamasseMiettes(scene, renderer);
 
   // Outils de pointage : rayon depuis le doigt ou la souris
   const rayon = new THREE.Raycaster();
@@ -245,7 +324,53 @@ export function creerMonde(opts = {}) {
     },
   };
   monde.particules = creerParticules(monde);
+  if (new URLSearchParams(location.search).has('debug')) window.kwelafeMonde = monde; // tests uniquement
   return monde;
+}
+
+// ---------------------------------------------------------------------
+// 3 bis. Ramasse-miettes graphique
+// Les jeux retirent des objets de la scène à chaque niveau (voitures, jetons, plateaux…)
+// sans libérer leur géométrie, leurs matières ni leurs textures : la mémoire de la carte
+// graphique grossissait sans fin pendant une longue partie. Ici, tout objet retiré et resté
+// détaché quelques secondes voit ses ressources libérées, sauf celles encore utilisées
+// par la scène. S'il est rajouté plus tard, Three.js renvoie simplement ses données.
+// ---------------------------------------------------------------------
+function activerRamasseMiettes(scene, renderer) {
+  const retires = new Map(); // objet -> instant du retrait
+  const removeOrigine = THREE.Object3D.prototype.remove;
+  THREE.Object3D.prototype.remove = function (...objets) {
+    for (const o of objets) if (o && o !== this) retires.set(o, performance.now());
+    return removeOrigine.apply(this, objets);
+  };
+  const dansScene = o => { let p = o; while (p) { if (p === scene) return true; p = p.parent; } return false; };
+  function ressources(racine, geos, mats, texs) {
+    racine.traverse(o => {
+      if (o.geometry) geos.add(o.geometry);
+      const l = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+      for (const m of l) { mats.add(m); for (const v of Object.values(m)) if (v && v.isTexture) texs.add(v); }
+    });
+  }
+  setInterval(() => {
+    if (!retires.size || document.visibilityState === 'hidden') return;
+    const maintenant = performance.now();
+    const aLiberer = [];
+    for (const [o, t] of retires) {
+      if (dansScene(o)) { retires.delete(o); continue; }       // rajouté entre-temps
+      if (maintenant - t > 3000) { aLiberer.push(o); retires.delete(o); }
+    }
+    if (!aLiberer.length) return;
+    const gU = new Set(), mU = new Set(), tU = new Set();
+    ressources(scene, gU, mU, tU);                              // ce que la scène utilise encore
+    const g = new Set(), m = new Set(), t = new Set();
+    aLiberer.forEach(o => ressources(o, g, m, t));
+    let n = 0;
+    // userData.garder : ressource réutilisée en permanence par le jeu, jamais libérée ici
+    g.forEach(x => { if (!gU.has(x) && !x.userData.garder) { x.dispose(); n++; } });
+    m.forEach(x => { if (!mU.has(x) && !x.userData.garder) { x.dispose(); n++; } });
+    t.forEach(x => { if (!tU.has(x) && !x.userData.garder && x !== scene.environment) { x.dispose(); n++; } });
+    if (n && window.KW_DEBUG) console.info('[kwélafé] ramasse-miettes', n, renderer.info.memory);
+  }, 2000);
 }
 
 // ---------------------------------------------------------------------
@@ -360,7 +485,7 @@ function audio() {
     maitre.gain.value = sonActif ? 0.8 : 0;
     maitre.connect(actx.destination);
   }
-  if (actx.state === 'suspended') actx.resume();
+  reveillerAudio(actx); // iOS : « suspended » ou « interrupted » après un appel ou un verrouillage
   return actx;
 }
 window.addEventListener('pointerdown', () => audio(), { capture: true });

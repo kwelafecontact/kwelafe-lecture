@@ -37,6 +37,21 @@ class Fusion implements Jeu {
   rayon(k: number) { return TAILLES[k] * this.base; }
   get ligne() { return this.boite.y + this.rayon(4) * 1.1; }
 
+  // Reprise après interruption : positions enregistrées relativement à la tante (indépendantes de l'écran)
+  instantane() {
+    if (this.fini) return null;
+    const B = this.boite;
+    return { v: 1, score: this.score, temps: this.temps, actuel: this.actuel, suivant: this.suivant,
+      boules: this.boules.filter((b) => b.k >= 0).map((b) => ({ k: b.k, u: (b.x - B.x) / B.w, v: (b.y - B.y) / B.h, rot: b.rot })) };
+  }
+  restaurer(e: unknown) {
+    const d = e as { v?: number; score: number; temps: number; actuel: number; suivant: number; boules: { k: number; u: number; v: number; rot: number }[] };
+    if (!d || d.v !== 1 || !Array.isArray(d.boules)) return;
+    const B = this.boite;
+    this.score = d.score || 0; this.temps = d.temps || 0; this.actuel = d.actuel | 0; this.suivant = d.suivant | 0;
+    this.boules = d.boules.map((b) => ({ k: b.k, x: B.x + b.u * B.w, y: B.y + b.v * B.h, vx: 0, vy: 0, r: this.rayon(b.k), rot: b.rot || 0, ne: 2, dessus: 0 }));
+    this.c.hud({ score: this.score });
+  }
   down(x: number) { if (!this.fini) this.visee = x; }
   move(x: number) { if (!this.fini) this.visee = x; }
   up(x: number) {
