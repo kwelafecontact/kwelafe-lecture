@@ -94,6 +94,17 @@ export class SonsJeu {
   victoire() { const c = this.ok(); if (!c) return; const t = c.currentTime; [523, 659, 784, 1047].forEach((f, i) => this.ton(t + i * 0.11, 0.4, f, f, 0.13, "triangle")); }
   defaite() { const c = this.ok(); if (!c) return; const t = c.currentTime; [440, 370, 311, 262].forEach((f, i) => this.ton(t + i * 0.14, 0.4, f, f * 0.98, 0.12, "triangle")); }
   tic() { const c = this.ok(); if (c) this.ton(c.currentTime, 0.03, 1800, 1700, 0.05, "square"); }
+  /** Sons enregistrés (fichiers mp3) : chargés au premier besoin ; renvoie false tant qu'ils ne sont pas prêts. */
+  private tampons = new Map<string, AudioBuffer | null>();
+  prechargerFichiers(urls: string[]) {
+    const c = this.ctx; if (!c) return;
+    for (const u of urls) if (!this.tampons.has(u)) { this.tampons.set(u, null); fetch(u).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((b) => c.decodeAudioData(b)).then((d) => this.tampons.set(u, d)).catch(() => {}); }
+  }
+  fichier(url: string, vol = 1, vit = 1): boolean {
+    const c = this.ok(); if (!c) return false;
+    const b = this.tampons.get(url); if (!b) { this.prechargerFichiers([url]); return false; }
+    const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; s.playbackRate.value = vit; g.gain.value = vol; s.connect(g).connect(this.out!); s.start(); return true;
+  }
   detruire() { this.ctx?.close(); this.ctx = null; }
 }
 
