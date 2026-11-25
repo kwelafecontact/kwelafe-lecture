@@ -108,7 +108,7 @@
     },
     {
       "id": "goyavier",
-      "nom": "Goyavier",
+      "nom": "Goyavier rouge",
       "fichier": "goyavier.glb",
       "taille_reelle_m": 0.031,
       "couleur_jus": "#E8C4C8",
@@ -273,7 +273,7 @@
     },
     {
       "id": "goyave",
-      "nom": "Goyave",
+      "nom": "Goyave rose",
       "fichier": "goyave.glb",
       "taille_reelle_m": 0.07,
       "couleur_jus": "#F2909A",
@@ -318,7 +318,7 @@
     },
     {
       "id": "jamrosa",
-      "nom": "Jamrosa",
+      "nom": "Jamrosat",
       "fichier": "jamrosa.glb",
       "taille_reelle_m": 0.045,
       "couleur_jus": "#F4EBC2",
@@ -333,7 +333,7 @@
     },
     {
       "id": "pomme-cannelle",
-      "nom": "Pomme cannelle",
+      "nom": "Zatte",
       "fichier": "pomme-cannelle.glb",
       "taille_reelle_m": 0.086,
       "couleur_jus": "#F4F0E2",
@@ -348,7 +348,7 @@
     },
     {
       "id": "coco",
-      "nom": "Coco",
+      "nom": "Noix de coco",
       "fichier": "coco.glb",
       "taille_reelle_m": 0.13,
       "couleur_jus": "#F4F2EA",
