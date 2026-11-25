@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Kass Koko · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="../koup-koup/lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family:"Bangers"; src:url("../koup-koup/lib/bangers.woff2") format("woff2"); font-display:swap; }
+  :root { --or:#ffd24a; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#0d2410; font-family:"Baloo 2", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  #fond { position:fixed; inset:0; background:#0d2410 url("./fond-plage.webp") center bottom / cover no-repeat; }
+  #fond::after { content:""; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 30%, rgba(10,30,10,0) 35%, rgba(2,10,4,.5) 100%); }
+  #lueur { position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:0; }
+  #gl { position:fixed; inset:0; width:100%; height:100%; }
+  .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .hud.on { opacity:1; }
+  .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
+  .score.saute { animation:saute .3s ease-out; }
+  @keyframes saute { 40% { transform:scale(1.25); } }
+  .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:2px; }
+  .vies { font-size:30px; letter-spacing:4px; text-align:right; }
+  .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .temps { font-family:"Bangers", sans-serif; font-size:clamp(32px, 6.5vw, 46px); color:#b8f0ff; text-shadow:0 3px 0 #1f4f94; letter-spacing:.05em; }
+  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 32px; pointer-events:none; transition:opacity .35s; }
+  .ecran.cache { opacity:0; }
+  .ecran.cache * { pointer-events:none !important; }
+  .titre { font-family:"Bangers", sans-serif; font-size:clamp(62px, 15vw, 124px); line-height:.95; letter-spacing:.04em; transform:rotate(-3deg);
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.45)); }
+  .sous { margin-top:14px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  .modes { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
+  .btn { pointer-events:auto; border:0; border-radius:999px; padding:14px 30px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.45); cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .btn2 { background:linear-gradient(#b8f0ff, #3fb4e6); box-shadow:0 5px 0 #1f6f94, 0 10px 22px rgba(0,0,0,.45); color:#0b2a3a; }
+  .consigne { margin-top:22px; font-size:clamp(16px, 3.6vw, 20px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.9); max-width:520px; }
+  .voile { padding:22px 26px 26px; border-radius:26px; background:rgba(6,6,24,.62); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+  .gros { font-family:"Bangers", sans-serif; font-size:clamp(70px, 17vw, 120px); color:var(--or); line-height:1; text-shadow:0 5px 0 #8a4a08, 0 0 30px rgba(255,190,60,.5); }
+  .etoiles { font-size:clamp(42px, 10vw, 64px); letter-spacing:.12em; color:#ffd24a; text-shadow:0 3px 0 #8a5a00, 0 0 18px rgba(255,200,60,.6); }
+  .etoiles .vide { color:rgba(255,255,255,.22); text-shadow:none; }
+  .nouveau { font-family:"Bangers", sans-serif; font-size:clamp(26px, 6vw, 38px); letter-spacing:.06em; color:#7bf0ff; text-shadow:0 0 16px #2fb4ff; }
+  .pop { position:fixed; pointer-events:none; font-family:"Bangers", sans-serif; letter-spacing:.05em; transform:translate(-50%,-50%); white-space:nowrap; animation:monte 1s ease-out forwards; }
+  .pop.pts { font-size:clamp(28px, 6vw, 40px); color:#fff; text-shadow:0 0 12px currentColor, 0 3px 0 rgba(0,0,0,.5); }
+  .pop.chaine { font-size:clamp(30px, 7vw, 48px); background:linear-gradient(90deg, #ffe23a, #ff9a1f, #ff4fb4, #2fb4ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 #1a0830); animation-duration:1.3s; }
+  .pop.aie { font-size:clamp(26px, 6vw, 38px); color:#c8c8d0; text-shadow:0 3px 0 rgba(0,0,0,.6); }
+  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 100% { opacity:0; transform:translate(-50%,-150%) scale(1); } }
+  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; transition:opacity .3s; }
+  .lien.discret { opacity:0; pointer-events:none; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+  .coin { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); min-height:44px; padding:0 18px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(10,8,30,.6); color:#fff; font:800 16px "Baloo 2", system-ui, sans-serif; cursor:pointer; }
+  #retour { left:max(26px, env(safe-area-inset-left)); }
+  #btnSon { right:max(26px, env(safe-area-inset-right)); width:48px; padding:0; }
+  #charge { position:fixed; left:0; right:0; bottom:calc(100px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; opacity:.85; }
+
+  .fiche { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9); width:min(86vw, 460px); padding:22px 24px 20px; border-radius:22px; text-align:center;
+    background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .35s cubic-bezier(.2,1.5,.4,1); z-index:15; }
+  .fiche.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  .fiche h2 { margin:0 0 4px; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:clamp(24px, 6vw, 32px); color:#7a3a10; }
+  .fiche .num { font-weight:800; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#8a6a3a; }
+  .fiche p { font-size:clamp(16px, 4vw, 19px); line-height:1.35; margin:10px 0 16px; font-weight:600; }
+  .fiche .btn { font-size:18px; padding:12px 26px; }
+  .pop.pts { color:#fff7c8; }
+  .niveau { position:fixed; left:50%; top:max(140px, calc(env(safe-area-inset-top) + 124px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#f6ecd2; text-shadow:0 2px 0 #1a3010, 0 0 10px rgba(0,0,0,.5); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .niveau.on { opacity:1; }
+  #trace { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+  .fiche h2 { color:#1a5a8a; }
+  .bandeau { position:fixed; left:50%; top:max(176px, calc(env(safe-area-inset-top) + 160px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
+    padding:6px 20px; border-radius:14px; background:rgba(0,30,60,.55); color:#9ff0ff; text-shadow:0 2px 0 #003a5a; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .bandeau.on { opacity:1; }
+
+.jauge { position:fixed; left:50%; bottom:max(96px, calc(env(safe-area-inset-bottom) + 96px)); transform:translateX(-50%); width:min(70vw,420px); height:30px; border-radius:16px; background:rgba(0,40,60,.55); border:3px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,.35); display:none; overflow:hidden; z-index:5; }
+.jauge.on { display:block; }
+.jauge .zone { position:absolute; top:0; bottom:0; }
+.jauge .z1 { background:linear-gradient(90deg,#ff4a3a,#ffb020); left:0; right:0; }
+.jauge .z2 { background:#ffd24a; }
+.jauge .z3 { background:linear-gradient(180deg,#5ef07a,#1fb04a); box-shadow:0 0 12px #5ef07a; }
+.jauge .aiguille { position:absolute; top:-4px; bottom:-4px; width:6px; margin-left:-3px; background:#fff; border-radius:3px; box-shadow:0 0 8px #000; }
+.jaugeTitre { position:fixed; left:50%; bottom:max(132px, calc(env(safe-area-inset-bottom) + 132px)); transform:translateX(-50%); font-family:Bangers,system-ui; letter-spacing:1px; color:#fff; text-shadow:0 2px 0 #0a4a6a; font-size:15px; white-space:nowrap; display:none; z-index:5; }
+.jaugeTitre.on { display:block; }
+</style>
+</head>
+<body>
+<div id="fond"></div>
+<canvas id="gl"></canvas>
+
+<div class="hud" id="hud">
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div class="vies" id="vies"></div>
+</div>
+<div class="niveau" id="niveau"></div>
+<div class="bandeau" id="bandeau">Coco doré ! La zone verte s'agrandit</div>
+<div class="jaugeTitre" id="jaugeTitre">Touche quand l'aiguille est dans le vert !</div>
+<div class="jauge" id="jauge"><div class="zone z1"></div><div class="zone z2" id="z2"></div><div class="zone z3" id="z3"></div><div class="aiguille" id="aiguille"></div></div>
+
+<div class="ecran" id="menu">
+  <div class="titre">Kass Koko</div>
+  <div class="sous">Sur une plage de l'Ouest, à l'ombre des cocotiers</div>
+  <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
+  <div class="consigne">Les noix de coco tombent ! Touche l'écran quand l'aiguille de force est dans le vert pour les casser net avant qu'elles touchent le sable.</div>
+</div>
+
+<div class="ecran cache" id="fin"><div class="voile">
+  <div class="sous" style="margin-top:0">Fin de la cueillette</div>
+  <div class="gros" id="scoreFin">0</div>
+  <div class="etoiles" id="etoilesFin"></div>
+  <div class="nouveau" id="nouveauRecord"></div>
+  <div class="sous" id="cocoFin"></div>
+  <div class="sous" id="recordFin">Record : 0</div>
+  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
+</div></div>
+
+<div class="fiche" id="fiche"><div class="num" id="ficheNum"></div><h2>Le saviez-vous ?</h2><p id="ficheTexte"></p><button class="btn zone-interactive" id="ficheOk">On continue</button></div>
+
+<div id="charge">Les cocotiers se balancent…</div>
+<button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
+<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script type="importmap">{ "imports": { "three": "../koup-koup/lib/three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from '../koup-koup/lib/RoomEnvironment.js';
+import { GLTFLoader } from '../koup-koup/lib/GLTFLoader.js';
+import { MeshoptDecoder } from '../koup-koup/lib/meshopt_decoder.module.js';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
+const PETIT = Math.min(innerWidth, innerHeight) < 500 || /iPhone/.test(navigator.userAgent);
+
+// Faits vérifiés : Réserve naturelle marine de La Réunion, Vikidia (lagons), IRT, INPN
+const FICHES = [
+  "La plage de l'Ermitage, à Saint-Paul, s'étend sur plusieurs kilomètres. Ses filaos donnent de l'ombre aux familles.",
+  "Les lagons de La Réunion sont des eaux peu profondes entre la plage et le récif de corail. Ils mesurent en tout environ 25 km.",
+  "Les plus grands lagons sont ceux de l'Ermitage, de Saint-Leu, de l'Étang-Salé et de Saint-Pierre.",
+  "La Réserve naturelle marine de La Réunion a été créée en 2007. Elle protège la plupart des lagons de l'Ouest.",
+  "Le récif de La Réunion abrite plus de 3 500 espèces marines : poissons, coraux, oursins, tortues…",
+  "Les coraux sont des animaux vivants : on ne marche jamais dessus, on regarde sans toucher.",
+  "Dans le lagon de l'Ermitage, un sentier sous-marin balisé par des bouées permet de découvrir le récif avec palmes, masque et tuba.",
+  "Certaines zones du lagon sont en protection intégrale : balisées en jaune, on n'y entre pas.",
+  "Dans une noix de coco jeune, il y a surtout de l'eau. En mûrissant, la chair blanche s'épaissit à l'intérieur.",
+  "Sur la plage, on évite de poser sa serviette juste sous un cocotier chargé de noix : une noix peut tomber !",
+];
+
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true, preserveDrawingBuffer: TEST });
+renderer.setPixelRatio(Math.min(devicePixelRatio, PETIT ? 1.75 : 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
+const soleil = new THREE.DirectionalLight(0xfff2d0, 2.6); soleil.position.set(4, 8, 6); scene.add(soleil);
+scene.add(new THREE.HemisphereLight(0xbfe8ff, 0xf0d8a0, 0.9));
+let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3;
+const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
+
+// ---------------------------------------------------------------- noix de coco (modèle GLB de Koup Koup 2)
+let modele = null;
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const fichierCoco = '../koup-koup/models/' + (PETIT ? 'mobile/' : '') + 'coco.glb';
+const promesse = new Promise(res => loader.load(fichierCoco, g => res(g), undefined, () => loader.load('../koup-koup/models/coco.glb', res, undefined, () => res(null))));
+const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc420, metalness: 0.9, roughness: 0.25, emissive: 0x7a4a00, emissiveIntensity: 0.4, clearcoat: 1 });
+function preparer(g) {
+  const entier = g.scene.getObjectByName('entier');
+  const box = new THREE.Box3().setFromObject(entier), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+  const k = 1.5 / Math.max(size.x, size.y, size.z);
+  const make = (name, or) => { const o = g.scene.getObjectByName(name).clone(true); o.position.sub(center); const w = new THREE.Group(), s = new THREE.Group(); s.scale.setScalar(k); s.add(o); w.add(s); if (or) w.traverse(m => { if (m.isMesh && !(m.material.name || '').endsWith('_chair')) m.material = matOr; }); return w; };
+  return { make };
+}
+function cocoSecours() { const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.SphereGeometry(0.7, 20, 16), new THREE.MeshStandardMaterial({ color: 0x6a4020, roughness: 0.9 }))); return g; }
+
+// ---------------------------------------------------------------- particules (eau de coco, sable, éclats dorés)
+const MAXP = 2400, pPos = new Float32Array(MAXP * 3), pAlp = new Float32Array(MAXP), pTai = new Float32Array(MAXP), pCol = new Float32Array(MAXP * 3);
+const PP = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, t0: 1, g: 9 }));
+const geoP = new THREE.BufferGeometry(); geoP.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); geoP.setAttribute('alpha', new THREE.BufferAttribute(pAlp, 1)); geoP.setAttribute('taille', new THREE.BufferAttribute(pTai, 1)); geoP.setAttribute('couleur', new THREE.BufferAttribute(pCol, 3));
+const matP = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { echelle: { value: 1 } },
+  vertexShader: `attribute float alpha; attribute float taille; attribute vec3 couleur; varying float vA; varying vec3 vC; uniform float echelle; void main() { vA = alpha; vC = couleur; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying float vA; varying vec3 vC; void main() { vec2 d = gl_PointCoord - 0.5; float r = length(d); if (r > 0.5) discard; float spec = smoothstep(0.25, 0.0, length(d + vec2(0.15, 0.15))); gl_FragColor = vec4(vC + spec * 0.6, vA * smoothstep(0.5, 0.35, r)); }` });
+const ptsP = new THREE.Points(geoP, matP); ptsP.frustumCulled = false; scene.add(ptsP);
+let pI = 0;
+function goutte(x, y, z, vx, vy, c, vie, t, g = 9) { const q = PP[pI], k = pI; pI = (pI + 1) % MAXP; q.vie = q.max = vie; q.vx = vx; q.vy = vy; q.t0 = t; q.g = g; pPos[k * 3] = x; pPos[k * 3 + 1] = y; pPos[k * 3 + 2] = z; pCol[k * 3] = c[0]; pCol[k * 3 + 1] = c[1]; pCol[k * 3 + 2] = c[2]; }
+function majParticules(dt) {
+  for (let i = 0; i < MAXP; i++) { const q = PP[i]; if (q.vie <= 0) { pAlp[i] = 0; continue; } q.vie -= dt; q.vy -= q.g * dt; pPos[i * 3] += q.vx * dt; pPos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; pAlp[i] = Math.min(1, k * 2); pTai[i] = q.t0 * (0.6 + 0.4 * k); }
+  for (const n of ['position', 'alpha', 'taille', 'couleur']) geoP.attributes[n].needsUpdate = true;
+}
+
+// ---------------------------------------------------------------- sons
+let actx = null, maitre = null, sonCoupe = false;
+try { sonCoupe = localStorage.getItem('kasskoko_son') === 'non'; } catch (e) {}
+function audio() { if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination);
+  // ressac du lagon
+  const b = actx.createBuffer(1, actx.sampleRate * 4, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (0.5 + 0.5 * Math.sin(i / d.length * Math.PI * 2) ** 2); const s = actx.createBufferSource(); s.buffer = b; s.loop = true; const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 600; const g = actx.createGain(); g.gain.value = 0.08; s.connect(f).connect(g).connect(maitre); s.start(); } catch (e) {} }
+function bruit(dur, f, q, vol, when = 0, type = 'bandpass') { if (!actx) return; const t = actx.currentTime + when, b = actx.createBuffer(1, Math.ceil(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = actx.createBufferSource(); s.buffer = b; const fi = actx.createBiquadFilter(); fi.type = type; fi.frequency.value = f; fi.Q.value = q; const g = actx.createGain(); g.gain.value = vol; s.connect(fi).connect(g).connect(maitre); s.start(t); }
+function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
+const son = {
+  net: () => { ton(900, 300, 0.08, 0.3, 'square'); bruit(0.15, 1800, 1.5, 0.5); bruit(0.4, 700, 0.8, 0.25, 0.04); },
+  fendu: () => { ton(500, 250, 0.1, 0.2, 'square'); bruit(0.2, 900, 1, 0.3); },
+  rate: () => { ton(220, 140, 0.15, 0.25, 'triangle'); },
+  sable: () => { bruit(0.3, 300, 0.7, 0.5, 0, 'lowpass'); },
+  or: () => [0, 4, 7, 12, 16].forEach((s, i) => ton(660 * 2 ** (s / 12), 660 * 2 ** (s / 12), 0.25, 0.06, 'sine', i * 0.06)),
+  niveau: () => [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
+};
+
+// ---------------------------------------------------------------- partie
+const DUREE_ZEN = 90, PAR_NIVEAU = 12;
+let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, cassees = 0, niveau = 1, ficheIdx = 0, combo = 0, bonusOr = 0, aiguille = 0, sensAig = 1;
+const cocos = [], morceaux = [];
+function resize() {
+  W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
+  sol = -viewH * 0.36;
+}
+function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 200) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
+function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
+function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🥥</span>`).join(''); }
+function majNiveau() { $('niveau').textContent = 'Niveau ' + niveau + ' · ' + cassees + ' cocos'; }
+// largeur des zones de la jauge (en fraction) : la zone verte rétrécit avec les niveaux
+const zoneVerte = () => Math.max(0.09, 0.22 - niveau * 0.012) * (bonusOr > 0 ? 1.8 : 1);
+const zoneJaune = () => zoneVerte() + 0.16;
+function majJauge() {
+  const v = zoneVerte(), j = zoneJaune();
+  $('z3').style.left = (50 - v * 50) + '%'; $('z3').style.width = (v * 100) + '%';
+  $('z2').style.left = (50 - j * 50) + '%'; $('z2').style.width = (j * 100) + '%';
+}
+function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
+function lancerCoco() {
+  const or = Math.random() < 0.07 && etat === 'jeu';
+  const obj = modele ? modele.make('entier', or) : cocoSecours();
+  const x = rnd(-viewW * 0.38, viewW * 0.38);
+  obj.position.set(x, viewH / 2 + 0.8, 0.5); obj.rotation.set(rnd(0, 6), rnd(0, 6), 0);
+  scene.add(obj);
+  const v0 = 0.6 + niveau * 0.08;
+  cocos.push({ obj, vy: -v0, g: 2.6 + niveau * 0.12, vr: rnd(-2, 2), or, vivant: true, rebond: 0 });
+}
+function vague() { lancerCoco(); if (niveau > 4 && Math.random() < Math.min(0.5, niveau * 0.04)) setTimeout(() => etat === 'jeu' && lancerCoco(), 450); prochain = Math.max(0.9, 2.4 - niveau * 0.1) + rnd(0, 0.5); }
+function demarrer(m) {
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.5; cassees = 0; niveau = 1; ficheIdx = 0; combo = 0; bonusOr = 0;
+  try { record = +localStorage.getItem('kasskoko_record_' + mode) || 0; } catch (e) {}
+  cocos.forEach(c => scene.remove(c.obj)); cocos.length = 0; $('bandeau').classList.remove('on');
+  majScore(); majVies(); majNiveau(); majJauge();
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('niveau').classList.add('on'); $('lien').classList.add('discret');
+  $('jauge').classList.add('on'); $('jaugeTitre').classList.add('on');
+}
+function finPartie() {
+  etat = 'fin'; $('niveau').classList.remove('on'); $('bandeau').classList.remove('on'); $('jauge').classList.remove('on'); $('jaugeTitre').classList.remove('on');
+  const nouveau = score > record && score > 0;
+  if (nouveau) { record = score; try { localStorage.setItem('kasskoko_record_' + mode, record); } catch (e) {} }
+  $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
+  $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
+  $('cocoFin').textContent = cassees + (cassees > 1 ? ' noix cassées' : ' noix cassée') + ' · niveau ' + niveau;
+  const et = cassees >= 50 ? 3 : cassees >= 25 ? 2 : cassees >= 8 ? 1 : 0;
+  $('etoilesFin').innerHTML = [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
+  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
+}
+function montrerFiche() { etat = 'fiche'; $('ficheNum').textContent = 'Niveau ' + (niveau - 1) + ' réussi'; $('ficheTexte').textContent = FICHES[ficheIdx % FICHES.length]; ficheIdx++; $('fiche').classList.add('on'); }
+function casser(c, net) {
+  c.vivant = false; scene.remove(c.obj);
+  const p = c.obj.position;
+  for (const s of [1, -1]) {
+    const m = modele ? modele.make(s > 0 ? 'moitie_A' : 'moitie_B', c.or) : cocoSecours();
+    m.position.copy(p); m.rotation.copy(c.obj.rotation); scene.add(m);
+    morceaux.push({ obj: m, vx: s * rnd(2, 3.5), vy: rnd(3, 5), vr: s * rnd(4, 8) });
+  }
+  // l'eau de coco gicle
+  const n = net ? 70 : 30;
+  for (let i = 0; i < n; i++) { const a = rnd(0, Math.PI * 2), v = rnd(1.5, net ? 6 : 3.5); goutte(p.x, p.y, p.z + 0.6, Math.cos(a) * v, Math.sin(a) * v + 2, c.or ? [1, 0.85, 0.3] : [0.85, 0.95, 1], rnd(0.5, 1.1), rnd(20, 45)); }
+  for (let i = 0; i < 14; i++) goutte(p.x, p.y, p.z + 0.6, rnd(-3, 3), rnd(0, 4), [1, 1, 0.97], rnd(0.4, 0.8), rnd(30, 55));
+}
+
+// ---------------------------------------------------------------- toucher : on frappe la noix la plus basse
+addEventListener('pointerdown', e => {
+  if (e.target.closest('.zone-interactive')) return; audio();
+  if (etat !== 'jeu') return;
+  const cible = cocos.filter(c => c.vivant && c.obj.position.y < viewH / 2 - 0.4).sort((a, b) => a.obj.position.y - b.obj.position.y)[0];
+  if (!cible) return;
+  const ecart = Math.abs(aiguille - 0.5) * 2; // 0 au centre, 1 au bord
+  const p = cible.obj.position.clone();
+  if (ecart <= zoneVerte()) {
+    combo++; const pts = (cible.or ? 10 : 3) + Math.min(combo - 1, 5);
+    casser(cible, true); son.net(); score += pts; cassees++;
+    popup((combo > 1 ? 'Kass net ×' + combo : 'Kass net !') + ' +' + pts, p, 'chaine');
+    if (cible.or) { bonusOr = 8; $('bandeau').classList.add('on'); son.or(); }
+  } else if (ecart <= zoneJaune()) {
+    combo = 0; casser(cible, false); son.fendu(); score += 1; cassees++;
+    popup('Fendue +1', p, 'pts', '#ffe28a');
+  } else {
+    combo = 0; son.rate(); cible.vy = 2.2; cible.rebond = 0.4;
+    popup(aiguille < 0.5 ? 'Trop doux !' : 'Trop fort !', p, 'aie');
+    return;
+  }
+  majScore(); majNiveau(); majJauge();
+  if (cassees > 0 && cassees % PAR_NIVEAU === 0 && cible) { niveau++; son.niveau(); majNiveau(); majJauge(); setTimeout(() => { if (etat === 'jeu') montrerFiche(); }, 700); }
+});
+
+// ---------------------------------------------------------------- boucle
+const horloge = new THREE.Clock(); let ambiance = 0;
+function boucle() {
+  const dt = Math.min(horloge.getDelta(), 0.05);
+  matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
+  const joue = etat === 'jeu', fige = etat === 'fiche';
+  if (joue) {
+    temps += dt; prochain -= dt; if (prochain <= 0) vague();
+    if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
+    // l'aiguille fait des allers-retours, de plus en plus vite
+    aiguille += sensAig * dt * (0.75 + niveau * 0.07); if (aiguille > 1) { aiguille = 1; sensAig = -1; } if (aiguille < 0) { aiguille = 0; sensAig = 1; }
+    $('aiguille').style.left = (aiguille * 100) + '%';
+  } else if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.8; lancerCoco(); } }
+  if (bonusOr > 0 && !fige) { bonusOr -= dt; if (bonusOr <= 0) { $('bandeau').classList.remove('on'); majJauge(); } }
+  for (let i = cocos.length - 1; i >= 0; i--) {
+    const c = cocos[i];
+    if (!c.vivant) { cocos.splice(i, 1); continue; }
+    if (fige) continue;
+    c.vy -= c.g * dt; c.obj.position.y += c.vy * dt; c.obj.rotation.z += c.vr * dt; c.obj.rotation.x += c.vr * 0.5 * dt;
+    if (c.or) { c.obj.rotation.y += dt * 3; if (Math.random() < 0.4) goutte(c.obj.position.x + rnd(-.5, .5), c.obj.position.y + rnd(-.5, .5), 1, 0, 0.3, [1, 0.85, 0.2], 0.5, 25, 0); }
+    if (c.obj.position.y < sol + 0.6) {
+      c.vivant = false; scene.remove(c.obj); son.sable();
+      const p = c.obj.position;
+      for (let k = 0; k < 26; k++) goutte(p.x, sol + 0.4, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3), [0.96, 0.88, 0.68], rnd(0.4, 0.8), rnd(25, 45));
+      if (joue) { combo = 0; popup('Tombée dans le sable', new THREE.Vector3(p.x, sol + 1.6, 0), 'aie'); if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 3); majScore(); } }
+    }
+  }
+  for (let i = morceaux.length - 1; i >= 0; i--) {
+    const m = morceaux[i]; if (fige) continue;
+    m.vy -= 9 * dt; m.obj.position.x += m.vx * dt; m.obj.position.y += m.vy * dt; m.obj.rotation.z += m.vr * dt;
+    if (m.obj.position.y < -viewH / 2 - 2) { scene.remove(m.obj); morceaux.splice(i, 1); }
+  }
+  majParticules(fige ? 0 : dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(boucle);
+}
+
+// ---------------------------------------------------------------- boutons
+const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; majSon();
+$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('kasskoko_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
+$('jouer').onclick = () => demarrer('classique');
+$('jouerZen').onclick = () => demarrer('zen');
+$('rejouer').onclick = () => demarrer(mode);
+$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
+$('ficheOk').onclick = () => { $('fiche').classList.remove('on'); etat = 'jeu'; horloge.getDelta(); };
+$('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
+document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
+addEventListener('resize', resize); resize(); majVies(); majScore(); majJauge();
+const img = new Image(); img.src = './fond-plage.webp';
+Promise.all([promesse.then(g => { if (g) modele = preparer(g); }), new Promise(r => { img.onload = img.onerror = r; })]).then(() => { $('charge').textContent = ''; window.PRET = true; });
+requestAnimationFrame(boucle);
+window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
+if (TEST) window.jeu = { cocos, toScreen, get etat() { return etat; }, demarrer, finPartie, setAiguille: v => { aiguille = v; } };
+</script>
+</body>
+</html>
