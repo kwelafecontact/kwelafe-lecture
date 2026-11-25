@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Mariaz la vanille · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="../koup-koup/lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family:"Bangers"; src:url("../koup-koup/lib/bangers.woff2") format("woff2"); font-display:swap; }
+  :root { --or:#ffd24a; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#0d2410; font-family:"Baloo 2", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  #fond { position:fixed; inset:0; background:#0d2410 url("./fond-sous-bois.webp") center bottom / cover no-repeat; }
+  #fond::after { content:""; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 30%, rgba(10,30,10,0) 35%, rgba(2,10,4,.5) 100%); }
+  #lueur { position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:0; }
+  #gl { position:fixed; inset:0; width:100%; height:100%; }
+  .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .hud.on { opacity:1; }
+  .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
+  .score.saute { animation:saute .3s ease-out; }
+  @keyframes saute { 40% { transform:scale(1.25); } }
+  .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:2px; }
+  .vies { font-size:30px; letter-spacing:4px; text-align:right; }
+  .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .temps { font-family:"Bangers", sans-serif; font-size:clamp(32px, 6.5vw, 46px); color:#b8f0ff; text-shadow:0 3px 0 #1f4f94; letter-spacing:.05em; }
+  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 32px; pointer-events:none; transition:opacity .35s; }
+  .ecran.cache { opacity:0; }
+  .ecran.cache * { pointer-events:none !important; }
+  .titre { font-family:"Bangers", sans-serif; font-size:clamp(62px, 15vw, 124px); line-height:.95; letter-spacing:.04em; transform:rotate(-3deg);
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.45)); }
+  .sous { margin-top:14px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  .modes { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
+  .btn { pointer-events:auto; border:0; border-radius:999px; padding:14px 30px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.45); cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .btn2 { background:linear-gradient(#b8f0ff, #3fb4e6); box-shadow:0 5px 0 #1f6f94, 0 10px 22px rgba(0,0,0,.45); color:#0b2a3a; }
+  .consigne { margin-top:22px; font-size:clamp(16px, 3.6vw, 20px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.9); max-width:520px; }
+  .voile { padding:22px 26px 26px; border-radius:26px; background:rgba(6,6,24,.62); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+  .gros { font-family:"Bangers", sans-serif; font-size:clamp(70px, 17vw, 120px); color:var(--or); line-height:1; text-shadow:0 5px 0 #8a4a08, 0 0 30px rgba(255,190,60,.5); }
+  .etoiles { font-size:clamp(42px, 10vw, 64px); letter-spacing:.12em; color:#ffd24a; text-shadow:0 3px 0 #8a5a00, 0 0 18px rgba(255,200,60,.6); }
+  .etoiles .vide { color:rgba(255,255,255,.22); text-shadow:none; }
+  .nouveau { font-family:"Bangers", sans-serif; font-size:clamp(26px, 6vw, 38px); letter-spacing:.06em; color:#7bf0ff; text-shadow:0 0 16px #2fb4ff; }
+  .pop { position:fixed; pointer-events:none; font-family:"Bangers", sans-serif; letter-spacing:.05em; transform:translate(-50%,-50%); white-space:nowrap; animation:monte 1s ease-out forwards; }
+  .pop.pts { font-size:clamp(28px, 6vw, 40px); color:#fff; text-shadow:0 0 12px currentColor, 0 3px 0 rgba(0,0,0,.5); }
+  .pop.chaine { font-size:clamp(30px, 7vw, 48px); background:linear-gradient(90deg, #ffe23a, #ff9a1f, #ff4fb4, #2fb4ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 #1a0830); animation-duration:1.3s; }
+  .pop.aie { font-size:clamp(26px, 6vw, 38px); color:#c8c8d0; text-shadow:0 3px 0 rgba(0,0,0,.6); }
+  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 100% { opacity:0; transform:translate(-50%,-150%) scale(1); } }
+  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; transition:opacity .3s; }
+  .lien.discret { opacity:0; pointer-events:none; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+  .coin { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); min-height:44px; padding:0 18px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(10,8,30,.6); color:#fff; font:800 16px "Baloo 2", system-ui, sans-serif; cursor:pointer; }
+  #retour { left:max(26px, env(safe-area-inset-left)); }
+  #btnSon { right:max(26px, env(safe-area-inset-right)); width:48px; padding:0; }
+  #charge { position:fixed; left:0; right:0; bottom:calc(100px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; opacity:.85; }
+
+  .fiche { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9); width:min(86vw, 460px); padding:22px 24px 20px; border-radius:22px; text-align:center;
+    background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .35s cubic-bezier(.2,1.5,.4,1); z-index:15; }
+  .fiche.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  .fiche h2 { margin:0 0 4px; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:clamp(24px, 6vw, 32px); color:#7a3a10; }
+  .fiche .num { font-weight:800; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#8a6a3a; }
+  .fiche p { font-size:clamp(16px, 4vw, 19px); line-height:1.35; margin:10px 0 16px; font-weight:600; }
+  .fiche .btn { font-size:18px; padding:12px 26px; }
+  .pop.pts { color:#fff7c8; }
+  .niveau { position:fixed; left:50%; top:max(140px, calc(env(safe-area-inset-top) + 124px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#f6ecd2; text-shadow:0 2px 0 #1a3010, 0 0 10px rgba(0,0,0,.5); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .niveau.on { opacity:1; }
+</style>
+</head>
+<body>
+<div id="fond"></div>
+<canvas id="gl"></canvas>
+
+<div class="hud" id="hud">
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div class="vies" id="vies"></div>
+</div>
+<div class="niveau" id="niveau"></div>
+
+<div class="ecran" id="menu">
+  <div class="titre">Mariaz la vanille</div>
+  <div class="sous">Le geste d'Edmond Albius, dans les vanilleraies de l'Est</div>
+  <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
+  <div class="consigne">Une fleur s'ouvre ? Touche bien son cœur pour la « marier » avant qu'elle ne fane. Une gousse poussera.</div>
+</div>
+
+<div class="ecran cache" id="fin"><div class="voile">
+  <div class="sous" style="margin-top:0">Récolte terminée</div>
+  <div class="gros" id="scoreFin">0</div>
+  <div class="etoiles" id="etoilesFin"></div>
+  <div class="nouveau" id="nouveauRecord"></div>
+  <div class="sous" id="goussesFin"></div>
+  <div class="sous" id="recordFin">Record : 0</div>
+  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
+</div></div>
+
+<div class="fiche" id="fiche"><div class="num" id="ficheNum"></div><h2>Le saviez-vous ?</h2><p id="ficheTexte"></p><button class="btn zone-interactive" id="ficheOk">On continue</button></div>
+
+<div id="charge">On prépare la vanilleraie…</div>
+<button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
+<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script type="importmap">{ "imports": { "three": "../koup-koup/lib/three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from '../koup-koup/lib/RoomEnvironment.js';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
+const PETIT = Math.min(innerWidth, innerHeight) < 500 || /iPhone/.test(navigator.userAgent);
+
+// Faits vérifiés (Wikipédia, Linnean Society, Europeana, Département de La Réunion, planet-vie ENS, IGP vanille de La Réunion)
+const FICHES = [
+  "En 1841, à Sainte-Suzanne, Edmond, un enfant esclave de 12 ans, découvre comment polliniser la fleur de vanille à la main.",
+  "Son geste : une fine baguette pour soulever la petite membrane qui sépare les organes de la fleur, puis le pouce pour les rapprocher.",
+  "La vanille vient du Mexique. À La Réunion, l'abeille qui la pollinise là-bas n'existe pas : sans la main de l'homme, presque aucune gousse.",
+  "Une fleur de vanille ne reste ouverte que quelques heures. Il faut passer chaque matin dans la vanilleraie pour ne pas en rater.",
+  "Après le « mariage », la gousse grandit en quelques semaines, mais elle n'est récoltée qu'environ huit à neuf mois plus tard.",
+  "Edmond a enseigné son geste dans les plantations de l'Est, à Saint-Benoît, Saint-André ou Sainte-Marie.",
+  "Edmond devient libre en 1848, à l'abolition de l'esclavage, et prend le nom d'Albius. Il meurt pauvre à Sainte-Suzanne en 1880.",
+  "Ce geste, qu'on appelle le « mariage » de la vanille, est encore utilisé aujourd'hui dans le monde entier.",
+  "La vanille de La Réunion (IGP) pousse sur la côte Est : Sainte-Suzanne, Bras-Panon, Saint-André, Saint-Benoît, Sainte-Rose…",
+  "Après la récolte, il faut encore de longs mois de préparation pour que la gousse verte devienne la gousse brune et parfumée.",
+];
+
+// ---------------------------------------------------------------- scène
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true, preserveDrawingBuffer: TEST });
+renderer.setPixelRatio(Math.min(devicePixelRatio, PETIT ? 1.75 : 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.82;
+renderer.shadowMap.enabled = !PETIT; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
+const soleil = new THREE.DirectionalLight(0xffe6b0, 2.4); soleil.position.set(4, 7, 8); soleil.castShadow = !PETIT; scene.add(soleil);
+scene.add(new THREE.HemisphereLight(0xd8f0c0, 0x203010, 0.9));
+let W = 0, H = 0, viewH = 10, viewW = 10;
+const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
+
+// matières
+const matTuteur = new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: 0.95 });
+const matLiane = new THREE.MeshStandardMaterial({ color: 0x3a7a1e, roughness: 0.45 });
+const matFeuille = new THREE.MeshStandardMaterial({ color: 0x2e6e18, roughness: 0.4, side: THREE.DoubleSide });
+const matPetale = new THREE.MeshPhysicalMaterial({ color: 0xc4d04e, roughness: 0.6, side: THREE.DoubleSide });
+const matLabelle = new THREE.MeshPhysicalMaterial({ color: 0xe8b82a, roughness: 0.55, side: THREE.DoubleSide });
+const matCoeur = new THREE.MeshStandardMaterial({ color: 0xfff8d8, roughness: 0.6, emissive: 0x332a00 });
+const matBouton = new THREE.MeshStandardMaterial({ color: 0x9cc24a, roughness: 0.5 });
+
+// géométries partagées
+const geoPetale = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(0.16, 0.18, 0.13, 0.62, 0, 0.78); s.bezierCurveTo(-0.13, 0.62, -0.16, 0.18, 0, 0); const g = new THREE.ShapeGeometry(s, 10); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, 0.12 * p.getY(i) ** 2); g.computeVertexNormals(); return g; })();
+const geoFeuille = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(0.3, 0.2, 0.3, 0.8, 0, 1.15); s.bezierCurveTo(-0.3, 0.8, -0.3, 0.2, 0, 0); const g = new THREE.ShapeGeometry(s, 10); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -0.15 * Math.abs(p.getX(i)) * 3); g.computeVertexNormals(); return g; })();
+const geoLabelle = new THREE.CylinderGeometry(0.16, 0.06, 0.42, 14, 1, true);
+const geoCoeur = new THREE.CylinderGeometry(0.035, 0.045, 0.36, 8);
+const geoBouton = (() => { const g = new THREE.SphereGeometry(0.11, 12, 8); g.scale(1, 2, 1); return g; })();
+const geoGousse = (() => { const g = new THREE.CylinderGeometry(0.1, 0.06, 1.6, 12, 8); g.translate(0, -0.75, 0); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setX(i, p.getX(i) + 0.05 * Math.sin(-y * 1.6)); } g.computeVertexNormals(); return g; })();
+
+const decor = new THREE.Group(); scene.add(decor);
+let emplacements = []; // points des lianes où une fleur peut s'ouvrir
+function construireVanilleraie() {
+  decor.clear(); emplacements = [];
+  const n = Math.max(3, Math.min(6, Math.round(viewW / 2.6)));
+  for (let i = 0; i < n; i++) {
+    const x = (i + 0.5) / n * viewW * 0.86 - viewW * 0.43 + rnd(-0.2, 0.2), z = rnd(-0.6, 0.4);
+    const tut = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, viewH * 1.1, 8), matTuteur);
+    tut.position.set(x, -viewH * 0.05, z - 0.25); tut.castShadow = true; decor.add(tut);
+    // la liane s'enroule autour du tuteur
+    const pts = []; const tours = rnd(2.2, 3.2), h0 = -viewH * 0.55, h1 = viewH * 0.36;
+    for (let k = 0; k <= 60; k++) { const t = k / 60, a = t * tours * Math.PI * 2 + i; pts.push(new THREE.Vector3(x + Math.cos(a) * 0.32, h0 + (h1 - h0) * t, z + Math.sin(a) * 0.22)); }
+    const courbe = new THREE.CatmullRomCurve3(pts);
+    const liane = new THREE.Mesh(new THREE.TubeGeometry(courbe, 160, 0.055, 8), matLiane); liane.castShadow = true; decor.add(liane);
+    for (let k = 0; k < 9; k++) {
+      const t = 0.08 + k / 9 * 0.9, p = courbe.getPoint(t), tg = courbe.getTangent(t);
+      const f = new THREE.Mesh(geoFeuille, matFeuille);
+      f.position.copy(p); f.rotation.set(rnd(-0.4, 0.4), 0, (k % 2 ? 1 : -1) * rnd(0.9, 1.5)); f.scale.setScalar(rnd(0.7, 1)); f.castShadow = true; decor.add(f);
+    }
+    for (let k = 0; k < 6; k++) { const t = 0.12 + k / 6 * 0.82 + rnd(-0.03, 0.03), p = courbe.getPoint(t); emplacements.push({ pos: new THREE.Vector3(p.x + (k % 2 ? 0.25 : -0.25), p.y, z + 0.35), libre: true }); }
+  }
+}
+function resize() {
+  W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
+  const fs = fleurs.splice(0); fs.forEach(f => scene.remove(f.obj)); gousses.splice(0).forEach(g => scene.remove(g.obj));
+  construireVanilleraie();
+}
+
+// ---------------------------------------------------------------- fleurs et gousses
+const fleurs = [], gousses = [];
+function creerFleur(emp, duree) {
+  const g = new THREE.Group();
+  const bouton = new THREE.Mesh(geoBouton, matBouton); g.add(bouton);
+  const corolle = new THREE.Group(); g.add(corolle);
+  for (let i = 0; i < 5; i++) { const p = new THREE.Mesh(geoPetale, matPetale); p.rotation.z = i / 5 * Math.PI * 2 + 0.3; p.rotation.x = -0.35; corolle.add(p); }
+  const lab = new THREE.Mesh(geoLabelle, matLabelle); lab.rotation.x = Math.PI / 2; lab.position.z = 0.16; corolle.add(lab);
+  const coeur = new THREE.Mesh(geoCoeur, matCoeur); coeur.rotation.x = Math.PI / 2; coeur.position.z = 0.2; corolle.add(coeur);
+  corolle.scale.setScalar(0.01);
+  g.position.copy(emp.pos); g.rotation.z = rnd(-0.4, 0.4); g.rotation.y = rnd(-0.3, 0.3);
+  scene.add(g); emp.libre = false;
+  const f = { obj: g, corolle, bouton, emp, t: 0, duree, etat: 'ouvre', vivant: true };
+  fleurs.push(f); return f;
+}
+function fermer(f) { f.vivant = false; f.etat = 'fane'; f.t = 0; }
+function pousserGousse(f) {
+  const m = new THREE.Mesh(geoGousse, new THREE.MeshPhysicalMaterial({ color: 0x5c9e24, roughness: 0.35, clearcoat: 0.6 }));
+  m.position.copy(f.emp.pos).add(new THREE.Vector3(0, -0.05, 0)); m.rotation.z = rnd(-0.15, 0.15); m.scale.set(1, 0.01, 1); m.castShadow = true;
+  scene.add(m); gousses.push({ obj: m, t: 0, emp: f.emp });
+}
+
+// ---------------------------------------------------------------- particules douces (pollen, éclats)
+const MAXP = 1500, pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3), pAlp = new Float32Array(MAXP), pTai = new Float32Array(MAXP);
+const PP = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, vz: 0, t0: 1 }));
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); geo.setAttribute('couleur', new THREE.BufferAttribute(pCol, 3));
+geo.setAttribute('alpha', new THREE.BufferAttribute(pAlp, 1)); geo.setAttribute('taille', new THREE.BufferAttribute(pTai, 1));
+const matP = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { echelle: { value: 1 } },
+  vertexShader: `attribute vec3 couleur; attribute float alpha; attribute float taille; varying vec3 vC; varying float vA; uniform float echelle; void main() { vC = couleur; vA = alpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main() { float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; gl_FragColor = vec4(vC, vA * exp(-r * r * 14.0)); }` });
+const pts = new THREE.Points(geo, matP); pts.frustumCulled = false; scene.add(pts);
+let pI = 0;
+function grain(p, c, n, v = 1.2, taille = 60) { for (let i = 0; i < n; i++) { const q = PP[pI], k = pI; pI = (pI + 1) % MAXP; q.vie = q.max = rnd(0.6, 1.2); q.vx = rnd(-v, v); q.vy = rnd(-v * .5, v); q.vz = rnd(-.3, .3); q.t0 = taille * rnd(0.6, 1.2); pPos[k * 3] = p.x; pPos[k * 3 + 1] = p.y; pPos[k * 3 + 2] = p.z + 0.3; pCol[k * 3] = c[0]; pCol[k * 3 + 1] = c[1]; pCol[k * 3 + 2] = c[2]; } }
+function majParticules(dt) {
+  for (let i = 0; i < MAXP; i++) { const q = PP[i]; if (q.vie <= 0) { pAlp[i] = 0; continue; } q.vie -= dt; q.vy -= 0.6 * dt; q.vx *= 0.97; pPos[i * 3] += q.vx * dt; pPos[i * 3 + 1] += q.vy * dt; pPos[i * 3 + 2] += q.vz * dt; const k = q.vie / q.max; pAlp[i] = k; pTai[i] = q.t0 * (0.5 + 0.5 * k); }
+  for (const n of ['position', 'alpha', 'taille', 'couleur']) geo.attributes[n].needsUpdate = true;
+}
+
+// ---------------------------------------------------------------- sons (doux, sans voix)
+let actx = null, maitre = null, sonCoupe = false;
+try { sonCoupe = localStorage.getItem('mariaz_son') === 'non'; } catch (e) {}
+function audio() { if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.6; maitre.connect(actx.destination); } catch (e) {} }
+function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
+const son = {
+  ouvre: () => ton(880, 1320, 0.25, 0.03, 'sine'),
+  mariage: (parfait) => { ton(660, 660, 0.18, 0.08, 'triangle'); ton(990, 990, 0.25, 0.07, 'triangle', 0.08); if (parfait) ton(1320, 1320, 0.3, 0.06, 'triangle', 0.16); },
+  rate: () => ton(330, 200, 0.4, 0.07, 'triangle'),
+  fane: () => ton(500, 260, 0.6, 0.05, 'sine'),
+  niveau: () => [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
+};
+
+// ---------------------------------------------------------------- partie
+const DUREE_ZEN = 90;
+let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, maries = 0, niveau = 1, serie = 0, ficheIdx = 0;
+function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
+function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
+function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🌼</span>`).join(''); }
+function majNiveau() { $('niveau').textContent = 'Niveau ' + niveau + ' · ' + maries + (maries > 1 ? ' gousses' : ' gousse'); }
+function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
+const PAR_NIVEAU = 8;
+function ouvrirFleur() {
+  const libres = emplacements.filter(e => e.libre && !gousses.some(g => g.emp === e));
+  if (!libres.length) return;
+  const emp = libres[Math.floor(Math.random() * libres.length)];
+  const duree = Math.max(1.5, 4.2 - (niveau - 1) * 0.25); // une fleur reste ouverte quelques secondes
+  creerFleur(emp, duree); son.ouvre();
+}
+function demarrer(m) {
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; maries = 0; niveau = 1; serie = 0; ficheIdx = 0;
+  try { record = +localStorage.getItem('mariaz_record_' + mode) || 0; } catch (e) {}
+  fleurs.splice(0).forEach(f => scene.remove(f.obj)); gousses.splice(0).forEach(g => scene.remove(g.obj)); emplacements.forEach(e => e.libre = true);
+  majScore(); majVies(); majNiveau();
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('niveau').classList.add('on'); $('lien').classList.add('discret');
+}
+function finPartie() {
+  etat = 'fin'; $('niveau').classList.remove('on');
+  const nouveau = score > record && score > 0;
+  if (nouveau) { record = score; try { localStorage.setItem('mariaz_record_' + mode, record); } catch (e) {} }
+  $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
+  $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
+  $('goussesFin').textContent = maries + (maries > 1 ? ' fleurs mariées' : ' fleur mariée') + ' · niveau ' + niveau;
+  const et = maries >= 40 ? 3 : maries >= 20 ? 2 : maries >= 8 ? 1 : 0;
+  $('etoilesFin').innerHTML = [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
+  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
+}
+function montrerFiche() {
+  etat = 'fiche';
+  $('ficheNum').textContent = 'Niveau ' + niveau + ' réussi';
+  $('ficheTexte').textContent = FICHES[ficheIdx % FICHES.length]; ficheIdx++;
+  $('fiche').classList.add('on');
+}
+
+// toucher : il faut viser le cœur de la fleur
+addEventListener('pointerdown', e => {
+  if (e.target.closest('.zone-interactive')) return; audio();
+  if (etat !== 'jeu') return;
+  let meilleur = null, dMin = 1e9;
+  for (const f of fleurs) { if (!f.vivant || f.etat === 'ouvre' && f.t < 0.25) continue; const s = toScreen(f.obj.position); const d = Math.hypot(s.x - e.clientX, s.y - e.clientY); if (d < dMin) { dMin = d; meilleur = f; } }
+  if (!meilleur) return;
+  const rayonPx = 0.78 * H / viewH; // taille d'une fleur à l'écran
+  if (dMin < rayonPx * 0.42) {
+    const parfait = dMin < rayonPx * 0.18;
+    const vite = meilleur.t < meilleur.duree * 0.5;
+    const pts = 10 + (parfait ? 5 : 0) + (vite ? 3 : 0) + Math.min(serie, 10);
+    serie++; maries++; score += pts; majScore(); majNiveau();
+    son.mariage(parfait); grain(meilleur.obj.position, [1, 0.95, 0.55], 26, 1.1, 50);
+    popup('+' + pts, meilleur.obj.position, 'pts');
+    if (parfait) setTimeout(() => popup('Mariage parfait !', meilleur.obj.position.clone().add(new THREE.Vector3(0, -0.9, 0)), 'chaine'), 100);
+    fermer(meilleur); meilleur.marie = true; pousserGousse(meilleur);
+    if (maries % PAR_NIVEAU === 0) { niveau++; son.niveau(); majNiveau(); setTimeout(() => { if (etat === 'jeu') montrerFiche(); }, 700); }
+  } else if (dMin < rayonPx * 1.1) {
+    serie = 0; son.rate(); popup('Vise le cœur !', meilleur.obj.position.clone().add(new THREE.Vector3(0, 0.9, 0)), 'aie');
+  }
+});
+
+// ---------------------------------------------------------------- boucle
+const horloge = new THREE.Clock();
+let ambiance = 0;
+function boucle() {
+  const dt = Math.min(horloge.getDelta(), 0.05);
+  matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
+  if (etat === 'jeu') {
+    temps += dt; prochain -= dt;
+    if (prochain <= 0) { ouvrirFleur(); if (niveau >= 4 && Math.random() < 0.3) setTimeout(() => etat === 'jeu' && ouvrirFleur(), 300); prochain = Math.max(0.55, 1.7 - (niveau - 1) * 0.12) + rnd(0, 0.5); }
+    if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
+  } else if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0 && emplacements.length) { ambiance = 1.2; if (fleurs.length < 4) creerFleur(emplacements.filter(e => e.libre)[Math.floor(Math.random() * emplacements.filter(e => e.libre).length)] || emplacements[0], 3.5); } }
+  for (let i = fleurs.length - 1; i >= 0; i--) {
+    const f = fleurs[i]; f.t += dt;
+    if (f.etat === 'ouvre') {
+      const k = Math.min(1, f.t / 0.35); f.corolle.scale.setScalar(0.01 + 0.99 * (1 - Math.pow(1 - k, 3)) * (1 + 0.05 * Math.sin(f.t * 3))); f.bouton.scale.setScalar(1 - k * 0.6);
+      // la fleur pâlit quand elle va faner
+      const reste = 1 - f.t / f.duree; matPetaleTeinte(f, reste);
+      if (f.t >= f.duree) { fermer(f); if (etat === 'jeu') { son.fane(); serie = 0; popup('Fanée…', f.obj.position, 'aie'); if (mode === 'classique') perdreVie(); } }
+    } else if (f.etat === 'fane') {
+      const k = Math.min(1, f.t / 0.5); f.corolle.scale.setScalar(Math.max(0.01, 1 - k)); f.obj.position.y -= f.marie ? 0 : dt * 0.6;
+      if (k >= 1) { scene.remove(f.obj); fleurs.splice(i, 1); if (!f.marie) f.emp.libre = true; }
+    }
+  }
+  for (let i = gousses.length - 1; i >= 0; i--) {
+    const g = gousses[i]; g.t += dt;
+    g.obj.scale.y = Math.min(1, 0.01 + g.t / 1.6);
+    // la gousse verte jaunit puis brunit et noircit, comme une vanille préparée
+    const c = g.obj.material.color, k = Math.min(1, Math.max(0, (g.t - 2) / 14));
+    c.setRGB(0.36 + (0.22 - 0.36) * k + 0.25 * Math.sin(k * Math.PI), 0.62 + (0.12 - 0.62) * k, 0.14 + (0.05 - 0.14) * k, THREE.SRGBColorSpace);
+    g.obj.material.roughness = 0.35 + k * 0.3;
+    if (g.t > 26) { g.obj.position.y -= dt * 2; g.obj.material.transparent = true; g.obj.material.opacity = Math.max(0, 1 - (g.t - 26)); if (g.t > 27) { scene.remove(g.obj); g.emp.libre = true; gousses.splice(i, 1); } }
+  }
+  majParticules(dt);
+  decor.rotation.y = Math.sin(performance.now() / 4000) * 0.015;
+  renderer.render(scene, camera);
+  requestAnimationFrame(boucle);
+}
+function matPetaleTeinte(f, reste) {
+  if (!f.matPropre) { f.matPropre = matPetale.clone(); f.corolle.children.forEach(m => { if (m.material === matPetale) m.material = f.matPropre; }); }
+  f.matPropre.color.setRGB(0.82 - (1 - reste) * 0.2, 0.86 - (1 - reste) * 0.35, 0.42 - (1 - reste) * 0.25, THREE.SRGBColorSpace);
+}
+
+// ---------------------------------------------------------------- boutons
+const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; majSon();
+$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('mariaz_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.6; majSon(); };
+$('jouer').onclick = () => demarrer('classique');
+$('jouerZen').onclick = () => demarrer('zen');
+$('rejouer').onclick = () => demarrer(mode);
+$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
+$('ficheOk').onclick = () => { $('fiche').classList.remove('on'); etat = 'jeu'; horloge.getDelta(); };
+$('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
+document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
+addEventListener('resize', resize); resize(); majVies(); majScore();
+const img = new Image(); img.src = './fond-sous-bois.webp'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
+requestAnimationFrame(boucle);
+window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
+if (TEST) window.jeu = { fleurs, toScreen, get etat() { return etat; }, demarrer, finPartie, get viewH() { return viewH; } };
+</script>
+</body>
+</html>
