@@ -448,3 +448,18 @@ body { background: var(--ivoire); }
 .choix-ligne { display: flex; flex-wrap: wrap; gap: 8px; }
 .choix-ligne .pastille { min-height: 40px; }
 .lecteur.sombre .bouton-rond { background: #2b2926; color: #eee; }
+
+/* Pour qui ? (portes par âge) et collections */
+.portes-public { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+@media (max-width: 520px) { .portes-public { grid-template-columns: repeat(2, 1fr); } }
+.porte-public { border: 0; border-radius: 16px; padding: 12px 8px; background: var(--cc); color: var(--c); display: flex; flex-direction: column; align-items: center; gap: 2px; box-shadow: inset 0 0 0 2px var(--cc); }
+.porte-public .ico { font-size: 26px; }
+.porte-public b { font-size: 15px; }
+.porte-public small { font-size: 12px; font-weight: 700; color: var(--texte); opacity: .75; }
+.porte-public.actif { background: var(--c); color: #fff; }
+.porte-public.actif small { color: #fff; opacity: .9; }
+.collections { display: grid; gap: 14px; }
+.collection { background: #fff; border-radius: 18px; padding: 14px 14px 4px; box-shadow: var(--ombre); }
+.entete-collection { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.entete-collection b { font-family: var(--titre); font-size: 18px; color: var(--encre); }
+.entete-collection span { font-size: 13px; font-weight: 800; color: var(--doux); white-space: nowrap; }

@@ -7,6 +7,7 @@ import { contexte } from "@/lib/contexte";
 import { UNIVERS, config } from "@/lib/config";
 import { autresFormats, formatDe, infoFormat, sansDoublon } from "@/lib/formats";
 import { leger } from "@/lib/leger";
+import { collectionDe, cleCollection } from "@/lib/organisation";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,11 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
   const f = infoFormat(formatDe(livre));
   const autres = autresFormats(livre, livres);
   const minutes = nbPages ? Math.max(5, Math.round(nbPages * 1.2)) : null;
+  const coll = collectionDe(livre.titre);
+  const tomes = coll
+    ? sansDoublon(livres.filter((l) => l.id !== livre.id && formatDe(l) === formatDe(livre) && collectionDe(l.titre) && cleCollection(collectionDe(l.titre)!.nom) === cleCollection(coll.nom)), acces)
+        .sort((a, b) => collectionDe(a.titre)!.tome - collectionDe(b.titre)!.tome)
+    : [];
   const memeUnivers = sansDoublon(livres.filter((l) => l.univers === livre.univers && l.id !== livre.id && formatDe(l) === formatDe(livre)), acces).slice(0, 8);
 
   return (
@@ -86,6 +92,17 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
             )}
           </div>
         </div>
+
+        {tomes.length > 0 && coll && (
+          <section className="section">
+            <h2>Les autres tomes : {coll.nom}</h2>
+            <div className="rangee">
+              {tomes.map((l) => (
+                <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori={favoris.has(l.id)} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {memeUnivers.length > 0 && (
           <section className="section">
