@@ -6,6 +6,7 @@
 <link rel="icon" href="data:,">
 <title>Koup Koup 2 · Kwélafé Production</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="./lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
   :root { --nuit:#1b0f06; --or:#ffcf4a; --feu:#ff7a1a; }
@@ -38,6 +39,13 @@
   .pop.combo { color:var(--or); font-size:clamp(30px, 7vw, 48px); animation-duration:1.3s; }
   .pop.pts { color:#fff; font-size:clamp(34px, 8vw, 52px); -webkit-text-stroke:2px rgba(40,14,0,.55); text-shadow:0 4px 0 rgba(0,0,0,.35), 0 0 22px currentColor; }
   .pop.bonus { color:#ffe27a; font-size:clamp(24px, 5.6vw, 34px); -webkit-text-stroke:1.5px rgba(60,20,0,.6); }
+  @font-face { font-family:"Bangers"; src:url("./lib/bangers.woff2") format("woff2"); font-display:swap; }
+  .pop.nom { font-family:"Bangers", "Baloo 2", sans-serif; font-weight:400; font-size:clamp(17px, 3.6vw, 24px); letter-spacing:.07em;
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4, #ff3b3b); background-size:200% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; text-shadow:none;
+    filter:drop-shadow(0 1.5px 0 #2a1000) drop-shadow(1px 0 0 #2a1000) drop-shadow(-1px 0 0 #2a1000) drop-shadow(0 0 4px rgba(0,0,0,.5));
+    animation:monte 1.4s ease-out forwards, arcenciel 1.4s linear forwards; }
+  @keyframes arcenciel { from { background-position:0 0; } to { background-position:-100% 0; } }
   .pop.or { color:#ffd84a; font-size:clamp(34px, 8vw, 56px); text-shadow:0 4px 0 #8a5a00, 0 0 30px #ffcf4a; }
   #dore { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(ellipse at center, rgba(255,215,90,0) 45%, rgba(255,190,40,.38) 100%); box-shadow:inset 0 0 60px 10px rgba(255,200,60,.5); }
   #barreOr { position:fixed; left:50%; transform:translateX(-50%); top:max(26px, calc(env(safe-area-inset-top) + 10px)); width:min(46vw, 260px); height:10px; border-radius:9px; background:rgba(0,0,0,.35); overflow:hidden; opacity:0; transition:opacity .3s; pointer-events:none; }
@@ -254,7 +262,7 @@ function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
   o.connect(g); g.connect(maitre); o.start(t); o.stop(t + dur + 0.02);
 }
 // Familles de fruits pour le son de la découpe
-const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi']);
+const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
 const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
 const son = {
   // le « whoosh » suit la vitesse du doigt
@@ -390,7 +398,7 @@ pulpe.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXQ *
 pulpe.frustumCulled = false; scene.add(pulpe);
 const Q = Array.from({ length: MAXQ }, () => ({ vie: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.05, rx: 0, ry: 0, vr: 0, plat: 0.4 }));
 let qIdx = 0;
-const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
+const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'jambos-rouge': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
 const tmpM = new THREE.Matrix4(), tmpC = new THREE.Color(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3(), tmpE = new THREE.Euler();
 function goutte(pos, vel, s, color, vie, grav = 1, impact = false) {
   const i = pIdx, p = P[i]; pIdx = (pIdx + 1) % MAXP;
@@ -757,6 +765,7 @@ function couper(o, dir, precision = 1) {
   score += pts; coupeSwipe += pts; majScore();
   const clair = teinteTache(jus).offsetHSL(0, 0.15, 0.08);
   popup('+' + pts, pos, 'pts', '#' + clair.getHexString());
+  if (!o.vanille && f.d.nom) popup(f.d.nom, pos.clone().add(new THREE.Vector3(0, 1.1, 0)), 'nom');
   if (parfait) setTimeout(() => popup('Pile au centre !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
   if (o.vanille) setTimeout(() => popup('Vanille !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
 }

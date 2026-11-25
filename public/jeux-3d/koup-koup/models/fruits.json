@@ -108,7 +108,7 @@
     },
     {
       "id": "goyavier",
-      "nom": "Goyavier",
+      "nom": "Goyavier rouge",
       "fichier": "goyavier.glb",
       "taille_reelle_m": 0.031,
       "couleur_jus": "#E8C4C8",
@@ -273,7 +273,7 @@
     },
     {
       "id": "goyave",
-      "nom": "Goyave",
+      "nom": "Goyave rose",
       "fichier": "goyave.glb",
       "taille_reelle_m": 0.07,
       "couleur_jus": "#F2909A",
@@ -318,7 +318,7 @@
     },
     {
       "id": "jamrosa",
-      "nom": "Jamrosa",
+      "nom": "Jamrosat",
       "fichier": "jamrosa.glb",
       "taille_reelle_m": 0.045,
       "couleur_jus": "#F4EBC2",
@@ -333,7 +333,7 @@
     },
     {
       "id": "pomme-cannelle",
-      "nom": "Pomme cannelle",
+      "nom": "Zatte",
       "fichier": "pomme-cannelle.glb",
       "taille_reelle_m": 0.086,
       "couleur_jus": "#F4F0E2",
@@ -348,7 +348,7 @@
     },
     {
       "id": "coco",
-      "nom": "Coco",
+      "nom": "Noix de coco",
       "fichier": "coco.glb",
       "taille_reelle_m": 0.13,
       "couleur_jus": "#F4F2EA",
@@ -480,6 +480,111 @@
         "moitie_2": "moitie_B"
       },
       "poids_ko": 1242
+    },
+    {
+      "id": "mangue-carotte",
+      "nom": "Mangue Carotte",
+      "fichier": "mangue-carotte.glb",
+      "taille_reelle_m": 0.14,
+      "couleur_jus": "#F28C14",
+      "clearcoat": 0.45,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 753
+    },
+    {
+      "id": "mangue-auguste",
+      "nom": "Mangue Auguste",
+      "fichier": "mangue-auguste.glb",
+      "taille_reelle_m": 0.13,
+      "couleur_jus": "#F5A01E",
+      "clearcoat": 0.5,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 765
+    },
+    {
+      "id": "mangue-cogshall",
+      "nom": "Mangue américaine (Cogshall)",
+      "fichier": "mangue-cogshall.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#F5A524",
+      "clearcoat": 0.55,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 760
+    },
+    {
+      "id": "mangue-emile",
+      "nom": "Mangue Émile",
+      "fichier": "mangue-emile.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#F5B02A",
+      "clearcoat": 0.45,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 786
+    },
+    {
+      "id": "mangue-lucie",
+      "nom": "Mangue Lucie",
+      "fichier": "mangue-lucie.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#F7AC22",
+      "clearcoat": 0.5,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 772
+    },
+    {
+      "id": "figue-sucree",
+      "nom": "Figue sucrée",
+      "fichier": "figue-sucree.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#F3E2A8",
+      "clearcoat": 0,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 933
+    },
+    {
+      "id": "jambos-rouge",
+      "nom": "Jambos rouge",
+      "fichier": "jambos-rouge.glb",
+      "taille_reelle_m": 0.06,
+      "couleur_jus": "#F4E6E4",
+      "clearcoat": 0.8,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 569
     }
   ],
   "compression": "meshopt (MeshoptDecoder requis dans GLTFLoader)"
