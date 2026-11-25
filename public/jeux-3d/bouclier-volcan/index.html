@@ -333,13 +333,15 @@ function audio() { setTimeout(chargerSon, 0); if (actx) { if (actx.state === 'su
   const b = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = actx.createBufferSource(); s.buffer = b; s.loop = true; const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 120; const g = actx.createGain(); g.gain.value = 0.18; s.connect(f).connect(g).connect(maitre); s.start(); } catch (e) {} }
 function bruit(dur, f, q, vol, when = 0, type = 'bandpass') { if (!actx) return; const t = actx.currentTime + when, b = actx.createBuffer(1, Math.ceil(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = actx.createBufferSource(); s.buffer = b; const fi = actx.createBiquadFilter(); fi.type = type; fi.frequency.value = f; fi.Q.value = q; const g = actx.createGain(); g.gain.value = vol; s.connect(fi).connect(g).connect(maitre); s.start(t); }
 function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
-let sonRoche = null;
-function chargerSon() { if (sonRoche || !actx) return; fetch('./explosion-roche.mp3').then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).then(d => { sonRoche = d; }).catch(() => {}); }
-function jouerRoche(vitesse, vol, debut = 0) { if (!actx || !sonRoche) return false; const s = actx.createBufferSource(); s.buffer = sonRoche; s.playbackRate.value = vitesse * rnd(0.93, 1.07); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(actx.currentTime, debut); return true; }
+// trois explosions selon la grosseur de la pierre : grave et lourde, moyenne, petite et plus vive
+const sonsRoche = {}; let sonsDemandes = false;
+function chargerSon() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const t of ['petite', 'moyenne', 'grosse']) fetch('./explosion-' + t + '.mp3').then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).then(d => { sonsRoche[t] = d; }).catch(() => {}); }
+const tailleSon = k => k >= 1.0 ? 'grosse' : k >= 0.85 ? 'moyenne' : 'petite';
+function jouerRoche(vitesse, vol, k = 0.9) { const buf = sonsRoche[tailleSon(k)]; if (!actx || !buf) return false; const s = actx.createBufferSource(); s.buffer = buf; s.playbackRate.value = vitesse * rnd(0.93, 1.07); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
 const son = {
   tir: () => { bruit(0.5, 160, 0.7, 0.6, 0, 'lowpass'); },
-  coupe: () => { bruit(0.08, 2600, 2, 0.25); if (!jouerRoche(1.18, 0.75)) bruit(0.3, 500, 1, 0.4, 0.02); },
-  impact: () => { if (!jouerRoche(0.82, 1.0)) { bruit(0.6, 200, 0.8, 0.8, 0, 'lowpass'); bruit(0.2, 1500, 1, 0.2); } },
+  coupe: (k) => { bruit(0.08, 2600, 2, 0.25); if (!jouerRoche(1.12, 0.8, k)) bruit(0.3, 500, 1, 0.4, 0.02); },
+  impact: (k) => { if (!jouerRoche(0.9, 1.0, k)) { bruit(0.6, 200, 0.8, 0.8, 0, 'lowpass'); bruit(0.2, 1500, 1, 0.2); } },
   touche: () => { ton(400, 200, 0.35, 0.08, 'triangle'); ton(300, 150, 0.4, 0.06, 'triangle', 0.1); },
   bouclier: () => [0, 4, 7, 12].forEach((s, i) => ton(440 * 2 ** (s / 12), 440 * 2 ** (s / 12), 0.3, 0.06, 'sine', i * 0.07)),
   niveau: () => [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
@@ -417,7 +419,7 @@ function majBonus() {
 }
 function activerBouclier() { if (etat !== 'jeu' || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
 function activerRalenti() { if (etat !== 'jeu' || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
-function activerOnde() { if (etat !== 'jeu' || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); majNiveau(); secousse = 0.5; son.impact(); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
+function activerOnde() { if (etat !== 'jeu' || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); majNiveau(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
 function eclater(b, dir) {
   b.vivant = false; scene.remove(b.obj);
   const p = b.obj.position; anneau(p);
@@ -445,7 +447,7 @@ function trancher(a, b) {
     const t = Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L));
     if ((a.x + t * dx - s.x) ** 2 + (a.y + t * dy - s.y) ** 2 < r * r) {
       const dir = new THREE.Vector3(dx, -dy, 0).normalize();
-      eclater(bo, dir); son.coupe(); coupees++; chaine++; serie++;
+      eclater(bo, dir); son.coupe(bo.obj.scale.x); coupees++; chaine++; serie++;
       if (serie % 6 === 0) { if (serie % 12 === 0) { ondes = Math.min(3, ondes + 1); popup('Série de ' + serie + ' ! Bonus onde de choc 💥', new THREE.Vector3(0, 1.5, 0), 'chaine'); } else { ralentis = Math.min(3, ralentis + 1); popup('Série de ' + serie + ' ! Bonus ralenti ⏳', new THREE.Vector3(0, 1.5, 0), 'chaine'); } son.bouclier(); majBonus(); }
       const haut = bo.obj.position.y > 0; const pts = haut ? 3 : 2;
       score += pts; majScore(); majNiveau();
@@ -500,23 +502,23 @@ function boucle() {
     const dtb = b.morceau ? dt : tb;
     b.vy -= b.g * dtb; b.obj.position.x += b.vx * dtb; b.obj.position.y += b.vy * dtb; b.obj.rotation.z += b.vr * dtb; b.obj.rotation.x += b.vr * 0.6 * dtb;
     const p = b.obj.position;
-    if (b.minuteur !== undefined) { b.minuteur -= dt; if (b.minuteur <= 0) { eclater(b, new THREE.Vector3(b.vx, b.vy, 0).normalize()); son.impact(); score += 1; majScore(); continue; } }
+    if (b.minuteur !== undefined) { b.minuteur -= dt; if (b.minuteur <= 0) { eclater(b, new THREE.Vector3(b.vx, b.vy, 0).normalize()); son.impact(b.obj.scale.x); score += 1; majScore(); continue; } }
     if (!b.morceau && Math.random() < 0.8) braise(p.x + rnd(-.2, .2), p.y + rnd(-.2, .2), p.z, rnd(-.3, .3), rnd(0, .6), [1, rnd(0.4, 0.7), 0.1], rnd(0.3, 0.6), rnd(25, 45), 1);
     if (b.morceau) { if (p.y < -viewH / 2 - 2) { b.vivant = false; scene.remove(b.obj); } continue; }
     if (bouclier > 0) {
       const A = viewW * 0.5, B = 2.2, ex = p.x / A, ey = (p.y - sol) / B, q = ex * ex + ey * ey;
       if (q < 1 && p.y > sol) {
-        if (b.minuteur !== undefined) { eclater(b, new THREE.Vector3(0, 1, 0)); son.impact(); score += 1; majScore(); continue; }
+        if (b.minuteur !== undefined) { eclater(b, new THREE.Vector3(0, 1, 0)); son.impact(b.obj.scale.x); score += 1; majScore(); continue; }
         const n = new THREE.Vector3(p.x / (A * A), (p.y - sol) / (B * B), 0).normalize();
         const vn = b.vx * n.x + b.vy * n.y;
         if (vn < 0) { b.vx = (b.vx - 2 * vn * n.x) * 0.6; b.vy = (b.vy - 2 * vn * n.y) * 0.6 + 1.5; }
         const k = 1 / Math.sqrt(q) * 1.01; p.x *= k; p.y = sol + (p.y - sol) * k;
         b.minuteur = 0.32; b.vr *= -1.5;
-        anneau(p); impactBulle = 0.3; son.coupe(); popup('Bouclier !', p, 'chaine');
+        anneau(p); impactBulle = 0.3; bruit(0.3, 380, 1, 0.5, 0, "lowpass"); ton(520, 260, 0.25, 0.08, "sine"); popup('Bouclier !', p, 'chaine');
       }
     }
     if (p.y < sol + 0.5) {
-      serie = 0; b.vivant = false; scene.remove(b.obj); son.impact(); secousse = 0.35; $('flash').style.transition = 'none'; $('flash').style.opacity = 1; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .6s'; $('flash').style.opacity = 0; });
+      serie = 0; b.vivant = false; scene.remove(b.obj); son.impact(b.obj.scale.x); secousse = 0.35; $('flash').style.transition = 'none'; $('flash').style.opacity = 1; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .6s'; $('flash').style.opacity = 0; });
       tache(p.x);
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
