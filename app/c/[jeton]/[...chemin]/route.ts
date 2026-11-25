@@ -34,6 +34,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ jet
     "Content-Disposition": "inline",
   };
 
+  // Les polices sont demandées depuis l'iframe isolée (origine différente) : il faut l'autoriser
+  if (["woff", "woff2", "ttf", "otf"].includes(ext)) entetes["Access-Control-Allow-Origin"] = "*";
+
   if (ext === "xhtml" || ext === "html" || ext === "htm") {
     let texte = await data.text();
     // Livre-application web : on garde son propre fonctionnement, on ajoute seulement la mémoire de lecture
@@ -41,7 +44,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ jet
     const bloc = `<script>//<![CDATA[\n${script}\n//]]></script>`;
     texte = /<\/head>/i.test(texte) ? texte.replace(/<\/head>/i, `${bloc}</head>`) : bloc + texte;
     // Les pages sont affichées dans une iframe isolée : elles ne peuvent pas lire l'application.
-    entetes["Content-Security-Policy"] = "frame-ancestors 'self'";
+    // Un livre web affiche ses propres pages dans des cadres imbriqués (origine isolée) : pas de restriction d'ancêtres.
+    if (!relatif.startsWith("web/")) entetes["Content-Security-Policy"] = "frame-ancestors 'self'";
     return new NextResponse(texte, { headers: entetes });
   }
   return new NextResponse(data.body, { headers: entetes });
