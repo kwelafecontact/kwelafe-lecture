@@ -107,15 +107,14 @@ class Fusion implements Jeu {
   // la difficulté monte : les fruits tirés deviennent plus variés avec les niveaux
   tirer() { const max = Math.min(6, 4 + Math.floor((this.niveau - 1) / 2)); return Math.floor(this.c.rnd() * (max + 1)); }
   // une rangée sur grand écran, deux rangées sur téléphone pour garder des fruits bien visibles
-  get rangeesListe() { return (this.L - 40) / CHAINE.length < 40 ? 2 : 1; }
+  get rangeesListe() { return rangees(this.L); }
   get parRangee() { return Math.ceil(CHAINE.length / this.rangeesListe); }
-  get tailleListe() { return Math.min(48, (this.L - 40) / this.parRangee); }
-  get hauteurListe() { return this.rangeesListe * this.tailleListe + 16; }
+  get tailleListe() { return taille(this.L); }
+  get hauteurListe() { return hauteurListe(this.L); }
   disposer() {
-    const w = Math.min(this.L * 0.92, this.H * 0.62 * (1 + save.amelio.tante * 0.05), 460 * (1 + save.amelio.tante * 0.05)), h = Math.min(this.H * 0.58, w * 1.2);
-    const bas = this.hauteurListe + 30; // place réservée à la liste des fruits
-    this.boite = { x: (this.L - w) / 2, y: Math.max(this.H * 0.3, this.H - h - bas - (this.H - h - bas) * 0.18), w, h };
-    this.base = w;
+    const g = geomBoite(this.L, this.H);
+    this.boite = { x: g.x, y: g.y, w: g.w, h: g.h };
+    this.base = g.w;
     setTimeout(() => this.placerCommandes(), 0);
     const r = 27, x = Math.max(56, this.boite.x - 4 + r);
     const by = Math.min(170, this.boite.y - r - 14); this.boutons = [{ id: "secoue", x, y: by, r }, { id: "cueille", x: x + r * 2.4, y: by, r }];
@@ -497,6 +496,23 @@ class Fusion implements Jeu {
   }
 }
 
+// Disposition partagée entre le jeu et le décor : une rangée sur grand écran, deux sur téléphone.
+const rangees = (L: number) => ((L - 40) / CHAINE.length < 40 ? 2 : 1);
+const taille = (L: number) => Math.min(48, (L - 40) / Math.ceil(CHAINE.length / rangees(L)));
+const hauteurListe = (L: number) => rangees(L) * taille(L) + 16;
+function geomBoite(L: number, H: number) {
+  const k = 1 + save.amelio.tante * 0.05;
+  const w = Math.min(L * 0.92, H * 0.62 * k, 460 * k), h = Math.min(H * 0.58, w * 1.2);
+  const bas = hauteurListe(L) + 30; // place réservée à la liste des fruits
+  return { x: (L - w) / 2, y: Math.max(H * 0.3, H - h - bas - (H - h - bas) * 0.18), w, h };
+}
+// Décor « étal du marché forain » : le haut du comptoir peint (62,5 % de l’image) passe juste sous la tante.
+const COMPTOIR = 0.625;
+function fondHaut(L: number, H: number, h: number) {
+  const g = geomBoite(L, H), y = g.y + g.h + 14 - COMPTOIR * h;
+  return Math.min(0, Math.max(H - h, y)); // jamais de bord vide
+}
+
 const def: DefJeu = {
   id: "fusion-pei",
   titre: "Fusion péi",
@@ -514,5 +530,7 @@ const def: DefJeu = {
   visuels: "photos",
   creer: (c) => new Fusion(c),
   progression,
+  fondHaut,
+  fondZoom: 1.35,
 };
 export default def;
