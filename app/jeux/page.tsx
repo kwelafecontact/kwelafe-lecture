@@ -24,6 +24,12 @@ export default async function PageJeux() {
           </div>
         </header>
 
+        <nav className="portes-jeux" aria-label="Types de jeux">
+          <a href="#mini-jeux" className="porte-jeu" style={{ background: "linear-gradient(135deg,#ffb08a,#e8283a)" }}><span>🎮</span><b>Mini-jeux</b><small>Fruits, mots, lieux</small></a>
+          <Link href="/jeux/quiz" className="porte-jeu" style={{ background: "linear-gradient(135deg,#8fe0ff,#1e6ec8)" }}><span>❓</span><b>Quiz</b><small>Teste tes connaissances</small></Link>
+          <Link href="/jeux/famille" className="porte-jeu" style={{ background: "linear-gradient(135deg,#bff0a8,#2f9a4a)" }}><span>👨‍👩‍👧</span><b>En famille</b><small>2 à 4 joueurs, un écran</small></Link>
+        </nav>
+
         <JeuxHorsLigne urls={CATALOGUE.filter((j) => !j.troisD && (acces || jeuGratuit(j.id))).map((j) => `/jeux/${j.id}`)} />
 
         {!acces && (
@@ -35,7 +41,7 @@ export default async function PageJeux() {
         )}
 
         {([["fruits", "Fruits et légumes péi"], ["reunion", "Jeux de La Réunion"]] as const).map(([serie, titre]) => (
-        <section key={serie} className="section" style={{ marginTop: serie === "fruits" ? 0 : undefined }}>
+        <section key={serie} id={serie === "fruits" ? "mini-jeux" : undefined} className="section" style={{ marginTop: serie === "fruits" ? 0 : undefined }}>
           <h2>{titre}</h2>
           <div className="jeux-grille">
             {CATALOGUE.filter((j) => j.serie === serie).map((j) => {

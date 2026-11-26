@@ -666,3 +666,26 @@ body { background: var(--ivoire); }
 .tableau-outils:hover { opacity: 1; }
 .tableau-outils button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 18px; cursor: pointer; }
 .tableau-page { color: #fff; font-weight: 800; font-size: 18px; padding: 0 10px; }
+
+/* Portes des jeux et quiz */
+.portes-jeux { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.porte-jeu { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 8px; border-radius: 20px; color: #fff; text-decoration: none; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+.porte-jeu span { font-size: 34px; } .porte-jeu b { font-size: 17px; } .porte-jeu small { opacity: .9; font-size: 12px; }
+.quiz { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; padding: 10px 0 40px; }
+.quiz-joueurs { display: flex; flex-direction: column; gap: 8px; }
+.quiz-joueur { display: flex; align-items: center; gap: 8px; border: 3px solid; border-radius: 14px; padding: 6px 10px; }
+.quiz-joueur span { font-size: 24px; } .quiz-joueur input { flex: 1; border: 0; font-size: 17px; background: transparent; color: inherit; }
+.quiz-joueur button { border: 0; background: none; font-size: 16px; cursor: pointer; color: inherit; }
+.quiz-passe { min-height: 60vh; justify-content: center; align-items: center; color: #fff; border-radius: 24px; cursor: pointer; text-align: center; }
+.quiz-gros { font-size: 80px; }
+.quiz-haut { display: flex; justify-content: space-between; font-weight: 700; }
+.quiz-question { font-size: 22px; line-height: 1.3; }
+.quiz-reponses { display: grid; gap: 10px; }
+.quiz-reponses button { padding: 16px; border-radius: 14px; border: 2px solid rgba(0,0,0,.12); background: #fff; color: #222; font-size: 17px; text-align: left; cursor: pointer; }
+.quiz-reponses .bonne { background: #2f9a4a; color: #fff; border-color: #2f9a4a; }
+.quiz-reponses .fausse { background: #e8283a; color: #fff; border-color: #e8283a; }
+.quiz-reponses .terne { opacity: .45; }
+.quiz-info { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; background: rgba(0,0,0,.05); }
+.quiz-podium { display: flex; flex-direction: column; gap: 8px; }
+.quiz-ligne { display: flex; align-items: center; gap: 10px; border: 3px solid; border-radius: 14px; padding: 10px 14px; font-size: 18px; }
+.quiz-ligne b { flex: 1; }
