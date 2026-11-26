@@ -223,7 +223,25 @@ const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set
 // deux versions du même décor : verticale (téléphone) et horizontale (tablette, ordinateur)
 const chargeFond = (f) => { const t = new THREE.TextureLoader().load(f, () => { window.PRET = true; $('charge').textContent = ''; resize(); }); t.colorSpace = THREE.SRGBColorSpace; return t; };
 const texFond = chargeFond('./fond-enclos.webp'), texFondL = chargeFond('./fond-enclos-large.webp');
-const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false }));
+// décor vivant : les coulées de lave (zones orange vif sous le ciel) s'animent, des filets plus clairs descendent la pente
+const matFond = new THREE.ShaderMaterial({ depthWrite: false, uniforms: { map: { value: texFond }, t: { value: 0 }, ciel: { value: 0.22 } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform sampler2D map; uniform float t; uniform float ciel;
+    float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float bruit(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+    void main() {
+      float v = 1.0 - vUv.y;
+      vec4 c0 = texture2D(map, vUv);
+      float m = smoothstep(0.62, 0.9, c0.r) * (1.0 - smoothstep(0.12, 0.42, c0.b)) * smoothstep(ciel, ciel + 0.05, v) * (1.0 - smoothstep(0.75, 0.8, v));
+      // la matière avance le long de la pente : on décale la lecture de l'image dans les zones de lave
+      vec2 d = vec2(sin(v * 60.0 - t * 2.2) * 0.0016, 0.0) * m;
+      vec3 c = texture2D(map, vUv + d).rgb;
+      float f1 = bruit(vec2(vUv.x * 46.0, v * 90.0 - t * 3.2)), f2 = bruit(vec2(vUv.x * 120.0 + 7.0, v * 210.0 - t * 5.5));
+      float vive = smoothstep(0.45, 0.95, f1 * 0.7 + f2 * 0.5);
+      c = c * (0.78 + 0.55 * vive * m) + m * vive * vec3(0.55, 0.2, 0.0) + m * 0.12 * sin(t * 3.0 + v * 20.0);
+      gl_FragColor = vec4(c, 1.0);
+    }` });
+const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), matFond);
 planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -460,6 +478,7 @@ const dureePhase = () => Math.min(34, 20 + niveau * 2);
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupees = 0, niveau = 1, ficheIdx = 0, bouclier = 0, charge = 0, serie = 0, ralentis = 0, ondes = 0, ralenti = 0;
 const bombes = [], marcheurs = [], oiseaux = []; let prochainOiseau = 6;
 const COULEURS = [0xd81e1e, 0x1e5ad8, 0x18a048, 0x8a2ad0];
+const cratere = { x: 0, y: 4, jx: 0, jy: 4 }; // bouche du cratère : décor (x, y) et plan de jeu (jx, jy)
 const SENTIER_L = 0.83; // ligne du sentier dans l'image horizontale
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
@@ -469,11 +488,14 @@ function resize() {
   sol = -viewH * 0.4; capteur.position.set(0, sol + 0.005, -2);
   const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
   // décor peint 2:3 : cratère en haut au centre, Enclos au milieu, sentier en bas ; le sentier peint (85 % de l'image) passe sous les pieds des randonneurs (90 % de l'écran)
-  const large = W / H > 0.85; planFond.material.map = large ? texFondL : texFond;
+  const large = W / H > 0.85; matFond.uniforms.map.value = large ? texFondL : texFond; matFond.uniforms.ciel.value = large ? 0.25 : 0.22;
   const ratioImg = large ? 4 / 3 : 2 / 3, SENTIER = large ? SENTIER_L : 0.85, CIBLE = 0.9; let pw = wF, ph = wF / ratioImg; if (ph < hF) { ph = hF; pw = hF * ratioImg; }
   pw *= 1.04; ph *= 1.04; if (ph * SENTIER < hF * CIBLE) { const k = hF * CIBLE / (ph * SENTIER); pw *= k; ph *= k; }
   const haut = Math.min(0, Math.max(hF - ph, CIBLE * hF - SENTIER * ph)); // décalage du haut de l'image sous le haut de l'écran
   planFond.scale.set(pw, ph, 1); planFond.position.y = hF / 2 - haut - ph / 2;
+  // bouche du cratère peinte : repère dans le décor (z = -25) et dans le plan du jeu (z = 0,6)
+  const cu = large ? 0.525 : 0.51, cv = large ? 0.205 : 0.168, wx = (cu - 0.5) * pw, wy = planFond.position.y + (0.5 - cv) * ph;
+  cratere.x = wx * 0.985; cratere.y = wy * 0.985; const kk = (camera.position.z - 0.6) / (camera.position.z - planFond.position.z); cratere.jx = wx * kk; cratere.jy = wy * kk;
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H);
   const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
   balises.forEach(b => scene.remove(b)); balises.length = 0;
@@ -496,15 +518,44 @@ function lancerBombe(fuseau = false) {
   const vise = Math.random() < 0.85 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)] : null;
   const cible = vise ? vise.x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45);
   if (vise && etat === 'jeu' && Math.random() < 0.35) setTimeout(() => crier(vise), 400);
-  const x0 = rnd(-viewW * (niveau > 3 ? .48 : .3), viewW * (niveau > 3 ? .48 : .3)), y0 = viewH / 2 + 0.8;
+  const x0 = cratere.jx + rnd(-0.25, 0.25), y0 = cratere.jy;
   const duree = Math.max(1.05, 2.5 - niveau * 0.12) + rnd(0, 0.4);
   const g = 3.8 + niveau * 0.22;
   const vy = ((sol + 0.6) - y0 + 0.5 * g * duree * duree) / duree, vx = (cible - x0) / duree;
   const m = new THREE.Mesh(rocheGeo, rocheMat); const s = fuseau ? 1.1 : rnd(0.7, 1.15); m.scale.setScalar(s); if (fuseau) m.scale.set(0.75, 1.6, 0.75);
   const h = new THREE.Sprite(halo); h.scale.setScalar(3); m.add(h);
   m.castShadow = true; m.position.set(x0, y0, 0.6); scene.add(m);
-  bombes.push({ obj: m, vx, vy, g, vr: fuseau ? 0.6 : rnd(-3, 3), rayon: 0.72 * s * (fuseau ? 1.2 : 1), vivant: true, fuseau });
+  bombes.push({ obj: m, vx, vy, g, vr: fuseau ? 0.6 : rnd(-3, 3), rayon: 0.72 * s * (fuseau ? 1.2 : 1), vivant: true, fuseau, age: 0, base: m.scale.clone() });
+  m.scale.multiplyScalar(0.25); eruption(fuseau ? 2 : 1);
   son.tir();
+}
+// ---------------------------------------------------------------- arrière-plan : le volcan projette des roches qui éclatent au loin
+const rochesFond = []; let fondT = 0.4; const ZF = -25;
+function lancerRocheFond(forte = false) {
+  const m = new THREE.Sprite(halo); m.scale.setScalar(forte ? 2.6 : rnd(1.3, 2.2)); m.position.set(cratere.x + rnd(-0.4, 0.4), cratere.y, ZF); scene.add(m);
+  const ang = rnd(-0.55, 0.55), v = rnd(12, 21) * (forte ? 1.15 : 1);
+  rochesFond.push({ m, vx: Math.sin(ang) * v * 0.6, vy: Math.cos(ang) * v, t: 0, boum: Math.random() < 0.6 ? rnd(0.9, 1.8) : 99 });
+  for (let k = 0; k < 5; k++) braise(m.position.x + rnd(-.3, .3), m.position.y, ZF, rnd(-2, 2), rnd(3, 8), [1, rnd(0.5, 0.8), 0.15], rnd(0.5, 1), rnd(40, 70), 5);
+}
+function majRochesFond(dt) {
+  for (let i = rochesFond.length - 1; i >= 0; i--) {
+    const r = rochesFond[i]; r.t += dt; r.vy -= 9 * dt; r.m.position.x += r.vx * dt; r.m.position.y += r.vy * dt;
+    if (Math.random() < 0.9) braise(r.m.position.x, r.m.position.y, ZF, rnd(-.4, .4), rnd(-.4, .4), [1, rnd(0.4, 0.7), 0.1], rnd(0.4, 0.8), rnd(32, 52), 0);
+    const chute = r.vy < 0 && r.m.position.y < cratere.y - 0.6;
+    if (r.t > r.boum || chute) {
+      const n = chute ? 10 : 26, p = r.m.position;
+      for (let k = 0; k < n; k++) { const a = rnd(0, 6.283), w = rnd(1.5, chute ? 3.5 : 7.5); braise(p.x, p.y, ZF, Math.cos(a) * w, Math.sin(a) * w + (chute ? 2 : 0), [1, rnd(0.45, 0.85), 0.15], rnd(0.6, 1.3), rnd(50, 90), 4); }
+      if (!chute) for (let k = 0; k < 3; k++) fumee(p.x + rnd(-.4, .4), p.y + rnd(-.4, .4), ZF, 320);
+      scene.remove(r.m); rochesFond.splice(i, 1);
+    }
+  }
+}
+// éruption au moment où une bombe quitte le cratère : gerbe, lueur et roches lancées au loin
+function eruption(force = 1) {
+  for (let k = 0; k < 22 * force; k++) braise(cratere.x + rnd(-.5, .5), cratere.y, ZF, rnd(-5, 5), rnd(6, 16), [1, rnd(0.5, 0.9), 0.2], rnd(0.7, 1.5), rnd(60, 110), 7);
+  for (let k = 0; k < 4; k++) fumee(cratere.x + rnd(-.6, .6), cratere.y + rnd(0, .5), ZF, 380);
+  for (let k = 0; k < 1 + force; k++) setTimeout(() => lancerRocheFond(force > 1), k * 120);
+  secousse = Math.max(secousse, 0.12);
 }
 function vague() {
   const n = 1 + Math.floor(Math.random() * Math.min(1.6 + niveau * 0.55, 6));
@@ -692,6 +743,7 @@ function boucle() {
     if (!b.vivant) { bombes.splice(i, 1); continue; }
     if (fige) continue;
     const dtb = b.morceau ? dt : tb;
+    if (b.age !== undefined && b.age < 0.75) { b.age += dtb; const k = Math.min(1, b.age / 0.75); b.obj.scale.copy(b.base).multiplyScalar(0.25 + 0.75 * (1 - (1 - k) * (1 - k))); }
     b.vy -= b.g * dtb; b.obj.position.x += b.vx * dtb; b.obj.position.y += b.vy * dtb; b.obj.rotation.z += b.vr * dtb; b.obj.rotation.x += b.vr * 0.6 * dtb;
     const p = b.obj.position;
     if (b.minuteur !== undefined) { b.minuteur -= dt; if (b.minuteur <= 0) { eclater(b, new THREE.Vector3(b.vx, b.vy, 0).normalize()); son.impact(b.obj.scale.x); score += 1; majScore(); continue; } }
@@ -741,6 +793,9 @@ function boucle() {
   }
   const proches = bombes.filter(b => b.vivant && !b.morceau).sort((a, b) => a.obj.position.y - b.obj.position.y);
   lumLave.forEach((l, k) => { const b = proches[k]; if (b) { l.position.copy(b.obj.position); l.position.z += 0.6; l.intensity = 9 + Math.sin(tps * 20 + k) * 2; } else l.intensity = 0; });
+  // volcan vivant : roches projetées en arrière-plan, éclatements, coulées animées
+  matFond.uniforms.t.value = tps;
+  if (!fige) { fondT -= dt; if (fondT <= 0) { fondT = rnd(0.3, 0.8); lancerRocheFond(); } majRochesFond(dt); }
   majParticules(dt);
   composer.render();
   dessinerTrait();
@@ -768,7 +823,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { finDeNiveau, egarer, poserOlivine, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, voixBuf, crier, oiseaux, lancerOiseau, get actx() { return actx; } };
+if (TEST) window.jeu = { cratere, rochesFond, finDeNiveau, egarer, poserOlivine, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, voixBuf, crier, oiseaux, lancerOiseau, get actx() { return actx; } };
 </script>
 </body>
 </html>
