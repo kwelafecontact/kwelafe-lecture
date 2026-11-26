@@ -3,15 +3,572 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:,">
-<title>Kar Péi - Kwélafé</title>
-<link rel="stylesheet" href="../commun/kwelafe.css">
-<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
+<title>Kar Péi · Kwélafé Production</title>
+<link rel="preload" href="../koup-koup/lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Bangers";src:url("../koup-koup/lib/bangers.woff2") format("woff2");font-display:swap}
+:root{--or:#ffd24a}
+html,body{margin:0;height:100%;overflow:hidden;background:#12304a;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
+#fond{position:fixed;inset:0;background:#12304a url("./fond-portrait.webp?v=1") center bottom/cover no-repeat}
+@media (min-aspect-ratio:1/1){#fond{background-image:url("./fond-paysage.webp?v=1")}}
+#c{position:fixed;inset:0;width:100%;height:100%}
+.ecran{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 28px;pointer-events:none;transition:opacity .35s;background:rgba(8,28,48,.4)}
+.ecran.cache{opacity:0}.ecran.cache *{pointer-events:none!important}
+.titre{font-family:"Bangers",sans-serif;font-size:clamp(70px,18vw,130px);line-height:.95;letter-spacing:.04em;transform:rotate(-3deg);background:linear-gradient(90deg,#ffe23a,#ff9a1f,#ff3b3b,#ff4fa8,#3aa6ff,#35c759);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 4px 0 #3a2a04) drop-shadow(0 0 22px rgba(255,210,60,.55))}
+.sous{margin-top:12px;font-size:clamp(16px,3.6vw,22px);font-weight:600;text-shadow:0 2px 8px #000}
+.modes{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:22px}
+.btn{pointer-events:auto;border:0;border-radius:999px;padding:13px 28px;font:800 20px/1 "Baloo 2",system-ui,sans-serif;color:#3a2a04;background:linear-gradient(#ffe27a,#ffb21e);box-shadow:0 5px 0 #a8700a,0 10px 22px rgba(0,0,0,.45);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a8700a}
+.btn2{background:linear-gradient(#b8f0ff,#3fb4e6);box-shadow:0 5px 0 #1f6f94,0 10px 22px rgba(0,0,0,.45);color:#0b2a3a}
+.consigne{margin-top:18px;font-size:clamp(15px,3.4vw,19px);font-weight:700;text-shadow:0 2px 8px #000;max-width:520px}
+.voile{padding:20px 24px 24px;border-radius:26px;background:rgba(8,26,44,.76);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);max-width:580px;max-height:88vh;overflow:auto;pointer-events:auto}
+.gros{font-family:"Bangers",sans-serif;font-size:clamp(64px,16vw,110px);color:var(--or);line-height:1;text-shadow:0 5px 0 #8a5a08,0 0 30px rgba(255,200,60,.5)}
+.petit{font-size:15px;font-weight:600;opacity:.92;margin-top:6px}
+.lien{pointer-events:auto;margin-top:16px;color:#fff;font-weight:800;text-decoration:none;padding:9px 18px;border-radius:999px;background:rgba(0,0,0,.35);box-shadow:0 0 14px 3px rgba(255,170,40,.8),inset 0 0 8px rgba(255,200,80,.5);animation:feu 1.6s ease-in-out infinite}
+@keyframes feu{50%{box-shadow:0 0 24px 7px rgba(255,120,30,.95),inset 0 0 12px rgba(255,220,100,.7)}}
+.liste{display:grid;gap:8px;margin-top:12px;text-align:left}
+.lig{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.1);border-radius:14px;padding:8px 12px;font-size:15px;font-weight:600}
+.lig b{color:var(--or)}.lig .btn{padding:8px 16px;font-size:16px;margin-left:auto}
+.fait{font-size:15px;font-weight:600;text-align:left;margin:8px 0;line-height:1.3}
+.fait small{display:block;opacity:.7;font-size:12px;font-weight:600}
+.fait.vide{opacity:.35}
+.sav{margin-top:12px;font-size:15px;font-weight:600;background:rgba(255,210,74,.14);border-radius:14px;padding:10px 12px;text-align:left}
+.sav small{display:block;opacity:.7;font-size:12px;margin-top:4px}
+.regle{text-align:left;font-size:15px;font-weight:600;line-height:1.35;margin-top:8px}
+</style>
 </head>
 <body>
-<div class="k-chargement"><b><i>Kw</i><i>él</i><i>a</i><i>fé</i></b><div class="k-barre"><div></div></div></div>
-<div id="scene"></div>
-<script type="module" src="jeu.js"></script>
+<div id="fond"></div>
+<canvas id="c"></canvas>
+
+<div class="ecran" id="menu">
+  <div class="titre">KAR PÉI</div>
+  <div class="sous">Fais monter chaque voyageur dans le bon car !</div>
+  <div class="consigne" id="defiMenu"></div>
+  <div class="modes">
+    <button class="btn" id="bJouer">▶ Jouer</button>
+    <button class="btn btn2" id="bBoutique">🛒 Boutique</button>
+    <button class="btn btn2" id="bCarnet">📖 Carnet</button>
+  </div>
+  <div class="petit" id="pieces"></div>
+  <a class="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+</div>
+
+<div class="ecran cache" id="aide">
+  <div class="voile"><div class="gros" style="font-size:52px">COMMENT JOUER</div>
+  <div class="regle">👆 Touche un voyageur libre : il file sur le quai.<br>
+  🚌 Chaque car affiche sa destination (forme + couleur). Les voyageurs du quai qui vont au même endroit montent tout seuls.<br>
+  ⚠️ Le quai a peu de places : s'il est plein sans bon voyageur, c'est perdu.<br>
+  📯 Le klaxon renvoie le car au bout de la file.<br>
+  🪘 De temps en temps : suis le rythme du kayamb !</div>
+  <div class="modes"><button class="btn" id="bAideOk">C'est parti !</button></div></div>
+</div>
+
+<div class="ecran cache" id="pause">
+  <div class="voile"><div class="gros" style="font-size:60px">PAUSE</div>
+  <div class="modes"><button class="btn" id="bReprendre">▶ Reprendre</button><button class="btn btn2" id="bQuitter">Menu</button></div></div>
+</div>
+
+<div class="ecran cache" id="fin">
+  <div class="voile">
+    <div class="gros" id="finScore">0</div>
+    <div class="petit" id="finInfo"></div>
+    <div class="sav" id="finSav"></div>
+    <div class="petit" id="finDefi"></div>
+    <div class="modes"><button class="btn" id="bRejouer">↻ Rejouer</button><button class="btn btn2" id="bMenu">Menu</button><button class="btn btn2" id="bBoutique2">🛒 Boutique</button></div>
+    <a class="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+  </div>
+</div>
+
+<div class="ecran cache" id="boutique">
+  <div class="voile"><div class="gros" style="font-size:52px">BOUTIQUE</div>
+  <div class="petit" id="boPieces"></div><div class="liste" id="boListe"></div>
+  <div class="modes"><button class="btn" id="bBoFerme">Retour</button></div></div>
+</div>
+
+<div class="ecran cache" id="carnet">
+  <div class="voile"><div class="gros" style="font-size:52px">CARNET</div>
+  <div class="petit" id="caCompte"></div><div id="caListe"></div>
+  <div class="modes"><button class="btn" id="bCaFerme">Retour</button></div></div>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const cv=$("c"),g=cv.getContext("2d");
+const V="?v=1";
+
+/* ---------- Données ---------- */
+// Destinations : forme + couleur (la forme aide ceux qui distinguent mal les couleurs)
+const VILLES=[
+ {nom:"Saint-Denis",c:"#ff4d4d",f:0},
+ {nom:"Saint-Paul",c:"#3aa6ff",f:1},
+ {nom:"Saint-Pierre",c:"#35c759",f:2},
+ {nom:"Saint-André",c:"#b45cff",f:3},
+ {nom:"Le Tampon",c:"#ff8a1f",f:4},
+ {nom:"Saint-Benoît",c:"#ff4fa8",f:5}];
+const IMG={};
+["car"].concat([0,1,2,3,4,5].map(i=>"p"+i)).forEach(k=>{const im=new Image();im.src=k+".webp"+V;IMG[k]=im;});
+
+const FAITS=[
+ ["En 1912, la première automobile de l'île est un autocar Berliet de 36 places, sur la ligne Le Port – Saint-Pierre.","Région Réunion, data.gouv.fr"],
+ ["Lucie Manès fut la première femme conductrice de La Réunion.","Région Réunion, data.gouv.fr"],
+ ["En 1988, le transport interurbain est structuré en réseau « Alizé », ancêtre du Car Jaune.","Région Réunion, data.gouv.fr"],
+ ["En janvier 1996, le Conseil départemental crée le réseau Car Jaune.","Région Réunion, data.gouv.fr"],
+ ["Depuis le 1er janvier 2017, c'est la Région qui est compétente pour les cars interurbains.","Région Réunion, data.gouv.fr"],
+ ["Le nouveau réseau Car Jaune a été lancé le 11 décembre 2014.","Département de La Réunion"],
+ ["En 2016, le réseau comptait 17 lignes et 139 arrêts, pour plus de 5 millions de voyages par an.","Département de La Réunion"],
+ ["Le réseau actuel compte 14 lignes et environ 150 arrêts.","Transbus"],
+ ["En 2024, la ponctualité des cars atteignait 92 % sur les 14 lignes.","Région Réunion, dossier de presse, nov. 2025"],
+ ["72 véhicules neufs ont été livrés début 2025 : 63 de 49 places et 9 de 45 places.","Transbus, 2025"],
+ ["Le parc compte 11 bus à étage.","Transbus, 2025"],
+ ["Les nouveaux cars sont construits en République tchèque, puis voyagent par la route jusqu'à Anvers et par bateau pendant des semaines.","Transbus, 2025"],
+ ["La gare de Saint-Paul accueille plus de 2 millions de voyageurs par an.","TCO, dossier de presse, 2017"],
+ ["Le kayamb est un hochet en forme de radeau : deux panneaux de roseaux et de hampes de fleurs de canne sur un cadre léger, avec des graines à l'intérieur.","Réunion Tourisme (reunion.fr)"],
+ ["Le kayamb et le roulèr marquent le rythme à deux temps du séga et du maloya.","Réunion Tourisme (reunion.fr)"],
+ ["Le maloya a été inscrit au patrimoine culturel immatériel de l'UNESCO le 1er octobre 2009.","UNESCO"]];
+
+const UPS=[
+ {id:"qua",nom:"Quai agrandi",desc:"+1 place d'attente par niveau",max:3,cout:[30,60,100]},
+ {id:"kla",nom:"Klaxon en plus",desc:"+1 klaxon par partie",max:3,cout:[25,50,90]},
+ {id:"vue",nom:"Horaires affichés",desc:"Voir 1, 2, 3 ou 4 cars à venir",max:3,cout:[20,45,80]},
+ {id:"kay",nom:"Kayamb d'or",desc:"Rythme plus tolérant",max:3,cout:[20,40,70]}];
+
+/* ---------- Sauvegarde ---------- */
+let S={best:0,pieces:0,up:[0,0,0,0],carnet:[],defi:{d:"",ok:false},vu:false};
+try{const r=JSON.parse(localStorage.getItem("karpei_v2")||"null");if(r)S=Object.assign(S,r);}catch(e){}
+const sauve=()=>{try{localStorage.setItem("karpei_v2",JSON.stringify(S));}catch(e){}};
+const upv=i=>S.up[i]||0;
+
+/* ---------- Sons (ElevenLabs v2 + repli synthétique) ---------- */
+const SONS={moteur:.8,depart:.8,pop:.8,pas:.6,erreur:.8,klaxon:.8,victoire:.9,defaite:.9,kayamb:.9,kayambok:.9,piece:.9,carnet:.8};
+let ac=null;
+function debloque(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(ac&&ac.state==="suspended")ac.resume();}
+function bip(f,d,t="sine",v=.15){if(!ac)return;const o=ac.createOscillator(),gn=ac.createGain();o.type=t;o.frequency.value=f;gn.gain.value=v;gn.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(gn);gn.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}
+function sfx(n,vol=1,vit=1){
+  try{const a=new Audio("sons/"+n+".mp3"+V);a.volume=Math.min(1,(SONS[n]||.8)*vol);a.playbackRate=vit;a.play().catch(()=>repli(n));a.onerror=()=>repli(n);}catch(e){repli(n);}
+}
+function repli(n){const m={moteur:[110,.5,"sawtooth"],depart:[130,.5,"sawtooth"],pop:[520,.08],pas:[300,.06],erreur:[120,.25,"square"],klaxon:[400,.3,"square"],victoire:[800,.4],defaite:[160,.5,"triangle"],kayamb:[900,.08,"square"],kayambok:[1200,.15],piece:[1000,.15],carnet:[700,.2]}[n];if(m)bip(m[0],m[1],m[2]);}
+let amb=[];
+function ambiance(on){
+  if(!on){amb.forEach(a=>a.pause());return;}
+  if(!amb.length){
+    [[.2,1],[.11,.9]].forEach(([v,r],i)=>{const a=new Audio("sons/ambiance.mp3"+V);a.loop=true;a.volume=v;a.playbackRate=r;amb.push(a);if(i)setTimeout(()=>{if(amb.length&&!amb[1].paused)return;amb[1].play().catch(()=>{});},1700);});
+  }
+  amb[0].play().catch(()=>{});
+}
+
+/* ---------- Mise en page (suit le décor) ---------- */
+// fractions de la hauteur du décor : voie des cars, quai, haut et bas de la place
+const FOND={p:{w:1080,h:1626,lane:.305,q:.395,gt:.455,gb:.95},l:{w:1600,h:1200,lane:.375,q:.5,gt:.565,gb:.965}};
+let W,H,DPR,CT=78,LY,QY,GT,GB;
+function resize(){
+  DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;g.setTransform(DPR,0,0,DPR,0,0);
+  const f=W>=H?FOND.l:FOND.p,s=Math.max(W/f.w,H/f.h),ih=f.h*s,top=H-ih,Y=k=>top+k*ih;
+  LY=Y(f.lane);QY=Y(f.q);GT=Y(f.gt);GB=Math.min(Y(f.gb),H-120);
+  CT=Math.max(78,(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--st"))||0)+64);
+}
+addEventListener("resize",resize);resize();
+
+/* ---------- Jeu ---------- */
+let mode="menu",G=null;
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
+const capQuai=()=>5+upv(0);
+const cellSz=()=>Math.max(30,Math.min(86,(W*.92)/G.cols,(GB-GT)/G.rows));
+const carW=()=>Math.min(W*.6,380);
+
+/* tappables : passagers qui ont un chemin libre jusqu'au quai (bord haut de la grille) */
+function tappables(grid){
+  const R=grid.length,C=grid[0].length,seen=[],out=[];
+  for(let r=0;r<R;r++)seen.push(new Array(C).fill(false));
+  const q=[];
+  for(let c=0;c<C;c++)if(!grid[0][c]){seen[0][c]=true;q.push([0,c]);}
+  while(q.length){const [r,c]=q.pop();for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=r+dr,b=c+dc;if(a<0||b<0||a>=R||b>=C||seen[a][b]||grid[a][b])continue;seen[a][b]=true;q.push([a,b]);}}
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    if(!grid[r][c])continue;
+    let ok=r===0;
+    if(!ok)for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=r+dr,b=c+dc;if(a>=0&&b>=0&&a<R&&b<C&&seen[a][b]&&!grid[a][b]){ok=true;break;}}
+    if(ok)out.push([r,c]);
+  }
+  return out;
+}
+/* choix d'un passager (même règle pour la génération des niveaux et pour le robot de test) */
+function choix(grid,quaiK,carK,nextK,cap){
+  if(quaiK.length>=cap)return null;
+  const T=tappables(grid);if(!T.length)return null;
+  const want=[carK].concat(nextK.slice(0,2));
+  let best=null,bs=-1e9;
+  for(const [r,c] of T){
+    const k=grid[r][c].k,wi=want.indexOf(k);
+    const n=quaiK.filter(x=>x===k).length;
+    const sc=(wi>=0?100-wi*30:0)+n*8-r*.5;
+    if(sc>bs){bs=sc;best=[r,c];}
+  }
+  return best;
+}
+function simule(grid0,cars0,cap){
+  const grid=grid0.map(r=>r.map(c=>c&&{k:c.k})),cars=cars0.map(c=>({k:c.k,s:c.s})),quai=[];
+  let guard=0;
+  while(guard++<500){
+    while(cars.length){
+      const cr=cars[0],i=quai.indexOf(cr.k);
+      if(i<0)break;
+      quai.splice(i,1);cr.s++;if(cr.s>=3)cars.shift();
+    }
+    if(!cars.length)return grid.every(r=>r.every(c=>!c));
+    const p=choix(grid,quai,cars[0].k,cars.slice(1).map(c=>c.k),cap);
+    if(!p)return false;
+    quai.push(grid[p[0]][p[1]].k);grid[p[0]][p[1]]=null;
+  }
+  return false;
+}
+function genNiveau(niv,cols,cap){
+  const nc=Math.min(6,3+Math.floor((niv-1)/2)),groups=Math.min(9,nc+2+Math.floor(niv/2));
+  let essai=0,res=null;
+  while(essai++<250){
+    const gk=[];for(let i=0;i<nc;i++)gk.push(i);while(gk.length<groups)gk.push(Math.floor(Math.random()*nc));
+    const nb=groups*3,rows=Math.ceil((nb+3)/cols);
+    const cells=[];for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)cells.push([r,c]);
+    for(let i=cells.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
+    const ks=[];gk.forEach(k=>{ks.push(k,k,k);});for(let i=ks.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ks[i],ks[j]]=[ks[j],ks[i]];}
+    const grid=[];for(let r=0;r<rows;r++)grid.push(new Array(cols).fill(null));
+    ks.forEach((k,i)=>{const [r,c]=cells[i];grid[r][c]={k,s:Math.floor(Math.random()*6),ph:Math.random()*6};});
+    const cars=gk.slice();for(let i=cars.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cars[i],cars[j]]=[cars[j],cars[i]];}
+    res={grid,rows,cars:cars.map(k=>({k,s:0}))};
+    if(simule(grid,res.cars,cap))break;
+  }
+  return res;
+}
+function nouveauNiveau(){
+  const cap=capQuai()+(G.bonus?1:0);G.bonus=0;
+  const L=genNiveau(G.niv,G.cols,cap);
+  G.grid=L.grid;G.rows=L.rows;G.queue=L.cars;G.cap=cap;
+  G.quai=new Array(cap).fill(null);G.car=null;G.fly=[];G.mv=[];G.carDelay=.6;G.stuck=0;G.fini=false;
+  G.gros={txt:"NIVEAU "+G.niv,t:1.6};
+}
+function nouveau(){
+  G={niv:1,score:0,cols:W>=H?7:5,grid:[],rows:0,queue:[],car:null,quai:[],fly:[],mv:[],parts:[],pops:[],gros:{txt:"",t:0},t:0,
+     kla:1+upv(1),combo:0,tb:0,bonus:0,fin:false,srv:{},vus:0,ry:null,shake:0,cap:5,carDelay:.6,stuck:0,fini:false,carS:0};
+  nouveauNiveau();
+}
+const gx=c=>W/2+(c-(G.cols-1)/2)*cellSz();
+const gy=r=>GT+(r+1)*cellSz();
+const slotSp=()=>Math.min(W*.8/G.cap,Math.max(46,cellSz()*1.05),82);
+const sx=i=>W/2+(i-(G.cap-1)/2)*slotSp();
+function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+function burst(x,y,col,n,sz){for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(80,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,t:0,life:rnd(.35,.7),r:rnd(3,8)*(sz+.4),col});}}
+
+/* ---------- Boucle ---------- */
+let last=0;
+function frame(ts){
+  const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+  if(mode==="play")maj(dt);
+  dessine();requestAnimationFrame(frame);
+}
+function amene(){ // un car arrive
+  const e=G.queue.shift();if(!e)return;
+  G.car={k:e.k,s:e.s,res:e.s,x:W+carW(),state:"in",t:0,bt:0};
+  sfx("moteur");
+}
+function maj(dt){
+  G.t+=dt;if(G.shake>0)G.shake-=dt;
+  if(G.ry){majRythme(dt);return;}
+  if(G.tb>0)G.tb-=dt;else G.combo=0;
+  // car
+  const car=G.car;
+  if(!car){if(G.queue.length){G.carDelay-=dt;if(G.carDelay<=0)amene();}}
+  else{
+    const cw=carW(),stop=W/2;
+    if(car.state==="in"){car.t+=dt;const k=Math.min(1,car.t/1.1),e=1-Math.pow(1-k,3);car.x=(W+cw)+(stop-(W+cw))*e;if(k>=1){car.state="stop";car.x=stop;sfx("pas",.4,.8);}}
+    else if(car.state==="stop"){
+      car.bt-=dt;
+      if(car.bt<=0&&car.res<3){
+        const i=G.quai.findIndex(p=>p&&p.arr&&p.k===car.k);
+        if(i>=0){const p=G.quai[i];G.quai[i]=null;car.res++;car.bt=.22;G.fly.push({k:p.k,s:p.s,x:sx(i),y:QY,p:0,x0:sx(i),y0:QY});}
+      }
+      if(car.res>=3&&car.s>=3){car.state="out";car.t=0;car.bt=.5;}
+    }else if(car.state==="out"){
+      car.bt-=dt;
+      if(car.bt<=0){if(car.t===0)sfx("depart");car.t+=dt;const k=Math.min(1.4,car.t/1.2);car.x=W/2-(k*k)*(W/2+cw);if(car.x<-cw){G.car=null;G.carDelay=.5;}}
+    }
+  }
+  // passagers en route vers le quai
+  for(const m of G.mv){m.p+=dt/.34;if(m.p>=1){m.p=1;const p=G.quai[m.i];if(p)p.arr=true;m.done=true;}}
+  G.mv=G.mv.filter(m=>!m.done);
+  // passagers qui montent dans le car
+  for(const f of G.fly){f.p+=dt/.3;
+    if(f.p>=1&&!f.done){f.done=true;const c=G.car;if(c){c.s++;
+      G.combo++;G.tb=4;const gain=10*(G.combo>=4?3:G.combo>=2?2:1);G.score+=gain;G.srv[f.k]=(G.srv[f.k]||0)+1;
+      sfx("pop",.9,1+Math.min(.4,G.combo*.05));burst(c.x,LY-20,VILLES[f.k].c,8,.5);
+      if(G.combo>=2)pop("×"+G.combo,c.x,LY-carW()*.3,"#ffd24a",26);
+      if(c.s>=3){G.score+=20;pop("+20",c.x,LY-carW()*.45,"#fff",30);sfx("klaxon",.5,1.2);vib(25);}
+    }}
+  }
+  G.fly=G.fly.filter(f=>!f.done);
+  for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
+  G.parts=G.parts.filter(q=>q.t<q.life);
+  for(const p of G.pops)p.t+=dt;G.pops=G.pops.filter(p=>p.t<1.4);
+  if(G.gros.t>0)G.gros.t-=dt;
+  // fin de niveau
+  if(!G.fini&&!G.car&&!G.queue.length&&G.fly.length===0&&G.mv.length===0){
+    G.fini=true;
+    G.score+=50+G.niv*10;sfx("victoire");vib([30,50,30]);
+    G.gros={txt:"BRAVO !",t:1.5};
+    setTimeout(()=>{if(!G||G.fin||mode!=="play")return;G.niv++;
+      if(G.niv%2===1)debutRythme();else nouveauNiveau();},1500);
+  }
+  // blocage : quai plein sans voyageur pour le car
+  if(G.car&&G.car.state==="stop"&&G.fly.length===0&&G.mv.length===0&&!G.fin){
+    const plein=G.quai.every(p=>p&&p.arr);
+    if(plein&&!G.quai.some(p=>p.k===G.car.k)){
+      G.stuck+=dt;
+      if(G.stuck>1.4&&(G.kla<=0||(G.queue.length===0))){perdu();}
+      else if(G.stuck>1.4&&G.t%1<.05)pop("Klaxon !",W/2,GB-80,"#ffd24a",26);
+    }else G.stuck=0;
+  }else G.stuck=0;
+}
+function perdu(){if(G.fin)return;G.fin=true;sfx("defaite");pop("Quai plein !",W/2,QY-60,"#ff9a8a",44);vib([60,40,60]);setTimeout(finJeu,1100);}
+
+/* ---------- Rythme du kayamb (accalmie) ---------- */
+function debutRythme(){
+  G.ry={t:0,beats:[1.2,2.2,3.2,4.2],hit:[null,null,null,null],fin:0};
+  G.gros={txt:"KAYAMB !",t:1.2};sfx("kayamb",.6);
+}
+function majRythme(dt){
+  const r=G.ry;r.t+=dt;
+  if(r.t>5.2&&!r.fin){
+    r.fin=1;const n=r.hit.filter(h=>h&&h>0).length,coins=n*3;S.pieces+=coins;sauve();
+    if(n>=3){G.bonus=1;}
+    G.gros={txt:n>=3?"Place en plus !":n+" / 4",t:1.6};
+    pop("+"+coins+" 🪙",W/2,H*.45,"#ffd24a",36);if(n>=3)sfx("kayambok");
+    setTimeout(()=>{if(!G||G.fin)return;G.ry=null;nouveauNiveau();},1700);
+  }
+  for(const p of G.pops)p.t+=dt;G.pops=G.pops.filter(p=>p.t<1.4);
+  if(G.gros.t>0)G.gros.t-=dt;
+  for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
+  G.parts=G.parts.filter(q=>q.t<q.life);
+}
+function tapRythme(){
+  const r=G.ry;if(r.fin)return;
+  const tol=.2+.05*upv(3);let bi=-1,bd=9;
+  r.beats.forEach((b,i)=>{if(r.hit[i]===null){const d=Math.abs(r.t-b);if(d<bd){bd=d;bi=i;}}});
+  if(bi<0||bd>tol+.12){sfx("erreur",.4);return;}
+  if(bd<=tol){r.hit[bi]=bd<tol*.5?2:1;sfx(bd<tol*.5?"kayambok":"kayamb");pop(bd<tol*.5?"Parfait !":"Bien !",W/2,H*.62,bd<tol*.5?"#ffd24a":"#fff",30);burst(W/2,H*.5,"#ffd24a",10,.6);}
+  else{r.hit[bi]=0;sfx("erreur",.4);pop("Raté",W/2,H*.62,"#ff9a8a",26);}
+}
+
+/* ---------- Actions ---------- */
+function envoie(r,c){
+  const i=G.quai.findIndex(p=>!p);if(i<0){sfx("erreur");pop("Quai plein !",W/2,QY-50,"#ff9a8a",30);G.shake=.25;return false;}
+  const p=G.grid[r][c];G.grid[r][c]=null;
+  G.quai[i]={k:p.k,s:p.s,arr:false};
+  G.mv.push({k:p.k,s:p.s,i,p:0,x0:gx(c),y0:gy(r)});
+  sfx("pas",.8,1+Math.random()*.2);vib(8);return true;
+}
+function klaxon(){
+  const car=G.car;
+  if(G.kla<=0||!car||car.state!=="stop"||!G.queue.length)return false;
+  G.kla--;sfx("klaxon");vib(30);G.queue.push({k:car.k,s:car.s});car.state="out";car.t=0;car.bt=.05;car.res=3;car.s=3;car.back=true;
+  pop("Car suivant !",W/2,LY-carW()*.5,"#ffd24a",32);return true;
+}
+function btnKla(){return {x:W/2,y:H-70,r:Math.max(30,Math.min(40,W*.07))};}
+function tap(x,y){
+  debloque();
+  if(mode!=="play")return;
+  if(Math.hypot(x-W/2,y-(CT+8))<30){pause(true);return;}
+  if(G.ry){tapRythme();return;}
+  const b=btnKla();
+  if(Math.hypot(x-b.x,y-b.y)<b.r+10){if(!klaxon())sfx("erreur",.5);return;}
+  const cs=cellSz();
+  for(let r=0;r<G.rows;r++)for(let c=0;c<G.cols;c++){
+    if(!G.grid[r][c])continue;
+    if(Math.abs(x-gx(c))<cs*.5&&y>gy(r)-cs*1.1&&y<gy(r)+cs*.05){
+      const ok=tappables(G.grid).some(a=>a[0]===r&&a[1]===c);
+      if(ok)envoie(r,c);else{sfx("erreur",.6);G.grid[r][c].sh=.3;pop("Bloqué !",gx(c),gy(r)-cs,"#ff9a8a",22);}
+      return;
+    }
+  }
+}
+function pause(v){if(v){ambiance(false);mode="pause";$("pause").classList.remove("cache");}else{ambiance(true);mode="play";$("pause").classList.add("cache");}}
+
+/* ---------- Dessin ---------- */
+function shape(f,x,y,r,col){
+  g.save();g.translate(x,y);g.beginPath();
+  if(f===0)g.arc(0,0,r,0,7);
+  else if(f===1)g.rect(-r*.85,-r*.85,r*1.7,r*1.7);
+  else if(f===2){g.moveTo(0,-r);g.lineTo(r*.95,r*.8);g.lineTo(-r*.95,r*.8);g.closePath();}
+  else if(f===3){g.moveTo(0,-r*1.1);g.lineTo(r*.9,0);g.lineTo(0,r*1.1);g.lineTo(-r*.9,0);g.closePath();}
+  else if(f===4){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.5:r*1.1;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}g.closePath();}
+  else{for(let i=0;i<6;i++){const a=i*Math.PI/3;g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}g.closePath();}
+  g.fillStyle=col;g.fill();g.lineWidth=Math.max(2,r*.2);g.strokeStyle="#fff";g.stroke();g.lineWidth=1.5;g.strokeStyle="rgba(0,0,0,.45)";g.stroke();g.restore();
+}
+function rr(x,y,w,h,r){g.beginPath();g.roundRect?g.roundRect(x,y,w,h,r):g.rect(x,y,w,h);}
+function txt(t,x,y,s,col="#fff",ombre="#000",al="center"){
+  g.font=`${s}px Bangers,"Baloo 2",sans-serif`;g.textAlign=al;g.textBaseline="middle";
+  g.lineWidth=Math.max(3,s*.12);g.strokeStyle=ombre;g.lineJoin="round";g.strokeText(t,x,y);g.fillStyle=col;g.fillText(t,x,y);
+}
+function pax(k,s,x,by,h,al=1,dim=false){
+  const im=IMG["p"+s];if(!im.complete||!im.naturalWidth)return;
+  const w=h*im.naturalWidth/im.naturalHeight;
+  g.save();g.globalAlpha=al*(dim?.55:1);g.drawImage(im,x-w/2,by-h,w,h);g.restore();
+  const col=VILLES[k].c;
+  shape(VILLES[k].f,x,by-h-h*.06,Math.max(9,h*.13),col);
+}
+function dessineCar(car){
+  const im=IMG.car,cw=carW();if(!im.complete||!im.naturalWidth)return;
+  const ch=cw*im.naturalHeight/im.naturalWidth;
+  g.save();g.translate(car.x,LY);
+  g.fillStyle="rgba(0,0,0,.22)";g.beginPath();g.ellipse(0,ch*.5-4,cw*.46,ch*.07,0,0,7);g.fill();
+  g.drawImage(im,-cw/2,-ch/2-ch*.06,cw,ch);
+  // plaque de destination (dessinée ici, sans aucune inscription de réseau)
+  const V1=VILLES[car.k],pw=Math.max(210,cw*.92),ph=40,py=-ch/2-ch*.06-ph-6;
+  rr(-pw/2,py,pw,ph,12);g.fillStyle="rgba(10,24,40,.85)";g.fill();g.lineWidth=3;g.strokeStyle=V1.c;g.stroke();
+  shape(V1.f,-pw/2+24,py+ph/2,12,V1.c);
+  g.font='800 18px "Baloo 2",sans-serif';g.fillStyle="#fff";g.textAlign="left";g.textBaseline="middle";g.fillText(V1.nom,-pw/2+44,py+ph/2+1);
+  for(let i=0;i<3;i++){g.beginPath();g.arc(pw/2-60+i*20,py+ph/2,7,0,7);g.fillStyle=i<car.s?V1.c:"rgba(255,255,255,.25)";g.fill();g.lineWidth=2;g.strokeStyle="#fff";g.stroke();}
+  g.restore();
+}
+function dessine(){
+  g.clearRect(0,0,W,H);
+  if(!G||mode==="menu")return;
+  const cs=cellSz(),shk=G.shake>0?Math.sin(G.t*80)*5:0;
+  // car
+  if(G.car)dessineCar(G.car);
+  // prochains cars
+  {const n=Math.min(G.queue.length,1+upv(2));
+   for(let i=0;i<n;i++){const e=G.queue[i],x=W-34-i*38,y=CT+66;shape(VILLES[e.k].f,x,y,13,VILLES[e.k].c);}
+   if(n)txt("Suivants",W-34-(n-1)*19,CT+36,18,"#fff","#000");}
+  // places du quai
+  const sp=slotSp();
+  for(let i=0;i<G.cap;i++){
+    g.beginPath();g.ellipse(sx(i)+shk,QY+6,sp*.36,sp*.11,0,0,7);g.fillStyle="rgba(255,255,255,.35)";g.fill();g.lineWidth=3;g.strokeStyle="rgba(255,255,255,.85)";g.stroke();
+  }
+  // grille de voyageurs (rangée du haut dessinée d'abord)
+  const T=G.ry?[]:tappables(G.grid);
+  for(let r=0;r<G.rows;r++)for(let c=0;c<G.cols;c++){
+    const p=G.grid[r][c];if(!p)continue;
+    const ok=T.some(a=>a[0]===r&&a[1]===c);
+    if(p.sh>0)p.sh-=1/60;
+    const bob=ok?Math.sin(G.t*4+p.ph)*2:0,wob=p.sh>0?Math.sin(G.t*70)*4:0;
+    pax(p.k,p.s,gx(c)+wob,gy(r)-bob,cs*1.18,1,!ok);
+  }
+  // en route vers le quai
+  for(const m of G.mv){const k=m.p,e=1-Math.pow(1-k,2),x=m.x0+(sx(m.i)-m.x0)*e,y=m.y0+(QY+8-m.y0)*e-Math.sin(k*Math.PI)*cs*.5;pax(m.k,m.s,x,y,cs*(1.18-.2*k));}
+  // quai
+  for(let i=0;i<G.cap;i++){const p=G.quai[i];if(p&&p.arr)pax(p.k,p.s,sx(i)+shk,QY+8,Math.min(cs*1.1,sp*1.1));}
+  // montée dans le car
+  if(G.car)for(const f of G.fly){const k=f.p,x=f.x0+(G.car.x-f.x0)*k,y=f.y0+(LY+10-f.y0)*k-Math.sin(k*Math.PI)*cs*.4;pax(f.k,f.s,x,y,cs*(1.05-.65*k),1-.5*k);}
+  // klaxon
+  const kb=btnKla(),dispo=G.kla>0&&G.car&&G.car.state==="stop"&&G.queue.length>0;
+  g.save();g.beginPath();g.arc(kb.x,kb.y,kb.r,0,7);g.fillStyle=dispo?"rgba(255,200,40,.95)":"rgba(40,50,70,.7)";g.fill();g.lineWidth=4;g.strokeStyle="#fff";g.stroke();
+  g.font=`${kb.r*1.05}px sans-serif`;g.textAlign="center";g.textBaseline="middle";g.fillText("📯",kb.x,kb.y+2);
+  g.fillStyle="#fff";g.beginPath();g.arc(kb.x+kb.r*.8,kb.y-kb.r*.8,12,0,7);g.fillStyle="#1f6f94";g.fill();g.lineWidth=2;g.strokeStyle="#fff";g.stroke();
+  g.fillStyle="#fff";g.font='800 15px "Baloo 2",sans-serif';g.fillText(G.kla,kb.x+kb.r*.8,kb.y-kb.r*.8+1);g.restore();
+  // HUD
+  const mx=Math.max(30,W*.08);
+  txt(G.score+"",mx,CT+10,Math.max(40,Math.min(58,W*.1)),"#ffd24a","#7a4a08","left");
+  txt("NIVEAU "+G.niv,W-mx,CT+10,Math.max(28,Math.min(40,W*.07)),"#b8f0ff","#1f4f94","right");
+  g.beginPath();g.arc(W/2,CT+8,24,0,7);g.fillStyle="rgba(10,24,40,.6)";g.fill();g.lineWidth=3;g.strokeStyle="#fff";g.stroke();
+  g.fillStyle="#fff";g.fillRect(W/2-8,CT-2,5,20);g.fillRect(W/2+3,CT-2,5,20);
+  if(G.combo>=2&&G.tb>0)txt("🔥 COMBO ×"+G.combo,mx+90,CT+54,22,"#ffb21e","#7a2a00","left");
+  // rythme
+  if(G.ry)dessineRythme();
+  for(const q of G.parts){g.globalAlpha=Math.max(0,1-q.t/q.life);g.fillStyle=q.col;g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fill();}
+  g.globalAlpha=1;
+  for(const p of G.pops){const a=1-p.t/1.4;g.globalAlpha=Math.max(0,Math.min(1,a*2));txt(p.txt,p.x,p.y-p.t*50,p.s,p.col,"#000");}
+  g.globalAlpha=1;
+  if(G.gros.t>0){const k=Math.min(1,G.gros.t/1.2);g.globalAlpha=Math.min(1,k*2.5);const sc=1+(1-k)*.25;g.save();g.translate(W/2,H*.4);g.scale(sc,sc);txt(G.gros.txt,0,0,Math.min(100,W*.18),"#ffd24a","#8a5a08");g.restore();g.globalAlpha=1;}
+}
+function dessineRythme(){
+  const r=G.ry;g.fillStyle="rgba(8,28,48,.62)";g.fillRect(0,0,W,H);
+  const cx=W/2,cy=H*.5,R=Math.min(W,H)*.14;
+  // kayamb : petit radeau de roseaux
+  g.save();g.translate(cx,cy);const sh=Math.sin(G.t*30)*(r.hit.some((h,i)=>h!==null&&Math.abs(r.t-r.beats[i])<.15)?.08:0);g.rotate(sh);
+  rr(-R*1.1,-R*.62,R*2.2,R*1.24,10);g.fillStyle="#8a5a2a";g.fill();
+  for(let i=0;i<9;i++){rr(-R*1.0+i*R*.25,-R*.55,R*.18,R*1.1,6);g.fillStyle=i%2?"#e8c878":"#d8b060";g.fill();}
+  g.restore();
+  g.lineWidth=5;g.strokeStyle="#fff";g.beginPath();g.arc(cx,cy,R*1.35,0,7);g.stroke();
+  r.beats.forEach((b,i)=>{
+    const d=b-r.t;
+    if(d>0&&d<1){g.beginPath();g.arc(cx,cy,R*1.35*(1+d*1.6),0,7);g.lineWidth=6;g.strokeStyle="rgba(255,210,74,"+(1-d)+")";g.stroke();}
+    const bx=cx+(i-1.5)*R*.9,by=cy+R*2.1;
+    g.beginPath();g.arc(bx,by,13,0,7);g.fillStyle=r.hit[i]===2?"#ffd24a":r.hit[i]===1?"#fff":r.hit[i]===0?"#ff6a5a":"rgba(255,255,255,.25)";g.fill();g.lineWidth=3;g.strokeStyle="#fff";g.stroke();
+  });
+  if(r.t<1)txt("Touche au rythme du kayamb !",cx,cy-R*2.3,Math.min(34,W*.06),"#fff","#000");
+}
+
+/* ---------- Fin, panneaux ---------- */
+function jourStr(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function defiDuJour(){const d=jourStr();let h=0;for(const c of d)h=(h*31+c.charCodeAt(0))%997;return {k:h%6,n:4+(h%4)};}
+function majMenu(){
+  const D=defiDuJour();
+  $("defiMenu").textContent="⭐ Défi du jour : emmène "+D.n+" voyageurs à "+VILLES[D.k].nom+(S.defi.d===jourStr()&&S.defi.ok?" (réussi ✔)":" (+30 pièces)");
+  $("pieces").textContent="🪙 "+S.pieces+" pièces · Meilleur score : "+S.best;
+}
+function finJeu(){
+  mode="fin";ambiance(false);
+  const D=defiDuJour(),n=G.srv[D.k]||0;
+  const gagne=Math.floor(G.score/12);let bonus=0,msg="";
+  if(S.defi.d!==jourStr())S.defi={d:jourStr(),ok:false};
+  if(!S.defi.ok&&n>=D.n){S.defi.ok=true;bonus=30;msg="⭐ Défi du jour réussi : +30 pièces !";}
+  else if(!S.defi.ok)msg="⭐ Défi du jour : "+n+" / "+D.n+" voyageurs pour "+VILLES[D.k].nom;
+  else msg="⭐ Défi du jour déjà réussi aujourd'hui";
+  const record=G.score>S.best;if(record)S.best=G.score;
+  S.pieces+=gagne+bonus;
+  const manq=FAITS.map((_,i)=>i).filter(i=>!S.carnet.includes(i));
+  let nouv="";if(manq.length){const i=pick(manq);S.carnet.push(i);nouv="📖 Nouveau fait dans ton carnet !";sfx("carnet");}
+  sauve();
+  const f=pick(FAITS);
+  $("finScore").textContent=G.score+" pts";
+  $("finInfo").innerHTML=(record?"🏆 Nouveau record !<br>":"")+"niveau "+G.niv+" · +"+gagne+" 🪙"+(nouv?"<br>"+nouv:"");
+  $("finSav").innerHTML="<b>Le saviez-vous ?</b><br>"+f[0]+"<small>Source : "+f[1]+"</small>";
+  $("finDefi").textContent=msg;
+  $("fin").classList.remove("cache");
+}
+function ouvreBoutique(){
+  $("boPieces").textContent="🪙 "+S.pieces+" pièces";
+  const L=$("boListe");L.innerHTML="";
+  UPS.forEach((u,i)=>{
+    const n=upv(i),max=n>=u.max,c=u.cout[n];
+    const d=document.createElement("div");d.className="lig";
+    d.innerHTML="<div><b>"+u.nom+"</b> ("+n+"/"+u.max+")<br><span style='font-weight:600;opacity:.85'>"+u.desc+"</span></div>";
+    const b=document.createElement("button");b.className="btn";b.textContent=max?"Max":"🪙 "+c;b.disabled=max||S.pieces<c;b.style.opacity=b.disabled?.5:1;
+    b.onclick=()=>{if(!max&&S.pieces>=c){S.pieces-=c;S.up[i]=n+1;sauve();sfx("piece");ouvreBoutique();majMenu();}};
+    d.appendChild(b);L.appendChild(d);
+  });
+  $("boutique").classList.remove("cache");
+}
+function ouvreCarnet(){
+  $("caCompte").textContent=S.carnet.length+" / "+FAITS.length+" faits trouvés (un par partie)";
+  const L=$("caListe");L.innerHTML="";
+  FAITS.forEach((f,i)=>{const d=document.createElement("div");const ok=S.carnet.includes(i);d.className="fait"+(ok?"":" vide");d.innerHTML=ok?"• "+f[0]+"<small>Source : "+f[1]+"</small>":"• ??? (continue de jouer)";L.appendChild(d);});
+  $("carnet").classList.remove("cache");
+}
+function demarre(){
+  ["menu","fin","pause","boutique","carnet","aide"].forEach(i=>$(i).classList.add("cache"));
+  ambiance(true);nouveau();mode="play";
+}
+function lance(){debloque();if(!S.vu){$("menu").classList.add("cache");$("fin").classList.add("cache");$("aide").classList.remove("cache");}else demarre();}
+$("bJouer").onclick=lance;
+$("bAideOk").onclick=()=>{S.vu=true;sauve();demarre();};
+$("bRejouer").onclick=()=>{debloque();demarre();};
+document.addEventListener("pointerdown",()=>{debloque();if(mode==="play")ambiance(true);},{once:true});
+$("bBoutique").onclick=ouvreBoutique;$("bBoutique2").onclick=ouvreBoutique;
+$("bCarnet").onclick=ouvreCarnet;
+$("bBoFerme").onclick=()=>$("boutique").classList.add("cache");
+$("bCaFerme").onclick=()=>$("carnet").classList.add("cache");
+$("bReprendre").onclick=()=>pause(false);
+$("bQuitter").onclick=()=>{$("pause").classList.add("cache");mode="menu";G=null;majMenu();$("menu").classList.remove("cache");};
+$("bMenu").onclick=()=>{$("fin").classList.add("cache");mode="menu";G=null;majMenu();$("menu").classList.remove("cache");};
+cv.addEventListener("pointerdown",e=>{e.preventDefault();tap(e.clientX,e.clientY);});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&mode==="play")pause(true);});
+majMenu();requestAnimationFrame(frame);
+if(location.search.includes("test"))window.jeu={get G(){return G;},get mode(){return mode;},demarre,tap,envoie,klaxon,tappables,choix,genNiveau,simule,gx,gy,sx,cellSz,S,
+  bot(){ if(!G||G.ry)return null;const nk=G.queue.map(c=>c.k),q=G.quai.filter(p=>p).map(p=>p.k);const p=choix(G.grid,q,G.car?G.car.k:(nk[0]),G.car?nk:nk.slice(1),G.cap);if(p)envoie(p[0],p[1]);return p;},
+  get layout(){return {LY,QY,GT,GB,W,H};}};
+</script>
 </body>
 </html>
