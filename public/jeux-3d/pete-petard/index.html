@@ -324,7 +324,7 @@ function ton(f0, f1, dur, vol, type = 'sine', when = 0) {
   o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05);
 }
 const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['boum-petit', 'boum-moyen', 'boum-gros', 'sifflet-1', 'sifflet-2', 'petard-1', 'petard-2', 'etoile', 'constellation', 'eteint', 'foule-oh-1', 'foule-oh-2', 'foule-decue-1', 'foule-decue-2', 'crepite', 'tourbillon']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; }).catch(() => {}); }
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['boum-petit', 'boum-moyen', 'boum-gros', 'sifflet-1', 'sifflet-2', 'petard-1', 'petard-2', 'etoile', 'constellation', 'eteint', 'foule-oh-1', 'foule-oh-2', 'foule-decue-1', 'foule-decue-2', 'crepite', 'tourbillon']) fetch('./sons/' + n + '.mp3?v=2').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; }).catch(() => {}); }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * rnd(0.94, 1.06); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
 const ouah = (d = 250) => setTimeout(() => jouer('foule-oh-' + (1 + Math.floor(Math.random() * 2)), 0.75), d);
 const decu = () => jouer('foule-decue-' + (1 + Math.floor(Math.random() * 2)), 0.7);
