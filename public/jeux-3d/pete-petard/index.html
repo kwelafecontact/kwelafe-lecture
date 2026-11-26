@@ -93,6 +93,7 @@
   .commande.bravo { animation:saute .5s; }
   #traceC { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:4; }
   .etoileC { position:fixed; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:50%; background:radial-gradient(#fff, #9ad8ff 45%, transparent 70%); color:#0b1450; font:800 13px/30px system-ui; text-align:center; pointer-events:none; z-index:5; animation:pret .6s ease-in-out infinite alternate; }
+  .etoileC.double { width:auto; min-width:46px; padding:0 7px; margin-left:-23px; border-radius:15px; }
   .etoileC.allumee { background:radial-gradient(#fff, #ffe23a 45%, transparent 70%); animation:none; transform:scale(1.3); }
   #cadre { position:fixed; inset:3px; border-radius:26px; pointer-events:none; z-index:7; border:6px solid transparent;
     background:linear-gradient(135deg, rgba(255,255,255,.75), rgba(190,220,255,.12) 22%, rgba(255,255,255,.55) 38%, rgba(160,200,255,.08) 55%, rgba(255,255,255,.6) 72%, rgba(200,220,255,.15) 86%, rgba(255,255,255,.7)) border-box;
@@ -202,11 +203,14 @@ function resize() {
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
   const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
   let pw = wF, ph = wF / FOND_RATIO; if (ph < hF) { ph = hF; pw = hF * FOND_RATIO; }
-  pw *= 1.04; ph *= 1.04; planFond.scale.set(pw, ph, 1);
+  pw *= 1.04; ph *= 1.04;
+  const vertical = W < H;
+  if (vertical && pw < wF / 0.6) { const k = wF / 0.6 / pw; pw *= k; ph *= k; } // en vertical : assez de zoom pour ne garder que la mer (l'eau commence à 37 % de l'image)
+  planFond.scale.set(pw, ph, 1);
   // la ligne d'eau vise 62 % de la hauteur de l'écran, sans jamais laisser de bord vide
   const hautEcran = Math.min(0, Math.max(hF - ph, 0.62 * hF - EAU * ph)), hautPlan = hF / 2 - hautEcran;
   planFond.position.y = hautPlan - ph / 2;
-  planFond.position.x = (pw - wF) / 2 * 0.7; // on garde la gauche, où sont les canons du Barachois
+  planFond.position.x = vertical ? -(pw - wF) / 2 : (pw - wF) / 2 * 0.7; // vertical : calé à droite, au-dessus de l'eau ; horizontal : on garde les canons à gauche
   const yEau = hautPlan - EAU * ph; matR.uniforms.horizon.value = yEau / hF * viewH; matR.uniforms.hauteurVue.value = viewH;
   matR.uniforms.plan.value.set((planFond.position.x - pw / 2) / (wF / 2), (planFond.position.y - ph / 2) / (hF / 2), pw / (wF / 2), ph / (hF / 2));
   { const v = renderer.getDrawingBufferSize(new THREE.Vector2()); matR.uniforms.ecran.value.copy(v); } // ligne d'eau ramenée au plan des fusées
@@ -243,9 +247,9 @@ const matR = new THREE.ShaderMaterial({
   uniforms: { echelle: { value: 1 }, horizon: { value: -3 }, hauteurVue: { value: 10 }, t: { value: 0 }, masque: { value: texEau },
     ecran: { value: new THREE.Vector2(1, 1) }, plan: { value: new THREE.Vector4(-1, -1, 2, 2) } },
   vertexShader: `attribute vec3 couleur; attribute float taille; attribute float alpha; varying vec3 vC; varying float vA, vP; uniform float echelle, horizon, hauteurVue, t;
-    void main() { vec3 p = position; float h = p.y - horizon; vC = couleur;
-      p.y = horizon - h; // miroir parfait
-      float prof = clamp(h / (hauteurVue * 0.6), 0.0, 1.0); vP = prof; // 0 au ras de la ligne d'eau, 1 tout près de nous
+    void main() { vec3 p = position; float hz = horizon * (14.0 - p.z) / 14.0; float h = p.y - hz; vC = couleur; // ligne d'eau à la profondeur de l'étincelle
+      p.y = hz - h; // miroir parfait
+      float prof = clamp(h / (hauteurVue * 0.6 * (14.0 - p.z) / 14.0), 0.0, 1.0); vP = prof; // 0 au ras de la ligne d'eau, 1 tout près de nous
       p.x += (sin(p.y * 6.0 + t * 1.8) * 0.5 + sin(p.y * 15.0 - t * 2.6) * 0.3) * (0.015 + 0.16 * prof * prof);
       vA = h > 0.0 ? alpha * (0.55 - 0.4 * prof) : 0.0;
       vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = taille * echelle * (1.1 + 0.6 * prof) / -mv.z; gl_Position = projectionMatrix * mv; }`,
@@ -471,15 +475,17 @@ function lancer(type) {
   else if (type === 'f1848') { obj = corpsFusee(0xd8141e, 1.3); obj.traverse(m => { if (m.isMesh && m.material.map) m.material = matOr; }); rayon = 0.95; }
   else if (type === 'brillante') { obj = corpsFusee(0xffffff, 1.1); obj.traverse(m => { if (m.isMesh) m.material = matIris; }); rayon = 0.85; }
   else { obj = corpsBombe(); rayon = 0.65; }
-  const x0 = rnd(-viewW * 0.4, viewW * 0.4), y0 = -viewH / 2 - 1;
+  // plusieurs distances : tout près de l'écran, au milieu, loin et très loin
+  const r0 = Math.random(), z = r0 < 0.2 ? 3 : r0 < 0.55 ? 0 : r0 < 0.82 ? -6 : -13, f = (camera.position.z - z) / camera.position.z;
+  const x0 = rnd(-viewW * 0.4, viewW * 0.4) * f, y0 = (-viewH / 2 - 1) * f;
   const niveau = Math.min(16, (niveauJeu - 1) * 1.6 + phaseT / 12);
-  const sommet = rnd(viewH * 0.12, viewH * 0.42);
-  const g = type === 'petard' ? 5.5 : type === 'rapide' ? 10 : type === 'siffleur' ? 5.2 : 4.2;
+  const sommet = rnd(viewH * 0.12, viewH * 0.42) * f;
+  const g = (type === 'petard' ? 5.5 : type === 'rapide' ? 10 : type === 'siffleur' ? 5.2 : 4.2) * f;
   const vy = Math.sqrt(2 * g * (sommet - y0)) * (1 + niveau * 0.02);
-  const vx = rnd(-0.8, 0.8) - x0 * 0.06;
-  obj.position.set(x0, y0, rnd(-0.5, 0.5));
+  const vx = (rnd(-0.8, 0.8) - x0 / f * 0.06) * f;
+  obj.position.set(x0, y0, z);
   scene.add(obj);
-  const e = { type, obj, vx, vy, g, rayon, pal, coul, vivant: true, vrot: type === 'petard' ? rnd(-3, 3) : 0, t: 0, vy0: vy, eteinte: false };
+  const e = { type, obj, vx, vy, g, rayon, f, pal, coul, vivant: true, vrot: type === 'petard' ? rnd(-3, 3) : 0, t: 0, vy0: vy, eteinte: false };
   engins.push(e);
   if (type === 'siffleur') { son.sifflet(); setTimeout(() => son.sifflet(), 200); ton(700, 2600, 1.1, 0.05, 'sine'); }
   else if (type === 'tourbillon') { if (!jouer('tourbillon', 0.55)) son.sifflet(); }
@@ -627,11 +633,35 @@ const DESSINS = {
     g.strokeStyle = '#d88a3a'; g.beginPath(); g.moveTo(90, 210); g.quadraticCurveTo(80, 140, 118, 72); g.stroke();
     g.strokeStyle = '#5ae05a'; for (const [ax, ay, bx, by] of [[118,72,30,60],[118,72,50,110],[118,72,200,58],[118,72,185,110],[118,72,95,20],[118,72,150,22]]) { g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo((ax + bx) / 2, Math.min(ay, by) - 30, bx, by); g.stroke(); }
     g.fillStyle = '#c8783a'; for (const [x, y] of [[110, 84], [124, 86], [117, 94]]) { g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); } } },
-  kaz: { nom: 'La kaz créole !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 6;
-    g.strokeStyle = '#ff3a3a'; g.beginPath(); g.moveTo(25, 100); g.lineTo(110, 35); g.lineTo(195, 100); g.closePath(); g.stroke();   // toit de tôle rouge
-    g.strokeStyle = '#ffe23a'; g.strokeRect(40, 100, 140, 90);                                                                        // murs
-    g.strokeStyle = '#ffffff'; for (let x = 40; x < 180; x += 14) { g.beginPath(); g.moveTo(x, 100); g.lineTo(x + 7, 112); g.lineTo(x + 14, 100); g.stroke(); } // lambrequins
-    g.strokeStyle = '#3ae07a'; g.strokeRect(95, 135, 30, 55); g.strokeRect(55, 125, 26, 26); g.strokeRect(139, 125, 26, 26); } },     // porte et fenêtres
+  kaz: { nom: 'La kaz créole !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 5;
+    g.strokeStyle = '#ff3a3a'; g.beginPath(); g.moveTo(30, 82); g.lineTo(70, 30); g.lineTo(150, 30); g.lineTo(190, 82); g.closePath(); g.stroke();   // toit de tôle à quatre pans
+    g.beginPath(); g.moveTo(14, 104); g.lineTo(34, 82); g.lineTo(186, 82); g.lineTo(206, 104); g.stroke();                                      // auvent de la varangue
+    g.strokeStyle = '#ffffff'; for (let x = 16; x < 204; x += 12) { g.beginPath(); g.moveTo(x, 104); g.quadraticCurveTo(x + 6, 116, x + 12, 104); g.stroke(); } // lambrequins
+    g.strokeStyle = '#ffe23a'; g.strokeRect(46, 112, 128, 80);                                                                                   // façade
+    g.strokeStyle = '#ffffff'; for (const x of [22, 198]) { g.beginPath(); g.moveTo(x, 110); g.lineTo(x, 192); g.stroke(); }                  // poteaux de la varangue
+    g.strokeStyle = '#3ae07a'; g.strokeRect(96, 138, 28, 54); g.strokeRect(58, 128, 26, 30); g.strokeRect(136, 128, 26, 30);                   // porte et persiennes
+    g.beginPath(); g.moveTo(14, 194); g.lineTo(206, 194); g.stroke(); } },                                                                     // marche de la varangue
+  papillon: { nom: 'Le papillon !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.translate(110, 110); g.lineWidth = 5;
+    for (const sx of [-1, 1]) { g.save(); g.scale(sx, 1);
+      g.strokeStyle = '#ffb21e'; g.beginPath(); g.moveTo(4, -6); g.bezierCurveTo(40, -90, 105, -70, 92, -18); g.bezierCurveTo(84, 8, 30, 6, 4, -2); g.stroke();   // aile du haut
+      g.strokeStyle = '#ff5a2a'; g.beginPath(); g.moveTo(4, 4); g.bezierCurveTo(60, 10, 80, 60, 50, 78); g.bezierCurveTo(28, 90, 10, 50, 4, 10); g.stroke();      // aile du bas
+      g.fillStyle = '#ffffff'; for (const [x, y] of [[58, -40], [74, -26], [40, 44]]) { g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); }                          // taches
+      g.strokeStyle = '#ffe23a'; g.beginPath(); g.moveTo(2, -40); g.quadraticCurveTo(10, -70, 26, -84); g.stroke(); g.restore(); }                                // antennes
+    g.strokeStyle = '#ffffff'; g.beginPath(); g.moveTo(0, -42); g.lineTo(0, 60); g.stroke(); } },                                                                 // corps
+  tortue: { nom: 'La tortue marine !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.translate(110, 116); g.lineWidth = 5;
+    g.strokeStyle = '#3ae07a'; g.beginPath(); g.ellipse(0, 0, 58, 72, 0, 0, 7); g.stroke();                                                      // carapace
+    g.strokeStyle = '#a8ff6a'; g.beginPath(); g.moveTo(0, -50); g.lineTo(0, 50); g.moveTo(-40, -22); g.lineTo(40, -22); g.moveTo(-40, 24); g.lineTo(40, 24); g.stroke(); // écailles
+    g.strokeStyle = '#ffe23a'; g.beginPath(); g.ellipse(0, -92, 18, 22, 0, 0, 7); g.stroke();                                                    // tête
+    for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * 46, -38); g.quadraticCurveTo(sx * 105, -70, sx * 110, -20); g.quadraticCurveTo(sx * 80, -22, sx * 54, -14); g.stroke(); // nageoires avant
+      g.beginPath(); g.moveTo(sx * 40, 50); g.quadraticCurveTo(sx * 70, 82, sx * 62, 96); g.quadraticCurveTo(sx * 44, 82, sx * 30, 62); g.stroke(); } } },                 // nageoires arrière
+  baleine: { nom: 'La baleine à bosse !', f: (g, T) => { const s = T / 220; g.scale(s, s); g.lineWidth = 5;
+    g.strokeStyle = '#6ac8ff'; g.beginPath(); g.moveTo(20, 120); g.bezierCurveTo(30, 70, 120, 62, 160, 96); g.quadraticCurveTo(178, 108, 190, 92); // dos
+    g.moveTo(20, 120); g.bezierCurveTo(50, 150, 130, 150, 172, 116); g.stroke();                                                                   // ventre
+    g.beginPath(); g.moveTo(186, 96); g.quadraticCurveTo(204, 70, 214, 64); g.moveTo(186, 96); g.quadraticCurveTo(208, 108, 214, 122); g.stroke();   // queue
+    g.strokeStyle = '#ffffff'; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(34 + i * 14, 128); g.lineTo(46 + i * 16, 140); g.stroke(); }   // sillons de la gorge
+    g.beginPath(); g.moveTo(80, 138); g.quadraticCurveTo(92, 176, 70, 190); g.stroke();                                                           // longue nageoire
+    g.fillStyle = '#ffffff'; g.beginPath(); g.arc(50, 112, 4, 0, 7); g.fill();                                                                    // œil
+    g.strokeStyle = '#bfe8ff'; g.beginPath(); g.moveTo(58, 74); g.quadraticCurveTo(48, 40, 34, 30); g.moveTo(58, 74); g.quadraticCurveTo(62, 38, 76, 26); g.stroke(); } }, // souffle
   // Lö Mahavéli : ciel bleu, volcan rouge, rayons jaunes
   drapeau: { nom: 'Lö Mahavéli !', f: (g, T) => { const s = T / 220; g.scale(s, s);
     g.fillStyle = '#1e5aff'; g.fillRect(10, 40, 200, 140);
@@ -651,7 +681,10 @@ const dureeConstel = () => 4.2 + save.amelio.ciel * 0.9;
 function lancerConstel() {
   const c = CONSTEL[(niveauJeu + Math.floor(Math.random() * 2)) % CONSTEL.length], t = Math.min(W - 230, H * 0.34), cx = W / 2 - (W < 600 ? 22 : 0), cy = H * 0.52;
   constel = { c, i: 0, t: 0, pts: c.pts.map(([x, y]) => [cx + x * t, cy - y * t]), els: [], fini: false };
-  constel.pts.forEach(([x, y], k) => { const e = document.createElement('div'); e.className = 'etoileC'; e.textContent = k + 1; e.style.left = x + 'px'; e.style.top = y + 'px'; document.body.appendChild(e); constel.els.push(e); });
+  constel.pts.forEach(([x, y], k) => { const e = document.createElement('div'); e.className = 'etoileC'; e.textContent = k + 1; e.style.left = x + 'px'; e.style.top = y + 'px'; document.body.appendChild(e); constel.els.push(e);
+    // une étoile qui repasse au même endroit (ex. le cocotier) : un seul rond qui porte les deux numéros, pour qu'aucun chiffre ne soit caché
+    const avant = constel.pts.findIndex(([a, b], j) => j < k && Math.hypot(a - x, b - y) < 30);
+    if (avant >= 0) { const e0 = constel.els[avant]; e0.textContent += ' · ' + (k + 1); e0.classList.add('double'); e.style.visibility = 'hidden'; } });
   bandeau('Relie les étoiles dans l\'ordre !', 2.2); traceC();
 }
 function traceC() {
@@ -674,7 +707,7 @@ function finConstel(ok) {
   } else { if (!jouer('eteint', 0.7)) son.rate(); bandeau('Les étoiles se sont éteintes…', 1.8); }
   const c = constel; setTimeout(() => { c.els.forEach(e => e.remove()); if (constel === c) { constel = null; traceC(); } }, ok ? 700 : 300);
 }
-const FORMES = ['dodo', 'paille', 'hibiscus', 'vanille', 'reunion', 'cocotier', 'kaz'], MESSAGES = ['m974', 'mLela', 'mAzot', 'mAou'];
+const FORMES = ['dodo', 'paille', 'hibiscus', 'vanille', 'reunion', 'cocotier', 'kaz', 'papillon', 'tortue', 'baleine'], MESSAGES = ['m974', 'mLela', 'mAzot', 'mAou'];
 function dessinCiel(x, y, cle, taille, n) {
   const D = DESSINS[cle], pts = echantillons(D.f, n, D.w || 220, D.h || D.w || 220);
   for (const [px, py, cr, cg, cb] of pts) {
@@ -763,7 +796,7 @@ function toucher(a, b) {
   if (etat !== 'jeu') return;
   for (const e of engins) {
     if (!e.vivant || e.eteinte) continue;
-    const s = toScreen(e.obj.position), r = e.rayon * H / viewH + 18;
+    const s = toScreen(e.obj.position), r = e.rayon * H / viewH / e.f + 18;
     const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy;
     const t = L ? Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L)) : 0;
     const px = a.x + t * dx - s.x, py = a.y + t * dy - s.y;
@@ -854,7 +887,7 @@ function boucle() {
         perdreVie();
       }
     }
-    if (e.eteinte) { e.obj.rotation.z += e.vrot * dt; if (Math.random() < 0.3) fumee(p.x, p.y, p.z, 40, 1); if (p.y < -viewH / 2 - 1.5) { e.vivant = false; scene.remove(e.obj); } continue; }
+    if (e.eteinte) { e.obj.rotation.z += e.vrot * dt; if (Math.random() < 0.3) fumee(p.x, p.y, p.z, 40, 1); if (p.y < (-viewH / 2 - 1.5) * e.f) { e.vivant = false; scene.remove(e.obj); } continue; }
     // signal du sommet : la fusée scintille quand elle approche de sa hauteur d'explosion
     if (e.type !== 'bombe' && e.vy / e.vy0 < 0.2 + save.amelio.oeil * 0.06) for (let k = 0; k < 2; k++) etincelle(p.x, p.y + 0.5, p.z, rnd(-.8, .8), rnd(-.4, .8), 0, tmpC.setRGB(1, 1, 1), 0.25, 70, { g: 0.5 });
     if (e.type === 'tourbillon') { e.obj.rotation.z += 16 * de; for (let k = 0; k < 3; k++) { const a = e.obj.rotation.z + k * 2.1; etincelle(p.x + Math.cos(a) * 0.4, p.y + Math.sin(a) * 0.4, p.z, -Math.sin(a) * 3, Math.cos(a) * 3, 0, k % 2 ? tmpC.setRGB(1, 0.9, 0.2) : tmpC.setRGB(0.3, 1, 0.4), 0.45, 60, { g: 0.6, scint: true }); } }
@@ -880,7 +913,7 @@ function boucle() {
 const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; };
 majSon();
 $('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('petepetard_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
-const ALBUM = ['m1848', 'dodo', 'paille', 'hibiscus', 'vanille', 'reunion', 'cocotier', 'kaz', 'm974', 'mLela', 'mAzot', 'mAou'];
+const ALBUM = ['m1848', 'dodo', 'paille', 'hibiscus', 'vanille', 'reunion', 'cocotier', 'kaz', 'papillon', 'tortue', 'baleine', 'm974', 'mLela', 'mAzot', 'mAou'];
 function majAtelier() { $('stock').innerHTML = `<b>Réserve : ${save.etinc} étincelle${save.etinc > 1 ? 's' : ''} ✨</b>`; $('amelios').innerHTML = AMELIOS.map(a => { const n = save.amelio[a.id], max = a.prix.length, prix = a.prix[n]; return `<div class="amelio"><div class="ic">${a.ic}</div><div class="tx"><b>${a.nom}</b> · niveau ${n}/${max}<br>${a.txt}</div>${n < max ? `<button class="zone-interactive" data-a="${a.id}" ${save.etinc < prix ? 'disabled' : ''}>${prix} ✨</button>` : '<span>✔</span>'}</div>`; }).join(''); $('amelios').querySelectorAll('button').forEach(b => b.onclick = () => { const a = AMELIOS.find(x => x.id === b.dataset.a), n = save.amelio[a.id]; if (save.etinc >= a.prix[n]) { save.etinc -= a.prix[n]; save.amelio[a.id]++; sauver(); son.chaine(4); majAtelier(); } }); }
 function majCarnet() { $('album').innerHTML = `<p><b>Album du ciel : ${save.album.length}/${ALBUM.length}</b></p><p>` + ALBUM.map(k => save.album.includes(k) ? `🎆 ${DESSINS[k].nom.replace(' !', '')}` : '🔒 ?').join(' · ') + '</p>'; $('faits').innerHTML = `<p><b>${save.faits.length}/${FAITS.length}</b> pages découvertes. Une nouvelle page à chaque partie !</p>` + FAITS.map((f, i) => save.faits.includes(i) ? `<div class="fait">🎇 ${f}</div>` : `<div class="fait cache">🔒 Page à découvrir</div>`).join(''); }
 function majMenu() { const d = defiDuJour(); $('defiMenu').textContent = (d.fait ? '✅ ' : '🎯 ') + 'Défi du jour : ' + d.txt(d.cible) + (d.fait ? ' (réussi)' : ' · +5 ✨'); }
@@ -903,7 +936,7 @@ resize();
 majVies(); majScore();
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { feu, feuSpecial, PALETTES,  pause, reprendre, get vies() { return vies; }, lancerConstel, finConstel, toucheConstel, get constel() { return constel; }, get cmd() { return cmd; }, get cmdI() { return cmdI; }, save, engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, finDeNiveau, get phase() { return phase; }, get niveauJeu() { return niveauJeu; }, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
+if (TEST) window.jeu = { feu, feuSpecial, dessinCiel, CONSTEL, PALETTES,  pause, reprendre, get vies() { return vies; }, lancerConstel, finConstel, toucheConstel, get constel() { return constel; }, get cmd() { return cmd; }, get cmdI() { return cmdI; }, save, engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, finDeNiveau, get phase() { return phase; }, get niveauJeu() { return niveauJeu; }, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
 </script>
 </body>
 </html>
