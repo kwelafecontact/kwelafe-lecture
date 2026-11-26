@@ -26,6 +26,9 @@ export default async function Bienvenue({ searchParams }: { searchParams: Promis
           La connexion n'a pas abouti. Ce n'est pas grave, tu peux réessayer dans un instant.
         </p>
       )}
+      <p className="liens-legaux" style={{ marginTop: 28 }}>
+        <a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Confidentialité</a> · <a href="/cgu">Conditions d'utilisation</a>
+      </p>
       {config.demo && <p className="texte-doux" style={{ marginTop: 24, fontSize: 14 }}>Mode démonstration activé</p>}
     </main>
   );
