@@ -53,6 +53,7 @@
   #vitre, #fanions { pointer-events:none; }
   #fond, #fanions { transition:filter .5s; }
   body.ralenti-or #fond, body.ralenti-or #fanions { filter:saturate(.3) brightness(.8); }
+  .btn-pause { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); right:calc(max(26px, env(safe-area-inset-right)) + 54px); width:44px; height:44px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(20,10,2,.6); color:#fff; display:none; align-items:center; justify-content:center; cursor:pointer; padding:0; font-size:18px; }
   .btn-son { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); right:max(26px, env(safe-area-inset-right)); width:44px; height:44px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(20,10,2,.6); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
   .hud { top:max(84px, calc(env(safe-area-inset-top) + 70px)) !important; }
   .pop.aie { color:#ff5a3a; font-size:clamp(26px, 6vw, 40px); }
@@ -113,6 +114,7 @@
   <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
 </div>
 <div id="charge">Chargement des fruits…</div>
+<button class="btn-pause zone-interactive" id="bPause" aria-label="Pause">⏸</button>
 <button class="retour-jeux zone-interactive" id="retourJeux" aria-label="Retour aux jeux">‹ Jeux</button>
 <style>.retour-jeux{position:fixed;z-index:20;top:max(22px,env(safe-area-inset-top));left:max(26px,env(safe-area-inset-left));min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(20,10,2,.6);color:#fff;font:800 16px "Baloo 2",system-ui,sans-serif;cursor:pointer}</style>
 <script>
@@ -213,10 +215,24 @@ function resize() {
 const decor = { p: new Image(), l: new Image() };
 decor.p.src = './v2/fond-portrait.webp?v=1'; decor.l.src = './v2/fond-paysage.webp?v=1';
 decor.p.onload = decor.l.onload = () => peindreFond();
-// zone de la table dans le décor, en fractions de l'écran (portrait / paysage)
-function zoneTable() {
-  return W < H ? { x0: 0.0, x1: 1.0, y0: 0.465, y1: 0.73 } : { x0: 0.09, x1: 0.89, y0: 0.545, y1: 0.675 };
+// Plateau de la table dans le décor (fractions de l'image). La tranche (épaisseur de la table, vers le bas) est exclue :
+// portrait : plateau de 45,5 % à 71,2 % de la hauteur, tranche de 71,2 % à 76,5 %
+// paysage  : plateau en trapèze (fond plus étroit), tranche sous le bord avant (68 % à 71,5 %)
+const TABLE_IMG = {
+  p: { w: 1024, h: 1536, pts: [[0, 0.455], [1, 0.455], [1, 0.712], [0, 0.712]] },
+  l: { w: 1024, h: 768, pts: [[0.200, 0.597], [0.800, 0.597], [0.884, 0.680], [0.093, 0.680]] }
+};
+function geoTable() {
+  const T = W < H ? TABLE_IMG.p : TABLE_IMG.l;
+  const k = Math.max(W / T.w, H / T.h), dx = (W - T.w * k) / 2, dy = H - T.h * k;
+  const pts = T.pts.map(([fx, fy]) => ({ x: dx + fx * T.w * k, y: dy + fy * T.h * k }));
+  const [TL, TR, BR, BL] = pts;
+  // abscisses gauche / droite du plateau à une profondeur u (0 = bord du fond, 1 = bord avant)
+  const xAt = u => [TL.x + (BL.x - TL.x) * u, TR.x + (BR.x - TR.x) * u];
+  const yAt = u => TL.y + (BL.y - TL.y) * u;
+  return { pts, xAt, yAt };
 }
+function cheminTable(ctx, g) { ctx.beginPath(); g.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath(); }
 function peindreFond() {
   const g = fctx, im = W < H ? decor.p : decor.l;
   g.fillStyle = '#1f4a2a'; g.fillRect(0, 0, W, H);
@@ -542,20 +558,19 @@ function blob(ctx, x, y, r, ang, allonge, couleur, alpha, detail = false) {
 }
 const reflets = []; // reflets humides qui disparaissent en séchant
 function tache(sx, sy, color, taille, dir) {
-  const c = teinteTache(color), Z = zoneTable();
-  const zx0 = Z.x0 * W, zx1 = Z.x1 * W, zy0 = Z.y0 * H, zy1 = Z.y1 * H;
-  // le jus tombe droit vers le bas : il atterrit sur la table, à la verticale de la coupe
-  const prof = rnd(0.15, 0.9);
-  const cx = Math.max(zx0 + taille * 0.4, Math.min(zx1 - taille * 0.4, sx + dir.x * taille * 0.8));
-  const cy = zy0 + (zy1 - zy0) * prof;
+  const c = teinteTache(color), G = geoTable();
+  const prof = rnd(0.12, 0.88);                         // profondeur sur le plateau : 0 = fond, 1 = bord avant
   const echelle = 0.55 + prof * 0.6;                    // perspective : plus gros sur le devant de la table
   const t = taille * 0.7 * echelle, ang = rnd(-0.25, 0.25);
+  const [xa, xb] = G.xAt(prof), marge = t * 1.2;
+  const cx = Math.max(xa + marge, Math.min(xb - marge, sx + dir.x * taille * 0.8));   // le jus tombe droit vers le bas
+  const cy = G.yAt(prof);
   const delai = Math.max(60, Math.abs(cy - sy) / 900 * 1000);
-  gouttes.push({ x: cx, y0: Math.min(sy, cy - 4), y1: cy, t: 0, d: delai / 1000, c, taille: t, ang, zx0, zx1, zy0, zy1 });
+  gouttes.push({ x: cx, y0: Math.min(sy, cy - 4), y1: cy, t: 0, d: delai / 1000, c, taille: t, ang });
 }
 const gouttes = [];  // gouttes qui tombent vers la table avant de s'écraser
 function posePlat(g) {
-  cctx.save(); cctx.beginPath(); cctx.rect(g.zx0, g.zy0, g.zx1 - g.zx0, g.zy1 - g.zy0); cctx.clip();
+  cctx.save(); cheminTable(cctx, geoTable()); cctx.clip();
   cctx.globalCompositeOperation = 'source-over';
   blob(cctx, g.x, g.y1, g.taille, g.ang, 1.9, g.c, 0.85, true);               // flaque aplatie : vue en perspective
   for (let i = 0; i < 16; i++) {
@@ -594,8 +609,7 @@ function majTaches(dt) {
 }
 function dessinerTaches(dt = 0.016) {
   tctx.clearRect(0, 0, W, H);
-  const Z = zoneTable();
-  tctx.save(); tctx.beginPath(); tctx.rect(Z.x0 * W, Z.y0 * H, (Z.x1 - Z.x0) * W, (Z.y1 - Z.y0) * H); tctx.clip();
+  tctx.save(); cheminTable(tctx, geoTable()); tctx.clip();
   tctx.globalAlpha = 0.95; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
   // reflets humides qui sèchent
   for (let i = reflets.length - 1; i >= 0; i--) {
@@ -613,6 +627,7 @@ function dessinerTaches(dt = 0.016) {
 }
 // ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
 function gouttesEcran(sx, sy, color, dir) {
+  return;   // supprimé : plus de filets de jus sur l'écran
   const c = teinteTache(color);
   const n = 1 + Math.floor(Math.random() * 3);
   for (let i = 0; i < n; i++) {
@@ -984,6 +999,9 @@ function afficherPause() {
 // Reprise d'une partie interrompue (rechargement, arrêt de l'onglet par iOS)
 let partieSauvee = null;
 try { const p = JSON.parse(localStorage.getItem('koupkoup2_partie') || 'null'); if (p && Date.now() - p.t < 48 * 3600e3 && p.vies > 0) partieSauvee = p; } catch (e) {}
+
+// bouton pause : visible pendant la partie, ouvre l'écran « Pause » (toucher l'écran pour reprendre)
+$('bPause').addEventListener('click', () => { if (etat !== 'jeu' || pauseAuto) return; pauseAuto = true; sauverPartie(); endormirAudio(actx); afficherPause(); });
 function masquerReprise() { const b = $('reprendre'); if (b) b.remove(); partieSauvee = null; }
 if (partieSauvee) {
   const b = document.createElement('button'); b.id = 'reprendre'; b.className = 'btn zone-interactive';
@@ -997,6 +1015,7 @@ const horloge = new THREE.Clock();
 const fumee = new THREE.Color(0xff8a1e);
 function boucle() {
   if (contextePerdu) return;
+  const bp = $('bPause'); if (bp) { const v = etat === 'jeu' && !pauseAuto ? 'flex' : 'none'; if (bp.style.display !== v) bp.style.display = v; }
   const vrai = pauseAuto ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
   if (ralenti > 0) ralenti -= vrai;
   if (ralentiOr > 0) ralentiOr -= vrai;
