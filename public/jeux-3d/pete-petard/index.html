@@ -218,7 +218,7 @@ const points = new THREE.Points(geo, matP); points.frustumCulled = false; scene.
 let pIdx = 0;
 function etincelle(x, y, z, vx, vy, vz, c, vie, taille, opts = {}) {
   const p = P[pIdx]; const i = pIdx; pIdx = (pIdx + 1) % MAXP;
-  p.vie = p.max = vie; p.vx = vx; p.vy = vy; p.vz = vz; p.g = opts.g ?? 1.6; p.frein = opts.frein ?? 0.985; p.t0 = taille; p.scint = !!opts.scint; p.trainee = !!opts.trainee; p.forme = false;
+  p.vie = p.max = vie; p.vx = vx; p.vy = vy; p.vz = vz; p.g = opts.g ?? 1.6; p.frein = opts.frein ?? 0.985; p.t0 = taille; p.scint = !!opts.scint; p.trainee = !!opts.trainee; p.dense = !!opts.dense; p.forme = false;
   p.r = c.r; p.gg = c.g; p.b = c.b;
   pPos[i * 3] = x; pPos[i * 3 + 1] = y; pPos[i * 3 + 2] = z;
 }
@@ -244,8 +244,8 @@ function majParticules(dt) {
     pAlp[i] = a; pTai[i] = p.t0 * (0.5 + 0.5 * k);
     const chaud = Math.max(0, k - 0.86) * 4; // les éclats démarrent presque blancs
     pCol[i * 3] = p.r + (1 - p.r) * chaud; pCol[i * 3 + 1] = p.gg + (1 - p.gg) * chaud; pCol[i * 3 + 2] = p.b + (1 - p.b) * chaud;
-    if (p.trainee && Math.random() < 0.25) {
-      const j = pIdx; etincelle(pPos[i * 3], pPos[i * 3 + 1], pPos[i * 3 + 2], 0, 0, 0, tmpC.setRGB(p.r * .6, p.gg * .5, p.b * .4), 0.5, p.t0 * 0.5, { g: 0.4 }); P[j].trainee = false;
+    if (p.trainee && Math.random() < (p.dense ? 0.75 : 0.25)) {
+      const j = pIdx; etincelle(pPos[i * 3], pPos[i * 3 + 1], pPos[i * 3 + 2], 0, 0, 0, tmpC.setRGB(p.r * .6, p.gg * .5, p.b * .4), p.dense ? 0.9 : 0.5, p.t0 * (p.dense ? 0.6 : 0.5), { g: 0.4 }); P[j].trainee = false; P[j].dense = false;
     }
   }
   for (const n of ['position', 'couleur', 'taille', 'alpha']) geo.attributes[n].needsUpdate = true;
@@ -503,7 +503,7 @@ function eclater(e, enChaine = false) {
     for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; setTimeout(() => { feu(p.x + Math.cos(a) * 1.5, p.y + Math.sin(a) * 1.5, p.z, PALETTES[(k + 2) % PALETTES.length], 'sphere', 0.55); son.pet(); }, 380); }
   } else if (e.type === 'tourbillon') {
     feu(p.x, p.y, p.z, [new THREE.Color('#2fd04a'), new THREE.Color('#ffe23a')], 'spirale', 1.3); feu(p.x, p.y, p.z, [new THREE.Color('#ffffff')], 'crepitant', 0.8);
-  } else feu(p.x, p.y, p.z, e.pal, Math.random() < 0.35 ? ['pistil', 'chrysantheme', 'crepitant', 'saule'][Math.floor(Math.random() * 4)] : forme, gros);
+  } else feu(p.x, p.y, p.z, e.pal, Math.random() < 0.6 ? ['pistil', 'chrysantheme', 'crepitant', 'saule', ...NOUVELLES, ...NOUVELLES][Math.floor(Math.random() * 18)] : forme, gros);
   if (e.type === 'brillante' || e.type === 'doree') ouah(e.type === 'doree' ? 1200 : 450);
   if (e.type === 'petard') son.pet(); else { son.boum(gros); son.crepite(); }
   if (e.type === 'doree') { lueur(DRAPEAU[0], 3); }
@@ -652,7 +652,44 @@ function finDeNiveau() {
   setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niveauJeu++; majNiveauHud(); lancerConstel(); }, liste.length * 650 + 1400);
 }
 function majNiveauHud() { $('niveauHud').textContent = 'Niveau ' + niveauJeu; $('niveauHud').classList.remove('saute'); void $('niveauHud').offsetWidth; $('niveauHud').classList.add('saute'); }
+// formes inspirées de vrais bouquets : pivoine retombante, queue de cheval, palmier doré à pointes colorées, et formes en 3D
+const NOUVELLES = ['retombante', 'queueCheval', 'palmierOr', 'saturne', 'anneaux3d', 'globe3d', 'dahlia'];
+function feuSpecial(x, y, z, pal, forme, gros) {
+  const P_ = PETIT ? 0.65 : 1, c0 = pal[0], c1 = pal[1 % pal.length], or = new THREE.Color('#ffc24a');
+  const tilt = (v, ax, ay) => { let [a, b, c] = v; const y1 = b * Math.cos(ax) - c * Math.sin(ax), z1 = b * Math.sin(ax) + c * Math.cos(ax); const x2 = a * Math.cos(ay) + z1 * Math.sin(ay), z2 = -a * Math.sin(ay) + z1 * Math.cos(ay); return [x2, y1, z2]; };
+  if (forme === 'retombante') { // grosse pivoine dont les étoiles tombent en longues traînées (photo 1)
+    const n = Math.round(220 * gros * P_);
+    for (let i = 0; i < n; i++) { const u = rnd(-1, 1), a = rnd(0, 7), sq = Math.sqrt(1 - u * u), v = 5.4 * Math.sqrt(gros) * rnd(0.9, 1.05);
+      etincelle(x, y, z, sq * Math.cos(a) * v, u * v, sq * Math.sin(a) * v * 0.8, i % 6 ? c0 : tmpC.setRGB(1, 0.95, 0.85), rnd(1.8, 2.5), rnd(100, 140), { g: 3.2, frein: 0.955, trainee: true, dense: true, scint: i % 3 === 0 }); }
+    setTimeout(() => { for (let i = 0; i < 40 * P_; i++) etincelle(x + rnd(-1.6, 1.6), y - rnd(1.2, 2.2), z, rnd(-1, 1), rnd(1, 2.6), 0, tmpC.setRGB(1, 1, 0.95), rnd(0.5, 0.9), 90, { g: 1.5, scint: true }); }, 250);
+  } else if (forme === 'queueCheval') { // saule / queue de cheval : gerbe vers le haut puis retombée en fils d'or (photo 2)
+    const n = Math.round(110 * gros * P_);
+    for (let i = 0; i < n; i++) { const a = rnd(-1.15, 1.15) + Math.PI / 2, v = rnd(2.6, 4.2) * Math.sqrt(gros), c = i % 2 ? or : c0;
+      etincelle(x, y, z, Math.cos(a) * v, Math.sin(a) * v, rnd(-0.8, 0.8), c, rnd(2.6, 3.4), rnd(80, 110), { g: 2.4, frein: 0.975, trainee: true, dense: true }); }
+  } else if (forme === 'palmierOr') { // palmier : grosses comètes pailletées d'or avec une étoile colorée au bout (photo 3)
+    const n = Math.round(16 + 6 * gros);
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + rnd(-0.1, 0.1), el = rnd(-0.5, 0.5), v = 5.6 * Math.sqrt(gros);
+      const vx = Math.cos(a) * Math.cos(el) * v, vy = Math.sin(a) * Math.cos(el) * v, vz = Math.sin(el) * v;
+      for (let k = 0; k < 6; k++) etincelle(x, y, z, vx * (1 - k * 0.07), vy * (1 - k * 0.07), vz * (1 - k * 0.07), or, rnd(1.4, 1.9), 120 - k * 12, { g: 1.6, frein: 0.965, trainee: true, dense: true, scint: true });
+      etincelle(x, y, z, vx * 1.04, vy * 1.04, vz * 1.04, PALETTES[(i % 7) + 1][0], 2.0, 130, { g: 1.6, frein: 0.965, scint: i % 2 === 0 }); }
+  } else if (forme === 'saturne') { // 3D : une sphère et un anneau incliné qui tourne en perspective
+    const n = Math.round(150 * gros * P_), ax = rnd(0.9, 1.3), ay = rnd(-0.6, 0.6);
+    for (let i = 0; i < n; i++) { const u = rnd(-1, 1), a = rnd(0, 7), sq = Math.sqrt(1 - u * u), v = 2.6 * Math.sqrt(gros); etincelle(x, y, z, sq * Math.cos(a) * v, u * v, sq * Math.sin(a) * v, c0, 1.6, 110, { g: 0.9, frein: 0.95 }); }
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2, [dx, dy, dz] = tilt([Math.cos(a), 0, Math.sin(a)], ax - Math.PI / 2, ay), v = 6 * Math.sqrt(gros); etincelle(x, y, z, dx * v, dy * v, dz * v, c1, 1.7, 115, { g: 0.9, frein: 0.95, scint: true }); }
+  } else if (forme === 'anneaux3d') { // 3D : deux anneaux croisés dans des plans différents (gyroscope)
+    const n = Math.round(130 * gros * P_);
+    [[0.6, 0.4, c0], [-0.7, -0.5, c1], [0, 1.2, or]].forEach(([ax, ay, c]) => { for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2, [dx, dy, dz] = tilt([Math.cos(a), Math.sin(a), 0], ax, ay), v = 5.4 * Math.sqrt(gros); etincelle(x, y, z, dx * v, dy * v, dz * v, c, 1.7, 110, { g: 0.8, frein: 0.955 }); } });
+  } else if (forme === 'globe3d') { // 3D : boule creuse en méridiens, bien ronde dans la profondeur
+    const mer = 10, n = Math.round(26 * P_ + 8);
+    for (let m = 0; m < mer; m++) { const lo = (m / mer) * Math.PI; for (let i = 0; i < n; i++) { const la = (i / n) * Math.PI * 2, v = 5.2 * Math.sqrt(gros); etincelle(x, y, z, Math.cos(la) * Math.cos(lo) * v, Math.sin(la) * v, Math.cos(la) * Math.sin(lo) * v, m % 2 ? c0 : c1, 1.8, 105, { g: 0.8, frein: 0.955 }); } }
+  } else if (forme === 'dahlia') { // dahlia : peu d'étoiles, grosses et colorées, deux couleurs alternées
+    const n = Math.round(46 * gros);
+    for (let i = 0; i < n; i++) { const u = rnd(-1, 1), a = rnd(0, 7), sq = Math.sqrt(1 - u * u), v = 5.2 * Math.sqrt(gros); etincelle(x, y, z, sq * Math.cos(a) * v, u * v, sq * Math.sin(a) * v * 0.8, i % 2 ? c0 : c1, 2.2, 190, { g: 1.6, frein: 0.96, trainee: true, dense: true }); }
+  }
+  for (let i = 0; i < 10; i++) etincelle(x, y, z, rnd(-1, 1), rnd(-1, 1), 0, tmpC.setRGB(1, 0.92, 0.8), 0.15, 80 * gros, { g: 0, frein: 0.9 });
+}
 function feu(x, y, z, pal, forme, gros = 1) {
+  if (NOUVELLES.includes(forme)) return feuSpecial(x, y, z, pal, forme, gros);
   const n = Math.round((PETIT ? 170 : 260) * gros * (forme === 'petard' ? 0.6 : 1));
   const v0 = (forme === 'petard' ? 3.2 : 5.2) * Math.sqrt(gros);
   for (let i = 0; i < n; i++) {
@@ -749,11 +786,11 @@ function boucle() {
     if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
   } else {
     // au menu : quelques fusées lointaines pour l'ambiance
-    ambiance -= dt; if (ambiance <= 0) { ambiance = rnd(0.9, 2.2); const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)]; feu(rnd(-viewW * .4, viewW * .4), rnd(0, viewH * .35), -6, pal, ['sphere', 'anneau', 'saule'][Math.floor(Math.random() * 3)], 0.8); if (actx && etat === 'fin') son.boum(0.4); }
+    ambiance -= dt; if (ambiance <= 0) { ambiance = rnd(0.9, 2.2); const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)]; feu(rnd(-viewW * .4, viewW * .4), rnd(0, viewH * .35), -6, pal, ['sphere', 'anneau', 'saule', 'retombante', 'palmierOr', 'saturne', 'queueCheval'][Math.floor(Math.random() * 7)], 0.8); if (actx && etat === 'fin') son.boum(0.4); }
   }
   if (finale > 0) {
     finale -= dt;
-    if (Math.random() < 0.18) { const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)]; feu(rnd(-viewW * .45, viewW * .45), rnd(-viewH * .05, viewH * .4), rnd(-3, 0), pal, ['sphere', 'anneau', 'palmier', 'saule', 'coeur'][Math.floor(Math.random() * 5)], rnd(0.8, 1.4)); son.boum(0.6); }
+    if (Math.random() < 0.18) { const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)]; feu(rnd(-viewW * .45, viewW * .45), rnd(-viewH * .05, viewH * .4), rnd(-3, 0), pal, ['sphere', 'anneau', 'palmier', 'saule', 'coeur', ...NOUVELLES][Math.floor(Math.random() * 12)], rnd(0.8, 1.4)); son.boum(0.6); }
   }
   for (let i = engins.length - 1; i >= 0; i--) {
     const e = engins[i];
@@ -824,7 +861,7 @@ resize();
 majVies(); majScore();
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { pause, reprendre, get vies() { return vies; }, lancerConstel, finConstel, toucheConstel, get constel() { return constel; }, get cmd() { return cmd; }, get cmdI() { return cmdI; }, save, engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, finDeNiveau, get phase() { return phase; }, get niveauJeu() { return niveauJeu; }, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
+if (TEST) window.jeu = { feu, PALETTES,  pause, reprendre, get vies() { return vies; }, lancerConstel, finConstel, toucheConstel, get constel() { return constel; }, get cmd() { return cmd; }, get cmdI() { return cmdI; }, save, engins, toScreen, get etat() { return etat; }, toucher, demarrer, finPartie, lancer, finDeNiveau, get phase() { return phase; }, get niveauJeu() { return niveauJeu; }, forcerAllumage: () => { charge = RECHARGE; activerAllumage(); } };
 </script>
 </body>
 </html>
