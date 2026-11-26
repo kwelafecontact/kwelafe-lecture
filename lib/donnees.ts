@@ -6,7 +6,7 @@ import { chiffrer, dechiffrer } from "./chiffre";
 import { creerCodesPourCommande } from "./cadeaux";
 import type { Session } from "./session";
 import { codeTestValide } from "./codes-test";
-import { groupeDeSession } from "./etablissements";
+import { groupeDeSession, responsableActif } from "./etablissements";
 
 export type Manifeste =
   | {
@@ -114,7 +114,9 @@ export async function client(session: Session, forcer = false): Promise<Client> 
     await enregistrerClient({ id: session.cid, email: session.email, prenom: session.prenom || null, achats: [], abonne: config.demo, maj: null });
     c = versClient(await premier("SELECT * FROM clients WHERE id = ?", session.cid));
   }
-  return c;
+  // Enseignant ou bibliothécaire d'un établissement abonné : accès complet pour préparer ses séances
+  if (c && !abonnementActif(c) && !session.visiteur && (await responsableActif(session.email))) c = { ...c, abonne: true };
+  return c!;
 }
 
 export function abonnementActif(c: Client) {

@@ -43,6 +43,22 @@ export async function etabsAdministres(session: Session | null): Promise<Etab[]>
   return liste.filter((e) => e.admins.toLowerCase().split(/[\s,;]+/).includes(email));
 }
 
+/** Responsable d'un établissement abonné et valable : il lit tout, comme ses élèves. */
+export async function responsableActif(email: string | undefined) {
+  if (!email) return false;
+  const e = email.toLowerCase();
+  const liste = await tous<Etab>("SELECT * FROM etablissements WHERE actif = 1 AND admins LIKE ?", `%${e}%`).catch(() => [] as Etab[]);
+  return liste.some((x) => etabValide(x) && x.admins.toLowerCase().split(/[\s,;]+/).includes(e));
+}
+
+/** Texte du filigrane du lecteur : jamais d'adresse technique pour un élève ou l'équipe. */
+export async function libelleFiligrane(session: Session) {
+  if (session.eleve) { const g = await groupeDeSession(session); return g ? `${g.etab.nom} · ${g.groupe.nom}` : "Kwélafé Academy"; }
+  if (session.testeur) return `Accès équipe Kwélafé${session.prenom ? ` · ${session.prenom}` : ""}`;
+  if (session.visiteur) return "Kwélafé · découverte";
+  return session.email;
+}
+
 export async function etabAdministre(session: Session | null, id: string) {
   return (await etabsAdministres(session)).find((e) => e.id === id) ?? null;
 }

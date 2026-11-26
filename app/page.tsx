@@ -12,6 +12,7 @@ import { leger } from "@/lib/leger";
 import { tous, urlCouverture } from "@/lib/cf";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Bibliothèque · Kwélafé" };
 
 function salut() {
   const h = Number(new Date().toLocaleString("fr-FR", { hour: "numeric", hour12: false, timeZone: "Indian/Reunion" }));

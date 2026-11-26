@@ -647,3 +647,7 @@ body { background: var(--ivoire); }
 .liens-legaux { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 13px; margin-top: 30px; }
 .lien-site .liens-legaux { margin-top: 8px; display: block; text-align: center; }
 .liens-legaux a { color: var(--doux); }
+
+.pastille-verrou { opacity: .7; text-decoration: none; }
+
+.bandeau-extrait { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9; background: #e8a200; color: #fff; font-weight: 800; font-size: 13px; padding: 5px 14px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.2); pointer-events: none; }

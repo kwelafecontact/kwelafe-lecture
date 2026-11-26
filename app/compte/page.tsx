@@ -10,6 +10,7 @@ import { tous } from "@/lib/cf";
 import { statistiques } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Mon compte · Kwélafé" };
 
 const dateFr = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
@@ -27,7 +28,7 @@ export default async function Compte() {
         <header className="entete" style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Avatar taille={64} />
           <div>
-            <div className="sur-titre">{session.visiteur ? "Mode visiteur" : session.email}</div>
+            <div className="sur-titre">{session.visiteur ? "Mode visiteur" : session.eleve ? "Espace élève" : session.testeur ? "Accès équipe" : session.email}</div>
             <h1>Mon compte</h1>
           </div>
         </header>

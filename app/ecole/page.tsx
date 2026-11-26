@@ -7,12 +7,15 @@ import { publicsDe } from "@/lib/organisation";
 import { sansDoublon } from "@/lib/formats";
 import { leger } from "@/lib/leger";
 import { CATALOGUE } from "@/lib/jeux/catalogue";
+import { jeuGratuit } from "@/lib/jeux/gratuits";
+import PastilleJeu from "@/components/PastilleJeu";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "École · Kwélafé" };
 
 export default async function Ecole({ searchParams }: { searchParams: Promise<{ niveau?: string; theme?: string }> }) {
-  const { livres, acces, prog, favoris } = await contexte();
+  const { session, livres, acces, prog, favoris, abonne } = await contexte();
+  const jeuxOuverts = abonne || !!session.admin;
   const q = await searchParams;
   const niveau = NIVEAUX.find((n) => n.id === q.niveau) ?? null;
   const theme = THEMES.find((t) => t.id === q.theme) ?? null;
@@ -92,9 +95,7 @@ export default async function Ecole({ searchParams }: { searchParams: Promise<{ 
               )}
               <div className="ecole-jeux">
                 <span className="texte-doux">Pour s'entraîner en jouant :</span>
-                {jeux.map((j) => (
-                  <Link key={j.id} href={j.troisD ? `/jeux/${j.id}` : `/jeux/${j.id}`} className="pastille">{j.emoji ?? "🎮"} {j.titre}</Link>
-                ))}
+                {jeux.map((j) => <PastilleJeu key={j.id} id={j.id} titre={j.titre} emoji={j.emoji} ouvert={jeuxOuverts || jeuGratuit(j.id)} />)}
               </div>
             </section>
           );

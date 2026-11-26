@@ -8,13 +8,15 @@ import { groupeDeSession, MOTS, selectionDe } from "@/lib/etablissements";
 import { NIVEAUX, THEMES } from "@/lib/ecole";
 import { leger } from "@/lib/leger";
 import { CATALOGUE } from "@/lib/jeux/catalogue";
+import { jeuGratuit } from "@/lib/jeux/gratuits";
+import PastilleJeu from "@/components/PastilleJeu";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Ma classe · Kwélafé" };
 
 // Espace d'un élève ou d'un lecteur : aux couleurs de son établissement, avec la sélection de son enseignant.
 export default async function Classe() {
-  const { session, livres, acces, prog, favoris } = await contexte();
+  const { session, livres, acces, prog, favoris, abonne } = await contexte();
   const info = await groupeDeSession(session);
   if (!info) redirect("/etablissement");
   const { groupe, etab } = info;
@@ -75,7 +77,7 @@ export default async function Classe() {
         <section className="section">
           <h2>🎮 Apprendre en jouant</h2>
           <div className="ecole-jeux">
-            {jeux.map((j) => <Link key={j.id} href={`/jeux/${j.id}`} className="pastille">{j.emoji ?? "🎮"} {j.titre}</Link>)}
+            {jeux.map((j) => <PastilleJeu key={j.id} id={j.id} titre={j.titre} emoji={j.emoji} ouvert={abonne || jeuGratuit(j.id)} />)}
           </div>
         </section>
         <p className="texte-doux" style={{ textAlign: "center", fontSize: 13, marginTop: 24 }}>Accès offert par {etab.nom} · Kwélafé Academy</p>

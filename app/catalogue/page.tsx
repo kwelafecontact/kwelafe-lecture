@@ -6,6 +6,7 @@ import { leger } from "@/lib/leger";
 import type { Format } from "@/lib/formats";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Catalogue · Kwélafé" };
 
 export default async function Catalogue({ searchParams }: { searchParams: Promise<{ univers?: string; format?: string; public?: string }> }) {
   const { univers, format, public: pourQui } = await searchParams;

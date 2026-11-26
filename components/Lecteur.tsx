@@ -13,6 +13,7 @@ type Props = {
   jetonInitial: string;
   positionInitiale: { i: number; f: number };
   email: string;
+  extrait?: { pages: number; boutique: string; abonnement: string };
 };
 
 const THEMES = {
@@ -34,10 +35,10 @@ function ecrirePref(cle: string, v: unknown) {
   try { localStorage.setItem(cle, JSON.stringify(v)); } catch {}
 }
 
-export default function Lecteur({ livre, jetonInitial, positionInitiale, email }: Props) {
+export default function Lecteur({ livre, jetonInitial, positionInitiale, email, extrait }: Props) {
   const m = livre.manifeste;
   const mode: "pdf" | "fixe" | "texte" = m.type === "pdf" ? "pdf" : m.fixe ? "fixe" : "texte";
-  const total = m.type === "pdf" ? m.pages : m.pages.length;
+  const total = Math.min(m.type === "pdf" ? m.pages : m.pages.length, extrait?.pages || Infinity);
 
   const jetonRef = useRef(jetonInitial);
   const [i, setI] = useState(() => Math.min(Math.max(0, positionInitiale.i || 0), total - 1));
@@ -254,6 +255,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
 
   useEffect(() => {
     const envoyer = (beacon = false) => {
+      if (extrait) return; // un extrait ne compte pas comme une lecture
       const sec = aEnvoyer.current.secondes;
       if (aEnvoyer.current.corps === aEnvoyer.current.cle && sec < 5) return;
       aEnvoyer.current.cle = aEnvoyer.current.corps;
@@ -507,6 +509,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
       )}
       <div className={`progression-fine ${barre ? "cachee" : ""}`} aria-hidden><i style={{ width: `${Math.min(100, fin ? 100 : pourcentage)}%` }} /></div>
       {toast && <div className="toast-lecteur" role="status">{toast}</div>}
+      {extrait && <div className="bandeau-extrait">Extrait gratuit · {extrait.pages} {m.type === "epub" && mode === "texte" ? "chapitre" : "pages"}</div>}
 
       {/* ----- Barre du haut ----- */}
       <header className={`barre-haut ${barre ? "visible" : ""}`}>
@@ -715,6 +718,18 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
       {fin && (
         <div className="voile">
           <div className="panneau-lecteur" style={{ textAlign: "center" }}>
+            {extrait ? (
+              <>
+                <div style={{ fontSize: 54 }}>📖</div>
+                <h2>Fin de l'extrait</h2>
+                <p className="texte-doux" style={{ margin: "8px 0 20px" }}>Tu as aimé ? Lis la suite avec l'abonnement Kwélafé, ou procure-toi ce livre sur la boutique.</p>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <a className="btn" href={extrait.abonnement}>Lire la suite avec l'abonnement</a>
+                  <a className="btn secondaire" href={extrait.boutique}>Voir le livre sur la boutique</a>
+                  <Link className="lien" href={`/livre/${livre.slug}`}>Retour à la fiche du livre</Link>
+                </div>
+              </>
+            ) : (<>
             <div style={{ fontSize: 54 }}>🌺</div>
             <h2>Fin du livre</h2>
             <p className="texte-doux" style={{ margin: "8px 0 20px" }}>Mèsi pou la lektir ! Un autre livre t'attend dans ta bibliothèque.</p>
@@ -722,6 +737,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
               <Link className="btn" href="/livres">Retour à mes livres</Link>
               <button className="btn secondaire" onClick={() => setFin(false)}>Rester sur cette page</button>
             </div>
+            </>)}
           </div>
         </div>
       )}

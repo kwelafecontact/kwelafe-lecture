@@ -6,6 +6,7 @@ import { config } from "@/lib/config";
 import { leger } from "@/lib/leger";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Mes livres · Kwélafé" };
 
 export default async function PageMesLivres() {
   const { livres, prog, acces, favoris } = await contexte();

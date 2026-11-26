@@ -9,6 +9,7 @@ import { JEUX_3D } from "@/lib/jeux/jeux3d";
 import { jeuGratuit } from "@/lib/jeux/gratuits";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Jeux · Kwélafé" };
 
 export default async function PageJeux() {
   const { session, abonne } = await contexte();

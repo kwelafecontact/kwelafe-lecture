@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tailleExtrait } from "@/lib/jeton-contenu";
 import { notFound } from "next/navigation";
 import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
@@ -63,7 +64,10 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
                   {p && p.pourcentage > 0 && !p.termine ? `Reprendre la lecture` : p?.termine ? "Relire" : "Commencer la lecture"}
                 </Link>
               ) : (
-                <a className="btn large" href={livre.url_boutique || config.abonnementUrl}>Découvrir sur la boutique</a>
+                <>
+                  {tailleExtrait(livre.manifeste as any) > 0 && <Link className="btn large" href={`/lire/${livre.slug}`}>📖 Lire un extrait gratuit</Link>}
+                  <a className={`btn large ${tailleExtrait(livre.manifeste as any) > 0 ? "secondaire" : ""}`} href={livre.url_boutique || config.abonnementUrl}>Découvrir sur la boutique</a>
+                </>
               )}
               <BoutonFavori livreId={livre.id} initial={favoris.has(livre.id)} />
             </div>

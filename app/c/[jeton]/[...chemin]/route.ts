@@ -2,6 +2,7 @@
 // Le fichier complet du livre n'est jamais transmis.
 import { NextRequest, NextResponse } from "next/server";
 import { lireJetonContenu } from "@/lib/jeton-contenu";
+import { livreParId } from "@/lib/donnees";
 import { stockage } from "@/lib/cf";
 import { SCRIPT_CHAPITRE, SCRIPT_WEB } from "@/lib/script-chapitre";
 
@@ -21,6 +22,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ jet
 
   const relatif = chemin.map(decodeURIComponent).join("/");
   if (relatif.includes("..") || /\.(opf|epub)$/i.test(relatif)) return new NextResponse("Interdit", { status: 403 });
+
+  // Extrait gratuit : seules les premières pages (ou le premier chapitre) peuvent être lues
+  if (droit.x) {
+    const n = relatif.match(/^pdf\/(\d+)\./);
+    if (n) { if (Number(n[1]) > droit.x) return new NextResponse("Extrait terminé", { status: 403 }); }
+    else if (/\.(x?html?)$/i.test(relatif)) {
+      const livre = await livreParId(droit.l);
+      const m: any = livre?.manifeste;
+      const permis = m?.type === "epub" ? m.pages.slice(0, droit.x).map((p: { href: string }) => p.href) : [];
+      if (!permis.includes(relatif)) return new NextResponse("Extrait terminé", { status: 403 });
+    }
+  }
 
   const data = await (await stockage()).get(`livres/${droit.l}/${relatif}`);
   if (!data) return new NextResponse("Introuvable", { status: 404 });
