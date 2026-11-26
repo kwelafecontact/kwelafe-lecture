@@ -3,7 +3,16 @@ import { toutesLesImages } from "./produits";
 import { PHOTOS } from "./photos";
 import { GestionnairePerf, dprCible, libererCanvas, reveillerAudio, endormirAudio, journal } from "@/public/jeux-3d/commun/performances";
 
-export type Resultat = { gagne: boolean; score: number; etoiles: number };
+export type Resultat = { gagne: boolean; score: number; etoiles: number; lignes?: string[]; savoir?: { titre: string; texte: string } };
+/** Progression entre les parties (facultative) : monnaie, boutique, carnet, défi du jour. */
+export type ArticleBoutique = { id: string; ic: string; nom: string; txt: string; niveau: number; max: number; prix: number | null; peut: boolean };
+export type Progression = {
+  monnaie(): string;
+  defi(): string;
+  boutique(): ArticleBoutique[];
+  acheter(id: string): boolean;
+  carnet(): { titre: string; total: number; pages: (string | null)[] };
+};
 export type Hud = { score?: number; objectif?: string; temps?: number | null; info?: string };
 
 export type Contexte = {
@@ -41,6 +50,7 @@ export type DefJeu = {
   visuels?: "photos";       // images photo des planches de KWélafé à la place des rendus 3D
   images?: Record<string, string>;   // images propres au jeu (id → chemin), préchargées avec lui
   creer: (c: Contexte, niveau: number) => Jeu;
+  progression?: Progression;
 };
 
 // ---------------------------------------------------------------------------

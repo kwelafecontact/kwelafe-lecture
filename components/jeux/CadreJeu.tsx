@@ -29,6 +29,8 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
   const [record, setRecord] = useState(recordInitial || 0);
   const [son, setSon] = useState(true);
   const [reprise, setReprise] = useState<PartieEnCours | null>(null);
+  const [panneau, setPanneau] = useState<"boutique" | "carnet" | null>(null);
+  const [, rafraichir] = useState(0);
   const etat = useRef({ donnees, record, niveau, def });
   etat.current = { donnees, record, niveau, def };
   const ecranRef = useRef<Ecran>("chargement");
@@ -165,6 +167,38 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
                 ? <button className={reprise ? "btn secondaire" : "btn"} onClick={() => setEcran("niveaux")}>Jouer · {totalEtoiles}/{def.niveaux * 3} ★</button>
                 : <button className={reprise ? "btn secondaire" : "btn"} onClick={() => jouer(1)}>{reprise ? "Nouvelle partie" : "Jouer"}{record ? ` · record ${record}` : ""}</button>}
             </div>
+            {def.progression && (
+              <div className="kw-progression">
+                <p className="kw-defi">🎯 {def.progression.defi()}</p>
+                <div className="kk-boutons">
+                  <button className="btn secondaire" onClick={() => setPanneau("boutique")}>🧺 Boutique · {def.progression.monnaie()}</button>
+                  <button className="btn secondaire" onClick={() => setPanneau("carnet")}>📖 Carnet</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {panneau && def?.progression && (
+        <div className="kk-centre" style={{ zIndex: 30 }}>
+          <div className="kk-panneau" style={{ maxHeight: "78vh", overflowY: "auto", maxWidth: 480 }}>
+            {panneau === "boutique" ? (<>
+              <h2>Boutique</h2>
+              <p><b>Réserve : {def.progression.monnaie()}</b></p>
+              {def.progression.boutique().map((a) => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, textAlign: "left", padding: 10, margin: "8px 0", borderRadius: 14, background: "rgba(0,0,0,.08)" }}>
+                  <span style={{ fontSize: 30 }}>{a.ic}</span>
+                  <span style={{ flex: 1, fontSize: 14, lineHeight: 1.25 }}><b>{a.nom}</b> · niveau {a.niveau}/{a.max}<br />{a.txt}</span>
+                  {a.prix == null ? <span>✔</span> : <button className="btn" style={{ padding: "8px 14px", fontSize: 14 }} disabled={!a.peut} onClick={() => { def.progression!.acheter(a.id); rafraichir((x) => x + 1); }}>{a.prix} 🪙</button>}
+                </div>
+              ))}
+            </>) : (() => { const c = def.progression!.carnet(); const n = c.pages.filter(Boolean).length; return (<>
+              <h2>{c.titre}</h2>
+              <p><b>{n}/{c.total}</b> pages découvertes. Une nouvelle page à chaque partie !</p>
+              {c.pages.map((t, i) => <div key={i} style={{ textAlign: "left", fontSize: 14, padding: "8px 10px", margin: "6px 0", borderRadius: 12, background: "rgba(0,0,0,.07)", opacity: t ? 1 : 0.45 }}>{t ? "🍃 " + t : "🔒 Page à découvrir"}</div>)}
+            </>); })()}
+            <div className="kk-boutons"><button className="btn" onClick={() => setPanneau(null)}>Fermer</button></div>
           </div>
         </div>
       )}
@@ -203,6 +237,8 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
             <h2>{res.gagne ? (def.niveaux > 0 ? "Gagné !" : "Bien joué !") : "Presque !"}</h2>
             {res.nouveauRecord && <div className="kk-badge">Nouveau record !</div>}
             <div className="kk-gros-score">{res.score}</div>
+            {res.lignes?.map((l, i) => <p key={i} style={{ margin: "4px 0", fontWeight: 700 }}>{l}</p>)}
+            {res.savoir && <div style={{ margin: "10px auto 4px", maxWidth: 440, padding: "12px 16px", borderRadius: 16, background: "linear-gradient(#f6ecd2, #e8d6a8)", color: "#3a2410", textAlign: "left", fontSize: 14 }}><b style={{ display: "block", marginBottom: 4 }}>{res.savoir.titre}</b>{res.savoir.texte}</div>}
             <div className="kk-boutons">
               {def.niveaux > 0 && res.gagne && niveau < def.niveaux && <button className="btn" onClick={() => jouer(niveau + 1)}>Niveau suivant</button>}
               <button className={def.niveaux > 0 && res.gagne ? "btn secondaire" : "btn"} onClick={() => jouer(niveau)}>Encore une !</button>
