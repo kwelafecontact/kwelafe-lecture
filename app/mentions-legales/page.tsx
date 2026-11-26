@@ -10,7 +10,7 @@ export default function MentionsLegales() {
       <p>
         L'application Kwélafé Lecture est éditée par <b>Kwélafé</b> (nom commercial Kwélafé Production), micro-entreprise de Himen Nalem.<br />
         SIREN : 850 887 100 · SIRET : 850 887 100 00020 · Code APE : 4791B<br />
-        Adresse : 97 rue des Sources, 83600 Fréjus, France · Téléphone : 07 64 27 25 06
+        Adresse : 173 rue de Courcelles, 75017 Paris, France · Téléphone : 07 64 27 25 06
       </p>
       <p>Directeur de la publication : Himen Nalem.<br />Contact : <a href="mailto:kwelafe.contact@gmail.com">kwelafe.contact@gmail.com</a></p>
       <h2>Hébergement</h2>
