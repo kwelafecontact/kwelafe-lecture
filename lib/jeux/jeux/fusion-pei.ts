@@ -58,7 +58,7 @@ const progression: Progression = {
   carnet: () => ({ titre: "Carnet du marché", total: FAITS.length, pages: FAITS.map((f, i) => (save.faits.includes(i) ? f : null)) }),
 };
 const CLIENTS = ["Madame Payet", "Tonton Hoarau", "Mamie Grondin", "Monsieur Técher", "Madame Fontaine", "Tonton Rivière"];
-type Commande = { k: number; nom: string; t: number; max: number; x: number; y: number };
+type Commande = { k: number; nom: string; t: number; max: number; x: number; y: number; w: number };
 const PAR_NIVEAU = 450;         // points par niveau
 
 type Boule = { k: number; x: number; y: number; vx: number; vy: number; r: number; rot: number; ne: number; dessus: number; gonfle: number; gate?: boolean; joker?: boolean };
@@ -106,10 +106,17 @@ class Fusion implements Jeu {
   }
   // la difficulté monte : les fruits tirés deviennent plus variés avec les niveaux
   tirer() { const max = Math.min(6, 4 + Math.floor((this.niveau - 1) / 2)); return Math.floor(this.c.rnd() * (max + 1)); }
+  // une rangée sur grand écran, deux rangées sur téléphone pour garder des fruits bien visibles
+  get rangeesListe() { return (this.L - 40) / CHAINE.length < 40 ? 2 : 1; }
+  get parRangee() { return Math.ceil(CHAINE.length / this.rangeesListe); }
+  get tailleListe() { return Math.min(48, (this.L - 40) / this.parRangee); }
+  get hauteurListe() { return this.rangeesListe * this.tailleListe + 16; }
   disposer() {
-    const w = Math.min(this.L * 0.92, this.H * 0.62 * (1 + save.amelio.tante * 0.05), 460 * (1 + save.amelio.tante * 0.05)), h = Math.min(this.H * 0.66, w * 1.25);
-    this.boite = { x: (this.L - w) / 2, y: this.H - h - 24, w, h };
+    const w = Math.min(this.L * 0.92, this.H * 0.62 * (1 + save.amelio.tante * 0.05), 460 * (1 + save.amelio.tante * 0.05)), h = Math.min(this.H * 0.58, w * 1.2);
+    const bas = this.hauteurListe + 30; // place réservée à la liste des fruits
+    this.boite = { x: (this.L - w) / 2, y: Math.max(this.H * 0.3, this.H - h - bas - (this.H - h - bas) * 0.18), w, h };
     this.base = w;
+    setTimeout(() => this.placerCommandes(), 0);
     const r = 27, x = Math.max(56, this.boite.x - 4 + r);
     const by = Math.min(170, this.boite.y - r - 14); this.boutons = [{ id: "secoue", x, y: by, r }, { id: "cueille", x: x + r * 2.4, y: by, r }];
   }
@@ -145,10 +152,15 @@ class Fusion implements Jeu {
     const k = min + Math.floor(this.c.rnd() * (max - min + 1));
     const nom = CLIENTS[Math.floor(this.c.rnd() * CLIENTS.length)];
     const t = 40 - Math.min(14, this.niveau * 2);
-    this.commandes.push({ k, nom, t, max: t, x: 0, y: 0 });
+    this.commandes.push({ k, nom, t, max: t, x: 0, y: 0, w: 96 });
     this.placerCommandes();
   }
-  placerCommandes() { const n = this.commandes.length, y = Math.max(118, this.boite.y - 92); this.commandes.forEach((c, i) => { c.x = this.L / 2 + (i - (n - 1) / 2) * 104; c.y = y; }); }
+  placerCommandes() {
+    // entre les boutons (à gauche) et le fruit suivant (à droite)
+    const b2 = this.boutons[1], g = b2 ? b2.x + b2.r + 8 : 20, d = this.L - 64 - 40, n = this.commandes.length;
+    const w = Math.min(96, (d - g) / Math.max(1, n) - 6), y = b2 ? b2.y : 150, cx = (g + d) / 2;
+    this.commandes.forEach((c, i) => { c.w = w; c.x = cx + (i - (n - 1) / 2) * (w + 6); c.y = y; });
+  }
   livrable(b: Boule) { return !b.gate && !b.joker && this.commandes.some((c) => c.k === b.k); }
   livrer(b: Boule) {
     const i = this.commandes.findIndex((c) => c.k === b.k); if (i < 0) return;
@@ -381,10 +393,10 @@ class Fusion implements Jeu {
   }
   dessinerCommandes(ctx: CanvasRenderingContext2D) {
     for (const c of this.commandes) {
-      const w = 96, h = 70, x = c.x - w / 2, y = c.y - h / 2, urgent = c.t < 8;
+      const w = c.w, h = 70, x = c.x - w / 2, y = c.y - h / 2, urgent = c.t < 8;
       ctx.save(); ctx.fillStyle = "rgba(255,248,230,0.94)"; arrondi(ctx, x, y, w, h, 14); ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = urgent ? `rgba(230,60,30,${0.6 + 0.4 * Math.sin(this.temps * 10)})` : "#c8862a"; arrondi(ctx, x, y, w, h, 14); ctx.stroke();
-      ctx.fillStyle = "#3a2410"; ctx.font = "700 11px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillText(c.nom, c.x, y + 14);
+      ctx.fillStyle = "#3a2410"; ctx.font = `700 ${w < 86 ? 9.5 : 11}px system-ui, sans-serif`; ctx.textAlign = "center"; ctx.fillText(c.nom, c.x, y + 14, w - 6);
       sprite(ctx, this.c.img(CHAINE[c.k]), c.x, y + 38, 34, 0, 1, false);
       ctx.fillStyle = "rgba(0,0,0,0.12)"; ctx.fillRect(x + 10, y + h - 9, w - 20, 4); ctx.fillStyle = urgent ? "#e64a1e" : "#5ab43a"; ctx.fillRect(x + 10, y + h - 9, (w - 20) * Math.max(0, c.t / c.max), 4);
       ctx.restore();
@@ -471,9 +483,17 @@ class Fusion implements Jeu {
       this.dessinerBoutons(ctx);
     }
     // chaîne des fruits en bas
-    const t = Math.min(30, this.L / (CHAINE.length + 2));
-    const plus = Math.max(-1, ...this.boules.map((b) => b.k));
-    CHAINE.forEach((id, i) => sprite(ctx, this.c.img(id), (this.L - CHAINE.length * t) / 2 + i * t + t / 2, this.H - 12, t * (i === plus ? 1.15 : 0.9), 0, i <= plus ? 1 : 0.45, false));
+    // liste des fruits, du plus petit au plus gros, sur un bandeau bien lisible
+    const t = this.tailleListe, plus = Math.max(-1, ...this.boules.map((b) => b.k));
+    const pr = this.parRangee, lw = pr * t + 16, lx = (this.L - lw) / 2, ly = B.y + B.h + 20, lh = this.hauteurListe;
+    ctx.save(); ctx.fillStyle = "rgba(255,248,230,0.9)"; arrondi(ctx, lx, ly, lw, lh, 16); ctx.fill(); ctx.strokeStyle = "#c8862a"; ctx.lineWidth = 2; arrondi(ctx, lx, ly, lw, lh, 16); ctx.stroke(); ctx.restore();
+    CHAINE.forEach((id, i) => {
+      const ligne = Math.floor(i / pr), col = i % pr, decal = ligne === 1 ? (pr * this.rangeesListe - CHAINE.length) * t / 2 : 0;
+      const x = lx + 8 + decal + col * t + t / 2, y = ly + 8 + ligne * t + t / 2;
+      if (i === plus) { ctx.save(); ctx.fillStyle = "rgba(255,210,58,0.45)"; ctx.beginPath(); ctx.arc(x, y, t * 0.55, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      sprite(ctx, this.c.img(id), x, y, t * (i === plus ? 1.1 : 0.92), 0, i <= plus ? 1 : 0.5, false);
+      if (i < CHAINE.length - 1 && col < pr - 1) { ctx.fillStyle = "rgba(120,70,20,0.5)"; ctx.font = "700 10px system-ui"; ctx.textAlign = "center"; ctx.fillText("›", x + t / 2, y + 4); }
+    });
   }
 }
 
