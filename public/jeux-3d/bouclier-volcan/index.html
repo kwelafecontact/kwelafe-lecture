@@ -220,7 +220,9 @@ renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.A
 const scene = new THREE.Scene();
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
-const texFond = new THREE.TextureLoader().load('./fond-volcan.webp', () => { window.PRET = true; $('charge').textContent = ''; resize(); }); texFond.colorSpace = THREE.SRGBColorSpace;
+// deux versions du même décor : verticale (téléphone) et horizontale (tablette, ordinateur)
+const chargeFond = (f) => { const t = new THREE.TextureLoader().load(f, () => { window.PRET = true; $('charge').textContent = ''; resize(); }); t.colorSpace = THREE.SRGBColorSpace; return t; };
+const texFond = chargeFond('./fond-enclos.webp'), texFondL = chargeFond('./fond-enclos-large.webp');
 const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false }));
 planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
 const composer = new EffectComposer(renderer);
@@ -433,16 +435,22 @@ function crier(m, urgent = false) {
 }
 // trois explosions selon la grosseur de la pierre : grave et lourde, moyenne, petite et plus vive
 const sonsRoche = {}; let sonsDemandes = false;
-function chargerSon() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const t of ['petite', 'moyenne', 'grosse']) fetch('./explosion-' + t + '.mp3').then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).then(d => { sonsRoche[t] = d; }).catch(() => {}); }
+function chargerSon() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const t of ['petite', 'moyenne', 'grosse']) fetch('./explosion-' + t + '.mp3?v=2').then(r => r.arrayBuffer()).then(b => actx.decodeAudioData(b)).then(d => { sonsRoche[t] = d; }).catch(() => {}); }
 const tailleSon = k => k >= 1.0 ? 'grosse' : k >= 0.85 ? 'moyenne' : 'petite';
 function jouerRoche(vitesse, vol, k = 0.9) { const buf = sonsRoche[tailleSon(k)]; if (!actx || !buf) return false; const s = actx.createBufferSource(); s.buffer = buf; s.playbackRate.value = vitesse * rnd(0.93, 1.07); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
+// sons ElevenLabs v2 (sons/<nom>.mp3) ; si un son manque, le son synthétique d'avant prend le relais
+const SFX = {}; let sfxDemandes = false;
+function chargerSfx() { if (sfxDemandes || !actx) return; sfxDemandes = true; for (const n of ['tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte']) fetch('./sons/' + n + '.mp3?v=2').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { SFX[n] = d; }).catch(() => {}); }
+function sfx(n, vol = 0.8, vit = 1) { chargerSfx(); const buf = SFX[n]; if (!actx || !buf) return false; const s = actx.createBufferSource(); s.buffer = buf; s.playbackRate.value = vit * rnd(0.96, 1.04); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
 const son = {
-  tir: () => { bruit(0.5, 160, 0.7, 0.6, 0, 'lowpass'); },
+  tir: () => { if (!sfx('tir', 0.55)) bruit(0.5, 160, 0.7, 0.6, 0, 'lowpass'); },
   coupe: (k) => { bruit(0.08, 2600, 2, 0.25); if (!jouerRoche(1.12, 0.8, k)) bruit(0.3, 500, 1, 0.4, 0.02); },
   impact: (k) => { if (!jouerRoche(0.9, 1.0, k)) { bruit(0.6, 200, 0.8, 0.8, 0, 'lowpass'); bruit(0.2, 1500, 1, 0.2); } },
-  touche: () => { ton(400, 200, 0.35, 0.08, 'triangle'); ton(300, 150, 0.4, 0.06, 'triangle', 0.1); },
-  bouclier: () => [0, 4, 7, 12].forEach((s, i) => ton(440 * 2 ** (s / 12), 440 * 2 ** (s / 12), 0.3, 0.06, 'sine', i * 0.07)),
-  niveau: () => [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
+  touche: () => { if (sfx('alerte', 0.8)) return; ton(400, 200, 0.35, 0.08, 'triangle'); ton(300, 150, 0.4, 0.06, 'triangle', 0.1); },
+  rappel: () => { if (!sfx('rappel', 0.85)) son.bouclier(); },
+  olivine: () => sfx('olivine', 0.7),
+  bouclier: () => sfx('bouclier', 0.8) || [0, 4, 7, 12].forEach((s, i) => ton(440 * 2 ** (s / 12), 440 * 2 ** (s / 12), 0.3, 0.06, 'sine', i * 0.07)),
+  niveau: () => sfx('niveau', 0.75) || [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
 };
 
 // ---------------------------------------------------------------- partie
@@ -452,6 +460,7 @@ const dureePhase = () => Math.min(34, 20 + niveau * 2);
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupees = 0, niveau = 1, ficheIdx = 0, bouclier = 0, charge = 0, serie = 0, ralentis = 0, ondes = 0, ralenti = 0;
 const bombes = [], marcheurs = [], oiseaux = []; let prochainOiseau = 6;
 const COULEURS = [0xd81e1e, 0x1e5ad8, 0x18a048, 0x8a2ad0];
+const SENTIER_L = 0.83; // ligne du sentier dans l'image horizontale
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
   const d = Math.min(devicePixelRatio, 2); trace.width = W * d; trace.height = H * d; tctx.setTransform(d, 0, 0, d, 0, 0);
@@ -459,8 +468,12 @@ function resize() {
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
   sol = -viewH * 0.4; capteur.position.set(0, sol + 0.005, -2);
   const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
-  const ratioImg = 16 / 9; let pw = wF, ph = wF / ratioImg; if (ph < hF) { ph = hF; pw = hF * ratioImg; }
-  planFond.scale.set(pw * 1.08, ph * 1.08, 1); planFond.position.y = (ph - hF) / 2;
+  // décor peint 2:3 : cratère en haut au centre, Enclos au milieu, sentier en bas ; le sentier peint (85 % de l'image) passe sous les pieds des randonneurs (90 % de l'écran)
+  const large = W / H > 0.85; planFond.material.map = large ? texFondL : texFond;
+  const ratioImg = large ? 4 / 3 : 2 / 3, SENTIER = large ? SENTIER_L : 0.85, CIBLE = 0.9; let pw = wF, ph = wF / ratioImg; if (ph < hF) { ph = hF; pw = hF * ratioImg; }
+  pw *= 1.04; ph *= 1.04; if (ph * SENTIER < hF * CIBLE) { const k = hF * CIBLE / (ph * SENTIER); pw *= k; ph *= k; }
+  const haut = Math.min(0, Math.max(hF - ph, CIBLE * hF - SENTIER * ph)); // décalage du haut de l'image sous le haut de l'écran
+  planFond.scale.set(pw, ph, 1); planFond.position.y = hF / 2 - haut - ph / 2;
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H);
   const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
   balises.forEach(b => scene.remove(b)); balises.length = 0;
@@ -553,14 +566,14 @@ function dessinerSismo(dt) {
 }
 // randonneur qui quitte le balisage
 function egarer() { const libres = marcheurs.filter(m => !m.egare && m.choc <= 0); if (!libres.length) return; const m = libres[Math.floor(Math.random() * libres.length)]; m.egare = 4 + save.amelio.jumelles; const e = document.createElement('div'); e.className = 'alerte'; e.textContent = '⚠️'; document.body.appendChild(e); m.alerte = e; crier(m); }
-function rappeler(m) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; score += 12; majScore(); compter('rappels'); son.bouclier(); popup('Reste sur le balisage ! +12', m.obj.position.clone().add(new THREE.Vector3(0, 2.4, 0)), 'chaine'); }
+function rappeler(m) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; score += 12; majScore(); compter('rappels'); son.rappel(); popup('Reste sur le balisage ! +12', m.obj.position.clone().add(new THREE.Vector3(0, 2.4, 0)), 'chaine'); }
 // olivine tombée d'une grosse bombe
 function poserOlivine(x) {
   const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0), new THREE.MeshStandardMaterial({ color: 0x7ad030, emissive: 0x3a8a10, emissiveIntensity: 1.2, roughness: 0.2, metalness: 0.1 }));
   m.position.set(Math.max(-viewW * 0.45, Math.min(viewW * 0.45, x)), sol + 0.3, 1.0); m.scale.set(1, 1.4, 1); scene.add(m); olivines.push({ obj: m, t: 0 });
 }
 function tapper(px, py) {
-  for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); ton(1500, 2200, 0.15, 0.07, 'triangle'); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); return true; } }
+  for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); if (!son.olivine()) ton(1500, 2200, 0.15, 0.07, 'triangle'); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); return true; } }
   for (const m of marcheurs) { if (!m.egare) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 1, 0))); if (Math.hypot(sc.x - px, sc.y - py) < 70) { rappeler(m); return true; } }
   return false;
 }
