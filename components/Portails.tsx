@@ -2,6 +2,7 @@
 // Entrée dans l'app : le logo s'anime (une fois par visite), on choisit son type de compte, puis son espace.
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Avatar from "./Avatar";
 
 type Props = {
   prenom: string;
@@ -80,6 +81,7 @@ export default function Portails({ prenom, visiteur, eleve, nbLivres, nbJeux, en
 
       {phase === "profil" && (
         <section className="portails-choix">
+          <div className="portails-avatar"><Avatar taille={64} /></div>
           <h1>{prenom ? `Bonjour ${prenom} !` : "Bonjour !"}</h1>
           <p>Qui utilise Kwélafé aujourd'hui ?</p>
           <ul className="portails-grille profils">
@@ -99,7 +101,8 @@ export default function Portails({ prenom, visiteur, eleve, nbLivres, nbJeux, en
       )}
 
       {phase !== "profil" && <section className="portails-choix" aria-hidden={phase === "intro"}>
-        <h1>{prenom ? `Bonjour ${prenom} !` : "Bonjour !"}</h1>
+        <div className="portails-avatar"><Avatar taille={64} /></div>
+          <h1>{prenom ? `Bonjour ${prenom} !` : "Bonjour !"}</h1>
         <p>Où veux-tu aller aujourd'hui ?</p>
 
         <ul className="portails-grille">

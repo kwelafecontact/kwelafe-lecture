@@ -613,3 +613,29 @@ body { background: var(--ivoire); }
 .groupe-detail { padding: 0 14px 14px; display: grid; gap: 6px; }
 .choix-livres { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; max-height: 280px; overflow: auto; padding: 4px; border: 1px solid var(--beige); border-radius: 10px; }
 .choix-livre { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+
+/* Protection du contenu */
+.ecran-protege { position: fixed; inset: 0; z-index: 50; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.ecran-protege span { font-size: 44px; }
+.ecran-protege small { opacity: .6; }
+@media print { .lecteur, .lecteur-web { display: none !important; } body::after { content: "Impression non autorisée · Kwélafé Production"; display: block; padding: 40px; font-size: 20px; } }
+
+/* Avatars */
+.avatar-bouton { position: relative; padding: 0; border: 3px solid #fff; border-radius: 50%; background: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.18); cursor: pointer; flex: 0 0 auto; }
+.avatar-bouton img { width: 100%; height: 100%; display: block; border-radius: 50%; }
+.avatar-crayon { position: absolute; right: -4px; bottom: -4px; width: 22px; height: 22px; border-radius: 50%; background: #1b2a4a; color: #fff; font-size: 12px; display: grid; place-items: center; border: 2px solid #fff; }
+.avatar-voile { position: fixed; inset: 0; z-index: 60; background: rgba(15,22,38,.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.avatar-panneau { background: var(--blanc, #fff); color: var(--texte, #333); border-radius: 22px; padding: 20px; width: min(520px, 100%); text-align: center; display: grid; gap: 14px; }
+.avatar-panneau h2 { margin: 0; }
+.avatar-grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.avatar-grille button { border: 3px solid transparent; border-radius: 16px; background: none; padding: 6px 2px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.avatar-grille button.actif { border-color: var(--bleu); background: #eef5fc; }
+.avatar-grille img { width: 64px; height: 64px; border-radius: 50%; }
+.avatar-grille small { font-size: 12px; font-weight: 700; }
+.portails-avatar { display: flex; justify-content: center; margin-bottom: 8px; }
+.ligne-avatar { display: flex; align-items: center; gap: 10px; margin-top: 6px !important; }
+
+.hors-ligne-jeux { display: flex; align-items: center; gap: 12px; background: var(--blanc); border-radius: 18px; padding: 12px 14px; box-shadow: var(--ombre); margin-bottom: 20px; border-left: 5px solid var(--vert); }
+.hors-ligne-jeux > span { font-size: 26px; }
+.hors-ligne-jeux > div { flex: 1; display: grid; }
+.hors-ligne-jeux small { color: var(--doux); font-size: 13px; }

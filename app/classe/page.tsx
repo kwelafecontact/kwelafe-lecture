@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
+import Avatar from "@/components/Avatar";
 import CarteLivre from "@/components/CarteLivre";
 import { contexte } from "@/lib/contexte";
 import { groupeDeSession, MOTS, selectionDe } from "@/lib/etablissements";
@@ -35,7 +36,7 @@ export default async function Classe() {
           <div>
             <div className="sur-titre">{etab.nom}{etab.ville ? ` · ${etab.ville}` : ""}</div>
             <h1>{groupe.nom}</h1>
-            <p>{session.prenom ? `Bonjour ${session.prenom} ! ` : "Bonjour ! "}{niveau ? niveau.nom : ""}{groupe.responsable ? ` · avec ${groupe.responsable}` : ""}</p>
+            <p className="ligne-avatar"><Avatar taille={40} cle="kw-avatar-eleve" />{session.prenom ? `Bonjour ${session.prenom} ! ` : "Bonjour ! "}{niveau ? niveau.nom : ""}{groupe.responsable ? ` · avec ${groupe.responsable}` : ""}</p>
           </div>
         </header>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NavBas from "@/components/NavBas";
 import LienSite from "@/components/LienSite";
+import JeuxHorsLigne from "@/components/JeuxHorsLigne";
 import { contexte } from "@/lib/contexte";
 import { config } from "@/lib/config";
 import { CATALOGUE } from "@/lib/jeux/catalogue";
@@ -21,6 +22,8 @@ export default async function PageJeux() {
             <h1>Jeux péi</h1>
           </div>
         </header>
+
+        <JeuxHorsLigne urls={CATALOGUE.filter((j) => !j.troisD && (acces || jeuGratuit(j.id))).map((j) => `/jeux/${j.id}`)} />
 
         {!acces && (
           <section className="panneau" style={{ marginBottom: 22 }}>

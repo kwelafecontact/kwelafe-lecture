@@ -1,3 +1,4 @@
+import Avatar from "@/components/Avatar";
 import NavBas from "@/components/NavBas";
 import ActiverCode from "@/components/ActiverCode";
 import GuideInstallation from "@/components/GuideInstallation";
@@ -23,7 +24,8 @@ export default async function Compte() {
   return (
     <>
       <main className="page">
-        <header className="entete">
+        <header className="entete" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <Avatar taille={64} />
           <div>
             <div className="sur-titre">{session.visiteur ? "Mode visiteur" : session.email}</div>
             <h1>Mon compte</h1>

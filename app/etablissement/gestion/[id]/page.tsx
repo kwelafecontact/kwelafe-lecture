@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import GestionEtab from "@/components/GestionEtab";
+import Avatar from "@/components/Avatar";
 import { lireSession } from "@/lib/session";
 import { etabAdministre, MOTS, type Groupe } from "@/lib/etablissements";
 import { tous } from "@/lib/cf";
@@ -22,6 +23,7 @@ export default async function Gestion({ params }: { params: Promise<{ id: string
   return (
     <main className="page" style={{ paddingBottom: 40 }}>
       <Link href="/etablissement" className="lien">← Retour</Link>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}><Avatar taille={48} cle="kw-avatar-prof" /><span className="texte-doux">Mon avatar d'{MOTS[etab.type].responsable}</span></div>
       <h1 style={{ marginTop: 10 }}>{MOTS[etab.type].emoji} {etab.nom}</h1>
       <p className="texte-doux">Abonnement actif jusqu'au {new Date(etab.fin).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
       <GestionEtab

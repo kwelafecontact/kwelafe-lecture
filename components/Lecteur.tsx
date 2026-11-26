@@ -66,6 +66,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   const [cadrage, setCadrage] = useState<"page" | "largeur">("page");
   const [eclair, setEclair] = useState<"" | "g" | "d">("");
   const [motif, setMotif] = useState("lagon");
+  const [ecranMasque, setEcranMasque] = useState(false);
   const [fin, setFin] = useState(false);
   const [dims, setDims] = useState({ w: 1024, h: 768 });
   const cadres = useRef<(HTMLIFrameElement | null)[]>([]);
@@ -168,6 +169,34 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   }, [affichees, toucher, suivant, precedent, i, total]);
 
   useEffect(() => { setZoomNiv(1); }, [i]);
+
+  /* ---------- Protection : écran noir quand l'app passe en arrière-plan, pendant une capture d'écran sur ordinateur ou à l'impression ---------- */
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const masquer = (duree = 0) => { setEcranMasque(true); if (t) clearTimeout(t); if (duree) t = setTimeout(() => setEcranMasque(false), duree); };
+    const vis = () => (document.visibilityState === "hidden" ? masquer() : setTimeout(() => setEcranMasque(false), 250));
+    // Toucher une page affichée dans un cadre fait perdre le focus à la fenêtre : ce n'est pas une sortie de l'app
+    const perteFocus = () => setTimeout(() => { if (document.activeElement?.tagName !== "IFRAME") masquer(); }, 0);
+    const retourFocus = () => setTimeout(() => setEcranMasque(false), 250);
+    const touche = (e: KeyboardEvent) => {
+      const cap = e.key === "PrintScreen" || ((e.metaKey || e.ctrlKey) && e.shiftKey && ["3", "4", "5", "s", "S"].includes(e.key));
+      if (cap) { masquer(2500); try { navigator.clipboard?.writeText(""); } catch {} }
+      if ((e.metaKey || e.ctrlKey) && ["p", "P", "s", "S"].includes(e.key) && !e.shiftKey) { e.preventDefault(); masquer(1500); }
+    };
+    document.addEventListener("visibilitychange", vis);
+    window.addEventListener("blur", perteFocus);
+    window.addEventListener("focus", retourFocus);
+    window.addEventListener("keydown", touche, true);
+    window.addEventListener("keyup", touche, true);
+    window.addEventListener("beforeprint", () => masquer());
+    return () => {
+      document.removeEventListener("visibilitychange", vis);
+      window.removeEventListener("blur", perteFocus);
+      window.removeEventListener("focus", retourFocus);
+      window.removeEventListener("keydown", touche, true);
+      window.removeEventListener("keyup", touche, true);
+    };
+  }, []);
 
   /* ---------- Rythme de lecture (pour estimer le temps restant) ---------- */
   useEffect(() => { tours.current.n++; }, [i, etatTexte.page]);
@@ -451,6 +480,13 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
 
         <div className="filigrane" aria-hidden>{email}</div>
       </div>
+      {ecranMasque && (
+        <div className="ecran-protege" onClick={() => setEcranMasque(false)}>
+          <span>🔒</span>
+          <b>Lecture protégée</b>
+          <small>Touche l'écran pour reprendre ta lecture</small>
+        </div>
+      )}
       {chaud > 0 && <div className="calque-chaud" style={{ opacity: chaud * 0.35 }} aria-hidden />}
       {lumiere < 1 && <div className="calque-lumiere" style={{ opacity: (1 - lumiere) * 0.85 }} aria-hidden />}
       {marqueIci >= 0 && (
