@@ -58,7 +58,7 @@
 
   #trace { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
   .bandeau { position:fixed; left:50%; top:max(176px, calc(env(safe-area-inset-top) + 160px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
-    padding:6px 20px; border-radius:14px; background:rgba(0,30,60,.55); color:#9ff0ff; text-shadow:0 2px 0 #003a5a; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+    padding:6px 20px; border-radius:14px; background:rgba(0,30,60,.55); color:#9ff0ff; text-shadow:0 2px 0 #003a5a; pointer-events:none; opacity:0; transition:opacity .3s; white-space:normal; width:max-content; max-width:92vw; text-align:center; }
   .bandeau.on { opacity:1; }
   .niveau { position:fixed; right:max(30px, env(safe-area-inset-right)); top:max(122px, calc(env(safe-area-inset-top) + 108px)); text-align:right; font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(20px, 4.4vw, 26px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,160,40,.6); pointer-events:none; opacity:0; transition:opacity .3s; }
   .niveau.on { opacity:1; } .niveau.saute { animation:saute .5s; }
@@ -81,13 +81,15 @@
   .modes.petit .btn { font-size:16px; padding:11px 20px; }
   .goni { position:fixed; left:max(34px, calc(env(safe-area-inset-left) + 34px)); bottom:calc(max(150px, 24vh) + env(safe-area-inset-bottom)); display:none; z-index:6; pointer-events:none; text-align:center; width:clamp(96px, 22vw, 200px); touch-action:none; } .goni.on { display:block; }
   .goni img { width:100%; display:block; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); transition:transform .2s; }
-  .goni.plein { pointer-events:auto; } .goni.plein img { animation:gonipulse .7s ease-in-out infinite alternate; filter:drop-shadow(0 0 12px #ffd23c) drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+  .goni.plein { pointer-events:auto; } .goni.plein img { animation:gonipulse .7s ease-in-out infinite alternate; filter:drop-shadow(0 0 10px #ff2a1a) drop-shadow(0 0 22px #ff2a1a) drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
   @keyframes gonipulse { from { transform:scale(1); } to { transform:scale(1.1) rotate(-3deg); } }
   .jauge { position:relative; height:clamp(12px, 1.8vw, 18px); margin:2px 6px 0; border-radius:8px; background:rgba(0,30,50,.7); border:2px solid #ffe9b0; overflow:hidden; }
   .rempli { position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(#e8f6ff, #8fc6e4); transition:width .4s; }
   .goni span { display:block; font:800 clamp(14px, 2.4vw, 22px) "Baloo 2", sans-serif; color:#fff; text-shadow:0 2px 3px #000; }
   .goni .gl { font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(20px, 3vw, 30px); color:#ffe9b0; text-shadow:0 2px 4px #000; margin-top:4px; }
   .badge { position:fixed; transform:translate(-50%,-100%); padding:2px 10px; border-radius:999px; background:rgba(0,30,50,.75); font:800 14px "Baloo 2", sans-serif; color:#fff; pointer-events:none; display:none; z-index:5; white-space:nowrap; } .badge.plein { background:#c8341e; }
+  .grosniv { position:fixed; left:50%; top:42%; transform:translate(-50%,-50%); pointer-events:none; z-index:8; text-align:center; font-family:"Bangers", sans-serif; letter-spacing:.06em; color:#ffe23a; text-shadow:0 0 24px #ff9a1f, 0 6px 0 #7a2a00, 0 0 4px #000; font-size:clamp(64px, 20vw, 190px); opacity:0; animation:gniv 2.4s ease-out forwards; white-space:nowrap; }
+  @keyframes gniv { 0% { opacity:0; transform:translate(-50%,-50%) scale(.4); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 30% { transform:translate(-50%,-50%) scale(1); } 80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-60%) scale(1.05); } }
 </style>
 </head>
 <body>
@@ -317,10 +319,11 @@ const bancs = [], dechets = [], herons = [];
 let vouveCharge = 0, goni = 0, prochaineCrue = 16, crueAlerte = 0;
 const dureePhase = () => Math.min(40, 20 + niveau * 2.5);
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1900); }
-function popupPx(txt, x, y, cls) { const e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; e.style.left = Math.min(Math.max(x, 110), W - 110) + 'px'; e.style.top = Math.max(y, 120) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1900); }
+function popupPx(txt, x, y, cls) { const e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; e.style.left = Math.min(Math.max(x, 110), W - 110) + 'px'; e.style.top = Math.max(y, 120) + 'px'; document.body.appendChild(e); e.style.animationDuration = '2.8s'; setTimeout(() => e.remove(), 2900); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
 function majGalets() { $('galetsHud').textContent = `🪨 ${galetsPartie} galet${galetsPartie > 1 ? 's' : ''}`; }
 function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = Array.from({ length: viesMax }, (_, i) => `<span class="${i >= vies ? 'perdue' : ''}">💧</span>`).join(''); }
+function grosNiveau() { const e = document.createElement('div'); e.className = 'grosniv'; e.textContent = 'Niveau ' + niveau; document.body.appendChild(e); setTimeout(() => e.remove(), 2500); }
 function majNiveau() { const e = $('niveau'); e.textContent = 'Niveau ' + niveau; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
 function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), Math.max(d * 1.8, 3.2) * 1000); }
 function compter(type, n = 1) { stats[type] = (stats[type] || 0) + n; const d = defiDuJour(); if (!d.fait && d.type === type && stats[type] >= d.cible) { save.defi.fait = true; save.galets += 5; sauver(); bandeau('Défi du jour réussi ! +5 galets', 3); son.niveau(); } }
@@ -569,7 +572,7 @@ function boucle() {
     temps += dt; phaseT += dt;
     prochaineCrue -= dt; if (crueAlerte > 0) { crueAlerte -= dt; if (crueAlerte <= 0) casser(Math.min(4, 2 + Math.floor(niveau / 3))); } else if (prochaineCrue <= 0 && phase === 'actif') { crueAlerte = 1.4; prochaineCrue = Math.max(9, 18 - niveau) + rnd(0, 5); bandeau('Crue ! Le barrage va céder', 1.6); son.crue(); }
     if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); prochainHeron -= dt; if (prochainHeron <= 0) { prochainHeron = Math.max(9, 18 - niveau) + rnd(0, 5); lancerHeron(); } }
-    else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; gagnerGalets(1); son.niveau(); majNiveau(); bandeau('Niveau ' + niveau + ' : les bichiques arrivent', 1.8); }
+    else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; gagnerGalets(1); son.niveau(); majNiveau(); grosNiveau(); bandeau('Les bichiques arrivent', 1.8); }
     if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
     if (grandeVouve > 0) grandeVouve -= dt; else charge = Math.min(RECHARGE, charge + dt);
     if (ralenti > 0) ralenti -= dt;
@@ -659,7 +662,7 @@ addEventListener('resize', () => { resize(); chargerDecor(); }); resize(); majVi
 const img = new Image(); img.src = './fond-portrait.webp?v=2?v=2'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { bancs, dechets, herons, nouveauBanc, nouveauDechet, lancerHeron, tapper, finDeNiveau, vendre, activerGrande, get capVouve() { return capVouve(); }, tst(o) { if (o.v !== undefined) vouveCharge = o.v; if (o.c !== undefined) charge = o.c; }, get goniVal() { return goniVal; }, get phase() { return phase; }, save, get niveau() { return niveau; }, toScreen, get etat() { return etat; }, demarrer, finPartie, balayer, majPause, get viewH() { return viewH; }, get viewW() { return viewW; }, versMonde, get score() { return score; }, slots, casser, recolter, get vouveCharge() { return vouveCharge; }, get goni() { return goni; } };
+if (TEST) window.jeu = { grosNiveau, bancs, dechets, herons, nouveauBanc, nouveauDechet, lancerHeron, tapper, finDeNiveau, vendre, activerGrande, get capVouve() { return capVouve(); }, tst(o) { if (o.v !== undefined) vouveCharge = o.v; if (o.c !== undefined) charge = o.c; }, get goniVal() { return goniVal; }, get phase() { return phase; }, save, get niveau() { return niveau; }, toScreen, get etat() { return etat; }, demarrer, finPartie, balayer, majPause, get viewH() { return viewH; }, get viewW() { return viewW; }, versMonde, get score() { return score; }, slots, casser, recolter, get vouveCharge() { return vouveCharge; }, get goni() { return goni; } };
 </script>
 </body>
 </html>
