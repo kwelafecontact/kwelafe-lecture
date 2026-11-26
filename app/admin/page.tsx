@@ -4,6 +4,7 @@ import NavBas from "@/components/NavBas";
 import ImportLivre from "@/components/ImportLivre";
 import ImportLot from "@/components/ImportLot";
 import CodesTest from "@/components/CodesTest";
+import EtablissementsAdmin from "@/components/EtablissementsAdmin";
 import { formatDe } from "@/lib/formats";
 import BasculeAdmin from "@/components/BasculeAdmin";
 import { sessionAdmin } from "@/lib/admin";
@@ -17,6 +18,7 @@ export default async function Admin() {
   if (!(await sessionAdmin())) redirect("/");
   const livres = await tousLesLivres();
   const codes = await tous("SELECT * FROM codes_cadeaux ORDER BY cree_le DESC LIMIT 50");
+  const etabs = await tous("SELECT e.*, (SELECT COUNT(*) FROM groupes g WHERE g.etab_id = e.id) AS nb FROM etablissements e ORDER BY e.cree_le DESC").catch(() => []);
   const codesTest = await tous("SELECT empreinte, nom, fin, revoque, dernier_usage, apercu FROM codes_test ORDER BY cree_le DESC LIMIT 100").catch(() => []);
 
   return (
@@ -59,6 +61,11 @@ export default async function Admin() {
             </tbody>
           </table>
           {!livres.length && <p className="texte-doux">Aucun livre pour l'instant.</p>}
+        </section>
+
+        <section className="panneau">
+          <h2>Écoles, médiathèques et collectivités</h2>
+          <EtablissementsAdmin etabs={etabs as any} />
         </section>
 
         <section className="panneau">

@@ -29,15 +29,17 @@ export default function Bibliotheque({
   mode,
   formatInitial = "tous",
   universInitial = "",
+  pourQuiInitial = "",
 }: {
   items: ItemBiblio[];
   mode: "catalogue" | "mes";
   formatInitial?: Format | "tous";
   universInitial?: string;
+  pourQuiInitial?: Public | "";
 }) {
   const [format, setFormat] = useState<Format | "tous">(formatInitial);
   const [univers, setUnivers] = useState(universInitial);
-  const [pourQui, setPourQui] = useState<Public | "">("");
+  const [pourQui, setPourQui] = useState<Public | "">(pourQuiInitial);
   const [etat, setEtat] = useState<(typeof ETATS)[number]["id"]>("tous");
   const [tri, setTri] = useState<(typeof TRIS)[number]["id"]>("recents");
   const [q, setQ] = useState("");

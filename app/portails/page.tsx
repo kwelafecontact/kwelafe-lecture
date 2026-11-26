@@ -18,6 +18,7 @@ export default async function PagePortails() {
     <Portails
       prenom={session.prenom || ""}
       visiteur={!!session.visiteur}
+      eleve={!!session.eleve}
       nbLivres={sansDoublon(livres, acces).length}
       nbJeux={CATALOGUE.length + JEUX_3D.length}
       enCours={livreEnCours ? { titre: livreEnCours.titre, slug: livreEnCours.slug, pct: Math.round(enCours!.pourcentage) } : null}
