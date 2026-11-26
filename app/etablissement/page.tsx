@@ -46,7 +46,7 @@ export default async function PageEtablissement() {
               <a className="btn" href="/auth/login">Me connecter</a>
             </>
           )}
-          <a className="lien" href="mailto:contact@kwelafeproduction.com?subject=Offre%20%C3%A9tablissement%20Kw%C3%A9laf%C3%A9" style={{ marginTop: 10, display: "inline-block" }}>Demander une offre pour mon établissement</a>
+          <a className="lien" href="mailto:kwelafe.contact@gmail.com?subject=Offre%20%C3%A9tablissement%20Kw%C3%A9laf%C3%A9" style={{ marginTop: 10, display: "inline-block" }}>Demander une offre pour mon établissement</a>
         </section>
       </div>
       <Link className="lien" href="/portails" style={{ marginTop: 20 }}>← Retour</Link>

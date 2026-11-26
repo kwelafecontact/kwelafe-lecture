@@ -8,10 +8,11 @@ export default function MentionsLegales() {
     <PageLegale titre="Mentions légales" maj="26 novembre 2026">
       <h2>Éditeur de l'application</h2>
       <p>
-        L'application Kwélafé Lecture est éditée par <b>Kwélafé Production</b>, [forme juridique, par exemple entreprise individuelle ou SAS],
-        immatriculée sous le numéro SIRET [à compléter], dont le siège est situé [adresse complète], La Réunion.
+        L'application Kwélafé Lecture est éditée par <b>Kwélafé</b> (nom commercial Kwélafé Production), micro-entreprise de Himen Mazouz.<br />
+        SIREN : 850 887 100 · SIRET : 850 887 100 00020 · Code APE : 4791B<br />
+        Adresse : 97 rue des Sources, 83600 Fréjus, France · Téléphone : 07 64 27 25 06
       </p>
-      <p>Directeur de la publication : [prénom et nom].<br />Contact : <a href="mailto:contact@kwelafeproduction.com">contact@kwelafeproduction.com</a></p>
+      <p>Directeur de la publication : Himen Mazouz.<br />Contact : <a href="mailto:kwelafe.contact@gmail.com">kwelafe.contact@gmail.com</a></p>
       <h2>Hébergement</h2>
       <p>
         L'application est hébergée par Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107, États-Unis (cloudflare.com).
@@ -25,7 +26,7 @@ export default function MentionsLegales() {
         extraction, totale ou partielle, sans autorisation écrite est interdite.
       </p>
       <h2>Signaler un problème</h2>
-      <p>Pour toute question ou réclamation : <a href="mailto:contact@kwelafeproduction.com">contact@kwelafeproduction.com</a>.</p>
+      <p>Pour toute question ou réclamation : <a href="mailto:kwelafe.contact@gmail.com">kwelafe.contact@gmail.com</a>.</p>
     </PageLegale>
   );
 }

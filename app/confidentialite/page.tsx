@@ -12,7 +12,7 @@ export default function Confidentialite() {
       </p>
 
       <h2>Responsable du traitement</h2>
-      <p>Kwélafé Production, [adresse], La Réunion. Contact : <a href="mailto:contact@kwelafeproduction.com">contact@kwelafeproduction.com</a>.</p>
+      <p>Kwélafé (Kwélafé Production), micro-entreprise de Himen Mazouz, 97 rue des Sources, 83600 Fréjus, France. SIRET 850 887 100 00020. Contact : <a href="mailto:kwelafe.contact@gmail.com">kwelafe.contact@gmail.com</a>.</p>
 
       <h2>Les données que nous utilisons</h2>
       <ul>
@@ -60,7 +60,7 @@ export default function Confidentialite() {
       <h2>Vos droits</h2>
       <p>
         Vous pouvez à tout moment demander à consulter, corriger ou supprimer vos données, ou vous opposer à leur utilisation, en écrivant à
-        <a href="mailto:contact@kwelafeproduction.com"> contact@kwelafeproduction.com</a>. Nous répondons dans un délai d'un mois.
+        <a href="mailto:kwelafe.contact@gmail.com"> kwelafe.contact@gmail.com</a>. Nous répondons dans un délai d'un mois.
         Vous pouvez aussi adresser une réclamation à la CNIL (cnil.fr).
       </p>
     </PageLegale>

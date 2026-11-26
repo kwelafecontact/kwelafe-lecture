@@ -107,7 +107,7 @@ export default async function Ecole({ searchParams }: { searchParams: Promise<{ 
             Bientôt : mode projection pour le tableau, fiches à imprimer et accès pour toute la classe.
             Écrivez-nous pour une offre école, médiathèque ou collectivité.
           </p>
-          <a className="btn" href="mailto:contact@kwelafeproduction.com?subject=Offre%20%C3%A9cole%20Kw%C3%A9laf%C3%A9">Nous contacter</a>
+          <a className="btn" href="mailto:kwelafe.contact@gmail.com?subject=Offre%20%C3%A9cole%20Kw%C3%A9laf%C3%A9">Nous contacter</a>
         </section>
       </main>
       <NavBas />
