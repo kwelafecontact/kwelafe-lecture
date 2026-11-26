@@ -4,15 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MOTS, type TypeEtab } from "@/lib/etab-mots";
 import { NIVEAUX } from "@/lib/ecole";
+import DevoirsGroupe from "@/components/DevoirsGroupe";
 
 type G = { id: string; nom: string; niveau: string | null; responsable: string | null; apercu: string; actif: number; selection: string; message: string | null; connexions: number; dernier_usage: string | null };
-type Props = { etab: { id: string; nom: string; type: TypeEtab; couleur: string; message: string; logo: string }; groupes: G[]; livres: { id: string; titre: string }[] };
+type Props = { etab: { id: string; nom: string; type: TypeEtab; couleur: string; message: string; logo: string }; groupes: G[]; livres: { id: string; titre: string }[]; ressources: { id: string; titre: string; format: string }[]; jeux: { id: string; titre: string }[] };
 
 const COULEURS = ["#2e9d4f", "#1f6fb2", "#d6332a", "#e8a200", "#4b3a78", "#b5562e", "#0f8b8d", "#1b2a4a"];
 const date = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "jamais");
 const liste = (s: string): string[] => { try { return JSON.parse(s); } catch { return []; } };
 
-export default function GestionEtab({ etab, groupes, livres }: Props) {
+export default function GestionEtab({ etab, groupes, livres, ressources, jeux }: Props) {
   const router = useRouter();
   const mots = MOTS[etab.type];
   const [perso, setPerso] = useState(etab);
@@ -148,6 +149,7 @@ export default function GestionEtab({ etab, groupes, livres }: Props) {
                       </label>
                     ))}
                   </div>
+                  <DevoirsGroupe etabId={etab.id} groupeId={g.id} livres={sel.length ? livres.filter((l) => sel.includes(l.id)) : livres} ressources={ressources} jeux={jeux} />
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
                     <button className="btn secondaire" onClick={() => confirm("Créer un nouveau code ? L'ancien ne marchera plus.") && modifier(g, { nouveauCode: true })}>🔑 Nouveau code</button>
                     <button className="btn secondaire" onClick={() => modifier(g, { actif: !g.actif })}>{g.actif ? "⏸ Suspendre l'accès" : "▶ Réactiver"}</button>

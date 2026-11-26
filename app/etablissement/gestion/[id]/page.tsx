@@ -7,6 +7,7 @@ import { etabAdministre, MOTS, type Groupe } from "@/lib/etablissements";
 import { tous } from "@/lib/cf";
 import { livresPublies } from "@/lib/donnees";
 import { sansDoublon } from "@/lib/formats";
+import { JEUX_ECOLE } from "@/lib/ecole-jeux";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Gestion de l'établissement · Kwélafé" };
@@ -20,6 +21,7 @@ export default async function Gestion({ params }: { params: Promise<{ id: string
   if (!etab) redirect("/etablissement");
   const groupes = await tous<Groupe>("SELECT * FROM groupes WHERE etab_id = ? ORDER BY cree_le", id);
   const livres = sansDoublon((await livresPublies()).filter((l) => etab.type !== "ecole" || l.univers !== "horreur")).map((l) => ({ id: l.id, titre: l.titre }));
+  const ressources = await tous<{ id: string; titre: string; format: string }>("SELECT id, titre, format FROM ressources ORDER BY titre").catch(() => []);
   return (
     <main className="page" style={{ paddingBottom: 40 }}>
       <Link href="/etablissement" className="lien">← Retour</Link>
@@ -30,6 +32,8 @@ export default async function Gestion({ params }: { params: Promise<{ id: string
         etab={{ id: etab.id, nom: etab.nom, type: etab.type, couleur: etab.couleur, message: etab.message || "", logo: etab.logo || "" }}
         groupes={groupes.map(({ empreinte, ...g }) => g)}
         livres={livres}
+        ressources={ressources}
+        jeux={JEUX_ECOLE.map((j) => ({ id: j.id, titre: j.titre }))}
       />
     </main>
   );
