@@ -810,6 +810,186 @@
     "moitie_2": "moitie_B"
    },
    "poids_ko": 161
+  },
+  {
+   "id": "citron-vert",
+   "nom": "Citron vert",
+   "fichier": "citron-vert.glb",
+   "taille_reelle_m": 0.06,
+   "couleur_jus": "#7FD21E",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "concombre",
+   "nom": "Concombre",
+   "fichier": "concombre.glb",
+   "taille_reelle_m": 0.22,
+   "couleur_jus": "#8BD43C",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "kiwi",
+   "nom": "Kiwi",
+   "fichier": "kiwi.glb",
+   "taille_reelle_m": 0.07,
+   "couleur_jus": "#5FCB1A",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "piment-vert",
+   "nom": "Gros piment vert",
+   "fichier": "piment-vert.glb",
+   "taille_reelle_m": 0.1,
+   "couleur_jus": "#2FB52A",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "poivron-vert",
+   "nom": "Poivron vert",
+   "fichier": "poivron-vert.glb",
+   "taille_reelle_m": 0.11,
+   "couleur_jus": "#3FC030",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "raisin-blanc",
+   "nom": "Raisin blanc",
+   "fichier": "raisin-blanc.glb",
+   "taille_reelle_m": 0.025,
+   "couleur_jus": "#B8E040",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "raisin-noir",
+   "nom": "Raisin noir",
+   "fichier": "raisin-noir.glb",
+   "taille_reelle_m": 0.025,
+   "couleur_jus": "#3A0A55",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "raisin-rose",
+   "nom": "Raisin rose",
+   "fichier": "raisin-rose.glb",
+   "taille_reelle_m": 0.025,
+   "couleur_jus": "#F04A6A",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "chou-rouge",
+   "nom": "Chou rouge",
+   "fichier": "chou-rouge.glb",
+   "taille_reelle_m": 0.18,
+   "couleur_jus": "#9A1FA8",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "prune-rouge",
+   "nom": "Prune rouge",
+   "fichier": "prune-rouge.glb",
+   "taille_reelle_m": 0.05,
+   "couleur_jus": "#E01030",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "poivron-rouge",
+   "nom": "Poivron rouge",
+   "fichier": "poivron-rouge.glb",
+   "taille_reelle_m": 0.11,
+   "couleur_jus": "#E01818",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
+  },
+  {
+   "id": "radis",
+   "nom": "Radis",
+   "fichier": "radis.glb",
+   "taille_reelle_m": 0.03,
+   "couleur_jus": "#FF2A60",
+   "clearcoat": 0.5,
+   "sheen": 0.0,
+   "noeuds": {
+    "entier": "entier",
+    "moitie_1": "moitie_A",
+    "moitie_2": "moitie_B"
+   },
+   "poids_ko": 85
   }
  ],
  "compression": "meshopt (MeshoptDecoder requis dans GLTFLoader)"
