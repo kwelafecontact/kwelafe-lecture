@@ -81,6 +81,12 @@
   #canal { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(92vw, 520px); padding:10px; border-radius:20px; background:rgba(0,30,50,.7); text-align:center; opacity:0; pointer-events:none; transition:opacity .25s; z-index:9; touch-action:none; }
   #canal.on { opacity:1; pointer-events:auto; } #canal b { font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:22px; color:#9ff0ff; } #canal canvas { width:100%; height:auto; display:block; }
   .modes.petit .btn { font-size:16px; padding:11px 20px; }
+  .goni { position:fixed; left:max(40px, calc(env(safe-area-inset-left) + 40px)); bottom:calc(150px + env(safe-area-inset-bottom)); display:none; z-index:6; pointer-events:none; text-align:center; } .goni.on { display:block; }
+  .sac { position:relative; width:76px; height:98px; border-radius:16px 16px 34px 34px / 16px 16px 40px 40px; background:linear-gradient(#d9b676, #a97c3a); border:3px solid #6e4b1e; overflow:hidden; box-shadow:0 6px 14px rgba(0,0,0,.45); }
+  .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:linear-gradient(#e8f6ff, #9ccbe6); opacity:.85; transition:height .4s; }
+  .sac span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font:800 15px "Baloo 2", sans-serif; color:#3a2410; text-shadow:0 1px 0 rgba(255,255,255,.5); }
+  .goni .gl { font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:20px; color:#ffe9b0; text-shadow:0 2px 4px #000; margin-top:4px; }
+  .badge { position:fixed; transform:translate(-50%,-100%); padding:2px 10px; border-radius:999px; background:rgba(0,30,50,.75); font:800 14px "Baloo 2", sans-serif; color:#fff; pointer-events:none; display:none; z-index:5; white-space:nowrap; } .badge.plein { background:#c8341e; }
 </style>
 </head>
 <body>
@@ -101,7 +107,7 @@
   <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
   <div class="modes petit"><button class="btn btn2 zone-interactive" id="ouvrirAtelier">🪨 Atelier</button><button class="btn btn2 zone-interactive" id="ouvrirCarnet">📖 Carnet</button></div>
   <div class="defi" id="defiMenu"></div>
-  <div class="consigne">Glisse le doigt pour ramasser les bancs de gros bichiques avec la vouve. Laisse passer les bichiques fines dorées (espèce en danger), sors les déchets d’un toucher et chasse le héron !</div>
+  <div class="consigne">Glisse le doigt pour ramasser les gros bichiques. Les galets les guident vers ta vouve : touche-la pour vider dans le goni, et rebâtis le barrage après la crue. Laisse passer les fines dorées, sors les déchets, chasse le héron !</div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
@@ -122,6 +128,8 @@
 <div class="panneau" id="pause"><h2>Pause</h2><p>La rivière attend.</p><div class="modes"><button class="btn zone-interactive" id="reprendre">Reprendre</button><button class="btn btn2 zone-interactive" id="finirPartie">Terminer</button></div></div>
 <div class="panneau" id="atelier"><h2>L'atelier</h2><div id="stock"></div><div id="amelios"></div><div class="modes"><button class="btn zone-interactive" id="fermerAtelier">Fermer</button></div></div>
 <div class="panneau" id="carnet"><h2>Carnet du bichique</h2><div id="faits"></div><div class="modes"><button class="btn zone-interactive" id="fermerCarnet">Fermer</button></div></div>
+<div class="goni" id="goni"><div class="sac"><div class="rempli" id="gonifill"></div><span id="gonitxt">0/120</span></div><div class="gl">Goni</div></div>
+<div class="badge" id="vouveBadge"></div>
 <div id="charge">On installe la vouve…</div>
 <button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
 <button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
@@ -228,6 +236,8 @@ const FAITS = [
   "Les rivières de La Réunion abritent 24 espèces de poissons migrateurs et 9 espèces de grosses crevettes d'eau douce.",
   "Les embouchures sont des passages indispensables : sans elles, les poissons migrateurs ne pourraient ni descendre ni remonter.",
   "Les règles servent à laisser passer assez de poissons pour qu'il y ait encore des bichiques demain.",
+  "Avant la montée, les pêcheurs déplacent des galets à la main pour aménager des canaux qui guident le courant et les poissons vers leurs vouves.",
+  "Les montées de bichiques suivent la lune : les pics ont lieu généralement autour du dernier quartier et de la nouvelle lune.",
 ];
 
 // ---------------------------------------------------------------- sauvegarde, boutique, défi du jour
@@ -236,7 +246,7 @@ let save = { galets: 0, amelio: { vouve: 0, epuisette: 0, canal: 0, lot: 0 }, fa
 try { const sv = JSON.parse(localStorage.getItem(CLE) || 'null'); if (sv) save = Object.assign(save, sv, { amelio: Object.assign(save.amelio, sv.amelio || {}) }); } catch (e) {}
 const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(save)); } catch (e) {} };
 const AMELIOS = [
-  { id: 'vouve', ic: '🧺', nom: 'Vouve tressée', txt: 'Ta vouve est plus large : tu attrapes plus de bichiques d\'un geste.', prix: [6, 15, 30] },
+  { id: 'vouve', ic: '🧺', nom: 'Vouve tressée', txt: 'Ta vouve est plus large, et celle du barrage contient plus de bichiques.', prix: [6, 15, 30] },
   { id: 'epuisette', ic: '🪣', nom: 'Épuisette', txt: 'Tu sors les déchets et tu chasses le héron plus facilement.', prix: [5, 12, 25] },
   { id: 'canal', ic: '🪨', nom: 'Canal bien taillé', txt: 'Les galets du canal se posent avec plus de marge.', prix: [8, 18] },
   { id: 'lot', ic: '🎫', nom: 'Lot de pêche', txt: 'Une goutte de vie en plus au départ.', prix: [10, 25] },
@@ -246,6 +256,7 @@ const DEFIS = [
   { type: 'dechets', cible: 6, txt: n => `Sors ${n} déchets de la rivière` },
   { type: 'herons', cible: 3, txt: n => `Fais fuir ${n} hérons` },
   { type: 'galets', cible: 5, txt: n => `Pose ${n} galets du canal en rythme` },
+  { type: 'goni', cible: 60, txt: n => `Remplis ton goni de ${n} bichiques` },
   { type: 'serie', cible: 12, txt: n => `Fais une série de ${n} prises sans erreur` },
 ];
 function defiDuJour() {
@@ -289,6 +300,9 @@ const son = {
   galet: () => sfx('galet', 0.9) || bruit(0.08, 700, 3, 0.4),
   canalOk: () => sfx('canal-ok', 0.9) || (ton(660, 990, 0.14, 0.07, 'triangle'), ton(990, 1320, 0.16, 0.06, 'triangle', 0.08)),
   canalRate: () => sfx('canal-rate', 0.9) || ton(260, 130, 0.3, 0.07, 'sine'),
+  crue: () => sfx('remontee', 0.9, 0.8) || bruit(0.9, 400, 0.8, 0.35),
+  cass: () => sfx('canal-rate', 0.9, 0.7) || bruit(0.4, 300, 1, 0.4),
+  goni: () => sfx('dechet-ramasse', 0.9, 0.8) || bruit(0.2, 600, 1, 0.3),
   rate: () => sfx('rate', 0.8) || ton(330, 220, 0.3, 0.05, 'sine'),
   niveau: () => sfx('niveau', 0.9) || [0, 4, 7, 12].forEach((s, i) => ton(523 * 2 ** (s / 12), 523 * 2 ** (s / 12), 0.25, 0.06, 'triangle', i * 0.09)),
   remontee: () => sfx('remontee', 0.9) || bruit(0.8, 500, 0.8, 0.3),
@@ -300,6 +314,7 @@ const DUREE_ZEN = 90, RECHARGE = 12, DUREE_GRANDE = 5;
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, viesMax = 3, temps = 0, prochain = 1, record = 0, peches = 0, niveau = 1, remontee = 0;
 let phase = 'actif', phaseT = 0, stats = {}, galetsPartie = 0, serie = 0, charge = 0, grandeVouve = 0, ralentis = 0, ondes = 0, ralenti = 0, prochainHeron = 12, pause = false, canal = null, nbDechets = 0;
 const bancs = [], dechets = [], herons = [];
+let vouveCharge = 0, goni = 0, prochaineCrue = 16, crueAlerte = 0;
 const dureePhase = () => Math.min(40, 20 + niveau * 2.5);
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1000); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
@@ -381,7 +396,7 @@ function dessinerCanal(dt) {
 }
 function terminerCanal() {
   if (!canal || canal.fini) return; canal.fini = true;
-  const n = canal.bons; if (n >= 4) { son.niveau(); }
+  const n = canal.bons; restaurer(n); if (n >= 4) { son.niveau(); }
   bandeau(n === NB_GALETS ? 'Canal parfait ! Les bichiques passent' : n + ' galet' + (n > 1 ? 's' : '') + ' bien posé' + (n > 1 ? 's' : ''), 2.2);
   if (n === NB_GALETS) { score += 25; majScore(); gagnerGalets(2); }
   setTimeout(() => $('canal').classList.remove('on'), 600);
@@ -413,7 +428,7 @@ function majBonus() {
 
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; viesMax = 3 + save.amelio.lot; vies = viesMax; temps = 0; prochain = 0.5; peches = 0; niveau = 1; remontee = 0;
-  phase = 'actif'; phaseT = 0; stats = {}; galetsPartie = 0; serie = 0; charge = 0; grandeVouve = 0; ralentis = 0; ondes = 0; ralenti = 0; prochainHeron = 14; nbDechets = 0; pause = false; canal = null;
+  phase = 'actif'; phaseT = 0; stats = {}; galetsPartie = 0; serie = 0; charge = 0; grandeVouve = 0; ralentis = 0; ondes = 0; ralenti = 0; prochainHeron = 14; nbDechets = 0; pause = false; canal = null; vouveCharge = 0; goni = 0; prochaineCrue = 16; crueAlerte = 0; construireBarrage(); majGoni(); $('goni').classList.add('on'); setTimeout(() => etat === 'jeu' && bandeau('Les galets guident les bichiques vers ta vouve', 3), 600);
   record = mode === 'zen' ? save.recordZen : save.record;
   bancs.length = 0; dechets.forEach(d => scene.remove(d.obj)); dechets.length = 0; herons.forEach(h => scene.remove(h.obj)); herons.length = 0; $('bandeau').classList.remove('on'); $('canal').classList.remove('on'); $('pause').classList.remove('on');
   majScore(); majVies(); majNiveau(); majGalets(); majBonus();
@@ -421,7 +436,7 @@ function demarrer(m) {
 }
 function finPartie() {
   if (etat !== 'jeu') return;
-  etat = 'fin'; pause = false; $('pause').classList.remove('on'); $('niveau').classList.remove('on'); $('bonus').classList.remove('on'); $('btnPause').classList.remove('on'); $('bandeau').classList.remove('on'); $('canal').classList.remove('on'); canal = null;
+  etat = 'fin'; pause = false; $('goni').classList.remove('on'); $('pause').classList.remove('on'); $('niveau').classList.remove('on'); $('bonus').classList.remove('on'); $('btnPause').classList.remove('on'); $('bandeau').classList.remove('on'); $('canal').classList.remove('on'); canal = null;
   const nouveau = score > record && score > 0;
   if (nouveau) { record = score; if (mode === 'zen') save.recordZen = score; else save.record = score; }
   save.galets += galetsPartie;
@@ -443,6 +458,7 @@ const pointeur = e => ({ x: e.clientX, y: e.clientY, t: performance.now() });
 const versMonde = (x, y) => { const v = new THREE.Vector3(x / W * 2 - 1, -(y / H) * 2 + 1, 0.5).unproject(camera); const d = v.sub(camera.position).normalize(); const t = -camera.position.z / d.z; return camera.position.clone().addScaledVector(d, t); };
 function tapper(px, py) {
   const marge = 62 + save.amelio.epuisette * 14;
+  if (tapBarrage(px, py, marge)) return true;
   for (const h of herons) { if (h.etat === 'fuite') continue; const s = toScreen(h.obj.position.clone().add(new THREE.Vector3(0, 0.5, 0))); if (Math.hypot(s.x - px, s.y - py) < marge + 24) { chasserHeron(h); return true; } }
   for (const d of dechets) { if (!d.vivant) continue; const s = toScreen(d.obj.position); if (Math.hypot(s.x - px, s.y - py) < marge) {
     d.vivant = false; scene.remove(d.obj); son.dechetPris(); score += 3; majScore(); nbDechets++; compter('dechets'); if (nbDechets % 2 === 0) { gagnerGalets(1); popup('Rivière propre ! +1 🪨', d.obj.position, 'chaine'); } else popup('Déchet sorti ! +3', d.obj.position, 'pts', '#bff4ff'); eclabousse(d.obj.position, 10); return true; } }
@@ -504,6 +520,48 @@ function dessinerTrait() {
   }
 }
 
+// ---------------------------------------------------------------- barrage de galets, vouve et goni
+const GONI_MAX = 120, NB_SLOTS = 9, gapX = 0;
+const capVouve = () => 30 + 12 * save.amelio.vouve;
+const barrageGroupe = new THREE.Group(); scene.add(barrageGroupe);
+const matPierre = [0x2c2c34, 0x3a3a42, 0x24242a].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, flatShading: true }));
+const geoPierre = new THREE.IcosahedronGeometry(0.44, 0);
+const matPanier = new THREE.MeshStandardMaterial({ color: 0xc89a52, roughness: 0.8, side: THREE.DoubleSide });
+const vouveObj = (() => { const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.5, 16, 1, true), matPanier)); for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.5 - i * 0.11, 0.025, 6, 20), new THREE.MeshStandardMaterial({ color: 0x7a5424 })); r.rotation.x = Math.PI / 2; r.position.y = -0.55 + i * 0.4; g.add(r); } return g; })();
+barrageGroupe.add(vouveObj); barrageGroupe.visible = false;
+let yBarrage = 0; const slots = [], matAnneau = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+function construireBarrage() {
+  for (const s of slots) { barrageGroupe.remove(s.pierre, s.anneau); } slots.length = 0;
+  yBarrage = viewH * 0.2; const esp = viewW * 0.84 / (NB_SLOTS - 1);
+  for (let i = 0; i < NB_SLOTS; i++) {
+    const x = -viewW * 0.42 + i * esp; if (Math.abs(x - gapX) < 0.3) continue;
+    const pierre = new THREE.Mesh(geoPierre, matPierre[i % 3]); pierre.position.set(x, yBarrage, 0.4); pierre.scale.set(rnd(0.95, 1.25), rnd(0.8, 1.0), 0.75); pierre.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3));
+    const anneau = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.03, 6, 22), matAnneau); anneau.position.set(x, yBarrage, 0.4); anneau.visible = false;
+    barrageGroupe.add(pierre, anneau); slots.push({ x, pierre, anneau, ok: true });
+  }
+  vouveObj.position.set(gapX, yBarrage + 0.7, 0.45);
+}
+function casser(n) {
+  const ok = slots.filter(s => s.ok); let c = 0;
+  while (c < n && ok.length) { const s = ok.splice(Math.floor(Math.random() * ok.length), 1)[0]; s.ok = false; s.pierre.visible = false; s.anneau.visible = true; eclabousse(new THREE.Vector3(s.x, yBarrage, 0.4), 16, [0.8, 0.95, 1], 3.2); c++; }
+  if (c) { son.cass(); popup('Le barrage cède ! Touche les ronds', new THREE.Vector3(0, yBarrage - 1.4, 0), 'aie'); }
+}
+function restaurer(n) { let c = 0; for (const s of slots) { if (c >= n) break; if (!s.ok) { s.ok = true; s.pierre.visible = true; s.anneau.visible = false; c++; } } }
+function majGoni() { $('gonifill').style.height = Math.min(100, goni / GONI_MAX * 100) + '%'; $('gonitxt').textContent = goni + '/' + GONI_MAX; }
+function recolter() {
+  if (vouveCharge <= 0) return false;
+  const n = vouveCharge, pts = n * (remontee > 0 ? 2 : 1); vouveCharge = 0; score += pts; peches += n; goni += n; majScore(); compter('bichiques', n); compter('goni', n);
+  son.goni(); eclabousse(vouveObj.position, Math.min(30, 6 + n)); popup('+' + pts + ' dans le goni', vouveObj.position.clone().add(new THREE.Vector3(0, -1.2, 0)), 'chaine');
+  if (goni >= GONI_MAX) { goni -= GONI_MAX; score += 50; majScore(); gagnerGalets(3); bandeau('Goni plein ! +3 galets', 2.5); son.niveau(); }
+  majGoni(); return true;
+}
+function tapBarrage(px, py, marge) {
+  const sv = toScreen(vouveObj.position);
+  if (Math.hypot(sv.x - px, sv.y - py) < marge + 20 && recolter()) return true;
+  for (const s of slots) if (!s.ok) { const q = toScreen(new THREE.Vector3(s.x, yBarrage, 0.4)); if (Math.hypot(q.x - px, q.y - py) < marge + 8) { s.ok = true; s.pierre.visible = true; s.anneau.visible = false; son.galet(); score += 2; majScore(); eclabousse(s.pierre.position, 8); return true; } }
+  return false;
+}
+
 // ---------------------------------------------------------------- boucle
 const horloge = new THREE.Clock(); let ambiance = 0;
 const m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), s4 = new THREE.Vector3(1, 1, 1), p4 = new THREE.Vector3(), axeZ = new THREE.Vector3(0, 0, 1);
@@ -513,6 +571,7 @@ function boucle() {
   decorUni.t.value += dt0; const joue = etat === 'jeu';
   if (joue) {
     temps += dt; phaseT += dt;
+    prochaineCrue -= dt; if (crueAlerte > 0) { crueAlerte -= dt; if (crueAlerte <= 0) casser(Math.min(4, 2 + Math.floor(niveau / 3))); } else if (prochaineCrue <= 0 && phase === 'actif') { crueAlerte = 1.4; prochaineCrue = Math.max(9, 18 - niveau) + rnd(0, 5); bandeau('Crue ! Le barrage va céder', 1.6); son.crue(); }
     if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); prochainHeron -= dt; if (prochainHeron <= 0) { prochainHeron = Math.max(9, 18 - niveau) + rnd(0, 5); lancerHeron(); } }
     else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; gagnerGalets(1); son.niveau(); majNiveau(); bandeau('Niveau ' + niveau + ' : les bichiques arrivent', 1.8); }
     if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
@@ -534,6 +593,14 @@ function boucle() {
     }
     for (const p of bc.poissons) {
       if (!p.vivant) continue;
+      if (bc.type === 'gros' && joue && !p.passe) {
+        const wy = bc.y + p.dy, px = bc.x + p.dx;
+        if (wy > yBarrage - 0.55) {
+          if (Math.abs(px - gapX) < 0.5) { p.passe = true; if (vouveCharge < capVouve()) { vouveCharge++; p.vivant = false; continue; } }
+          else if (slots.some(s => s.ok && Math.abs(s.x - px) < 0.5)) { p.dy = yBarrage - 0.55 - bc.y; p.dx += Math.sign(gapX - px) * 3.4 * tb; }
+          else p.passe = true;
+        }
+      }
       const ondule = Math.sin(bc.t * 9 + p.ph) * 0.25;
       p4.set(bc.x + p.dx + Math.sin(bc.t * 2 + p.ph) * 0.05, bc.y + p.dy, 0.3);
       q4.setFromAxisAngle(axeZ, ondule * 0.6);
@@ -562,6 +629,8 @@ function boucle() {
       if (o.position.y > viewH / 2 + 2.5) { scene.remove(o); herons.splice(i, 1); }
     }
   }
+  barrageGroupe.visible = etat === 'jeu'; barrageGroupe.position.x = crueAlerte > 0 && !pause ? Math.sin(performance.now() / 35) * 0.06 : 0;
+  const bd = $('vouveBadge'); if (etat === 'jeu') { const sv = toScreen(vouveObj.position.clone().add(new THREE.Vector3(0, 1, 0))); bd.style.display = 'block'; bd.style.left = sv.x + 'px'; bd.style.top = sv.y + 'px'; bd.textContent = vouveCharge >= 4 ? vouveCharge + '/' + capVouve() + ' · touche !' : vouveCharge + '/' + capVouve(); bd.classList.toggle('plein', vouveCharge >= capVouve()); } else bd.style.display = 'none';
   majParticules(dt);
   renderer.render(scene, camera);
   dessinerTrait();
@@ -594,7 +663,7 @@ addEventListener('resize', () => { resize(); chargerDecor(); }); resize(); majVi
 const img = new Image(); img.src = './fond-portrait.webp?v=2?v=2'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { bancs, dechets, herons, nouveauBanc, nouveauDechet, lancerHeron, tapper, lancerCanal, poserGalet, finDeNiveau, get canal() { return canal; }, get phase() { return phase; }, save, get niveau() { return niveau; }, toScreen, get etat() { return etat; }, demarrer, finPartie, balayer, majPause, get viewH() { return viewH; }, get viewW() { return viewW; }, versMonde, get score() { return score; } };
+if (TEST) window.jeu = { bancs, dechets, herons, nouveauBanc, nouveauDechet, lancerHeron, tapper, lancerCanal, poserGalet, finDeNiveau, get canal() { return canal; }, get phase() { return phase; }, save, get niveau() { return niveau; }, toScreen, get etat() { return etat; }, demarrer, finPartie, balayer, majPause, get viewH() { return viewH; }, get viewW() { return viewW; }, versMonde, get score() { return score; }, slots, casser, recolter, get vouveCharge() { return vouveCharge; }, get goni() { return goni; } };
 </script>
 </body>
 </html>
