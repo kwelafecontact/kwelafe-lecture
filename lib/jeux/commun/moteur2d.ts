@@ -433,7 +433,9 @@ export const FONDS_AQUARELLE = new Set<string>([
   "marche-des-jus", "fusion-pei", "bazar-krush", "2048-pei", "memory-pei", "kel-fri-sa", "trie-le-bazar", "rekolt-la", "let-melanze", "marchand-du-bazar",
   "kosa-in-shoz", "zarlor", "oussa-i-le", "memory-lontan", "ramasse-les-letchis", "cari-parfait", "gardiens-de-l-ile", "expressions-a-recoller", "case-bleue", "coulee-de-lave",
 ]);
-export const cheminFond = (id: string) => `/jeux/fonds/${id}.webp`;
+/** Version des décors refaits : changer le chiffre force les appareils à retélécharger l'image (cache « d'abord »). */
+const VERSIONS_FOND: Record<string, number> = { "rekolt-la": 2 };
+export const cheminFond = (id: string) => `/jeux/fonds/${id}.webp${VERSIONS_FOND[id] ? `?v=${VERSIONS_FOND[id]}` : ""}`;
 
 export const THEMES: Record<string, Theme> = {
   marche: { haut: "#ffcf8a", bas: "#e9845a", collines: ["#c8644a", "#9e4a3a", "#6e3226"], soleil: "rgba(255,240,180,0.8)" },
