@@ -63,6 +63,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   const [theme, setTheme] = useState<Theme>("clair");
   const [zoomNiv, setZoomNiv] = useState(1); // 1 = page entière, jusqu'à 4
   const zoom = zoomNiv > 1.01;
+  const zoomChange = Math.abs(zoomNiv - 1) > 0.01;
   const [cadrage, setCadrage] = useState<"page" | "largeur">("page");
   const [eclair, setEclair] = useState<"" | "g" | "d">("");
   const [motif, setMotif] = useState("lagon");
@@ -82,7 +83,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     setChaud(lirePref("kw_chaud", 0));
     setNuitPages(lirePref("kw_nuit_pages", false));
     setRappel(lirePref("kw_rappel", 0));
-    setCadrage(lirePref<"page" | "largeur">("kw_cadrage", window.innerWidth < 600 && window.innerHeight > window.innerWidth ? "largeur" : "page"));
+    setCadrage(lirePref<"page" | "largeur">("kw_cadrage2", "page"));
     setMotif(lirePref("kw_marque_motif", "lagon"));
     return () => window.removeEventListener("resize", maj);
   }, []);
@@ -129,7 +130,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
 
   const basculerBarre = useCallback(() => setBarre((b) => !b), []);
   const flash = (c: "g" | "d") => { setEclair(c); setTimeout(() => setEclair(""), 260); };
-  const changerZoom = useCallback((z: number) => setZoomNiv(Math.round(Math.min(4, Math.max(1, z)) * 100) / 100), []);
+  const changerZoom = useCallback((z: number) => setZoomNiv(Math.round(Math.min(4, Math.max(0.5, z)) * 100) / 100), []);
   const toucher = useCallback(
     (x: number) => {
       if (x < 0.25) { flash("g"); precedent(); }
@@ -208,7 +209,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
       if (e.key === "ArrowLeft") precedent();
       if (e.key === "Escape") { setPanneau(null); setZoomNiv(1); }
       if (e.key === "+" || e.key === "=") setZoomNiv((z) => Math.min(4, z + 0.5));
-      if (e.key === "-") setZoomNiv((z) => Math.max(1, z - 0.5));
+      if (e.key === "-") setZoomNiv((z) => Math.max(0.5, z - 0.25));
       if (e.key === "b" || e.key === "B") raccourcis.current.marque();
       if (e.key === "f" || e.key === "F") raccourcis.current.plein();
     };
@@ -314,7 +315,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     } else (d.exitFullscreen || d.webkitExitFullscreen)?.call(d);
   }
   useEffect(() => {
-    const maj = () => setPleinEcran(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+    const maj = () => { setPleinEcran(!!(document.fullscreenElement || (document as any).webkitFullscreenElement)); setZoomNiv(1); setTimeout(() => setDims({ w: window.innerWidth, h: window.innerHeight }), 150); };
     document.addEventListener("fullscreenchange", maj);
     document.addEventListener("webkitfullscreenchange", maj);
     return () => { document.removeEventListener("fullscreenchange", maj); document.removeEventListener("webkitfullscreenchange", maj); };
@@ -496,9 +497,9 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
       <button className={`fleche-page gauche ${barre ? "visible" : ""}`} onClick={(e) => { e.stopPropagation(); flash("g"); precedent(); }} aria-label="Page précédente">‹</button>
       <button className={`fleche-page droite ${barre ? "visible" : ""}`} onClick={(e) => { e.stopPropagation(); flash("d"); suivant(); }} aria-label="Page suivante">›</button>
       {eclair && <div className={`eclair-zone ${eclair}`} aria-hidden />}
-      {zoom && mode !== "texte" && (
+      {zoomChange && mode !== "texte" && (
         <div className="pastille-zoom" role="group" aria-label="Zoom">
-          <button onClick={() => changerZoom(zoomNiv - 0.5)} aria-label="Dézoomer">−</button>
+          <button onClick={() => changerZoom(zoomNiv - 0.25)} aria-label="Dézoomer">−</button>
           <span>{Math.round(zoomNiv * 100)} %</span>
           <button onClick={() => changerZoom(zoomNiv + 0.5)} aria-label="Zoomer">+</button>
           <button onClick={() => setZoomNiv(1)} aria-label="Revenir à la page entière">✕</button>
@@ -538,10 +539,10 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
             {diaporama > 0 && <button className="bouton-texte actif" onClick={() => setDiaporama(0)}>⏸ Arrêter</button>}
             {mode !== "texte" && (
               <>
-                <button className="bouton-texte" onClick={() => changerZoom(zoomNiv - 0.5)} aria-label="Dézoomer" disabled={!zoom}>−</button>
+                <button className="bouton-texte" onClick={() => changerZoom(zoomNiv - 0.25)} aria-label="Dézoomer">−</button>
                 <button className="bouton-texte" onClick={() => setZoomNiv(1)} title="Revenir à 100 %">🔍 {Math.round(zoomNiv * 100)} %</button>
                 <button className="bouton-texte" onClick={() => changerZoom(zoomNiv + 0.5)} aria-label="Zoomer">+</button>
-                <button className="bouton-texte" onClick={() => { const c = cadrage === "page" ? "largeur" : "page"; setCadrage(c); ecrirePref("kw_cadrage", c); setZoomNiv(1); }}>
+                <button className="bouton-texte" onClick={() => { const c = cadrage === "page" ? "largeur" : "page"; setCadrage(c); ecrirePref("kw_cadrage2", c); setZoomNiv(1); }}>
                   {cadrage === "page" ? "↔ Pleine largeur" : "▣ Page entière"}
                 </button>
               </>
@@ -652,7 +653,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
                 <h3 className="titre-reglage">Cadrage de la page</h3>
                 <div className="choix-ligne">
                   {([["page", "▣ Page entière"], ["largeur", "↔ Pleine largeur"]] as const).map(([c, nom]) => (
-                    <button key={c} className={`pastille ${cadrage === c ? "active" : ""}`} onClick={() => { setCadrage(c); ecrirePref("kw_cadrage", c); setZoomNiv(1); }}>{nom}</button>
+                    <button key={c} className={`pastille ${cadrage === c ? "active" : ""}`} onClick={() => { setCadrage(c); ecrirePref("kw_cadrage2", c); setZoomNiv(1); }}>{nom}</button>
                   ))}
                 </div>
                 <p className="texte-doux" style={{ fontSize: 13, margin: "6px 0 0" }}>Pour zoomer : pince avec deux doigts, touche deux fois la page, ou Ctrl + molette sur ordinateur.</p>
