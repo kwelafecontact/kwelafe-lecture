@@ -651,3 +651,18 @@ body { background: var(--ivoire); }
 .pastille-verrou { opacity: .7; text-decoration: none; }
 
 .bandeau-extrait { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9; background: #e8a200; color: #fff; font-weight: 800; font-size: 13px; padding: 5px 14px; border-radius: 999px; box-shadow: 0 3px 10px rgba(0,0,0,.2); pointer-events: none; }
+
+/* Filigrane invisible : code du compte répété, presque transparent (révélé en forçant le contraste d'une capture) */
+.filigrane-invisible { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; display: flex; flex-wrap: wrap; align-content: space-around; justify-content: space-around; transform: rotate(-24deg) scale(1.4); opacity: .022; font: 700 13px/1 ui-monospace, monospace; color: #000; gap: 60px 90px; }
+.lecteur.sombre .filigrane-invisible { color: #fff; }
+/* Mode tableau */
+.lecteur.mode-tableau { cursor: none; }
+.lecteur.mode-tableau .barre-haut, .lecteur.mode-tableau .barre-bas, .lecteur.mode-tableau .pastille-zoom, .lecteur.mode-tableau .marque-page-visuel { display: none !important; }
+.lecteur.mode-tableau .fleche-page { width: 72px; height: 72px; margin-top: -36px; font-size: 46px; opacity: .25; cursor: pointer; }
+.lecteur.mode-tableau .fleche-page:hover { opacity: .9; }
+.pointeur-laser { position: fixed; z-index: 30; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: radial-gradient(circle, #ff2a2a 0 35%, rgba(255,40,40,.45) 36% 60%, transparent 61%); box-shadow: 0 0 18px 6px rgba(255,30,30,.5); pointer-events: none; }
+.tableau-noir { position: fixed; inset: 0; z-index: 25; background: #000; cursor: pointer; }
+.tableau-outils { position: fixed; right: 16px; bottom: 16px; z-index: 31; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); border-radius: 999px; padding: 6px 8px; opacity: .35; transition: opacity .2s; cursor: default; }
+.tableau-outils:hover { opacity: 1; }
+.tableau-outils button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 18px; cursor: pointer; }
+.tableau-page { color: #fff; font-weight: 800; font-size: 18px; padding: 0 10px; }

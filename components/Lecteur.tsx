@@ -14,6 +14,7 @@ type Props = {
   positionInitiale: { i: number; f: number };
   email: string;
   extrait?: { pages: number; boutique: string; abonnement: string };
+  code?: string; // code du compte, caché dans le filigrane invisible
 };
 
 const THEMES = {
@@ -35,7 +36,7 @@ function ecrirePref(cle: string, v: unknown) {
   try { localStorage.setItem(cle, JSON.stringify(v)); } catch {}
 }
 
-export default function Lecteur({ livre, jetonInitial, positionInitiale, email, extrait }: Props) {
+export default function Lecteur({ livre, jetonInitial, positionInitiale, email, extrait, code }: Props) {
   const m = livre.manifeste;
   const mode: "pdf" | "fixe" | "texte" = m.type === "pdf" ? "pdf" : m.fixe ? "fixe" : "texte";
   const total = Math.min(m.type === "pdf" ? m.pages : m.pages.length, extrait?.pages || Infinity);
@@ -59,7 +60,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
   const [allerVers, setAllerVers] = useState("");
   const [secondes, setSecondes] = useState(0);
   const tours = useRef({ n: 0, depuis: Date.now() });
-  const raccourcis = useRef({ marque: () => {}, plein: () => {} });
+  const raccourcis = useRef<{ marque: () => void; plein: () => void; tableau: boolean; quitterTableau: () => void }>({ marque: () => {}, plein: () => {}, tableau: false, quitterTableau: () => {} });
   const [taille, setTaille] = useState(115);
   const [theme, setTheme] = useState<Theme>("clair");
   const [zoomNiv, setZoomNiv] = useState(1); // 1 = page entière, jusqu'à 4
@@ -69,6 +70,9 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
   const [eclair, setEclair] = useState<"" | "g" | "d">("");
   const [motif, setMotif] = useState("lagon");
   const [ecranMasque, setEcranMasque] = useState(false);
+  const [tableau, setTableau] = useState(false); // mode tableau pour la classe
+  const [ecranNoir, setEcranNoir] = useState(false);
+  const [pointeur, setPointeur] = useState<{ x: number; y: number } | null>(null);
   const [fin, setFin] = useState(false);
   const [dims, setDims] = useState({ w: 1024, h: 768 });
   const cadres = useRef<(HTMLIFrameElement | null)[]>([]);
@@ -206,9 +210,11 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
   /* ---------- Clavier ---------- */
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") suivant();
-      if (e.key === "ArrowLeft") precedent();
-      if (e.key === "Escape") { setPanneau(null); setZoomNiv(1); }
+      // Les télécommandes de présentation envoient PageDown / PageUp
+      if (e.key === "ArrowRight" || e.key === "PageDown" || (e.key === " " && raccourcis.current.tableau)) { e.preventDefault(); suivant(); }
+      if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); precedent(); }
+      if (e.key === "Escape") { setPanneau(null); setZoomNiv(1); if (raccourcis.current.tableau) raccourcis.current.quitterTableau(); }
+      if ((e.key === "n" || e.key === "N" || e.key === ".") && raccourcis.current.tableau) setEcranNoir((v) => !v);
       if (e.key === "+" || e.key === "=") setZoomNiv((z) => Math.min(4, z + 0.5));
       if (e.key === "-") setZoomNiv((z) => Math.max(0.5, z - 0.25));
       if (e.key === "b" || e.key === "B") raccourcis.current.marque();
@@ -335,7 +341,16 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
     if (rappel && secondes > 0 && secondes % (rappel * 60) === 0) setPause(true);
   }, [secondes, rappel]);
 
-  raccourcis.current = { marque: basculerMarque, plein: basculerPleinEcran };
+  function entrerTableau() {
+    setTableau(true); setBarre(false); setPanneau(null); setZoomNiv(1); setCadrage("page");
+    const el: any = document.documentElement; const d: any = document;
+    if (!d.fullscreenElement && !d.webkitFullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+  }
+  function quitterTableau() {
+    setTableau(false); setEcranNoir(false); setPointeur(null); setBarre(true);
+    const d: any = document; if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen)?.call(d);
+  }
+  raccourcis.current = { marque: basculerMarque, plein: basculerPleinEcran, tableau, quitterTableau };
   const changerReglage = <T,>(cle: string, set: (v: T) => void) => (v: T) => { set(v); ecrirePref(cle, v); };
 
   /* ---------- Réglages du texte ---------- */
@@ -427,7 +442,12 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
   const fondFinal = nuitPages && mode !== "texte" ? "#121212" : fond;
 
   return (
-    <div className={`lecteur ${sombre || (nuitPages && mode !== "texte") ? "sombre" : ""}`} style={{ background: fondFinal }}>
+    <div
+      className={`lecteur ${sombre || (nuitPages && mode !== "texte") ? "sombre" : ""} ${tableau ? "mode-tableau" : ""}`}
+      style={{ background: tableau ? "#000" : fondFinal }}
+      onMouseMove={tableau ? (e) => setPointeur({ x: e.clientX, y: e.clientY }) : undefined}
+      onMouseLeave={tableau ? () => setPointeur(null) : undefined}
+    >
       {/* ----- Zone de lecture ----- */}
       <div
         className={`scene ${deborde ? "defile" : ""}`}
@@ -482,8 +502,24 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
         )}
 
         <div className="filigrane" aria-hidden>{email}</div>
+        {code && (
+          <div className="filigrane-invisible" aria-hidden>
+            {Array.from({ length: 40 }, (_, k) => <span key={k}>KW·{code}</span>)}
+          </div>
+        )}
       </div>
-      {ecranMasque && (
+      {tableau && (
+        <>
+          {pointeur && <div className="pointeur-laser" style={{ left: pointeur.x, top: pointeur.y }} aria-hidden />}
+          {ecranNoir && <div className="tableau-noir" onClick={() => setEcranNoir(false)} />}
+          <div className="tableau-outils">
+            <span className="tableau-page">{i + 1} / {total}</span>
+            <button onClick={() => setEcranNoir((v) => !v)} title="Écran noir (N)">⬛</button>
+            <button onClick={quitterTableau} title="Quitter le mode tableau (Échap)">✕</button>
+          </div>
+        </>
+      )}
+      {ecranMasque && !tableau && (
         <div className="ecran-protege" onClick={() => setEcranMasque(false)}>
           <span>🔒</span>
           <b>Lecture protégée</b>
@@ -518,6 +554,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
         <button className={`bouton-rond ${marqueIci >= 0 ? "actif" : ""}`} onClick={basculerMarque} aria-label={marqueIci >= 0 ? "Retirer le marque-page" : "Ajouter un marque-page"} title="Marque-page (B)">🔖</button>
         <button className="bouton-rond" onClick={() => { setOngletMenu(sommaire.length ? "sommaire" : "pages"); setPanneau("menu"); }} aria-label="Sommaire, pages et marque-pages">☰</button>
         <button className="bouton-rond" onClick={() => setPanneau("aa")} aria-label="Réglages de lecture">Aa</button>
+        <button className="bouton-rond" onClick={entrerTableau} aria-label="Mode tableau" title="Mode tableau pour la classe">📽</button>
         <button className="bouton-rond cache-mobile" onClick={basculerPleinEcran} aria-label="Plein écran" title="Plein écran (F)">{pleinEcran ? "🗗" : "⛶"}</button>
       </header>
 

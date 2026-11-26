@@ -22,6 +22,7 @@ export default async function PageLecture({ params }: { params: Promise<{ slug: 
   if (!ouvert && !extrait) redirect(`/livre/${slug}`);
   const p = await progressionLivre(session.cid, livre.id);
   const filigrane = await libelleFiligrane(session);
+  const empreinteCompte = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("kw-fil:" + session.cid))), (o) => o.toString(16).padStart(2, "0")).join("").slice(0, 8).toUpperCase();
   if (m.type === "web") {
     const jetonWeb = await creerJetonContenu(session.cid, livre.id, session.email, 8 * 3600);
     return <LecteurWeb livre={{ id: livre.id, slug: livre.slug, titre: livre.titre, entree: m.entree, pages: m.pages || 0 }} jeton={jetonWeb} email={filigrane} />;
@@ -34,6 +35,7 @@ export default async function PageLecture({ params }: { params: Promise<{ slug: 
       positionInitiale={extrait ? { i: 0, f: 0 } : p?.position || { i: 0, f: 0 }}
       extrait={extrait ? { pages: extrait, boutique: livre.url_boutique || config.abonnementUrl, abonnement: config.abonnementUrl } : undefined}
       email={filigrane}
+      code={empreinteCompte}
     />
   );
 }
