@@ -51,6 +51,8 @@ export type DefJeu = {
   images?: Record<string, string>;   // images propres au jeu (id → chemin), préchargées avec lui
   creer: (c: Contexte, niveau: number) => Jeu;
   progression?: Progression;
+  /** Décor calé sur le jeu : pas de zoom ni de dérive, et position verticale choisie par le jeu (h = hauteur affichée). */
+  fondHaut?: (L: number, H: number, h: number) => number;
 };
 
 // ---------------------------------------------------------------------------
@@ -369,10 +371,11 @@ export class Moteur2D {
     const fond = cacheImages.get("fond:" + this.def.id);
     if (fond && fond.complete && fond.naturalWidth > 0) {
       // fond aquarelle : recadré pour couvrir l'écran, avec une très lente respiration
-      const z = 1.04 + 0.02 * Math.sin(this.temps * 0.12);
+      const cale = this.def.fondHaut;
+      const z = cale ? 1 : 1.04 + 0.02 * Math.sin(this.temps * 0.12);
       const s = Math.max(L / fond.naturalWidth, H / fond.naturalHeight) * z;
       const w = fond.naturalWidth * s, h = fond.naturalHeight * s;
-      ctx.drawImage(fond, (L - w) / 2 + Math.sin(this.temps * 0.07) * L * 0.01, (H - h) / 2, w, h);
+      ctx.drawImage(fond, (L - w) / 2 + (cale ? 0 : Math.sin(this.temps * 0.07) * L * 0.01), cale ? cale(L, H, h) : (H - h) / 2, w, h);
       ctx.fillStyle = "rgba(255,250,240,0.12)"; ctx.fillRect(0, 0, L, H);
       const v = ctx.createRadialGradient(L / 2, H / 2, Math.min(L, H) * 0.4, L / 2, H / 2, Math.max(L, H) * 0.8);
       v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.22)");
