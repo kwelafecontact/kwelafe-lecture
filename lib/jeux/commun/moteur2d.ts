@@ -53,6 +53,8 @@ export type DefJeu = {
   progression?: Progression;
   /** Décor calé sur le jeu : pas de zoom ni de dérive, et position verticale choisie par le jeu (h = hauteur affichée). */
   fondHaut?: (L: number, H: number, h: number) => number;
+  /** Zoom fixe du décor calé par fondHaut, pour lui laisser de la marge de glissement (par défaut 1). */
+  fondZoom?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -372,7 +374,7 @@ export class Moteur2D {
     if (fond && fond.complete && fond.naturalWidth > 0) {
       // fond aquarelle : recadré pour couvrir l'écran, avec une très lente respiration
       const cale = this.def.fondHaut;
-      const z = cale ? 1 : 1.04 + 0.02 * Math.sin(this.temps * 0.12);
+      const z = cale ? (this.def.fondZoom ?? 1) : 1.04 + 0.02 * Math.sin(this.temps * 0.12);
       const s = Math.max(L / fond.naturalWidth, H / fond.naturalHeight) * z;
       const w = fond.naturalWidth * s, h = fond.naturalHeight * s;
       ctx.drawImage(fond, (L - w) / 2 + (cale ? 0 : Math.sin(this.temps * 0.07) * L * 0.01), cale ? cale(L, H, h) : (H - h) / 2, w, h);
@@ -434,7 +436,7 @@ export const FONDS_AQUARELLE = new Set<string>([
   "kosa-in-shoz", "zarlor", "oussa-i-le", "memory-lontan", "ramasse-les-letchis", "cari-parfait", "gardiens-de-l-ile", "expressions-a-recoller", "case-bleue", "coulee-de-lave",
 ]);
 /** Version des décors refaits : changer le chiffre force les appareils à retélécharger l'image (cache « d'abord »). */
-const VERSIONS_FOND: Record<string, number> = { "rekolt-la": 2 };
+const VERSIONS_FOND: Record<string, number> = { "rekolt-la": 2, "fusion-pei": 2 };
 export const cheminFond = (id: string) => `/jeux/fonds/${id}.webp${VERSIONS_FOND[id] ? `?v=${VERSIONS_FOND[id]}` : ""}`;
 
 export const THEMES: Record<string, Theme> = {
