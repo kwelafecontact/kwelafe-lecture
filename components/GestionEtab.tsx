@@ -59,7 +59,10 @@ export default function GestionEtab({ etab, groupes, livres }: Props) {
     <div className="gestion-etab">
       {msg && <div className="message ok" style={{ position: "sticky", top: 8, zIndex: 5 }}>{msg}</div>}
 
-      <a className="btn secondaire large" href="/tableau-blanc" style={{ marginBottom: 14 }}>🖍️ Tableau blanc pour la classe</a>
+      <div className="outils-prof">
+        <a className="btn large" href="/ecole/ressources">📚 Ressources pédagogiques</a>
+        <a className="btn secondaire large" href="/tableau-blanc">🖍️ Tableau blanc</a>
+      </div>
       <section className="panneau">
         <h2>🎨 Personnaliser {etab.type === "ecole" ? "l'école" : "l'espace"}</h2>
         <div className="formulaire">

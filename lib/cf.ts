@@ -11,6 +11,7 @@ export type R2Objet = { body: ReadableStream; text(): Promise<string>; httpMetad
 export type R2 = {
   get(cle: string): Promise<R2Objet | null>;
   put(cle: string, valeur: ReadableStream | ArrayBuffer | Blob | string, options?: { httpMetadata?: { contentType?: string } }): Promise<unknown>;
+  delete?(cle: string): Promise<void>;
 };
 
 async function env() {
