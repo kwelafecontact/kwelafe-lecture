@@ -210,35 +210,21 @@ function resize() {
 }
 
 // Décor : étal en bois du marché forain, fanions aux couleurs de La Réunion
+const decor = { p: new Image(), l: new Image() };
+decor.p.src = './v2/fond-portrait.webp?v=1'; decor.l.src = './v2/fond-paysage.webp?v=1';
+decor.p.onload = decor.l.onload = () => peindreFond();
+// zone de la table dans le décor, en fractions de l'écran (portrait / paysage)
+function zoneTable() {
+  return W < H ? { x0: 0.0, x1: 1.0, y0: 0.465, y1: 0.73 } : { x0: 0.09, x1: 0.89, y0: 0.545, y1: 0.675 };
+}
 function peindreFond() {
-  const g = fctx;
-  const grd = g.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, '#6b3f1d'); grd.addColorStop(1, '#3d220e');
-  g.fillStyle = grd; g.fillRect(0, 0, W, H);
-  const nb = Math.max(5, Math.round(W / 150)), lw = W / nb;
-  for (let i = 0; i < nb; i++) {
-    const x = i * lw, teinte = [0, 8, -6, 4, -10, 6][i % 6];
-    const pl = g.createLinearGradient(x, 0, x + lw, 0);
-    pl.addColorStop(0, `hsl(${26 + teinte * .3} 48% ${30 + teinte * .4}%)`);
-    pl.addColorStop(.5, `hsl(${28 + teinte * .3} 50% ${36 + teinte * .4}%)`);
-    pl.addColorStop(1, `hsl(${25 + teinte * .3} 46% ${28 + teinte * .4}%)`);
-    g.fillStyle = pl; g.fillRect(x + 2, 0, lw - 4, H);
-    g.save(); g.globalAlpha = .13; g.strokeStyle = '#1e0e04'; g.lineWidth = 1.2;
-    for (let k = 0; k < 9; k++) {
-      g.beginPath(); const ox = x + 8 + (k / 9) * (lw - 16) + Math.sin(i * 7 + k) * 4;
-      g.moveTo(ox, 0);
-      for (let y = 0; y <= H; y += 40) g.lineTo(ox + Math.sin(y / 90 + k * 1.7 + i) * 5, y);
-      g.stroke();
-    }
-    g.globalAlpha = .35; g.fillStyle = '#1a0c03';
-    const nx = x + lw * (0.3 + 0.4 * ((i * 37) % 10) / 10), ny = H * (0.2 + 0.6 * ((i * 53) % 10) / 10);
-    g.beginPath(); g.ellipse(nx, ny, 7, 11, 0, 0, 7); g.fill();
-    g.restore();
-    g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(x, 0, 3, H);
-  }
-  const v = g.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .75);
-  v.addColorStop(0, 'rgba(255,190,90,.10)'); v.addColorStop(1, 'rgba(10,4,0,.62)');
-  g.fillStyle = v; g.fillRect(0, 0, W, H);
+  const g = fctx, im = W < H ? decor.p : decor.l;
+  g.fillStyle = '#1f4a2a'; g.fillRect(0, 0, W, H);
+  if (!im.complete || !im.naturalWidth) return;
+  const k = Math.max(W / im.naturalWidth, H / im.naturalHeight);   // « cover », ancré en bas
+  const w = im.naturalWidth * k, h = im.naturalHeight * k;
+  g.drawImage(im, (W - w) / 2, H - h, w, h);
+  g.fillStyle = 'rgba(10,30,16,.18)'; g.fillRect(0, 0, W, H);        // léger voile pour la lisibilité du HUD
 }
 
 // Fanions aux couleurs de La Réunion qui ondulent doucement au vent
@@ -556,27 +542,29 @@ function blob(ctx, x, y, r, ang, allonge, couleur, alpha, detail = false) {
 }
 const reflets = []; // reflets humides qui disparaissent en séchant
 function tache(sx, sy, color, taille, dir) {
-  const c = teinteTache(color);
-  // dir : sens du geste à l'écran (y vers le bas)
-  const ang = Math.atan2(-dir.y, dir.x);
-  const cx = sx + Math.cos(ang) * taille * 0.45, cy = sy + Math.sin(ang) * taille * 0.45;
+  const c = teinteTache(color), Z = zoneTable();
+  const zx0 = Z.x0 * W, zx1 = Z.x1 * W, zy0 = Z.y0 * H, zy1 = Z.y1 * H;
+  // le jus tombe droit vers le bas : il atterrit sur la table, à la verticale de la coupe
+  const prof = rnd(0.15, 0.9);
+  const cx = Math.max(zx0 + taille * 0.4, Math.min(zx1 - taille * 0.4, sx + dir.x * taille * 0.8));
+  const cy = zy0 + (zy1 - zy0) * prof;
+  const echelle = 0.55 + prof * 0.6;                    // perspective : plus gros sur le devant de la table
+  const t = taille * 0.7 * echelle, ang = rnd(-0.25, 0.25);
+  const delai = Math.max(60, Math.abs(cy - sy) / 900 * 1000);
+  gouttes.push({ x: cx, y0: Math.min(sy, cy - 4), y1: cy, t: 0, d: delai / 1000, c, taille: t, ang, zx0, zx1, zy0, zy1 });
+}
+const gouttes = [];  // gouttes qui tombent vers la table avant de s'écraser
+function posePlat(g) {
+  cctx.save(); cctx.beginPath(); cctx.rect(g.zx0, g.zy0, g.zx1 - g.zx0, g.zy1 - g.zy0); cctx.clip();
   cctx.globalCompositeOperation = 'source-over';
-  blob(cctx, cx, cy, taille * 0.8, ang, 1.35, c, 0.82, true);
-  // éclaboussures projetées dans la direction de la coupe (et quelques-unes en arrière)
-  for (let i = 0; i < 26; i++) {
-    const arriere = Math.random() < 0.15;
-    const a = ang + (arriere ? Math.PI : 0) + rnd(-0.45, 0.45);
-    const d = taille * rnd(0.9, arriere ? 1.8 : 3.6);
-    const r = Math.max(1.5, taille * 0.22 * (1 - d / (taille * 4.2)) * rnd(0.4, 1.1));
-    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
-    blob(cctx, x, y, r, a, rnd(1.2, 2.4), c, rnd(0.7, 0.9));
-    if (r > taille * 0.11 && Math.random() < 0.35) nouvelleCoulure(x, y + r * 0.6, r * 0.42, c, rnd(30, 120));
+  blob(cctx, g.x, g.y1, g.taille, g.ang, 1.9, g.c, 0.85, true);               // flaque aplatie : vue en perspective
+  for (let i = 0; i < 16; i++) {
+    const a = rnd(0, 6.28), d = g.taille * rnd(1.0, 2.8);
+    const r = Math.max(1.2, g.taille * 0.2 * (1 - d / (g.taille * 3.4)) * rnd(0.4, 1.1));
+    blob(cctx, g.x + Math.cos(a) * d * 1.6, g.y1 + Math.sin(a) * d * 0.55, r, a, rnd(1.2, 2), g.c, rnd(0.7, 0.9));
   }
-  // reflet humide (il s'efface en quelques secondes, comme le jus qui sèche)
-  reflets.push({ x: cx - taille * 0.25, y: cy - taille * 0.3, rx: taille * 0.3, ry: taille * 0.11, a: ang - 0.4, t: 0 });
-  // les coulures partent du bas de la flaque
-  const nb = 3 + Math.floor(Math.random() * 4);
-  for (let i = 0; i < nb; i++) nouvelleCoulure(cx + rnd(-0.75, 0.75) * taille, cy + taille * rnd(0.35, 0.6), rnd(1.8, Math.max(2.6, taille * 0.13)), c, rnd(70, 300));
+  reflets.push({ x: g.x - g.taille * 0.4, y: g.y1 - g.taille * 0.15, rx: g.taille * 0.5, ry: g.taille * 0.12, a: 0, t: 0 });
+  cctx.restore();
 }
 function nouvelleCoulure(x, y, largeur, c, longueur) {
   if (coulures.length > 160 * qx()) coulures.shift();
@@ -595,62 +583,32 @@ function verserFlaque(x, quantite, c) {
   }
 }
 function majTaches(dt) {
-  // les vieilles taches pâlissent très lentement (environ 40 secondes)
+  // les taches restent longtemps sur la table (environ 4 minutes avant de pâlir)
   cctx.globalCompositeOperation = 'destination-out';
-  cctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.028)})`; cctx.fillRect(0, 0, W, H);
+  cctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.004)})`; cctx.fillRect(0, 0, W, H);
   cctx.globalCompositeOperation = 'source-over';
-  cctx.lineCap = 'round';
-  for (let i = coulures.length - 1; i >= 0; i--) {
-    const k = coulures[i];
-    if (k.attente > 0) { k.attente -= dt; continue; }
-    const py = k.y, px = k.x;
-    k.v = Math.max(4, k.v * (1 - 0.22 * dt));                     // le jus ralentit en s'étalant
-    const dy = k.v * dt; k.y += dy; k.reste -= dy;
-    k.x = k.x0 + Math.sin(k.y * 0.035 + k.phase) * 1.6;         // léger zigzag naturel
-    k.l = Math.max(1.2, k.l - dy * 0.006);
-    cctx.strokeStyle = rgba(k.c, 0.78); cctx.lineWidth = k.l * 1.6;
-    cctx.beginPath(); cctx.moveTo(px, py); cctx.lineTo(k.x, k.y); cctx.stroke();
-    if (k.y > H - 3 - (flaque.h[Math.floor(k.x / 8)] || 0)) { verserFlaque(k.x, k.l * 1.4, k.c); coulures.splice(i, 1); continue; }
-    if (k.reste <= 0) {
-      // une petite goutte se forme au bout du filet
-      cctx.fillStyle = rgba(k.c.clone().offsetHSL(0, 0, -0.08), 0.9);
-      cctx.beginPath(); cctx.arc(k.x, k.y + k.l * 0.4, k.l * 1.35, 0, 7); cctx.fill();
-      coulures.splice(i, 1);
-    }
+  for (let i = gouttes.length - 1; i >= 0; i--) {
+    const g = gouttes[i]; g.t += dt;
+    if (g.t >= g.d) { posePlat(g); gouttes.splice(i, 1); }
   }
 }
 function dessinerTaches(dt = 0.016) {
   tctx.clearRect(0, 0, W, H);
-  tctx.globalAlpha = 0.92; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
-  // ombres douces des fruits sur l'étal (le soleil vient d'en haut à droite)
-  for (const o of objets) {
-    if (!o.vivant) continue;
-    const sc = toScreen(o.obj.position), r = pxRayon(o.rayon);
-    const g = tctx.createRadialGradient(sc.x - r * 0.35, sc.y + r * 0.55, r * 0.1, sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2);
-    g.addColorStop(0, 'rgba(20,8,0,.32)'); g.addColorStop(1, 'rgba(20,8,0,0)');
-    tctx.fillStyle = g; tctx.beginPath(); tctx.ellipse(sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2, r * 0.75, 0, 0, 7); tctx.fill();
-  }
+  const Z = zoneTable();
+  tctx.save(); tctx.beginPath(); tctx.rect(Z.x0 * W, Z.y0 * H, (Z.x1 - Z.x0) * W, (Z.y1 - Z.y0) * H); tctx.clip();
+  tctx.globalAlpha = 0.95; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
   // reflets humides qui sèchent
   for (let i = reflets.length - 1; i >= 0; i--) {
-    const f = reflets[i]; f.t += dt; const a = 0.28 * (1 - f.t / 4);
+    const f = reflets[i]; f.t += dt; const a = 0.3 * (1 - f.t / 5);
     if (a <= 0) { reflets.splice(i, 1); continue; }
     tctx.fillStyle = `rgba(255,255,255,${a})`; tctx.beginPath(); tctx.ellipse(f.x, f.y, f.rx, f.ry, f.a, 0, 7); tctx.fill();
   }
-  // flaque du bas : bord arrondi, reflet sur le dessus
-  const nb = Math.ceil(W / 8) + 1;
-  for (let j = 0; j < nb; j++) {
-    const h = flaque.h[j]; if (!h || h < 0.5) continue;
-    flaque.h[j] = Math.max(0, h - dt * 0.35);   // la flaque s'évapore doucement
-    const x = j * 8, c = flaque.c[j];
-    tctx.fillStyle = rgba(c, 0.85); tctx.beginPath(); tctx.roundRect(x - 1, H - h, 10, h + 2, [5, 5, 0, 0]); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.22)'; tctx.fillRect(x + 1, H - h + 1.5, 6, 1.5);
-  }
-  // tête brillante des filets qui coulent encore
-  for (const k of coulures) {
-    if (k.attente > 0) continue;
-    const r = k.l * 1.25;
-    tctx.fillStyle = rgba(k.c, 0.95); tctx.beginPath(); tctx.arc(k.x, k.y, r, 0, 7); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.55)'; tctx.beginPath(); tctx.arc(k.x - r * 0.35, k.y - r * 0.35, r * 0.35, 0, 7); tctx.fill();
+  tctx.restore();
+  // gouttes de jus qui tombent vers la table
+  for (const g of gouttes) {
+    const u = Math.min(1, g.t / g.d), y = g.y0 + (g.y1 - g.y0) * u * u;
+    tctx.fillStyle = rgba(g.c, 0.95); tctx.beginPath(); tctx.ellipse(g.x, y, 3.2, 5.5, 0, 0, 7); tctx.fill();
+    tctx.fillStyle = 'rgba(255,255,255,.55)'; tctx.beginPath(); tctx.arc(g.x - 1, y - 1.5, 1.2, 0, 7); tctx.fill();
   }
 }
 // ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
@@ -1086,7 +1044,7 @@ function boucle() {
   if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
 
   if (POSTFX && QUALITE > 0) composer.render(); else renderer.render(scene, camera);
-  majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai); dessinerFanions(performance.now() / 1000);
+  majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai);
 }
 
 // ---------------------------------------------------------------- démarrage
