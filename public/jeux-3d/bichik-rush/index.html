@@ -145,13 +145,35 @@ scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnviron
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
 const soleil = new THREE.DirectionalLight(0xffd8b0, 2.2); soleil.position.set(3, 6, 8); scene.add(soleil);
 scene.add(new THREE.HemisphereLight(0xdff4ff, 0x203a3a, 0.9));
+// ---------------------------------------------------------------- décor animé : la rivière vue du dessus ; l'eau ondule et brille, les feuillages bougent au vent
+const decorUni = { t: { value: 0 }, asp: { value: 1 }, img: { value: 0.667 }, tex: { value: null } };
+const decor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({ uniforms: decorUni, toneMapped: false, depthWrite: false,
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy * 2.0, 0.999, 1.0); }`,
+  fragmentShader: `uniform sampler2D tex; uniform float t, asp, img; varying vec2 vUv;
+    vec2 cover(vec2 u) { vec2 s = asp > img ? vec2(1.0, img / asp) : vec2(asp / img, 1.0); return (u - 0.5) * s + 0.5; }
+    float eau(vec3 c) { return smoothstep(0.06, 0.22, (c.g + c.b) * 0.5 - c.r - 0.08); }
+    void main() {
+      vec2 u = cover(vUv); vec3 c0 = texture2D(tex, u).rgb; float m = eau(c0);
+      vec2 o = m * 0.0045 * vec2(sin(u.y * 38.0 + t * 1.7 + sin(u.x * 17.0 + t * 0.6) * 2.0), cos(u.x * 33.0 + t * 1.3 + sin(u.y * 13.0) * 2.0));
+      float bord = smoothstep(0.12, 0.42, abs(u.x - 0.5)) * (1.0 - m);
+      o.x += bord * 0.003 * sin(t * 1.3 + u.y * 9.0 + u.x * 5.0); o.y += bord * 0.0015 * sin(t * 1.9 + u.x * 11.0);
+      vec3 c = texture2D(tex, u + o).rgb;
+      float k = sin(u.x * 70.0 + t * 1.1 + sin(u.y * 24.0 + t * 0.5) * 1.5) * sin(u.y * 60.0 - t * 1.4 + cos(u.x * 28.0) * 1.2) + sin((u.x + u.y) * 48.0 + t * 0.9);
+      c += m * pow(max(k, 0.0), 3.0) * vec3(0.06, 0.09, 0.08);
+      c += m * 0.05 * vec3(0.4, 0.3, 0.1) * (0.5 + 0.5 * sin(u.y * 8.0 - t * 1.2));
+      gl_FragColor = vec4(c, 1.0);
+      #include <colorspace_fragment>
+    }` }));
+decor.frustumCulled = false; decor.renderOrder = -10; scene.add(decor);
+const chargerDecor = () => { const src = innerWidth > innerHeight ? './fond-paysage.webp?v=3' : './fond-portrait.webp?v=3'; new THREE.TextureLoader().load(src, tx => { tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; decorUni.tex.value = tx; decorUni.img.value = tx.image.width / tx.image.height; $('fond').style.visibility = 'hidden'; }); };
+chargerDecor();
 let W = 0, H = 0, viewH = 10, viewW = 10;
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
 const trace = $('trace'), tctx = trace.getContext('2d');
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
   const d = Math.min(devicePixelRatio, 2); trace.width = W * d; trace.height = H * d; tctx.setTransform(d, 0, 0, d, 0, 0);
-  camera.aspect = W / H; camera.updateProjectionMatrix();
+  camera.aspect = W / H; camera.updateProjectionMatrix(); decorUni.asp.value = W / H;
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
 }
 
@@ -488,7 +510,7 @@ const m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), s4 = new THREE.Vect
 function boucle() {
   const dt0 = Math.min(horloge.getDelta(), 0.05), dt = pause ? 0 : dt0;
   matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
-  const joue = etat === 'jeu';
+  decorUni.t.value += dt0; const joue = etat === 'jeu';
   if (joue) {
     temps += dt; phaseT += dt;
     if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); prochainHeron -= dt; if (prochainHeron <= 0) { prochainHeron = Math.max(9, 18 - niveau) + rnd(0, 5); lancerHeron(); } }
@@ -568,7 +590,7 @@ $('ouvrirCarnet').onclick = () => { majCarnet(); $('carnet').classList.add('on')
 majMenu();
 $('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
-addEventListener('resize', resize); resize(); majVies(); majScore();
+addEventListener('resize', () => { resize(); chargerDecor(); }); resize(); majVies(); majScore();
 const img = new Image(); img.src = './fond-portrait.webp?v=2?v=2'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
