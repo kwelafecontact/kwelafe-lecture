@@ -72,6 +72,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
   const [eclair, setEclair] = useState<"" | "g" | "d">("");
   const [motif, setMotif] = useState("lagon");
   const [ecranMasque, setEcranMasque] = useState(false);
+  const [appareils, setAppareils] = useState<null | { max: number; autres: { id: string; nom: string; vu: number }[] }>(null);
   const [tableau, setTableau] = useState(false); // mode tableau pour la classe
   const [ecranNoir, setEcranNoir] = useState(false);
   const [pointeur, setPointeur] = useState<{ x: number; y: number } | null>(null);
@@ -208,6 +209,25 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
 
   /* ---------- Rythme de lecture (pour estimer le temps restant) ---------- */
   useEffect(() => { tours.current.n++; }, [i, etatTexte.page]);
+
+  /* ---------- Limite d'appareils (3 par compte) ---------- */
+  const verifierAppareil = useCallback(async () => {
+    if (horsLigne || extrait) return;
+    let id = "";
+    try { id = localStorage.getItem("kw-appareil") || ""; if (!id) { id = crypto.randomUUID(); localStorage.setItem("kw-appareil", id); } } catch { return; }
+    const ua = navigator.userAgent;
+    const nom = /iPad/.test(ua) ? "iPad" : /iPhone/.test(ua) ? "iPhone" : /Android/.test(ua) ? (/Mobile/.test(ua) ? "Téléphone Android" : "Tablette Android") : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "PC Windows" : "Ordinateur";
+    try {
+      const r = await fetch("/api/appareil", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, nom }) });
+      const j = await r.json();
+      setAppareils(j.ok === false ? { max: j.max, autres: j.autres } : null);
+    } catch {}
+  }, [horsLigne, extrait]);
+  useEffect(() => { verifierAppareil(); }, [verifierAppareil]);
+  async function liberer(cible: string) {
+    await fetch("/api/appareil", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cible }) }).catch(() => {});
+    verifierAppareil();
+  }
 
   /* ---------- Clavier ---------- */
   useEffect(() => {
@@ -511,6 +531,22 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
           </div>
         )}
       </div>
+      {appareils && (
+        <div className="ecran-appareils">
+          <div className="panneau">
+            <h2>📱 {appareils.max} appareils maximum</h2>
+            <p className="texte-doux">Ton compte est déjà utilisé sur {appareils.max} appareils. Déconnecte-en un pour lire ici.</p>
+            {appareils.autres.map((a) => (
+              <div key={a.id} className="ligne-appareil">
+                <span><b>{a.nom}</b><small>Vu le {new Date(a.vu).toLocaleDateString("fr-FR")}</small></span>
+                <button className="btn secondaire" onClick={() => liberer(a.id)}>Déconnecter</button>
+              </div>
+            ))}
+            <p className="texte-doux" style={{ fontSize: 13 }}>Les élèves entrés avec un code de classe ne sont pas concernés.</p>
+            <Link className="lien" href={`/livre/${livre.slug}`}>Retour</Link>
+          </div>
+        </div>
+      )}
       {tableau && (
         <>
           {pointeur && <div className="pointeur-laser" style={{ left: pointeur.x, top: pointeur.y }} aria-hidden />}
