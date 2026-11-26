@@ -15,6 +15,8 @@ type Props = {
   email: string;
   extrait?: { pages: number; boutique: string; abonnement: string };
   code?: string; // code du compte, caché dans le filigrane invisible
+  horsLigne?: boolean; // livre téléchargé : pas de jeton à renouveler, progression gardée sur l'appareil
+  onFermer?: () => void;
 };
 
 const THEMES = {
@@ -36,7 +38,7 @@ function ecrirePref(cle: string, v: unknown) {
   try { localStorage.setItem(cle, JSON.stringify(v)); } catch {}
 }
 
-export default function Lecteur({ livre, jetonInitial, positionInitiale, email, extrait, code }: Props) {
+export default function Lecteur({ livre, jetonInitial, positionInitiale, email, extrait, code, horsLigne, onFermer }: Props) {
   const m = livre.manifeste;
   const mode: "pdf" | "fixe" | "texte" = m.type === "pdf" ? "pdf" : m.fixe ? "fixe" : "texte";
   const total = Math.min(m.type === "pdf" ? m.pages : m.pages.length, extrait?.pages || Infinity);
@@ -233,12 +235,13 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
 
   /* ---------- Renouvellement du jeton de lecture (toutes les 20 minutes) ---------- */
   useEffect(() => {
+    if (horsLigne) return;
     const t = setInterval(async () => {
-      const r = await fetch(`/api/jeton?livre=${livre.id}`);
-      if (r.ok) jetonRef.current = (await r.json()).jeton;
+      try { const r = await fetch(`/api/jeton?livre=${livre.id}`); if (r.ok) jetonRef.current = (await r.json()).jeton; } catch {}
     }, 20 * 60 * 1000);
     return () => clearInterval(t);
-  }, [livre.id]);
+  }, [livre.id, horsLigne]);
+  useEffect(() => { if (horsLigne) try { localStorage.setItem(`kw-hl-pos-${livre.id}`, JSON.stringify({ i, f: 0 })); } catch {} }, [horsLigne, livre.id, i]);
 
   /* ---------- Progression : enregistrée toutes les 10 secondes et à la fermeture ---------- */
   const fraction = mode === "texte" ? etatTexte.page / Math.max(1, etatTexte.pages) : 0;
@@ -549,7 +552,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
 
       {/* ----- Barre du haut ----- */}
       <header className={`barre-haut ${barre ? "visible" : ""}`}>
-        <Link href={`/livre/${livre.slug}`} className="bouton-rond" aria-label="Retour à ma bibliothèque">←</Link>
+        {onFermer ? <button onClick={onFermer} className="bouton-rond" aria-label="Retour à mes livres hors connexion">←</button> : <Link href={`/livre/${livre.slug}`} className="bouton-rond" aria-label="Retour à ma bibliothèque">←</Link>}
         <div className="titre-lecteur">{livre.titre}</div>
         <button className={`bouton-rond ${marqueIci >= 0 ? "actif" : ""}`} onClick={basculerMarque} aria-label={marqueIci >= 0 ? "Retirer le marque-page" : "Ajouter un marque-page"} title="Marque-page (B)">🔖</button>
         <button className="bouton-rond" onClick={() => { setOngletMenu(sommaire.length ? "sommaire" : "pages"); setPanneau("menu"); }} aria-label="Sommaire, pages et marque-pages">☰</button>

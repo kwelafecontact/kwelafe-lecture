@@ -689,3 +689,14 @@ body { background: var(--ivoire); }
 .quiz-podium { display: flex; flex-direction: column; gap: 8px; }
 .quiz-ligne { display: flex; align-items: center; gap: 10px; border: 3px solid; border-radius: 14px; padding: 10px 14px; font-size: 18px; }
 .quiz-ligne b { flex: 1; }
+
+/* Hors connexion */
+.bloc-hors-ligne { margin-top: 10px; width: 100%; }
+.barre-telechargement { position: relative; height: 40px; border-radius: 12px; background: rgba(0,0,0,.08); overflow: hidden; }
+.barre-telechargement span { position: absolute; inset: 0 auto 0 0; background: #2f9a4a; transition: width .2s; }
+.barre-telechargement b { position: relative; display: block; text-align: center; line-height: 40px; }
+.hl-ok { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; }
+.liste-hl { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.carte-hl { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(0,0,0,.04); }
+.carte-hl-ouvrir { flex: 1; display: flex; flex-direction: column; text-align: left; border: 0; background: none; color: inherit; cursor: pointer; gap: 2px; font-size: 16px; }
+.carte-hl-ouvrir:disabled { opacity: .5; cursor: default; }

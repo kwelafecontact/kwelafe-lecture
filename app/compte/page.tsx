@@ -34,6 +34,7 @@ export default async function Compte() {
         </header>
 
         {session.visiteur && <BandeauVisiteur />}
+        {!session.visiteur && <a className="btn secondaire large" href="/mes-livres-hors-ligne" style={{ marginBottom: 18 }}>⬇️ Mes livres hors connexion</a>}
 
         <section className="panneau panneau-stats">
           <h2>📊 Mes lectures</h2>

@@ -8,8 +8,9 @@
 // v3 (26 nov. 2026) : seuls les FICHIERS (images, sons…) de /jeux/ sont gardés « cache d'abord ».
 //  Avant, les pages et données des jeux 2D (/jeux/fusion-pei, ?_rsc=…) l'étaient aussi :
 //  une mise à jour d'un jeu n'arrivait jamais sur un appareil qui l'avait déjà ouvert.
-const CACHE = "kwelafe-v4";
-const CACHE_PAGES = "kwelafe-pages-v2"; // pages et jeux gardés pour le hors connexion (jamais les livres)
+const CACHE = "kwelafe-v5";
+const CACHE_PAGES = "kwelafe-pages-v2";
+// v5 : livres hors connexion, lus chiffrés depuis IndexedDB (/c/hl/<livre>/<fichier>) // pages et jeux gardés pour le hors connexion (jamais les livres)
 const PAGE_HORS_LIGNE = "/hors-ligne"; // servie par Cloudflare à partir de public/hors-ligne.html
 const COQUILLE = ["/manifest.webmanifest", "/icone-192.png", "/icone-512.png", PAGE_HORS_LIGNE];
 const MAX_ENTREES = 160;
@@ -36,6 +37,7 @@ async function borner(cache) {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
+  if (url.pathname.startsWith("/c/hl/")) { e.respondWith(livreHorsLigne(url.pathname)); return; }
   if (url.pathname.startsWith("/c/") || url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/") || url.pathname.startsWith("/jeux-3d/")) return;
   if (url.pathname.startsWith("/_next/static/")) {
     // Fichiers versionnés par leur nom : cache d'abord, réseau sinon
@@ -59,7 +61,7 @@ self.addEventListener("fetch", (e) => {
   }
   if (e.request.mode === "navigate") {
     // Pages de l'app (jamais le lecteur ni les livres) : réseau d'abord, copie gardée pour le hors connexion
-    const gardable = /^\/($|portails|jeux|ecole|classe|catalogue|livres|compte)/.test(url.pathname);
+    const gardable = /^\/($|portails|jeux|ecole|classe|catalogue|livres|compte|mes-livres-hors-ligne)/.test(url.pathname);
     e.respondWith(
       fetch(e.request).then((rep) => {
         if (gardable && rep.ok && rep.type === "basic") { const copie = rep.clone(); e.waitUntil(caches.open(CACHE_PAGES).then((c) => c.put(url.pathname, copie))); }
@@ -95,3 +97,23 @@ self.addEventListener("message", (e) => {
     }
   })());
 });
+
+// Livres téléchargés : déchiffrés à la volée, jamais stockés en clair
+function ouvrirHL() {
+  return new Promise((ok, ko) => { const r = indexedDB.open("kwelafe-hl", 1); r.onupgradeneeded = () => { const d = r.result; d.createObjectStore("cle"); d.createObjectStore("livres"); d.createObjectStore("fichiers"); }; r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); });
+}
+function lireHL(d, magasin, cle) {
+  return new Promise((ok) => { const r = d.transaction(magasin).objectStore(magasin).get(cle); r.onsuccess = () => ok(r.result); r.onerror = () => ok(undefined); });
+}
+async function livreHorsLigne(chemin) {
+  try {
+    const reste = decodeURIComponent(chemin.slice("/c/hl/".length));
+    const id = reste.split("/")[0];
+    const d = await ouvrirHL();
+    const [livre, k, f] = await Promise.all([lireHL(d, "livres", id), lireHL(d, "cle", "k"), lireHL(d, "fichiers", reste)]);
+    if (!livre || !k || !f) return new Response("Introuvable", { status: 404 });
+    if (livre.expire < Date.now()) return new Response("Expiré", { status: 403 });
+    const clair = await crypto.subtle.decrypt({ name: "AES-GCM", iv: f.iv }, k, f.data);
+    return new Response(clair, { headers: { "Content-Type": f.type, "Cache-Control": "no-store" } });
+  } catch { return new Response("Erreur", { status: 500 }); }
+}

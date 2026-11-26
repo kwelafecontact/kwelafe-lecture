@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
 import BoutonFavori from "@/components/BoutonFavori";
+import BoutonHorsLigne from "@/components/BoutonHorsLigne";
 import { contexte } from "@/lib/contexte";
 import { UNIVERS, config } from "@/lib/config";
 import { autresFormats, formatDe, infoFormat, sansDoublon } from "@/lib/formats";
@@ -70,6 +71,7 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
                 </>
               )}
               <BoutonFavori livreId={livre.id} initial={favoris.has(livre.id)} />
+              {ok && m.type === "pdf" && <BoutonHorsLigne livreId={livre.id} />}
             </div>
             {!ok && (
               <p className="texte-doux" style={{ marginTop: 12 }}>
