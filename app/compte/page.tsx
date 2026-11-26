@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { groupeDeSession } from "@/lib/etablissements";
 import Avatar from "@/components/Avatar";
 import NavBas from "@/components/NavBas";
 import ActiverCode from "@/components/ActiverCode";
@@ -16,6 +18,34 @@ const dateFr = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "nu
 
 export default async function Compte() {
   const { session, client, abonne, progs, favoris } = await contexte();
+  if (session.eleve) {
+    const info = await groupeDeSession(session);
+    return (
+      <>
+        <main className="page">
+          <header className="entete" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <Avatar taille={64} cle="kw-avatar-eleve" />
+            <div><div className="sur-titre">Espace élève</div><h1>{session.prenom || "Moi"}</h1></div>
+          </header>
+          <section className="panneau">
+            <h2>🎒 Ma classe</h2>
+            <p>{info ? <><b>{info.groupe.nom}</b> · {info.etab.nom}</> : "Classe introuvable"}</p>
+            <Link className="btn large" href="/classe">Aller dans ma classe</Link>
+          </section>
+          <section className="panneau">
+            <h2>📖 Mes lectures</h2>
+            <p>{progs.filter((p) => p.termine).length} livre(s) terminé(s) · {progs.filter((p) => !p.termine && p.pourcentage > 0).length} en cours</p>
+          </section>
+          <section className="panneau">
+            <h2>🚪 Quitter l'espace élève</h2>
+            <p className="texte-doux">Pour rendre l'appareil ou changer de classe.</p>
+            <a className="btn secondaire large" href="/auth/logout">Quitter l'espace élève</a>
+          </section>
+        </main>
+        <NavBas />
+      </>
+    );
+  }
   const stats = await statistiques(session.cid);
   const max = Math.max(15, ...stats.derniers.map((d) => d.minutes));
   const heures = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`);

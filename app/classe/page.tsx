@@ -29,6 +29,10 @@ export default async function Classe() {
   return (
     <>
       <main className="page">
+        <div className="barre-retour-classe">
+          <Link href="/portails" className="bouton-rond" aria-label="Retour à l'accueil">←</Link>
+          <a href="/auth/logout" className="lien">Quitter l'espace élève</a>
+        </div>
         <header className="bandeau-classe" style={{ ["--c" as any]: etab.couleur }}>
           {etab.logo ? (
             // eslint-disable-next-line @next/next/no-img-element

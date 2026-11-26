@@ -68,6 +68,9 @@ export async function ouvrirSession(s: Session) {
     path: "/",
     maxAge: DUREE,
   });
+  // Repère lisible par l'interface pour afficher la navigation de l'espace élève
+  if (s.eleve) jar.set("kw_espace", "eleve", { path: "/", sameSite: "lax", secure: config.appUrl.startsWith("https"), maxAge: DUREE });
+  else jar.delete("kw_espace");
 }
 
 export async function lireSession(): Promise<Session | null> {

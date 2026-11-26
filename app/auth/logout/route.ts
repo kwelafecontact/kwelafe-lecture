@@ -10,6 +10,7 @@ export async function GET() {
   const jar = await cookies();
   const idToken = jar.get("kw_idt")?.value;
   jar.delete("kw_idt");
+  jar.delete("kw_espace");
   const retour = `${config.appUrl}/bienvenue`;
   if (idToken && !config.demo) {
     try {

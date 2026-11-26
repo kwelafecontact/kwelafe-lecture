@@ -177,7 +177,7 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [affichees, toucher, suivant, precedent, i, total]);
 
-  useEffect(() => { setZoomNiv(1); }, [i]);
+  // Le zoom reste le même d'une page à l'autre (on revient à 100 % avec ✕ ou Échap)
 
   /* ---------- Protection : écran noir quand l'app passe en arrière-plan, pendant une capture d'écran sur ordinateur ou à l'impression ---------- */
   useEffect(() => {

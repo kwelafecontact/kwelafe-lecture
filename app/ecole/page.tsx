@@ -104,6 +104,7 @@ export default async function Ecole({ searchParams }: { searchParams: Promise<{ 
 
         <section className="section panneau panneau-couleur" style={{ textAlign: "center" }}>
           <h2>Vous êtes enseignant ou établissement ?</h2>
+          <p><a className="btn" href="/tableau-blanc">🖍️ Ouvrir le tableau blanc</a></p>
           <p style={{ margin: "8px 0 16px" }}>
             Bientôt : mode projection pour le tableau, fiches à imprimer et accès pour toute la classe.
             Écrivez-nous pour une offre école, médiathèque ou collectivité.

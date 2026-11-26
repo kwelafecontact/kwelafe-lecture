@@ -731,3 +731,22 @@ body { background: var(--ivoire); }
 .devine-boutons .passer { background: rgba(255,255,255,.25); color: #fff; } .devine-boutons .trouve { background: #fff; color: #2f9a4a; }
 .devine-compte { font-weight: 700; }
 .gage { background: #fff4d6; color: #5a3d00; }
+/* Espace élève : retour */
+.barre-retour-classe { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+/* Tableau blanc */
+.tableau-blanc { position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 60; background: #fff; }
+.tableau-blanc.fond-noir { background: #1d2b24; }
+.tableau-blanc.fond-ligne .tb-zone { background-image: linear-gradient(#cfe0f3 1px, transparent 1px); background-size: 100% 36px; }
+.tableau-blanc.fond-carreaux .tb-zone { background-image: linear-gradient(#dde7f2 1px, transparent 1px), linear-gradient(90deg, #dde7f2 1px, transparent 1px); background-size: 28px 28px; }
+.tb-barre { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: #f3f1ea; border-bottom: 1px solid rgba(0,0,0,.1); }
+.tb-btn { min-width: 42px; height: 42px; border-radius: 12px; border: 0; background: #fff; font-size: 19px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #222; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.tb-btn.actif { background: #1f6fb2; color: #fff; }
+.tb-couleur { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(0,0,0,.2); cursor: pointer; }
+.tb-couleur.actif { outline: 3px solid #1f6fb2; outline-offset: 2px; }
+.tb-sep { width: 1px; height: 28px; background: rgba(0,0,0,.12); margin: 0 2px; }
+.tb-epaisseur { width: 90px; }
+.tb-select { height: 42px; border-radius: 12px; border: 0; padding: 0 8px; background: #fff; }
+.tb-zone { position: relative; flex: 1; overflow: hidden; touch-action: none; }
+.tb-zone canvas { display: block; touch-action: none; }
+.tb-texte { position: absolute; min-width: 180px; min-height: 48px; border: 2px dashed #1f6fb2; background: rgba(255,255,255,.85); font-weight: 700; font-family: system-ui, sans-serif; padding: 4px; resize: both; }
+.tb-message { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); background: #222; color: #fff; padding: 8px 14px; border-radius: 999px; }

@@ -15,5 +15,8 @@ export async function POST(req: NextRequest) {
   await executer("UPDATE groupes SET connexions = connexions + 1, dernier_usage = ? WHERE id = ?", new Date().toISOString(), g.id);
   const p = String(prenom || "").trim().slice(0, 30);
   await ouvrirSession({ cid: `eleve-${g.id.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`, email: "eleve@kwelafe.invalid", prenom: p, eleve: { e: g.etab_id, g: g.id } });
-  return NextResponse.json({ ok: true });
+  const rep = NextResponse.json({ ok: true });
+  // Repère lisible par l'interface (aucune donnée) : affiche la navigation de l'espace élève
+  rep.cookies.set("kw_espace", "eleve", { path: "/", sameSite: "lax", secure: true, maxAge: 60 * 60 * 24 * 30 });
+  return rep;
 }
