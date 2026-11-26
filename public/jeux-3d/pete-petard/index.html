@@ -207,7 +207,9 @@ function resize() {
   const hautEcran = Math.min(0, Math.max(hF - ph, 0.62 * hF - EAU * ph)), hautPlan = hF / 2 - hautEcran;
   planFond.position.y = hautPlan - ph / 2;
   planFond.position.x = (pw - wF) / 2 * 0.7; // on garde la gauche, où sont les canons du Barachois
-  const yEau = hautPlan - EAU * ph; matR.uniforms.horizon.value = yEau / hF * viewH; // ligne d'eau ramenée au plan des fusées
+  const yEau = hautPlan - EAU * ph; matR.uniforms.horizon.value = yEau / hF * viewH; matR.uniforms.hauteurVue.value = viewH;
+  matR.uniforms.plan.value.set((planFond.position.x - pw / 2) / (wF / 2), (planFond.position.y - ph / 2) / (hF / 2), pw / (wF / 2), ph / (hF / 2));
+  { const v = renderer.getDrawingBufferSize(new THREE.Vector2()); matR.uniforms.ecran.value.copy(v); } // ligne d'eau ramenée au plan des fusées
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
 }
 
@@ -232,18 +234,26 @@ const matP = new THREE.ShaderMaterial({
     float coeur = exp(-r * r * 70.0), halo = exp(-r * r * 14.0); gl_FragColor = vec4(vC * (halo * 0.5 + coeur * 1.45) + vec3(coeur * 0.2), vA * (halo * 0.8 + coeur)); }`
 });
 const points = new THREE.Points(geo, matP); points.frustumCulled = false; scene.add(points);
-// reflets des explosions dans la mer : les mêmes étincelles, retournées sous la ligne d'eau, étirées et ondulées
+// reflets des explosions : la mer est un miroir. Chaque étincelle est retournée par rapport à la ligne d'eau,
+// et ne s'affiche que sur les pixels d'eau de l'image (masque eau-masque.png : ni le mur, ni les canons, ni les rochers).
+// Profondeur : plus le reflet descend vers nous, plus l'eau le fait onduler, l'étire et l'efface.
+const texEau = new THREE.TextureLoader().load('./eau-masque.png');
 const matR = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  uniforms: { echelle: { value: 1 }, horizon: { value: -3 }, t: { value: 0 } },
-  vertexShader: `attribute vec3 couleur; attribute float taille; attribute float alpha; varying vec3 vC; varying float vA; uniform float echelle, horizon, t;
+  uniforms: { echelle: { value: 1 }, horizon: { value: -3 }, hauteurVue: { value: 10 }, t: { value: 0 }, masque: { value: texEau },
+    ecran: { value: new THREE.Vector2(1, 1) }, plan: { value: new THREE.Vector4(-1, -1, 2, 2) } },
+  vertexShader: `attribute vec3 couleur; attribute float taille; attribute float alpha; varying vec3 vC; varying float vA, vP; uniform float echelle, horizon, hauteurVue, t;
     void main() { vec3 p = position; float h = p.y - horizon; vC = couleur;
-      vA = h > 0.0 ? alpha * 0.42 * clamp(1.0 - h / 14.0, 0.15, 1.0) : 0.0;
-      p.y = horizon - h * 0.55; p.x += sin(p.y * 5.0 + t * 2.2) * 0.06 + sin(p.y * 13.0 - t * 1.4) * 0.03;
-      vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = taille * echelle * 1.3 / -mv.z; gl_Position = projectionMatrix * mv;
-      vA *= smoothstep(-0.8, -0.3, gl_Position.x / gl_Position.w); } // pas de reflet sur le mur des canons, à gauche`,
-  fragmentShader: `varying vec3 vC; varying float vA; void main() { vec2 d = gl_PointCoord - 0.5; d.x *= 2.4; float r = length(d); if (r > 0.5) discard;
-    float k = exp(-r * r * 16.0); gl_FragColor = vec4(vC * k, vA * k); }`
+      p.y = horizon - h; // miroir parfait
+      float prof = clamp(h / (hauteurVue * 0.6), 0.0, 1.0); vP = prof; // 0 au ras de la ligne d'eau, 1 tout près de nous
+      p.x += (sin(p.y * 6.0 + t * 1.8) * 0.5 + sin(p.y * 15.0 - t * 2.6) * 0.3) * (0.015 + 0.16 * prof * prof);
+      vA = h > 0.0 ? alpha * (0.55 - 0.4 * prof) : 0.0;
+      vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = taille * echelle * (1.1 + 0.6 * prof) / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `uniform sampler2D masque; uniform vec2 ecran; uniform vec4 plan; varying vec3 vC; varying float vA, vP;
+    void main() { vec2 d = gl_PointCoord - 0.5; d.x *= 1.3 + 2.2 * vP; float r = length(d); if (r > 0.5) discard;
+      vec2 ndc = gl_FragCoord.xy / ecran * 2.0 - 1.0; vec2 uv = (ndc - plan.xy) / plan.zw; // position de ce pixel dans l'image du décor
+      float eau = texture2D(masque, uv).r; if (eau < 0.02) discard;
+      float k = exp(-r * r * 16.0); gl_FragColor = vec4(vC * k * eau, vA * k * eau); }`
 });
 const reflets = new THREE.Points(geo, matR); reflets.frustumCulled = false; reflets.renderOrder = 0; scene.add(reflets);
 let pIdx = 0;
