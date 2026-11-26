@@ -49,6 +49,12 @@
   .pop.or { color:#ffd84a; font-size:clamp(34px, 8vw, 56px); text-shadow:0 4px 0 #8a5a00, 0 0 30px #ffcf4a; }
   #dore { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(ellipse at center, rgba(255,215,90,0) 45%, rgba(255,190,40,.38) 100%); box-shadow:inset 0 0 60px 10px rgba(255,200,60,.5); }
   #barreOr { position:fixed; left:50%; transform:translateX(-50%); top:max(26px, calc(env(safe-area-inset-top) + 10px)); width:min(46vw, 260px); height:10px; border-radius:9px; background:rgba(0,0,0,.35); overflow:hidden; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #stress { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .4s; z-index:3; background:radial-gradient(ellipse at center, rgba(255,0,0,0) 40%, rgba(220,10,10,.5) 100%); box-shadow:inset 0 0 90px 20px rgba(255,20,20,.45); }
+  #stress.on { opacity:1; animation:stressPouls .55s ease-in-out infinite alternate; }
+  @keyframes stressPouls { from { filter:brightness(.7); } to { filter:brightness(1.35); } }
+  #barreStress { position:fixed; left:50%; transform:translateX(-50%); top:max(48px, calc(env(safe-area-inset-top) + 32px)); width:min(54vw, 300px); height:12px; border-radius:9px; background:rgba(0,0,0,.45); overflow:hidden; opacity:0; transition:opacity .3s; pointer-events:none; z-index:4; box-shadow:0 0 14px rgba(255,40,40,.6); }
+  #barreStress.on { opacity:1; }
+  #barreStress div { height:100%; width:100%; background:linear-gradient(90deg, #ffb199, #ff2a2a); }
   #barreOr div { height:100%; width:100%; background:linear-gradient(90deg, #fff1a8, #ffc21e); box-shadow:0 0 12px #ffcf4a; }
   #vitre, #fanions { pointer-events:none; }
   #fond, #fanions { transition:filter .5s; }
@@ -86,6 +92,8 @@
 <div id="flash"></div>
 <div id="dore"></div>
 <div id="barreOr"><div></div></div>
+<div id="stress"></div>
+<div id="barreStress"><div></div></div>
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
@@ -294,7 +302,7 @@ function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
   o.connect(g); g.connect(maitre); o.start(t); o.stop(t + dur + 0.02);
 }
 // Familles de fruits pour le son de la découpe
-const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
+const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge', 'concombre', 'radis', 'poivron-vert', 'poivron-rouge', 'piment-vert', 'chou-rouge']);
 const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
 const son = {
   // le « whoosh » suit la vitesse du doigt
@@ -322,6 +330,7 @@ const son = {
   goutte: () => sTone(rnd(700, 1100), 0.09, 0.05, 'sine', 0, 0.55),
   ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
 };
+son.coeur = () => { sTone(58, 0.16, 0.5, 'sine', 0, 0.8); sTone(52, 0.18, 0.4, 'sine', 0.17, 0.8); };
 const sons = {}; let sonsDemandes = false;
 function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'goutte', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(maitre); s.start(); return true; }
@@ -570,15 +579,15 @@ function tache(sx, sy, color, taille, dir) {
   const delai = Math.max(60, Math.abs(cy - sy) / 900 * 1000);
   gouttes.push({ x: cx, y0: Math.min(sy, cy - 4), y1: cy, t: 0, d: delai / 1000, c, taille: t, ang });
 }
-const imagesTaches = [0, 1, 2, 3].map(i => { const im = new Image(); im.src = './v2/tache' + i + '.webp'; return im; });
+const imagesTaches = Array.from({ length: 15 }, (_, i) => i).map(i => { const im = new Image(); im.src = './v2/tache' + i + '.webp'; return im; });
 const cacheTeinte = new Map();
 function teinterTache(k, c) {
   const cle = k + '_' + c.getHexString(); let cv = cacheTeinte.get(cle); if (cv) return cv;
   const im = imagesTaches[k]; cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight;
   const x = cv.getContext('2d');
   x.drawImage(im, 0, 0);
-  x.globalCompositeOperation = 'source-atop'; x.fillStyle = rgba(c, 0.8); x.fillRect(0, 0, cv.width, cv.height);   // couleur du jus
-  x.globalAlpha = 0.28; x.drawImage(im, 0, 0);                                                                  // reflets et relief de la photo
+  x.globalCompositeOperation = 'source-atop'; x.fillStyle = rgba(c, 0.93); x.fillRect(0, 0, cv.width, cv.height);   // couleur du jus
+  x.globalAlpha = 0.17; x.drawImage(im, 0, 0);                                                                  // reflets et relief de la photo
   if (cacheTeinte.size > 200) cacheTeinte.clear();
   cacheTeinte.set(cle, cv); return cv;
 }
@@ -586,11 +595,11 @@ const gouttes = [];  // gouttes qui tombent vers la table avant de s'écraser
 function posePlat(g) {
   cctx.save(); cheminTable(cctx, geoTable()); cctx.clip();
   cctx.globalCompositeOperation = 'source-over';
-  const im = imagesTaches.length === 4 && imagesTaches.every(i => i.complete && i.naturalWidth) ? imagesTaches : null;
+  const im = imagesTaches.length === 15 && imagesTaches.every(i => i.complete && i.naturalWidth) ? imagesTaches : null;
   if (im) {
     // tache photoréaliste (générée sur ElevenLabs), teintée à la couleur du jus et posée en perspective
-    const k = Math.floor(Math.random() * 4), teinte = teinterTache(k, g.c);
-    const w = g.taille * rnd(5.2, 6.4), h = w * teinte.height / teinte.width * 0.62;
+    const k = Math.floor(Math.random() * 15), teinte = teinterTache(k, g.c);
+    const w = g.taille * rnd(4.6, 5.8), h = w * teinte.height / teinte.width * 0.6;
     cctx.save(); cctx.translate(g.x, g.y1); cctx.rotate(g.ang * 0.6); if (Math.random() < 0.5) cctx.scale(-1, 1);
     cctx.globalAlpha = 0.92; cctx.drawImage(teinte, -w / 2, -h / 2, w, h); cctx.restore();
   } else {
@@ -734,6 +743,13 @@ function activerCoup() { if (etat !== 'jeu' || charge < RECHARGE) return; charge
 function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralentiBonus = 5; ralenti = Math.max(ralenti, 5); bandeau('Ralenti !', 5); majBonus(); }
 function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
 // fin de niveau : pluie de fruits spéciaux (letchis dorés, vanille), puis 4 secondes d'accalmie
+// avant chaque niveau suivant : une ruée stressante (fruits et roches en rafale, cœur qui bat, bord rouge qui pulse)
+let battement = 0;
+const dureeStress = () => 6 + Math.min(4, niv * 0.5);
+function debutStress() {
+  phase = 'stress'; phaseT = 0; prochainLancer = 0.1; battement = 0;
+  bandeau('⚠ La ruée arrive ! Tiens bon, évite les roches !', 2.4);
+}
 function finDeNiveau() {
   phase = 'speciales'; phaseT = 0; bandeau('Pluie de fruits péi !', 2.2);
   const n = 7 + Math.min(7, niv);
@@ -958,10 +974,10 @@ function dessinerTrait(dt = 0.016) {
 }
 
 // ---------------------------------------------------------------- vagues de lancers
-function vague() {
+function vague(ruee = false) {
   niveau = Math.min(14, Math.floor((niv - 1) * 1.3 + phaseT / 16));
-  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5));
-  const chanceRoche = temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
+  const n = ruee ? 3 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5));
+  const chanceRoche = ruee ? Math.min(0.3 + niv * 0.015, 0.42) : temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
   for (let i = 0; i < n; i++) {
     setTimeout(() => {
       if (etat !== 'jeu' || !prets.length) return;
@@ -1039,6 +1055,7 @@ const horloge = new THREE.Clock();
 const fumee = new THREE.Color(0xff8a1e);
 function boucle() {
   if (contextePerdu) return;
+  { const st = etat === 'jeu' && phase === 'stress' && !pauseAuto; $('stress').classList.toggle('on', st); $('barreStress').classList.toggle('on', st); }
   const bp = $('bPause'); if (bp) { const v = etat === 'jeu' && !pauseAuto ? 'flex' : 'none'; if (bp.style.display !== v) bp.style.display = v; }
   const vrai = pauseAuto ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
   if (ralenti > 0) ralenti -= vrai;
@@ -1053,7 +1070,13 @@ function boucle() {
   if (ralentiBonus > 0) { ralentiBonus -= vrai; if (ralenti < 0.05 && ralentiBonus > 0) ralenti = ralentiBonus; }
   if (etat === 'jeu') {
     temps += dt; phaseT += dt; charge = Math.min(RECHARGE, charge + vrai); if (frenesie > 0) frenesie -= vrai; majBonus();
-    if (phase === 'actif') { prochainLancer -= dt; if (prochainLancer <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
+    if (phase === 'actif') { prochainLancer -= dt; if (prochainLancer <= 0) vague(); if (phaseT > dureePhase()) debutStress(); }
+    else if (phase === 'stress') {
+      prochainLancer -= dt; if (prochainLancer <= 0) { vague(true); prochainLancer = rnd(0.42, 0.7) - Math.min(0.2, niv * 0.02); }
+      const k = Math.min(1, phaseT / dureeStress()); battement -= vrai; if (battement <= 0) { son.coeur(); battement = 0.85 - k * 0.5; }
+      $('barreStress').firstElementChild.style.width = ((1 - k) * 100) + '%';
+      if (phaseT > dureeStress()) finDeNiveau();
+    }
     else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochainLancer = 0.2; bandeau('Niveau ' + niv + ' ! Ça repart', 1.6); }
   }
   if (comboN > 0 && performance.now() - comboT > 260) finCombo();
@@ -1107,6 +1130,16 @@ document.querySelectorAll('.zone-interactive').forEach(element => { element.addE
   catalogue = info.fruits.slice();
   const premiers = ['mangue', 'letchi', 'ananas', 'banane', 'papaye', 'fruit-de-la-passion'];
   catalogue.sort((a, b) => (premiers.indexOf(b.id) >= 0) - (premiers.indexOf(a.id) >= 0) || Math.random() - 0.5);
+  // diversité des couleurs de jus : après les fruits de départ, on alterne vert, violet/noir, rouge, rose, orange, jaune
+  {
+    const fam = d => { const h = {}; new THREE.Color(d.couleur_jus).getHSL(h); const deg = h.h * 360;
+      if (h.l < 0.3) return 1; if (deg > 70 && deg < 170) return 0; if (deg >= 250 || deg < 8) return h.s > 0.5 && deg >= 250 ? 1 : 2;
+      if (deg >= 320 || deg < 20) return deg >= 320 && deg < 345 ? 3 : 2; if (deg < 45) return 4; return 5; };
+    const debut = catalogue.filter(d => premiers.indexOf(d.id) >= 0), reste = catalogue.filter(d => premiers.indexOf(d.id) < 0);
+    const seaux = [[], [], [], [], [], []]; reste.forEach(d => seaux[fam(d)].push(d));
+    const ordre = []; for (let i = 0; ordre.length < reste.length; i++) for (const q of seaux) if (q[i]) ordre.push(q[i]);
+    catalogue = debut.concat(ordre);
+  }
   let fait = 0;
   const majCharge = () => { $('charge').textContent = fait < catalogue.length ? `Chargement des fruits… ${fait}/${catalogue.length}` : ''; };
   // Seuls MAX_CHARGES fruits sont en mémoire ; les autres attendent leur tour (réserve)
@@ -1168,7 +1201,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+  window.jeu = { demarrer, debutStress, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 }
 }
 </script>
