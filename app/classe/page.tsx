@@ -1,3 +1,4 @@
+import { JEUX_ECOLE } from "@/lib/ecole-jeux";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
@@ -24,7 +25,7 @@ export default async function Classe() {
   const niveau = NIVEAUX.find((n) => n.id === groupe.niveau);
   const ids = selectionDe(groupe);
   const selection = ids.map((id) => livres.find((l) => l.id === id)).filter(Boolean) as typeof livres;
-  const jeux = [...new Set(THEMES.flatMap((t) => t.jeux))].map((id) => CATALOGUE.find((j) => j.id === id)).filter(Boolean).slice(0, 8) as typeof CATALOGUE;
+  const jeux = JEUX_ECOLE;
   return (
     <>
       <main className="page">
@@ -77,7 +78,7 @@ export default async function Classe() {
         <section className="section">
           <h2>🎮 Apprendre en jouant</h2>
           <div className="ecole-jeux">
-            {jeux.map((j) => <PastilleJeu key={j.id} id={j.id} titre={j.titre} emoji={j.emoji} ouvert={abonne || jeuGratuit(j.id)} />)}
+            {jeux.map((j) => <Link key={j.id} className="pastille" href={`/ecole/jeux/${j.id}`}>{j.emoji} {j.titre}</Link>)}
           </div>
         </section>
         <p className="texte-doux" style={{ textAlign: "center", fontSize: 13, marginTop: 24 }}>Accès offert par {etab.nom} · Kwélafé Academy</p>

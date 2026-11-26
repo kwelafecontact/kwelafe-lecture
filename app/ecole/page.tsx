@@ -1,3 +1,4 @@
+import { JEUX_ECOLE } from "@/lib/ecole-jeux";
 import Link from "next/link";
 import NavBas from "@/components/NavBas";
 import CarteLivre from "@/components/CarteLivre";
@@ -67,7 +68,7 @@ export default async function Ecole({ searchParams }: { searchParams: Promise<{ 
                 <Link key={t.id} href={url(niveau?.id, theme?.id === t.id ? null : t.id)} className={`tuile ${theme?.id === t.id ? "tuile-active" : ""}`} style={{ ["--c" as any]: t.couleur, ["--cc" as any]: t.clair }}>
                   <span className="emoji" aria-hidden>{t.emoji}</span>
                   <b>{t.nom}</b>
-                  <small>{nb ? `${nb} livre${nb > 1 ? "s" : ""}` : "Bientôt"} · {t.jeux.length} jeux</small>
+                  <small>{nb ? `${nb} livre${nb > 1 ? "s" : ""}` : "Bientôt"} · {JEUX_ECOLE.filter((j) => j.themes.includes(t.id)).length} jeux</small>
                 </Link>
               );
             })}
@@ -77,7 +78,7 @@ export default async function Ecole({ searchParams }: { searchParams: Promise<{ 
 
         {themesAffiches.map((t) => {
           const liste = duNiveau(duTheme(t));
-          const jeux = t.jeux.map((id) => CATALOGUE.find((j) => j.id === id)).filter(Boolean) as typeof CATALOGUE;
+          const jeux = JEUX_ECOLE.filter((j) => j.themes.includes(t.id));
           return (
             <section key={t.id} className="section rayon" style={{ ["--c" as any]: t.couleur, ["--cc" as any]: t.clair }}>
               <div className="entete-rayon">
@@ -95,7 +96,7 @@ export default async function Ecole({ searchParams }: { searchParams: Promise<{ 
               )}
               <div className="ecole-jeux">
                 <span className="texte-doux">Pour s'entraîner en jouant :</span>
-                {jeux.map((j) => <PastilleJeu key={j.id} id={j.id} titre={j.titre} emoji={j.emoji} ouvert={jeuxOuverts || jeuGratuit(j.id)} />)}
+                {jeux.map((j) => <Link key={j.id} className="pastille" href={`/ecole/jeux/${j.id}`}>{j.emoji} {j.titre}</Link>)}
               </div>
             </section>
           );

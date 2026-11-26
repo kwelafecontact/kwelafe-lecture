@@ -705,3 +705,29 @@ body { background: var(--ivoire); }
 .ecran-appareils .panneau { max-width: 440px; width: 100%; display: flex; flex-direction: column; gap: 10px; }
 .ligne-appareil { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(0,0,0,.08); }
 .ligne-appareil span { display: flex; flex-direction: column; }
+/* Thèmes du quiz, jeux école, Dévine vite */
+.themes-quiz { display: flex; flex-wrap: wrap; gap: 8px; }
+.themes-quiz button { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 999px; border: 2px solid rgba(0,0,0,.12); background: #fff; color: #222; font-size: 15px; cursor: pointer; }
+.themes-quiz button.actif { border-color: #1e6ec8; background: #1e6ec8; color: #fff; }
+.entete-jeu-ecole { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 20px; color: #fff; margin-bottom: 14px; }
+.entete-jeu-ecole span { font-size: 44px; } .entete-jeu-ecole h1 { margin: 0; font-size: 24px; } .entete-jeu-ecole p { margin: 4px 0 0; opacity: .95; }
+.choix-niveau-jeu { display: flex; gap: 8px; margin-bottom: 10px; }
+.choix-niveau-jeu button { flex: 1; padding: 10px; border-radius: 12px; border: 2px solid rgba(0,0,0,.12); background: #fff; color: #222; cursor: pointer; font-weight: 700; }
+.choix-niveau-jeu button.actif { background: #2e9d4f; color: #fff; border-color: #2e9d4f; }
+.grille-paires { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (min-width: 640px) { .grille-paires { grid-template-columns: repeat(4, 1fr); } }
+.carte-paire { min-height: 84px; border-radius: 14px; border: 0; font-size: 17px; font-weight: 700; cursor: pointer; background: #4b3a78; color: #fff; padding: 6px; }
+.carte-paire.vue.kr { background: #1e6ec8; } .carte-paire.vue.fr { background: #2f9a4a; } .carte-paire.ok { opacity: .55; }
+.vf-boutons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vf-boutons button { padding: 22px; font-size: 20px; border-radius: 16px; border: 2px solid rgba(0,0,0,.12); background: #fff; color: #222; cursor: pointer; }
+.vf-boutons .bonne { background: #2f9a4a; color: #fff; } .vf-boutons .fausse { background: #e8283a; color: #fff; } .vf-boutons .terne { opacity: .45; }
+.chaine-choisie { min-height: 34px; font-weight: 700; font-size: 17px; display: flex; flex-wrap: wrap; gap: 6px; }
+.devine-jeu { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 30px 20px; color: #fff; }
+.devine-temps { font-size: 56px; font-weight: 900; } .devine-temps.urgent { animation: kw-pouls 1s infinite; }
+@keyframes kw-pouls { 50% { transform: scale(1.2); } }
+.devine-mot { font-size: clamp(34px, 9vw, 72px); font-weight: 900; text-align: center; line-height: 1.1; padding: 0 10px; }
+.devine-boutons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 560px; }
+.devine-boutons button { padding: 26px 10px; font-size: 22px; font-weight: 800; border: 0; border-radius: 20px; cursor: pointer; }
+.devine-boutons .passer { background: rgba(255,255,255,.25); color: #fff; } .devine-boutons .trouve { background: #fff; color: #2f9a4a; }
+.devine-compte { font-weight: 700; }
+.gage { background: #fff4d6; color: #5a3d00; }

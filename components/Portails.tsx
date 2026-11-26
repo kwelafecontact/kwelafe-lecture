@@ -56,7 +56,7 @@ export default function Portails({ prenom, visiteur, eleve, nbLivres, nbJeux, en
         { href: "/classe", nom: "Ma classe", ico: "🎒", c: "#2e9d4f", detail: "La sélection de mon enseignant" },
         { href: "/", nom: "Bibliothèque", ico: "📚", c: "#1f6fb2", detail: `${nbLivres} livres à lire`, couv: couvertures },
         { href: "/ecole", nom: "Apprendre", ico: "✏️", c: "#4b3a78", detail: "Par niveau et par thème" },
-        { href: "/jeux", nom: "Jeux", ico: "🎮", c: "#e8a200", detail: `${nbJeux} jeux péi` },
+        { href: "/ecole/jeux", nom: "Jeux pour apprendre", ico: "🎮", c: "#e8a200", detail: "Jeux pédagogiques de l'école" },
       ]
     : profil === "famille"
       ? [
