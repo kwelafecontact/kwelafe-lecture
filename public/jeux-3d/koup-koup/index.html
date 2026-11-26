@@ -5,1171 +5,515 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="icon" href="data:,">
 <title>Koup Koup 2 · Kwélafé Production</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preload" href="./lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
-  :root { --nuit:#1b0f06; --or:#ffcf4a; --feu:#ff7a1a; }
-  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  html, body { height:100%; overflow:hidden; background:#3a2414; font-family:"Baloo 2", "Avenir Next", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
-  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; }
-  #gl { touch-action:none; }
-  #trace { pointer-events:none; }
-  .hud { position:fixed; top:max(78px, calc(env(safe-area-inset-top) + 64px)); left:max(30px, env(safe-area-inset-left)); right:max(30px, env(safe-area-inset-right)); display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; opacity:0; transition:opacity .4s; }
-  .hud.on { opacity:1; }
-  .score { font-size:clamp(34px, 7vw, 54px); font-weight:800; line-height:1; color:var(--or); text-shadow:0 3px 0 #7a3a08, 0 6px 18px rgba(0,0,0,.45); }
-  .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:4px; text-shadow:0 2px 6px rgba(0,0,0,.6); }
-  .vies { display:flex; gap:8px; margin-top:6px; }
-  .vies svg { width:30px; height:30px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)); transition:transform .3s, opacity .3s; }
-  .vies svg.perdue { opacity:.35; transform:scale(.8); }
-  .vies svg.perdue .x { opacity:1; }
-  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:max(9vh, 60px); text-align:center; pointer-events:none; transition:opacity .45s; }
-  .ecran.cache { opacity:0; }
-  .titre { font-size:clamp(58px, 14vw, 120px); font-weight:800; line-height:.9; color:var(--or); letter-spacing:.01em; text-shadow:0 5px 0 #a8460a, 0 10px 0 #5a2406, 0 18px 30px rgba(0,0,0,.5); transform:rotate(-3deg); }
-  .sous { margin-top:18px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.7); }
-  .consigne { position:fixed; left:0; right:0; padding:0 32px; bottom:calc(150px + env(safe-area-inset-bottom)); font-size:clamp(17px, 3.8vw, 22px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); animation:pulse 1.4s ease-in-out infinite; }
-  @keyframes pulse { 50% { transform:scale(1.06); } }
-  .btn { pointer-events:auto; margin-top:22px; border:0; border-radius:999px; padding:14px 34px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.4); cursor:pointer; }
-  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
-  .gros { font-size:clamp(64px, 16vw, 110px); font-weight:800; color:var(--or); line-height:1; text-shadow:0 5px 0 #a8460a, 0 14px 26px rgba(0,0,0,.5); margin-top:8px; }
-  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; }
-  .lien.discret { pointer-events:none; opacity:.4; font-size:13px; padding:6px 16px; }
-  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
-  .pop { position:fixed; pointer-events:none; font-weight:800; transform:translate(-50%,-50%); text-shadow:0 3px 0 rgba(0,0,0,.35), 0 0 14px rgba(0,0,0,.4); animation:monte .9s ease-out forwards; white-space:nowrap; }
-  .pop.combo { color:var(--or); font-size:clamp(30px, 7vw, 48px); animation-duration:1.3s; }
-  .pop.pts { color:#fff; font-size:clamp(34px, 8vw, 52px); -webkit-text-stroke:2px rgba(40,14,0,.55); text-shadow:0 4px 0 rgba(0,0,0,.35), 0 0 22px currentColor; }
-  .pop.bonus { color:#ffe27a; font-size:clamp(24px, 5.6vw, 34px); -webkit-text-stroke:1.5px rgba(60,20,0,.6); }
-  @font-face { font-family:"Bangers"; src:url("./lib/bangers.woff2") format("woff2"); font-display:swap; }
-  .pop.nom { font-family:"Bangers", "Baloo 2", sans-serif; font-weight:400; font-size:clamp(17px, 3.6vw, 24px); letter-spacing:.07em;
-    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4, #ff3b3b); background-size:200% 100%;
-    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; text-shadow:none;
-    filter:drop-shadow(0 1.5px 0 #2a1000) drop-shadow(1px 0 0 #2a1000) drop-shadow(-1px 0 0 #2a1000) drop-shadow(0 0 4px rgba(0,0,0,.5));
-    animation:monte 1.4s ease-out forwards, arcenciel 1.4s linear forwards; }
-  @keyframes arcenciel { from { background-position:0 0; } to { background-position:-100% 0; } }
-  .pop.or { color:#ffd84a; font-size:clamp(34px, 8vw, 56px); text-shadow:0 4px 0 #8a5a00, 0 0 30px #ffcf4a; }
-  #dore { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(ellipse at center, rgba(255,215,90,0) 45%, rgba(255,190,40,.38) 100%); box-shadow:inset 0 0 60px 10px rgba(255,200,60,.5); }
-  #barreOr { position:fixed; left:50%; transform:translateX(-50%); top:max(26px, calc(env(safe-area-inset-top) + 10px)); width:min(46vw, 260px); height:10px; border-radius:9px; background:rgba(0,0,0,.35); overflow:hidden; opacity:0; transition:opacity .3s; pointer-events:none; }
-  #barreOr div { height:100%; width:100%; background:linear-gradient(90deg, #fff1a8, #ffc21e); box-shadow:0 0 12px #ffcf4a; }
-  #vitre, #fanions { pointer-events:none; }
-  #fond, #fanions { transition:filter .5s; }
-  body.ralenti-or #fond, body.ralenti-or #fanions { filter:saturate(.3) brightness(.8); }
-  .btn-son { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); right:max(26px, env(safe-area-inset-right)); width:44px; height:44px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(20,10,2,.6); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
-  .hud { top:max(84px, calc(env(safe-area-inset-top) + 70px)) !important; }
-  .pop.aie { color:#ff5a3a; font-size:clamp(26px, 6vw, 40px); }
-  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 30% { transform:translate(-50%,-55%) scale(1); } 100% { opacity:0; transform:translate(-50%,-140%) scale(1); } }
-  #flash { position:fixed; inset:0; background:#fff3d0; opacity:0; pointer-events:none; }
-  #charge { position:fixed; left:0; right:0; bottom:calc(96px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; font-size:15px; opacity:.85; text-shadow:0 2px 6px rgba(0,0,0,.7); pointer-events:none; }
-  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
-  .bonus.on { display:flex; }
-  .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
-  .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
-  .bbtn.vide { opacity:.38; }
-  .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
-  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
-  @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
-  .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
-  .niveauHud.saute { animation:sauteN .5s; } @keyframes sauteN { 40% { transform:scale(1.35); } }
-  .bandeau { position:fixed; left:50%; transform:translateX(-50%); top:max(150px, calc(env(safe-area-inset-top) + 136px)); padding:6px 20px; border-radius:14px; background:rgba(40,20,0,.6); color:#ffe27a; font-weight:800; font-size:clamp(16px,3.8vw,22px); text-shadow:0 2px 0 #5a2a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; z-index:6; }
-  .bandeau.on { opacity:1; }
-  .logo { width:min(46vw, 230px); margin-top:14px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+@font-face{font-family:"Bangers";src:url("./lib/bangers.woff2") format("woff2");font-display:swap}
+:root{--or:#ffd24a}
+html,body{margin:0;height:100%;overflow:hidden;background:#1f4a2a;font-family:"Baloo 2",system-ui,sans-serif;color:#fff;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
+#fond{position:fixed;inset:0;background:#1f4a2a url("./v2/fond-portrait.webp?v=1") center bottom/cover no-repeat}
+@media (min-aspect-ratio:1/1){#fond{background-image:url("./v2/fond-paysage.webp?v=1")}}
+#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+.ecran{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 28px;pointer-events:none;transition:opacity .35s;background:rgba(10,36,18,.4)}
+.ecran.cache{opacity:0}.ecran.cache *{pointer-events:none!important}
+.titre{font-family:"Bangers",sans-serif;font-size:clamp(66px,17vw,126px);line-height:.95;letter-spacing:.04em;transform:rotate(-3deg);background:linear-gradient(90deg,#ff3b3b,#ff9a1f,#ffe23a,#5fe04a,#2fb4ff,#b45cff,#ff4fa8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.5))}
+.sous{margin-top:12px;font-size:clamp(16px,3.6vw,22px);font-weight:600;text-shadow:0 2px 8px #000}
+.modes{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.btn{pointer-events:auto;border:0;border-radius:999px;padding:13px 28px;font:800 20px/1 "Baloo 2",system-ui,sans-serif;color:#3a1a04;background:linear-gradient(#ffe27a,#ffb21e);box-shadow:0 5px 0 #a8580a,0 10px 22px rgba(0,0,0,.45);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a8580a}
+.btn2{background:linear-gradient(#b8f0ff,#3fb4e6);box-shadow:0 5px 0 #1f6f94,0 10px 22px rgba(0,0,0,.45);color:#0b2a3a}
+.consigne{margin-top:16px;font-size:clamp(15px,3.4vw,19px);font-weight:700;text-shadow:0 2px 8px #000;max-width:520px}
+.voile{padding:20px 24px 24px;border-radius:26px;background:rgba(10,30,16,.78);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);max-width:580px;max-height:88vh;overflow:auto;pointer-events:auto;touch-action:pan-y}
+.gros{font-family:"Bangers",sans-serif;font-size:clamp(64px,16vw,110px);color:var(--or);line-height:1;text-shadow:0 5px 0 #8a4a08,0 0 30px rgba(255,190,60,.5)}
+.petit{font-size:15px;font-weight:600;opacity:.92;margin-top:6px}
+.lien{pointer-events:auto;margin-top:16px;color:#fff;font-weight:800;text-decoration:none;padding:9px 18px;border-radius:999px;background:rgba(0,0,0,.4);box-shadow:0 0 14px 3px rgba(255,170,40,.8),inset 0 0 8px rgba(255,200,80,.5);animation:feu 1.6s ease-in-out infinite}
+@keyframes feu{50%{box-shadow:0 0 24px 7px rgba(255,120,30,.95),inset 0 0 12px rgba(255,220,100,.7)}}
+.liste{display:grid;gap:8px;margin-top:12px;text-align:left}
+.lig{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.1);border-radius:14px;padding:8px 12px;font-size:15px;font-weight:600}
+.lig b{color:var(--or)}.lig .btn{padding:8px 16px;font-size:16px;margin-left:auto}
+.fait{font-size:15px;font-weight:600;text-align:left;margin:8px 0;line-height:1.3}
+.fait small{display:block;opacity:.7;font-size:12px;font-weight:600}
+.fait.vide{opacity:.35}
+.sav{margin-top:12px;font-size:15px;font-weight:600;background:rgba(255,210,74,.14);border-radius:14px;padding:10px 12px;text-align:left}
+.sav small{display:block;opacity:.7;font-size:12px;margin-top:4px}
+.regle{text-align:left;font-size:15px;font-weight:600;line-height:1.35;margin-top:8px}
 </style>
 </head>
 <body>
-<canvas id="fond"></canvas>
-<canvas id="fanions"></canvas>
-<canvas id="taches"></canvas>
-<canvas id="gl"></canvas>
-<canvas id="vitre"></canvas>
-<canvas id="trace"></canvas>
-<div id="flash"></div>
-<div id="dore"></div>
-<div id="barreOr"><div></div></div>
-
-<div class="hud" id="hud">
-  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
-  <div><div class="vies" id="vies"></div><div class="niveauHud" id="niveauHud">Niveau 1</div></div>
-</div>
+<div id="fond"></div>
+<canvas id="c"></canvas>
 
 <div class="ecran" id="menu">
-  <div class="titre">Koup Koup 2</div>
-  <div class="sous">Les fruits et légumes péi en 3D</div>
-  <div class="consigne">Coupe la mangue d'un coup de doigt pour jouer</div>
-  <button class="btn zone-interactive" id="jouer">Jouer</button>
+  <div class="titre">KOUP KOUP 2</div>
+  <div class="sous">Tranche les fruits péi et sers les commandes du marché !</div>
+  <div class="consigne" id="defiMenu"></div>
+  <div class="modes">
+    <button class="btn" id="bJouer">▶ Classique</button>
+    <button class="btn btn2" id="bZen">🧘 Zen · 90 s</button>
+  </div>
+  <div class="modes" style="margin-top:12px">
+    <button class="btn btn2" id="bBoutique">🛒 Boutique</button>
+    <button class="btn btn2" id="bCarnet">📖 Carnet</button>
+  </div>
+  <div class="petit" id="pieces"></div>
+  <a class="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+</div>
+
+<div class="ecran cache" id="aide">
+  <div class="voile"><div class="gros" style="font-size:52px">COMMENT JOUER</div>
+  <div class="regle">👆 Glisse le doigt sur les fruits pour les trancher.<br>
+  🧺 Un fruit qui tombe sans être coupé te coûte un panier.<br>
+  🪨 Évite les scories du volcan : les trancher coûte un panier.<br>
+  📝 Le marchand passe commande : sers-la pour gagner des points et regagner un panier.<br>
+  ✨ Le letchi doré déclenche la frénésie : points doublés !<br>
+  🥁 Entre deux niveaux : frappe le roulèr en rythme.</div>
+  <div class="modes"><button class="btn" id="bAideOk">C'est parti !</button></div></div>
+</div>
+
+<div class="ecran cache" id="pause">
+  <div class="voile"><div class="gros" style="font-size:60px">PAUSE</div>
+  <div class="modes"><button class="btn" id="bReprendre">▶ Reprendre</button><button class="btn btn2" id="bQuitter">Menu</button></div></div>
 </div>
 
 <div class="ecran cache" id="fin">
-  <div class="sous" style="margin-top:0">Partie terminée</div>
-  <div class="gros" id="scoreFin">0</div>
-  <div class="sous" id="recordFin">Record : 0</div>
-  <div class="consigne">Coupe la mangue pour rejouer</div>
-  <button class="btn zone-interactive" id="rejouer">Rejouer</button>
+  <div class="voile">
+    <div class="gros" id="finScore">0</div>
+    <div class="petit" id="finInfo"></div>
+    <div class="sav" id="finSav"></div>
+    <div class="petit" id="finDefi"></div>
+    <div class="modes"><button class="btn" id="bRejouer">↻ Rejouer</button><button class="btn btn2" id="bMenu">Menu</button><button class="btn btn2" id="bBoutique2">🛒 Boutique</button></div>
+    <a class="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+  </div>
 </div>
 
-<div class="bandeau" id="bandeau"></div>
-<div class="bonus" id="bonus">
-  <button class="bbtn zone-interactive" id="bCoup" aria-label="Grand coup de lame">🔪</button>
-  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
-  <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
+<div class="ecran cache" id="boutique">
+  <div class="voile"><div class="gros" style="font-size:52px">BOUTIQUE</div>
+  <div class="petit" id="boPieces"></div><div class="liste" id="boListe"></div>
+  <div class="modes"><button class="btn" id="bBoFerme">Retour</button></div></div>
 </div>
-<div id="charge">Chargement des fruits…</div>
-<button class="retour-jeux zone-interactive" id="retourJeux" aria-label="Retour aux jeux">‹ Jeux</button>
-<style>.retour-jeux{position:fixed;z-index:20;top:max(22px,env(safe-area-inset-top));left:max(26px,env(safe-area-inset-left));min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(20,10,2,.6);color:#fff;font:800 16px "Baloo 2",system-ui,sans-serif;cursor:pointer}</style>
+
+<div class="ecran cache" id="carnet">
+  <div class="voile"><div class="gros" style="font-size:52px">CARNET</div>
+  <div class="petit" id="caCompte"></div><div id="caListe"></div>
+  <div class="modes"><button class="btn" id="bCaFerme">Retour</button></div></div>
+</div>
+
 <script>
-document.getElementById('retourJeux').addEventListener('pointerup', function () {
-  try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {}
-  location.href = '/jeux';
-});
-</script>
-<button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
-<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+"use strict";
+const $=id=>document.getElementById(id);
+const cv=$("c"),g=cv.getContext("2d");
+const V="?v=1";
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 
-<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
-<script type="module">
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
-import { GestionnairePerf, dprCible, appareil, afficherSecours, reveillerAudio, endormirAudio, journal, libererCanvas } from '../commun/performances.js';
+/* ---------- Données ---------- */
+// Fruits péi : sprites aquarelle entiers (f_) et coupés (c_). sc = taille relative.
+const FR=[
+  {id:"letchi",nom:"letchi",pl:"letchis",sc:.62,jus:"#f4f0e0"},
+  {id:"mangue",nom:"mangue José",pl:"mangues",sc:.9,jus:"#ffae1c"},
+  {id:"ananas",nom:"ananas Victoria",pl:"ananas",sc:1,jus:"#ffe14a"},
+  {id:"papaye",nom:"papaye",pl:"papayes",sc:1,jus:"#ff9a3a"},
+  {id:"banane",nom:"banane",pl:"bananes",sc:.9,jus:"#fff0b8"},
+  {id:"passion",nom:"fruit de la passion",pl:"fruits de la passion",sc:.68,jus:"#ffb02a"},
+  {id:"goyavier",nom:"goyavier",pl:"goyaviers",sc:.62,jus:"#ffd8e0"},
+  {id:"citron",nom:"citron galet",pl:"citrons galet",sc:.64,jus:"#b6f06a"}
+];
+const IMG={f:[],c:[]};
+FR.forEach((f,i)=>{["f","c"].forEach(p=>{const im=new Image();im.src="./v2/"+p+"_"+f.id+".webp"+V;IMG[p][i]=im;});});
+const ok=im=>im&&im.complete&&im.naturalWidth>0;
 
-{
-const $ = id => document.getElementById(id);
-const rnd = (a, b) => a + Math.random() * (b - a);
-const TEST = new URLSearchParams(location.search).has('test');
-// Qualité : 2 = haute, 1 = moyenne, 0 = basse. Baisse toute seule si le jeu ralentit.
-let QUALITE = (() => {
-  const f = new URLSearchParams(location.search).get('qualite'); if (f !== null) return Math.max(0, Math.min(2, +f));
-  const c = navigator.hardwareConcurrency || 4; const q = c >= 6 ? 2 : c >= 4 ? 1 : 0;
-  return appareil.iphone ? Math.min(q, 1) : q; // iPhone : on démarre en qualité moyenne
-})();
-// Mémoire : les 32 modèles d'origine (textures 1024 px) demandaient plus de 1 Go de mémoire graphique
-// une fois tous chargés, ce qui faisait planter Safari sur iPhone (écran noir puis rechargement).
-// Sur téléphone et tablette : modèles aux textures 512 px et nombre de fruits chargés limité,
-// renouvelés pendant la partie pour garder toute la variété.
-const MOBILE = appareil.ios || appareil.tactile;
-const PARAMS = new URLSearchParams(location.search);
-const DOSSIER_MODELES = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? './models/mobile/' : './models/';
-const MAX_CHARGES = +PARAMS.get('max') || (appareil.iphone ? 10 : MOBILE ? 14 : 20);
-const PROTEGES = new Set(['mangue', 'letchi']); // menu et letchi doré
-const ratioRendu = () => Math.min(dprCible(2), [1, 1.4, 1.75][QUALITE]);
-const qx = () => [0.45, 0.75, 1][QUALITE];
+// Faits sourcés du carnet (un par partie)
+const FAITS=[
+  ["Les vergers de letchis couvrent environ 500 hectares à La Réunion et donnent quelque 8 000 tonnes de fruits.","La Réunion Tourisme (reunion.fr)"],
+  ["En 1984, il n'y avait qu'environ 135 hectares de letchis sur l'île, pour environ 1 000 tonnes par an.","CIRAD, revue Fruits (1987)"],
+  ["Dès 1987, les chercheurs du CIRAD écrivaient que le letchi était cultivé à La Réunion depuis plus de 200 ans.","CIRAD, revue Fruits (1987)"],
+  ["L'ananas Victoria serait arrivé sur l'île en 1668 et il porte un Label Rouge depuis 2006.","France.fr (Atout France)"],
+  ["L'ananas Victoria de La Réunion est le premier fruit tropical à avoir reçu un Label Rouge.","Gault&Millau"],
+  ["Un ananas ne mûrit pas après la récolte : il doit acquérir toutes ses qualités sur la plante.","Réussir Fruits & Légumes"],
+  ["En 2025, les ananas occupent environ 500 hectares à La Réunion.","DAAF Réunion, note de conjoncture de mai 2026"],
+  ["La mangue est la quatrième production fruitière de l'île. Deux variétés dominent : José, d'origine réunionnaise, et Cogshall, venue de Floride.","CIRAD, fiche RITA (2019)"],
+  ["Le goyavier vendu sur les marchés réunionnais est le goyavier de Chine, pourtant originaire du Brésil.","Jardin botanique Val Rahmeh (MNHN)"],
+  ["Sur la côte au vent, le goyavier de Chine pousse du bord de mer jusqu'à 1 300 m d'altitude. C'est aussi une espèce envahissante.","CIRAD, revue Fruits (1994) ; MNHN"],
+  ["La chair du goyavier de Chine est environ vingt fois plus riche en vitamine C que l'orange.","Jardin botanique Val Rahmeh (MNHN)"],
+  ["La filière banane de La Réunion connaît une forte croissance depuis les années 2000.","CIRAD, mémoire de fin d'études (2022)"],
+  ["En 2022, La Réunion a produit environ 38 000 tonnes de fruits.","DAAF Réunion (novembre 2023)"],
+  ["L'île compte près de 300 hectares de vergers d'agrumes, mais la moitié des agrumes consommés sont importés.","Ma santé.re d'après la DAAF"],
+  ["Le maloya, né chez les esclaves malgaches et africains des plantations, est inscrit à l'UNESCO depuis le 1er octobre 2009.","UNESCO"],
+  ["Le roulèr est un tambour en forme de tonneau coupé, recouvert d'une peau. Avec le kayamb, il marque le rythme du maloya et du séga.","La Réunion Tourisme (reunion.fr)"]
+];
+const UPS=[
+  {nom:"Sabre affûté",desc:"Ton geste tranche plus large.",max:3,cout:[40,80,140]},
+  {nom:"Panier en plus",desc:"Un panier de plus au départ.",max:2,cout:[60,120]},
+  {nom:"Commandes faciles",desc:"Les commandes demandent un fruit de moins.",max:3,cout:[50,100,160]},
+  {nom:"Letchi doré",desc:"Il apparaît plus souvent et la frénésie dure plus longtemps.",max:3,cout:[50,100,160]}
+];
+let S={best:0,pieces:0,up:[0,0,0,0],carnet:[],defi:{d:"",ok:false},vu:false};
+try{const r=JSON.parse(localStorage.getItem("koupkoup_v2")||"null");if(r)S=Object.assign(S,r);}catch(e){}
+const sauve=()=>{try{localStorage.setItem("koupkoup_v2",JSON.stringify(S));}catch(e){}};
+const upv=i=>S.up[i]||0;
 
-// ---------------------------------------------------------------- rendu
-const glc = $('gl');
-const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: TEST });
-renderer.setClearColor(0x000000, 0);
-renderer.setPixelRatio(ratioRendu());
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.08;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-const scene = new THREE.Scene();
-function construireEnvironnement() {
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const ancien = scene.environment;
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  if (ancien) ancien.dispose();
-  pmrem.dispose();
+/* ---------- Sons (ElevenLabs v2 + repli synthétique) ---------- */
+const SONS={coupe:.8,scorie:.9,dore:.9,roulet:.9,niveau:.9,defaite:.9,piece:.9,carnet:.8,rate:.7,lancer:.4};
+let ac=null;
+function debloque(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(ac&&ac.state==="suspended")ac.resume();}
+function bip(f,d,t="sine",v=.15){if(!ac)return;const o=ac.createOscillator(),gn=ac.createGain();o.type=t;o.frequency.value=f;gn.gain.value=v;gn.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(gn);gn.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}
+function sfx(n,vol=1,vit=1){
+  try{const a=new Audio("v2/sons/"+n+".mp3"+V);a.volume=Math.min(1,(SONS[n]||.8)*vol);a.playbackRate=vit;a.play().catch(()=>repli(n));a.onerror=()=>repli(n);}catch(e){repli(n);}
 }
-construireEnvironnement();
-scene.environmentIntensity = 0.8;
-const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-camera.position.set(0, 0, 14);
-const sun = new THREE.DirectionalLight(0xfff0d0, 2.8); sun.position.set(3, 6, 8); scene.add(sun);
-const rim = new THREE.DirectionalLight(0xbfdcff, 1.6); rim.position.set(-6, 3, -4); scene.add(rim);
-scene.add(new THREE.HemisphereLight(0xfff4dc, 0x6a4020, 0.4));
-// post-traitement : halo lumineux léger (seuls les éclats très clairs brillent) et contours lissés
-const cible = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, format: THREE.RGBAFormat });
-const composer = new EffectComposer(renderer, cible); const passeRendu = new RenderPass(scene, camera); passeRendu.clearAlpha = 0; composer.addPass(passeRendu);
-const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.35, 1.05); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(new SMAAPass());
-const POSTFX = !new URLSearchParams(location.search).has('simple');
-
-let W = 0, H = 0, viewH = 10, viewW = 10;
-const fond = $('fond'), taches = $('taches'), trace = $('trace'), vitre = $('vitre'), fanions = $('fanions');
-const anctx = fanions.getContext('2d');
-const fctx = fond.getContext('2d'), tctx = taches.getContext('2d'), bctx = trace.getContext('2d'), vctx = vitre.getContext('2d');
-// calques hors écran qui gardent les taches (étal) et les traînées (vitre) d'une image à l'autre
-const couche = document.createElement('canvas'), cctx = couche.getContext('2d');
-const coucheVitre = document.createElement('canvas'), cvctx = coucheVitre.getContext('2d');
-function resize() {
-  W = innerWidth; H = innerHeight;
-  const dpr = dprCible(2); // 1,5 au plus sur iPhone : 7 calques plein écran
-  for (const c of [fond, taches, trace, vitre, couche, coucheVitre, fanions]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
-  renderer.setSize(W, H, false); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = MOBILE ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
-  camera.aspect = W / H;
-  // garder une largeur jouable en portrait
-  camera.fov = W < H ? Math.min(62, 40 * Math.max(1, 0.75 / camera.aspect)) : 40;
-  camera.updateProjectionMatrix();
-  viewH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  viewW = viewH * camera.aspect;
-  peindreFond();
+function repli(n){const m={coupe:[700,.08,"sawtooth"],scorie:[110,.3,"square"],dore:[1200,.3],roulet:[130,.2,"triangle"],niveau:[800,.4],defaite:[160,.5,"triangle"],piece:[1000,.15],carnet:[700,.2],rate:[200,.15,"triangle"],lancer:[400,.06]}[n];if(m)bip(m[0],m[1],m[2]);}
+let amb=[];
+function ambiance(on){
+  if(!on){amb.forEach(a=>a.pause());return;}
+  if(!amb.length){
+    [[.2,1],[.11,.9]].forEach(([v,r],i)=>{const a=new Audio("v2/sons/ambiance.mp3"+V);a.loop=true;a.volume=v;a.playbackRate=r;amb.push(a);if(i)setTimeout(()=>{if(amb.length&&!amb[1].paused)return;amb[1].play().catch(()=>{});},1700);});
+  }
+  amb[0].play().catch(()=>{});
 }
 
-// Décor : étal en bois du marché forain, fanions aux couleurs de La Réunion
-function peindreFond() {
-  const g = fctx;
-  const grd = g.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, '#6b3f1d'); grd.addColorStop(1, '#3d220e');
-  g.fillStyle = grd; g.fillRect(0, 0, W, H);
-  const nb = Math.max(5, Math.round(W / 150)), lw = W / nb;
-  for (let i = 0; i < nb; i++) {
-    const x = i * lw, teinte = [0, 8, -6, 4, -10, 6][i % 6];
-    const pl = g.createLinearGradient(x, 0, x + lw, 0);
-    pl.addColorStop(0, `hsl(${26 + teinte * .3} 48% ${30 + teinte * .4}%)`);
-    pl.addColorStop(.5, `hsl(${28 + teinte * .3} 50% ${36 + teinte * .4}%)`);
-    pl.addColorStop(1, `hsl(${25 + teinte * .3} 46% ${28 + teinte * .4}%)`);
-    g.fillStyle = pl; g.fillRect(x + 2, 0, lw - 4, H);
-    g.save(); g.globalAlpha = .13; g.strokeStyle = '#1e0e04'; g.lineWidth = 1.2;
-    for (let k = 0; k < 9; k++) {
-      g.beginPath(); const ox = x + 8 + (k / 9) * (lw - 16) + Math.sin(i * 7 + k) * 4;
-      g.moveTo(ox, 0);
-      for (let y = 0; y <= H; y += 40) g.lineTo(ox + Math.sin(y / 90 + k * 1.7 + i) * 5, y);
-      g.stroke();
-    }
-    g.globalAlpha = .35; g.fillStyle = '#1a0c03';
-    const nx = x + lw * (0.3 + 0.4 * ((i * 37) % 10) / 10), ny = H * (0.2 + 0.6 * ((i * 53) % 10) / 10);
-    g.beginPath(); g.ellipse(nx, ny, 7, 11, 0, 0, 7); g.fill();
-    g.restore();
-    g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(x, 0, 3, H);
+/* ---------- Mise en page ---------- */
+let W,H,DPR,CT=78,U=100;
+function resize(){
+  DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;g.setTransform(DPR,0,0,DPR,0,0);
+  U=Math.min(W,H*.62)*.34;
+  CT=Math.max(40,(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--st"))||0)+30);
+}
+addEventListener("resize",resize);resize();
+
+/* ---------- Jeu ---------- */
+let mode="menu",G=null;
+const maxVies=()=>3+upv(1);
+const besoin=n=>9+n*3;
+function nouveauJeu(zen){
+  G={zen,score:0,vies:maxVies(),niv:0,cut:0,need:0,t:0,fruits:[],moit:[],parts:[],pops:[],trail:[],order:null,
+     frenzy:0,spawn:1.2,srv:{},ry:null,gros:{txt:"",t:0},shake:0,fin:false,swipe:0,swipeT:0,temps:90,mem:null};
+  nouveauNiveau();
+}
+function nouveauNiveau(){
+  G.niv++;G.cut=0;G.need=besoin(G.niv);G.fruits=[];G.spawn=1.1;
+  G.gros={txt:"Niveau "+G.niv,t:1.6};if(G.niv>1)sfx("niveau");
+  if(!G.order)nouvelleCommande();
+}
+const typesDispo=()=>Math.min(8,3+G.niv);
+function nouvelleCommande(){
+  const k=Math.floor(Math.random()*typesDispo());
+  const n=Math.max(2,2+Math.floor(G.niv/3)+Math.floor(Math.random()*2)-upv(2));
+  G.order={k,n,got:0};
+}
+function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+function burst(x,y,col,n,sz){for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(80,320);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,t:0,life:rnd(.35,.8),r:rnd(3,8)*(sz+.4),col});}}
+const GR=()=>H*1.25;
+
+/* ---------- Fruits qui volent ---------- */
+function lance(scorie,gold){
+  const k=gold?0:Math.floor(Math.random()*typesDispo());
+  const kk=(!scorie&&!gold&&G.order&&Math.random()<.3)?G.order.k:k;
+  const r=scorie?U*.34:U*FR[kk].sc*.5+4;
+  const x=rnd(W*.14,W*.86),apex=rnd(.42,.8)*H,vy=-Math.sqrt(2*GR()*apex);
+  G.fruits.push({x,y:H+r,vx:(W/2-x)*rnd(.1,.55),vy,rot:rnd(0,6.28),vr:rnd(-4,4),k:kk,r,scorie,gold,cut:false,rk:Math.floor(rnd(0,5))});
+  sfx("lancer",.5,rnd(.9,1.2));
+}
+function vague(){
+  const nv=G.niv;
+  let n=1+(Math.random()<.3+.04*nv?1:0)+(Math.random()<.08+.03*nv?1:0);
+  for(let i=0;i<n;i++){
+    const sc=nv>=2&&Math.random()<Math.min(.26,.05+.025*nv);
+    const go=!sc&&nv>=2&&Math.random()<.04*(1+upv(3)*.8);
+    lance(sc,go);
   }
-  const v = g.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .75);
-  v.addColorStop(0, 'rgba(255,190,90,.10)'); v.addColorStop(1, 'rgba(10,4,0,.62)');
-  g.fillStyle = v; g.fillRect(0, 0, W, H);
+  G.spawn=Math.max(.5,1.35-.07*nv)*(G.frenzy>0?.5:1);
 }
 
-// Fanions aux couleurs de La Réunion qui ondulent doucement au vent
-function dessinerFanions(t) {
-  const g = anctx; g.clearRect(0, 0, W, 110);
-  const cols = ['#1f5fbf', '#ffd21e', '#e8322a', '#1f9a4a'];
-  const y0 = Math.max(10, H * 0.015), sag = 26, n = Math.ceil(W / 46) + 1;
-  const vent = k => Math.sin(t * 1.6 + k * 0.9) * 0.18 + Math.sin(t * 0.7 + k * 0.33) * 0.1;
-  g.strokeStyle = 'rgba(255,240,210,.6)'; g.lineWidth = 2; g.beginPath();
-  for (let i = 0; i <= 40; i++) { const u = i / 40; g.lineTo(u * W, y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2)); } g.stroke();
-  for (let i = 0; i < n; i++) {
-    const u = (i + .5) / n, x = u * W, y = y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2);
-    const a = vent(i), bx = x + Math.sin(a) * 30, by = y + Math.cos(a) * 30;
-    g.fillStyle = cols[i % 4]; g.beginPath(); g.moveTo(x - 16, y); g.lineTo(x + 16, y); g.lineTo(bx, by); g.closePath(); g.fill();
-    g.fillStyle = `rgba(255,255,255,${0.14 + a * 0.3})`; g.beginPath(); g.moveTo(x - 16, y); g.lineTo(x, y); g.lineTo(bx, by); g.closePath(); g.fill();
-    g.fillStyle = 'rgba(0,0,0,.15)'; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 16, y); g.lineTo(bx, by); g.closePath(); g.fill();
-  }
-}
-
-// ---------------------------------------------------------------- sons (synthétisés, sans voix)
-let actx = null, maitre = null, bruit = null, filtreRalenti = null, sonCoupe = false;
-try { sonCoupe = localStorage.getItem('koupkoup_son') === 'non'; } catch (e) {}
-function audio() {
-  if (actx) { reveillerAudio(actx); return; } // iOS : « suspended » ou « interrupted »
-  try {
-    actx = new (window.AudioContext || window.webkitAudioContext)();
-    // chaîne : sons -> maître -> filtre (ralenti) -> compresseur -> haut-parleurs
-    maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7;
-    filtreRalenti = actx.createBiquadFilter(); filtreRalenti.type = 'lowpass'; filtreRalenti.frequency.value = 20000;
-    const comp = actx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
-    maitre.connect(filtreRalenti); filtreRalenti.connect(comp); comp.connect(actx.destination);
-    bruit = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
-    const d = bruit.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    setTimeout(chargerSons, 0);
-  } catch (e) { actx = null; }
-}
-const hauteur = () => 2 ** (rnd(-2.5, 2.5) / 12); // petite variation à chaque son
-function sNoise(dur, f0, f1, q, vol, type = 'bandpass', when = 0) {
-  if (!actx) return; const t = actx.currentTime + when;
-  const s = actx.createBufferSource(); s.buffer = bruit;
-  const f = actx.createBiquadFilter(); f.type = type; f.Q.value = q;
-  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
-  const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  s.connect(f); f.connect(g); g.connect(maitre); s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.02);
-}
-function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
-  if (!actx) return; const t = actx.currentTime + when;
-  const o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
-  o.frequency.exponentialRampToValueAtTime(freq * glide, t + dur);
-  const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(maitre); o.start(t); o.stop(t + dur + 0.02);
-}
-// Familles de fruits pour le son de la découpe
-const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
-const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
-const son = {
-  // le « whoosh » suit la vitesse du doigt
-  swoosh: (v = 1) => { const k = Math.min(2.2, Math.max(0.6, v)); sNoise(0.14 + 0.06 / k, 700 * k, 3400 * k, 1.1, 0.07 + 0.06 * Math.min(k, 1.6)); },
-  coupe: id => {
-    const h = hauteur();
-    if (CROQUANTS.has(id)) {          // croquant : petits craquements secs
-      for (let i = 0; i < 3; i++) sNoise(0.035, 4200 * h, 2600 * h, 4, 0.32 - i * 0.07, 'bandpass', i * 0.022);
-      sTone(380 * h, 0.06, 0.12, 'triangle', 0, 0.6);
-    } else if (SOURDS.has(id)) {      // sourd : chair dense et épaisse
-      sTone(95 * h, 0.22, 0.45, 'sine', 0, 0.55); sNoise(0.18, 900 * h, 200, 0.8, 0.4, 'lowpass');
-    } else {                          // juteux : chair qui s'ouvre et jus qui gicle
-      sNoise(0.2, 2400 * h, 500, 1.4, 0.38, 'bandpass'); sNoise(0.12, 6000, 2500, 2, 0.12);
-      sTone(170 * h, 0.1, 0.25, 'sine', 0, 0.5);
-      for (let i = 0; i < 2; i++) sTone(rnd(500, 900) * h, 0.05, 0.05, 'sine', 0.04 + i * 0.03, 1.8); // petites bulles
-    }
-  },
-  note: n => sTone(523 * 2 ** ([0, 4, 7, 12, 16, 19, 24][Math.min(6, n - 1)] / 12), 0.2, 0.15, 'triangle'),
-  combo: n => { [0, 4, 7, 12, 16].slice(0, Math.min(5, n)).forEach((st, i) => sTone(523 * 2 ** (st / 12), 0.22, 0.2, 'triangle', i * 0.06)); },
-  rate: () => sTone(220, 0.35, 0.22, 'sawtooth', 0, 0.5),
-  roche: () => { sNoise(0.9, 900, 60, 0.7, 0.9, 'lowpass'); sTone(70, 0.6, 0.6, 'sine', 0, 0.4); sNoise(0.5, 3000, 800, 1, 0.2, 'bandpass', 0.05); },
-  lance: () => sNoise(0.12, 300, 900, 0.8, 0.05),
-  or: () => { [0, 4, 7, 12, 16, 19, 24].forEach((st, i) => sTone(1046 * 2 ** (st / 12), 0.5, 0.11, 'sine', i * 0.045)); sTone(110, 1.2, 0.22, 'sine', 0, 0.5); },
-  bonus: () => { sTone(988, 0.08, 0.12, 'square'); sTone(1318, 0.18, 0.12, 'square', 0.07); },
-  goutte: () => sTone(rnd(700, 1100), 0.09, 0.05, 'sine', 0, 0.55),
-  ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
-};
-const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
-function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(maitre); s.start(); return true; }
-const _coupe = son.coupe, _roche = son.roche, _or = son.or;
-son.coupe = (id, rayon = 0.6) => { const v = Math.max(0.75, Math.min(1.25, 1.35 - rayon * 0.6)); const n = CROQUANTS.has(id) ? 'croquant-' + (1 + (Math.random() * 2 | 0)) : SOURDS.has(id) ? 'sourd' : 'juteux-' + (1 + (Math.random() * 2 | 0)); if (!jouer(n, 0.95, v)) _coupe(id); };
-son.roche = () => { if (!jouer('roche', 1)) _roche(); };
-son.or = () => { if (!jouer('or', 0.8)) _or(); else sTone(110, 1.2, 0.18, 'sine', 0, 0.5); };
-let dernierPloc = 0;
-function ploc() { const t = performance.now(); if (t - dernierPloc > 70) { dernierPloc = t; son.ploc(); } }
-// Ambiance très légère de marché forain : brouhaha lointain sans paroles et quelques oiseaux
-function ambianceMarche() {
-  const s = actx.createBufferSource(); s.buffer = bruit; s.loop = true;
-  const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 520; f.Q.value = 0.6;
-  const g = actx.createGain(); g.gain.value = 0.035;
-  const lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.13; lg.gain.value = 0.012;
-  lfo.connect(lg); lg.connect(g.gain); lfo.start();
-  s.connect(f); f.connect(g); g.connect(maitre); s.start();
-  const oiseau = () => { if (Math.random() < 0.6) { const b = rnd(2400, 3600); sTone(b, 0.07, 0.025, 'sine', 0, 1.35); sTone(b * 1.1, 0.06, 0.02, 'sine', 0.1, 0.8); } setTimeout(oiseau, rnd(2500, 7000)); };
-  setTimeout(oiseau, 3000);
-}
-function majBoutonSon() {
-  $('btnSon').innerHTML = sonCoupe
-    ? '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="m16 9 6 6m0-6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
-    : '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
-}
-
-// ---------------------------------------------------------------- chargement des fruits
-const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
-let catalogue = [];           // tous les fruits du fichier
-const prets = [];             // fruits chargés et prêts à lancer
-const cache = {};
-function preparer(d, g) {
-  g.scene.traverse(o => {
-    if (!o.isMesh) return;
-    const m = o.material, p = new THREE.MeshPhysicalMaterial();
-    THREE.MeshStandardMaterial.prototype.copy.call(p, m);
-    if (m.name.endsWith('_peau')) { p.clearcoat = d.clearcoat; p.clearcoatRoughness = 0.22; if (d.sheen > 0) { p.sheen = d.sheen; p.sheenRoughness = 0.6; p.sheenColor = new THREE.Color(0xffffff); } }
-    else if (m.name.endsWith('_chair')) { p.clearcoat = 0.9; p.clearcoatRoughness = 0.1; }
-    o.material = p; o.frustumCulled = false;
-  });
-  const entier = g.scene.getObjectByName('entier');
-  const box = new THREE.Box3().setFromObject(entier);
-  const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
-  const maxd = Math.max(size.x, size.y, size.z);
-  const taille = 1.3 * (1 + 0.18 * THREE.MathUtils.clamp(Math.log2(d.taille_reelle_m / 0.07), -1.2, 2.5));
-  const k = taille / maxd;
-  const make = name => { const o = g.scene.getObjectByName(name).clone(); o.position.sub(center); const w = new THREE.Group(); const s = new THREE.Group(); s.scale.setScalar(k); s.add(o); w.add(s); return w; };
-  const rayon = Math.max(0.5 * taille * 0.9, 0.5);
-  return { d, gltf: g.scene, entier: make('entier'), A: make('moitie_A'), B: make('moitie_B'), rayon, jus: new THREE.Color(d.couleur_jus), charge: performance.now() };
-}
-async function charger(d) {
-  if (cache[d.id]) return cache[d.id];
-  const g = await loader.loadAsync(DOSSIER_MODELES + (d.fichier_web || d.fichier));
-  return (cache[d.id] = preparer(d, g));
-}
-/** Libère un fruit chargé (géométries, matières, textures) quand on fait de la place. */
-function oublier(f) {
-  delete cache[f.d.id];
-  const i = prets.indexOf(f); if (i >= 0) prets.splice(i, 1);
-  const textures = new Set();
-  const vider = racine => racine.traverse(o => {
-    if (o.geometry) o.geometry.dispose();
-    if (o.material) { for (const v of Object.values(o.material)) if (v && v.isTexture) textures.add(v); o.material.dispose(); }
-  });
-  [f.gltf, f.entier, f.A, f.B].forEach(vider);
-  textures.forEach(t => { t.dispose(); if (t.image && t.image.close) t.image.close(); });
-}
-const enVol = f => objets.some(o => o.vivant && o.fruit === f) || moities.some(m => m.fruit === f);
-
-// ---------------------------------------------------------------- roche du volcan (à ne pas couper)
-function rocheTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
-  g.fillStyle = '#000'; g.fillRect(0, 0, 512, 512);
-  g.strokeStyle = '#ff6a10'; g.lineCap = 'round';
-  for (let i = 0; i < 26; i++) {
-    let x = Math.random() * 512, y = Math.random() * 512; g.lineWidth = rnd(1.5, 5);
-    g.shadowColor = '#ffb020'; g.shadowBlur = 12; g.beginPath(); g.moveTo(x, y);
-    for (let k = 0; k < 8; k++) { x += rnd(-40, 40); y += rnd(-40, 40); g.lineTo(x, y); } g.stroke();
-  }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-const rocheGeo = (() => {
-  const g = new THREE.IcosahedronGeometry(0.62, 4), p = g.attributes.position, v = new THREE.Vector3();
-  for (let i = 0; i < p.count; i++) {
-    v.fromBufferAttribute(p, i); const n = v.clone().normalize();
-    const f = 1 + 0.13 * Math.sin(n.x * 5.1 + n.y * 3.3) * Math.cos(n.z * 4.7) + 0.06 * Math.sin(n.x * 17 + n.z * 13) + 0.04 * Math.sin(n.y * 23);
-    v.copy(n).multiplyScalar(0.62 * f); p.setXYZ(i, v.x, v.y, v.z);
-  }
-  g.computeVertexNormals(); return g;
-})();
-const rocheMat = new THREE.MeshStandardMaterial({ color: 0x2a2624, roughness: 0.92, metalness: 0.05, emissive: 0xffffff, emissiveMap: rocheTexture(), emissiveIntensity: 1.6, flatShading: true });
-
-// ---------------------------------------------------------------- particules de jus (une seule pièce instanciée)
-// Les gouttes sont étirées dans le sens de leur vitesse, translucides et brillantes.
-// Trois tailles : fine bruine, gouttes moyennes, grosses gouttes lourdes.
-// Une grosse goutte qui retombe laisse une petite tache en couronne sur l'étal.
-const MAXP = 900;
-const pGeo = (() => { const g = new THREE.SphereGeometry(1, 10, 8); g.scale(1, 1, 0.8); return g; })();
-const pMat = new THREE.MeshPhysicalMaterial({ roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, transparent: true, opacity: 0.88, specularIntensity: 1, ior: 1.33, sheen: 0.4, sheenColor: 0xffffff });
-const parts = new THREE.InstancedMesh(pGeo, pMat, MAXP);
-parts.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-parts.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXP * 3), 3);
-parts.frustumCulled = false; scene.add(parts);
-const P = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.1, g: 1, impact: false, c: new THREE.Color() }));
-let pIdx = 0;
-// pulpe et pépins : petits morceaux plats qui tournent
-const MAXQ = 260;
-const qGeo = new THREE.TetrahedronGeometry(1, 0);
-const qMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0 });
-const pulpe = new THREE.InstancedMesh(qGeo, qMat, MAXQ);
-pulpe.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-pulpe.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXQ * 3), 3);
-pulpe.frustumCulled = false; scene.add(pulpe);
-const Q = Array.from({ length: MAXQ }, () => ({ vie: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.05, rx: 0, ry: 0, vr: 0, plat: 0.4 }));
-let qIdx = 0;
-const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'jambos-rouge': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
-const tmpM = new THREE.Matrix4(), tmpC = new THREE.Color(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3(), tmpE = new THREE.Euler();
-function goutte(pos, vel, s, color, vie, grav = 1, impact = false) {
-  const i = pIdx, p = P[i]; pIdx = (pIdx + 1) % MAXP;
-  Object.assign(p, { vie, max: vie, x: pos.x, y: pos.y, z: pos.z, vx: vel.x, vy: vel.y, vz: vel.z, s, g: grav, impact });
-  p.c.copy(color);
-  parts.setColorAt(i, color); parts.instanceColor.needsUpdate = true;
-}
-function morceau(pos, vel, s, couleur, vie, plat = 0.4) {
-  const i = qIdx, q = Q[i]; qIdx = (qIdx + 1) % MAXQ;
-  Object.assign(q, { vie, x: pos.x, y: pos.y, z: pos.z, vx: vel.x, vy: vel.y, vz: vel.z, s, rx: rnd(0, 6), ry: rnd(0, 6), vr: rnd(-12, 12), plat });
-  pulpe.setColorAt(i, couleur); pulpe.instanceColor.needsUpdate = true;
-}
-function giclee(pos, dir, color, n = 34, id = '') {
-  const perp = new THREE.Vector3(-dir.y, dir.x, 0);
-  const k = qx();
-  // fine bruine
-  for (let i = 0; i < Math.round(n * 0.9 * k); i++) {
-    const a = rnd(0, Math.PI * 2), sp = rnd(3, 10);
-    const v = new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp + 1.5, rnd(-1, 3)).addScaledVector(dir, rnd(1, 5)).addScaledVector(perp, rnd(-2, 2));
-    tmpC.copy(color).offsetHSL(rnd(-0.01, 0.01), 0, rnd(-0.06, 0.12));
-    goutte(pos, v, rnd(0.012, 0.03), tmpC, rnd(0.3, 0.7), 0.6);
-  }
-  // gouttes moyennes, projetées surtout dans le sens du geste
-  for (let i = 0; i < Math.round(n * k); i++) {
-    const a = rnd(0, Math.PI * 2), sp = rnd(1.5, 7);
-    const v = new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp + 2, rnd(-1, 3));
-    v.addScaledVector(perp, rnd(-3, 3)).addScaledVector(dir, rnd(0, 4.5));
-    tmpC.copy(color).offsetHSL(rnd(-0.015, 0.015), rnd(-0.05, 0.05), rnd(-0.08, 0.1));
-    goutte(pos, v, rnd(0.03, 0.07), tmpC, rnd(0.6, 1.2), 1, Math.random() < 0.18);
-  }
-  // grosses gouttes lourdes
-  for (let i = 0; i < Math.round(7 * k) + 1; i++) {
-    const v = new THREE.Vector3(rnd(-2, 2), rnd(0, 3.5), rnd(0, 2)).addScaledVector(dir, rnd(0.5, 3));
-    goutte(pos, v, rnd(0.08, 0.15), color, rnd(0.45, 0.9), 1.5, true);
-  }
-  // pulpe (chair du fruit) et pépins selon le fruit
-  const chair = color.clone().offsetHSL(0, -0.05, 0.1);
-  for (let i = 0; i < Math.round(10 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4, 4), rnd(0, 6), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.03, 0.07), chair, rnd(0.7, 1.3), 0.35);
-  if (PEPINS[id]) { const pc = new THREE.Color(PEPINS[id]); for (let i = 0; i < Math.round(12 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4.5, 4.5), rnd(0, 6.5), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.025, 0.05), pc, rnd(0.8, 1.4), 0.6); }
-}
-function etincelles(pos, n = 40, couleur = 0xffcf4a) {
-  const c = new THREE.Color(couleur);
-  for (let i = 0; i < Math.round(n * qx()); i++) { const a = rnd(0, 6.283), sp = rnd(3, 10); goutte(pos, new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp, rnd(-2, 2)), rnd(0.03, 0.08), c.clone().offsetHSL(0, 0, rnd(-0.1, 0.15)), rnd(0.4, 0.9), 0.5); }
-}
-function majParticules(dt) {
-  for (let i = 0; i < MAXP; i++) {
-    const p = P[i];
-    if (p.vie <= 0) { tmpM.makeScale(0, 0, 0); parts.setMatrixAt(i, tmpM); continue; }
-    p.vie -= dt; p.vy -= 13 * p.g * dt; p.vx *= 1 - 0.9 * dt; p.vz *= 1 - 0.9 * dt;
-    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-    if (p.vie <= 0 && p.impact) impactGoutte(p);
-    const k = Math.max(0, p.vie / p.max), s = p.s * (0.45 + 0.55 * k);
-    const sp = Math.hypot(p.vx, p.vy);
-    tmpQ.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.atan2(p.vy, p.vx));
-    tmpS.set(s * (1 + Math.min(sp * 0.09, 1.6)), s * (1 - Math.min(sp * 0.012, 0.25)), s);
-    tmpM.compose(tmpP.set(p.x, p.y, p.z), tmpQ, tmpS); parts.setMatrixAt(i, tmpM);
-  }
-  parts.instanceMatrix.needsUpdate = true;
-  for (let i = 0; i < MAXQ; i++) {
-    const q = Q[i];
-    if (q.vie <= 0) { tmpM.makeScale(0, 0, 0); pulpe.setMatrixAt(i, tmpM); continue; }
-    q.vie -= dt; q.vy -= 12 * dt; q.vx *= 1 - 0.6 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
-    q.rx += q.vr * dt; q.ry += q.vr * 0.7 * dt;
-    const s = q.s * Math.min(1, q.vie * 3);
-    tmpQ.setFromEuler(tmpE.set(q.rx, q.ry, 0)); tmpS.set(s, s * q.plat, s);
-    tmpM.compose(tmpP.set(q.x, q.y, q.z), tmpQ, tmpS); pulpe.setMatrixAt(i, tmpM);
-  }
-  pulpe.instanceMatrix.needsUpdate = true;
-}
-// une grosse goutte touche l'étal : petite tache en couronne
-function impactGoutte(p) {
-  const sc = toScreen(tmpP.set(p.x, p.y, p.z));
-  if (sc.x < 0 || sc.x > W || sc.y < 0 || sc.y > H) return;
-  const c = teinteTache(p.c), r = Math.max(2.5, pxRayon(p.s) * 1.3);
-  blob(cctx, sc.x, sc.y, r, rnd(0, 6), 1.15, c, 0.8);
-  for (let k = 0; k < 6; k++) { const a = rnd(0, 6.283), d = r * rnd(1.4, 2.6); blob(cctx, sc.x + Math.cos(a) * d, sc.y + Math.sin(a) * d, r * rnd(0.12, 0.28), a, 1.8, c, 0.75); }
-  if (r > 4 && Math.random() < 0.4) nouvelleCoulure(sc.x, sc.y + r * 0.6, r * 0.35, c, rnd(20, 80));
-  ploc();
-}
-
-// ---------------------------------------------------------------- taches de jus sur l'étal
-// Chaque fruit coupé projette son jus dans le sens du geste. Les taches restent,
-// s'accumulent (les couleurs se superposent), puis des coulures descendent
-// lentement vers le bas avant de pâlir doucement.
-const coulures = [];      // filets de jus qui coulent sur l'étal
-const gouttesVitre = [];  // grosses gouttes qui glissent sur l'écran
-function teinteTache(c) {
-  // les jus très pâles (letchi, coco…) restent visibles : on les teinte légèrement
-  const t = c.clone(), hsl = {}; t.getHSL(hsl);
-  if (hsl.l > 0.82) t.setHSL(hsl.h, Math.max(hsl.s, 0.38), 0.74);
-  return t;
-}
-const rgba = (c, a) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
-function blob(ctx, x, y, r, ang, allonge, couleur, alpha, detail = false) {
-  // contour organique : somme de sinus aux phases aléatoires (bord doux, jamais un rond parfait)
-  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(allonge, 1);
-  const n = detail ? 40 : 18, f1 = rnd(0, 6), f2 = rnd(0, 6), f3 = rnd(0, 6);
-  ctx.beginPath();
-  for (let i = 0; i <= n; i++) {
-    const a = (i / n) * Math.PI * 2;
-    const rr = r * (1 + 0.14 * Math.sin(a * 3 + f1) + 0.08 * Math.sin(a * 5 + f2) + 0.05 * Math.sin(a * 9 + f3));
-    const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
-    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-  }
-  ctx.closePath();
-  const g = ctx.createRadialGradient(-r * 0.15, -r * 0.15, r * 0.05, 0, 0, r * 1.15);
-  g.addColorStop(0, rgba(couleur.clone().offsetHSL(0, 0.04, 0.05), alpha * 0.85));
-  g.addColorStop(0.7, rgba(couleur, alpha));
-  g.addColorStop(1, rgba(couleur.clone().offsetHSL(0, 0.08, -0.12), alpha));   // bord plus foncé : le jus sèche en anneau
-  ctx.fillStyle = g; ctx.fill();
-  if (detail) {
-    // le jus pénètre le fil du bois : quelques veines plus sombres à l'intérieur de la tache
-    ctx.clip();
-    ctx.strokeStyle = rgba(couleur.clone().offsetHSL(0, 0, -0.22), alpha * 0.25); ctx.lineWidth = 1.2;
-    for (let k = 0; k < 6; k++) { ctx.beginPath(); const ox = rnd(-r, r); ctx.moveTo(ox, -r * 1.3); for (let yy = -r * 1.3; yy <= r * 1.3; yy += r * 0.25) ctx.lineTo(ox + Math.sin(yy * 0.08 + k) * 2.5, yy); ctx.stroke(); }
-  }
-  ctx.restore();
-}
-const reflets = []; // reflets humides qui disparaissent en séchant
-function tache(sx, sy, color, taille, dir) {
-  const c = teinteTache(color);
-  // dir : sens du geste à l'écran (y vers le bas)
-  const ang = Math.atan2(-dir.y, dir.x);
-  const cx = sx + Math.cos(ang) * taille * 0.45, cy = sy + Math.sin(ang) * taille * 0.45;
-  cctx.globalCompositeOperation = 'source-over';
-  blob(cctx, cx, cy, taille * 0.8, ang, 1.35, c, 0.82, true);
-  // éclaboussures projetées dans la direction de la coupe (et quelques-unes en arrière)
-  for (let i = 0; i < 26; i++) {
-    const arriere = Math.random() < 0.15;
-    const a = ang + (arriere ? Math.PI : 0) + rnd(-0.45, 0.45);
-    const d = taille * rnd(0.9, arriere ? 1.8 : 3.6);
-    const r = Math.max(1.5, taille * 0.22 * (1 - d / (taille * 4.2)) * rnd(0.4, 1.1));
-    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
-    blob(cctx, x, y, r, a, rnd(1.2, 2.4), c, rnd(0.7, 0.9));
-    if (r > taille * 0.11 && Math.random() < 0.35) nouvelleCoulure(x, y + r * 0.6, r * 0.42, c, rnd(30, 120));
-  }
-  // reflet humide (il s'efface en quelques secondes, comme le jus qui sèche)
-  reflets.push({ x: cx - taille * 0.25, y: cy - taille * 0.3, rx: taille * 0.3, ry: taille * 0.11, a: ang - 0.4, t: 0 });
-  // les coulures partent du bas de la flaque
-  const nb = 3 + Math.floor(Math.random() * 4);
-  for (let i = 0; i < nb; i++) nouvelleCoulure(cx + rnd(-0.75, 0.75) * taille, cy + taille * rnd(0.35, 0.6), rnd(1.8, Math.max(2.6, taille * 0.13)), c, rnd(70, 300));
-}
-function nouvelleCoulure(x, y, largeur, c, longueur) {
-  if (coulures.length > 160 * qx()) coulures.shift();
-  const quantite = Math.min(2.2, largeur / 3);     // les gros filets coulent plus vite et plus loin
-  coulures.push({ x, y, x0: x, l: largeur, c, reste: longueur * (0.6 + quantite * 0.6), v: rnd(14, 30) * (0.7 + quantite * 0.5), attente: rnd(0.05, 0.6), phase: rnd(0, 6) });
-}
-// flaque qui s'accumule en bas de l'écran (une colonne tous les 8 px)
-const flaque = { h: [], c: [] };
-function verserFlaque(x, quantite, c) {
-  const i = Math.max(0, Math.min(Math.floor(x / 8), Math.ceil(W / 8)));
-  for (let k = -3; k <= 3; k++) {
-    const j = i + k; if (j < 0) continue;
-    const part = quantite * Math.exp(-k * k / 4);
-    flaque.h[j] = Math.min(40, (flaque.h[j] || 0) + part);
-    flaque.c[j] = flaque.c[j] ? flaque.c[j].clone().lerp(c, part / (flaque.h[j] + 0.01)) : c.clone();
-  }
-}
-function majTaches(dt) {
-  // les vieilles taches pâlissent très lentement (environ 40 secondes)
-  cctx.globalCompositeOperation = 'destination-out';
-  cctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.028)})`; cctx.fillRect(0, 0, W, H);
-  cctx.globalCompositeOperation = 'source-over';
-  cctx.lineCap = 'round';
-  for (let i = coulures.length - 1; i >= 0; i--) {
-    const k = coulures[i];
-    if (k.attente > 0) { k.attente -= dt; continue; }
-    const py = k.y, px = k.x;
-    k.v = Math.max(4, k.v * (1 - 0.22 * dt));                     // le jus ralentit en s'étalant
-    const dy = k.v * dt; k.y += dy; k.reste -= dy;
-    k.x = k.x0 + Math.sin(k.y * 0.035 + k.phase) * 1.6;         // léger zigzag naturel
-    k.l = Math.max(1.2, k.l - dy * 0.006);
-    cctx.strokeStyle = rgba(k.c, 0.78); cctx.lineWidth = k.l * 1.6;
-    cctx.beginPath(); cctx.moveTo(px, py); cctx.lineTo(k.x, k.y); cctx.stroke();
-    if (k.y > H - 3 - (flaque.h[Math.floor(k.x / 8)] || 0)) { verserFlaque(k.x, k.l * 1.4, k.c); coulures.splice(i, 1); continue; }
-    if (k.reste <= 0) {
-      // une petite goutte se forme au bout du filet
-      cctx.fillStyle = rgba(k.c.clone().offsetHSL(0, 0, -0.08), 0.9);
-      cctx.beginPath(); cctx.arc(k.x, k.y + k.l * 0.4, k.l * 1.35, 0, 7); cctx.fill();
-      coulures.splice(i, 1);
+/* ---------- Boucle ---------- */
+function maj(dt){
+  G.t+=dt;if(G.shake>0)G.shake-=dt;
+  for(const p of G.pops)p.t+=dt;G.pops=G.pops.filter(p=>p.t<1.2);
+  if(G.gros.t>0)G.gros.t-=dt;
+  for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
+  G.parts=G.parts.filter(q=>q.t<q.life);
+  for(const p of G.trail)p.t+=dt;G.trail=G.trail.filter(p=>p.t<.28);
+  if(G.ry){majRythme(dt);return;}
+  if(G.frenzy>0)G.frenzy-=dt;
+  if(G.zen){G.temps-=dt;if(G.temps<=0){G.temps=0;fini();return;}}
+  G.spawn-=dt;if(G.spawn<=0)vague();
+  const gr=GR();
+  for(const f of G.fruits){
+    f.vy+=gr*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.rot+=f.vr*dt;
+    if(f.x<f.r*.6){f.x=f.r*.6;f.vx=Math.abs(f.vx);}if(f.x>W-f.r*.6){f.x=W-f.r*.6;f.vx=-Math.abs(f.vx);}
+    if(!f.cut&&f.vy>0&&f.y>H+f.r*1.3){
+      f.cut=true;f.out=true;
+      if(!f.scorie&&!f.gold&&!G.zen){perdPanier(f.x);}
     }
   }
+  G.fruits=G.fruits.filter(f=>!f.out);
+  for(const m of G.moit){m.vy+=gr*dt;m.x+=m.vx*dt;m.y+=m.vy*dt;m.rot+=m.vr*dt;}
+  G.moit=G.moit.filter(m=>m.y<H+200);
+  if(G.swipe&&G.t-G.swipeT>.5)G.swipe=0;
 }
-function dessinerTaches(dt = 0.016) {
-  tctx.clearRect(0, 0, W, H);
-  tctx.globalAlpha = 0.92; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
-  // ombres douces des fruits sur l'étal (le soleil vient d'en haut à droite)
-  for (const o of objets) {
-    if (!o.vivant) continue;
-    const sc = toScreen(o.obj.position), r = pxRayon(o.rayon);
-    const g = tctx.createRadialGradient(sc.x - r * 0.35, sc.y + r * 0.55, r * 0.1, sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2);
-    g.addColorStop(0, 'rgba(20,8,0,.32)'); g.addColorStop(1, 'rgba(20,8,0,0)');
-    tctx.fillStyle = g; tctx.beginPath(); tctx.ellipse(sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2, r * 0.75, 0, 0, 7); tctx.fill();
-  }
-  // reflets humides qui sèchent
-  for (let i = reflets.length - 1; i >= 0; i--) {
-    const f = reflets[i]; f.t += dt; const a = 0.28 * (1 - f.t / 4);
-    if (a <= 0) { reflets.splice(i, 1); continue; }
-    tctx.fillStyle = `rgba(255,255,255,${a})`; tctx.beginPath(); tctx.ellipse(f.x, f.y, f.rx, f.ry, f.a, 0, 7); tctx.fill();
-  }
-  // flaque du bas : bord arrondi, reflet sur le dessus
-  const nb = Math.ceil(W / 8) + 1;
-  for (let j = 0; j < nb; j++) {
-    const h = flaque.h[j]; if (!h || h < 0.5) continue;
-    flaque.h[j] = Math.max(0, h - dt * 0.35);   // la flaque s'évapore doucement
-    const x = j * 8, c = flaque.c[j];
-    tctx.fillStyle = rgba(c, 0.85); tctx.beginPath(); tctx.roundRect(x - 1, H - h, 10, h + 2, [5, 5, 0, 0]); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.22)'; tctx.fillRect(x + 1, H - h + 1.5, 6, 1.5);
-  }
-  // tête brillante des filets qui coulent encore
-  for (const k of coulures) {
-    if (k.attente > 0) continue;
-    const r = k.l * 1.25;
-    tctx.fillStyle = rgba(k.c, 0.95); tctx.beginPath(); tctx.arc(k.x, k.y, r, 0, 7); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.55)'; tctx.beginPath(); tctx.arc(k.x - r * 0.35, k.y - r * 0.35, r * 0.35, 0, 7); tctx.fill();
-  }
-}
-// ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
-function gouttesEcran(sx, sy, color, dir) {
-  const c = teinteTache(color);
-  const n = 1 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < n; i++) {
-    const r = rnd(7, 16);
-    gouttesVitre.push({
-      x: Math.min(W - 30, Math.max(30, sx + dir.x * rnd(30, 140) + rnd(-40, 40))),
-      y: Math.min(H - 80, Math.max(60, sy - dir.y * rnd(30, 140) + rnd(-40, 40))),
-      r, c, apparition: 0, attente: rnd(0.35, 1.2), v: 0, vmax: rnd(50, 130), phase: rnd(0, 6),
-    });
-  }
-  son.goutte();
-}
-function majVitre(dt) {
-  cvctx.globalCompositeOperation = 'destination-out';
-  cvctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.45)})`; cvctx.fillRect(0, 0, W, H);   // traînées qui sèchent vite
-  cvctx.globalCompositeOperation = 'source-over'; cvctx.lineCap = 'round';
-  vctx.clearRect(0, 0, W, H);
-  vctx.drawImage(coucheVitre, 0, 0, W, H);
-  for (let i = gouttesVitre.length - 1; i >= 0; i--) {
-    const g = gouttesVitre[i];
-    g.apparition = Math.min(1, g.apparition + dt * 6);
-    if (g.attente > 0) g.attente -= dt;
-    else {
-      const py = g.y, px = g.x;
-      g.v = Math.min(g.vmax, g.v + 140 * dt); g.y += g.v * dt;
-      g.x += Math.sin(g.y * 0.03 + g.phase) * 0.6;
-      g.r = Math.max(4, g.r - dt * 1.5);
-      cvctx.strokeStyle = rgba(g.c, 0.32); cvctx.lineWidth = g.r * 0.9;
-      cvctx.beginPath(); cvctx.moveTo(px, py); cvctx.lineTo(g.x, g.y); cvctx.stroke();
-    }
-    // micro-gouttelettes laissées sur la traînée
-    if (g.attente <= 0 && Math.random() < dt * 6) { cvctx.fillStyle = rgba(g.c, 0.45); cvctx.beginPath(); cvctx.arc(g.x + rnd(-g.r * 0.4, g.r * 0.4), g.y - g.r * rnd(1, 2.5), rnd(1, 2.4), 0, 7); cvctx.fill(); }
-    const r = g.r * (0.4 + 0.6 * g.apparition);
-    // effet de lentille : la scène derrière la goutte apparaît agrandie
-    if (QUALITE > 0 && r > 5) {
-      const dpr = glc.width / W, sr = r * 0.62;
-      vctx.save(); vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.clip();
-      try { vctx.drawImage(glc, (g.x - sr) * dpr, (g.y - sr) * dpr, sr * 2 * dpr, sr * 2 * dpr, g.x - r, g.y - r, r * 2, r * 2); } catch (e) {}
-      try { vctx.drawImage(taches, (g.x - sr) * dpr, (g.y - sr) * dpr, sr * 2 * dpr, sr * 2 * dpr, g.x - r, g.y - r, r * 2, r * 2); } catch (e) {}
-      vctx.restore();
-    }
-    // goutte en forme de lentille : bord sombre, cœur clair, reflet
-    const grd = vctx.createRadialGradient(g.x - r * 0.3, g.y - r * 0.3, r * 0.1, g.x, g.y, r);
-    grd.addColorStop(0, rgba(g.c.clone().offsetHSL(0, 0, 0.15), 0.55));
-    grd.addColorStop(0.7, rgba(g.c, 0.62));
-    grd.addColorStop(1, rgba(g.c.clone().offsetHSL(0, 0, -0.25), 0.85));
-    vctx.fillStyle = grd;
-    vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.fill();
-    vctx.fillStyle = 'rgba(255,255,255,.75)';
-    vctx.beginPath(); vctx.ellipse(g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6, 0, 7); vctx.fill();
-    if (g.y - r > H) gouttesVitre.splice(i, 1);
-  }
-  // deux gouttes qui se touchent fusionnent en une plus grosse
-  for (let i = 0; i < gouttesVitre.length; i++) for (let j = i + 1; j < gouttesVitre.length; j++) {
-    const a = gouttesVitre[i], b = gouttesVitre[j];
-    if (Math.hypot(a.x - b.x, a.y - b.y) < (a.r + b.r) * 0.75) {
-      a.r = Math.min(24, Math.sqrt(a.r * a.r + b.r * b.r)); a.c.lerp(b.c, 0.5); a.v = Math.max(a.v, b.v) + 20; a.attente = 0;
-      gouttesVitre.splice(j, 1); j--;
-    }
-  }
+function perdPanier(x){
+  if(G.fin)return;
+  G.vies--;G.shake=.25;sfx("rate");vib(30);pop("Raté !",Math.max(60,Math.min(W-60,x)),H-110,"#ff9a8a",32);
+  if(G.vies<=0){G.fin=true;sfx("defaite");setTimeout(fini,900);}
 }
 
-// ---------------------------------------------------------------- objets du jeu
-const objets = [];   // fruits et roches en vol
-const moities = [];  // moitiés coupées
-let etat = 'menu', score = 0, vies = 3, record = 0, temps = 0, niveau = 0;
-let arret = 0, ralenti = 0, ralentiOr = 0, tremble = 0, zoom = 0, prochainLancer = 1, mangueMenu = null;
-let coupeSwipe = 0;
-let niv = 1, phase = 'actif', phaseT = 0, charge = 0, serie = 0, ralentis = 0, frenesies = 0, frenesie = 0, ralentiBonus = 0;
-const RECHARGE = 12, dureePhase = () => Math.min(34, 20 + niv * 2);
-function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
-function majNiveauHud() { const e = $('niveauHud'); e.textContent = 'Niveau ' + niv; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
-function majBonus() {
-  const k = Math.min(1, charge / RECHARGE), pc = (k * 100).toFixed(1);
-  $('bCoup').style.background = `linear-gradient(to top, rgba(255,170,40,.75) ${pc}%, rgba(40,20,0,.55) ${pc}%)`; $('bCoup').classList.toggle('pret', k >= 1); $('bCoup').classList.toggle('vide', k < 1);
-  $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', !ralentis); $('bRalenti').classList.toggle('pret', ralentis > 0);
-  $('nFrenesie').textContent = frenesies; $('bFrenesie').classList.toggle('vide', !frenesies); $('bFrenesie').classList.toggle('pret', frenesies > 0);
-}
-function activerCoup() { if (etat !== 'jeu' || charge < RECHARGE) return; charge = 0; let n = 0; for (const o of [...objets]) if (o.vivant && !o.roche && !o.menu) { couper(o, new THREE.Vector3(Math.random() - .5, 1, 0).normalize(), 0.5); n++; } bandeau('Grand coup de lame ! ' + n + ' fruits'); tremble = 0.35; zoom = 1; majBonus(); }
-function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralentiBonus = 5; ralenti = Math.max(ralenti, 5); bandeau('Ralenti !', 5); majBonus(); }
-function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
-// fin de niveau : pluie de fruits spéciaux (letchis dorés, vanille), puis 4 secondes d'accalmie
-function finDeNiveau() {
-  phase = 'speciales'; phaseT = 0; bandeau('Pluie de fruits péi !', 2.2);
-  const n = 7 + Math.min(7, niv);
-  for (let i = 0; i < n; i++) setTimeout(() => { if (etat !== 'jeu' || !prets.length) return; const x = -viewW * 0.38 + (i / (n - 1)) * viewW * 0.76; lancer(prets[Math.floor(Math.random() * prets.length)], { x }); }, 200 + i * 170);
-  setTimeout(() => { if (etat === 'jeu' && cache['letchi']) lancer(cache['letchi'], { or: true, x: rnd(-viewW * 0.2, viewW * 0.2) }); }, 900);
-  if (cache['vanille']) setTimeout(() => { if (etat === 'jeu') lancer(cache['vanille']); }, 1300);
-  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); bandeau('Accalmie… Niveau ' + niv, 3.2); }, 4200);
-} // points gagnés pendant le geste en cours
-const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
-function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
-try { record = +(localStorage.getItem('koupkoup_record') || 0); } catch (e) {}
-
-function lancer(fruit, opts = {}) {
-  const roche = !fruit;
-  const grp = roche ? new THREE.Mesh(rocheGeo, rocheMat) : fruit.entier.clone();
-  if (opts.or) { dorer(grp); grp.scale.multiplyScalar(1.15); }
-  const vanille = !roche && !opts.menu && fruit.d.id === 'vanille';
-  const x0 = opts.x ?? rnd(-viewW * 0.38, viewW * 0.38);
-  const y0 = -viewH / 2 - 1.2;
-  const sommet = rnd(viewH * 0.08, viewH * 0.38);
-  const g = 11;
-  const vy = Math.sqrt(2 * g * (sommet - y0));
-  const tVol = 2 * vy / g;
-  const vx = (-x0 * rnd(0.5, 1.1) + rnd(-1.2, 1.2)) / tVol;
-  grp.position.set(x0, y0, rnd(-0.6, 0.6));
-  grp.rotation.set(rnd(0, 6), rnd(0, 6), rnd(0, 6));
-  scene.add(grp);
-  const o = { roche, fruit, obj: grp, vel: new THREE.Vector3(vx, vy, 0), axe: new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(), vrot: rnd(1.5, 4.5), rayon: roche ? 0.62 : fruit.rayon * (opts.or ? 1.25 : 1), g, vivant: true, menu: !!opts.menu, or: !!opts.or, vanille };
-  if (vanille) {
-    // la gousse de vanille tombe toujours depuis le haut de l'écran, en virevoltant
-    grp.position.set(rnd(-viewW * 0.36, viewW * 0.36), viewH / 2 + 1.2, rnd(-0.3, 0.3));
-    o.vel.set(rnd(-0.7, 0.7), -rnd(0.6, 1.6), 0); o.g = 3.2; o.vrot = rnd(1, 2.2); o.rayon = Math.max(o.rayon, 0.75);
+/* ---------- Tranche ---------- */
+function segment(x1,y1,x2,y2){
+  if(!G||mode!=="play"||G.ry||G.fin)return;
+  const sab=U*.1+upv(0)*U*.05;
+  for(const f of G.fruits){
+    if(f.cut)continue;
+    const dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy||1;
+    let t=((f.x-x1)*dx+(f.y-y1)*dy)/l2;t=Math.max(0,Math.min(1,t));
+    const d=Math.hypot(f.x-(x1+t*dx),f.y-(y1+t*dy));
+    if(d<f.r+sab)coupe(f,x2,y2);
   }
-  if (opts.menu) { o.vel.set(0, 0, 0); grp.position.set(0, opts.y ?? 0.3, 0); o.vrot = 0.9; o.axe.set(0.2, 1, 0.1).normalize(); }
-  objets.push(o);
-  if (!opts.menu) son.lance();
-  return o;
 }
-
-function couper(o, dir, precision = 1) {
-  o.vivant = false; scene.remove(o.obj);
-  const pos = o.obj.position.clone();
-  if (o.roche) {
-    son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
-    const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
-    popup('Aïe ! Une roche du volcan !', pos, 'aie'); serie = 0;
-    perdreVie(); perdreVie();
+function coupe(f,x,y){
+  f.cut=true;f.out=true;
+  if(f.scorie){
+    G.vies--;G.shake=.4;sfx("scorie");vib([40,30,40]);burst(f.x,f.y,"#7a4a3a",16,1);burst(f.x,f.y,"#ff7a2a",8,.6);
+    pop("Scorie ! -1 panier",f.x,f.y-U*.4,"#ff9a8a",30);
+    if(G.vies<=0&&!G.fin){G.fin=true;sfx("defaite");setTimeout(fini,900);}
     return;
   }
-  const f = o.fruit;
-  son.coupe(f.d.id, f.rayon);
-  arret = 0.04;                                   // très courte pause d'impact
-  tremble = Math.max(tremble, 0.05 + f.rayon * 0.06);
-  eclats.push({ p: toScreen(pos), t: 0, c: f.jus });
-  // plan de coupe : contient la direction du geste et l'axe de vue
-  const n = new THREE.Vector3(-dir.y, dir.x, 0).normalize();
-  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
-  const yApres = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-  const ang = Math.atan2(new THREE.Vector3().crossVectors(yApres, dir).dot(n), yApres.dot(dir));
-  q.premultiply(new THREE.Quaternion().setFromAxisAngle(n, ang + rnd(-0.3, 0.3)));
-  for (const [nom, sgn] of [['A', 1], ['B', -1]]) {
-    const m = f[nom].clone(); m.position.copy(pos); m.quaternion.copy(q); scene.add(m);
-    if (o.or) dorer(m);
-    const cap = n.clone().multiplyScalar(-sgn);
-    const axe = dir.clone(); const sens = Math.sign(new THREE.Vector3().crossVectors(axe, cap).z) || 1;
-    moities.push({ fruit: f, jus: o.or ? new THREE.Color(0xffd23a) : f.jus, obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4 });
+  G.swipe++;G.swipeT=G.t;
+  const dir=Math.atan2(f.vy,f.vx);
+  for(const s of[-1,1]){G.moit.push({k:f.k,x:f.x,y:f.y,vx:f.vx*.6+s*rnd(90,200),vy:f.vy*.3-rnd(60,160),rot:f.rot,vr:s*rnd(2,5),flip:s<0,gold:f.gold});}
+  burst(f.x,f.y,f.gold?"#ffd24a":FR[f.k].jus,14,1);
+  sfx(f.gold?"dore":"coupe",.9,rnd(.9,1.2));vib(12);
+  let pts=(f.gold?10:1)*(G.frenzy>0?2:1)+(G.swipe>=2?G.swipe-1:0);
+  G.score+=pts;
+  pop((G.frenzy>0?"×2 ":"")+"+"+pts,f.x,f.y-U*.3,f.gold?"#ffd24a":"#fff",28);
+  if(G.swipe>=2)pop("Combo ×"+G.swipe+" !",f.x,f.y-U*.75,"#7bf0ff",30);
+  G.srv[f.k]=(G.srv[f.k]||0)+1;G.cut++;
+  if(f.gold){G.frenzy=6+upv(3)*1.5;G.gros={txt:"FRÉNÉSIE !",t:1.3};G.spawn=.2;}
+  const o=G.order;
+  if(o&&!f.gold&&f.k===o.k){
+    o.got++;
+    if(o.got>=o.n){
+      G.score+=15;sfx("piece");pop("Commande servie ! +15",W/2,CT+(W<700?166:110),"#ffd24a",32);
+      if(G.vies<maxVies()){G.vies++;pop("+1 panier",W/2,CT+145,"#9af0a0",26);}
+      G.order=null;nouvelleCommande();
+    }
   }
-  const jus = o.or ? new THREE.Color(0xffd23a) : f.jus;
-  giclee(pos, dir, jus, o.or ? 60 : 34, f.d.id);
-  const s = toScreen(pos);
-  tache(s.x, s.y, jus, pxRayon(f.rayon) * 0.9, dir);
-  if (Math.random() < (o.or ? 1 : 0.3)) gouttesEcran(s.x, s.y, jus, dir);
-  try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
-  if (o.menu) { demarrer(); return; }
-  let pts = 1;
-  if (o.vanille) pts = 3;
-  if (!o.menu && etat === 'jeu') { serie++; if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } son.bonus(); majBonus(); } }
-  if (o.or) {
-    pts = 5;
-    ralenti = Math.max(ralenti, 4); ralentiOr = 4;
-    son.or(); etincelles(pos, 90, 0xffd84a); etincelles(pos, 40, 0xffffff);
-    popup('Ralenti doré !', pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 'or');
+  if(G.cut>=G.need&&!G.ry)debutRythme();
+}
+
+/* ---------- Rythme du roulèr ---------- */
+function debutRythme(){
+  G.fruits.forEach(f=>{f.cut=true;f.out=true;});
+  G.ry={t:0,beats:[1.2,2.2,3.2,4.2],hit:[null,null,null,null],fin:0};
+  G.gros={txt:"ROULÈR !",t:1.2};sfx("roulet",.6);
+}
+function majRythme(dt){
+  const r=G.ry;r.t+=dt;
+  if(r.t>5.2&&!r.fin){
+    r.fin=1;const n=r.hit.filter(h=>h&&h>0).length,coins=n*3;S.pieces+=coins;sauve();
+    let msg=n+" / 4";if(n>=3){if(G.vies<maxVies()){G.vies++;msg="Un panier en plus !";}else msg="Bravo !";sfx("niveau");}
+    G.gros={txt:msg,t:1.6};pop("+"+coins+" 🪙",W/2,H*.45,"#ffd24a",36);
+    setTimeout(()=>{if(!G||G.fin)return;G.ry=null;nouveauNiveau();},1700);
   }
-  const parfait = precision < 0.28 && !o.or;
-  if (parfait) pts += 1;
-  if (frenesie > 0) pts *= 2;
-  score += pts; coupeSwipe += pts; majScore();
-  const clair = teinteTache(jus).offsetHSL(0, 0.15, 0.08);
-  popup('+' + pts, pos, 'pts', '#' + clair.getHexString());
-  if (!o.vanille && f.d.nom) popup(f.d.nom, pos.clone().add(new THREE.Vector3(0, 1.1, 0)), 'nom');
-  if (parfait) setTimeout(() => popup('Pile au centre !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
-  if (o.vanille) setTimeout(() => popup('Vanille !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
+}
+function tapRythme(){
+  const r=G.ry;if(r.fin)return;
+  const tol=.22;let bi=-1,bd=9;
+  r.beats.forEach((b,i)=>{if(r.hit[i]===null){const d=Math.abs(r.t-b);if(d<bd){bd=d;bi=i;}}});
+  if(bi<0||bd>tol+.12){sfx("rate",.4);return;}
+  if(bd<=tol){const par=bd<tol*.5;r.hit[bi]=par?2:1;sfx("roulet");pop(par?"Parfait !":"Bien !",W/2,H*.64,par?"#ffd24a":"#fff",30);burst(W/2,H*.5,"#ffd24a",10,.6);}
+  else{r.hit[bi]=0;sfx("rate",.4);pop("Raté",W/2,H*.64,"#ff9a8a",26);}
 }
 
-function perdreVie() {
-  if (etat !== 'jeu') return;
-  vies = Math.max(0, vies - 1); majVies();
-  if (vies === 0) finPartie();
+/* ---------- Pause et fin ---------- */
+const btnPause=()=>({x:W-48,y:W<700?CT+120:CT+86,r:24});
+function pause(v){if(v){ambiance(false);mode="pause";$("pause").classList.remove("cache");}else{ambiance(true);mode="play";$("pause").classList.add("cache");}}
+function jourStr(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function defiDuJour(){const d=jourStr();let h=0;for(const c of d)h=(h*31+c.charCodeAt(0))%997;return {k:h%8,n:6+(h%5)};}
+function majMenu(){
+  const D=defiDuJour();
+  $("defiMenu").textContent="⭐ Défi du jour : tranche "+D.n+" "+FR[D.k].pl+(S.defi.d===jourStr()&&S.defi.ok?" (réussi ✔)":" (+30 pièces)");
+  $("pieces").textContent="🪙 "+S.pieces+" pièces · Meilleur score : "+S.best;
+}
+function fini(){
+  if(mode==="fin")return;
+  mode="fin";ambiance(false);
+  const D=defiDuJour(),n=G.srv[D.k]||0;
+  const gagne=Math.floor(G.score/8);let bonus=0,msg="";
+  if(S.defi.d!==jourStr())S.defi={d:jourStr(),ok:false};
+  if(!S.defi.ok&&n>=D.n){S.defi.ok=true;bonus=30;msg="⭐ Défi du jour réussi : +30 pièces !";}
+  else if(!S.defi.ok)msg="⭐ Défi du jour : "+n+" / "+D.n+" "+FR[D.k].pl;
+  else msg="⭐ Défi du jour déjà réussi aujourd'hui";
+  const record=!G.zen&&G.score>S.best;if(record)S.best=G.score;
+  S.pieces+=gagne+bonus;
+  const manq=FAITS.map((_,i)=>i).filter(i=>!S.carnet.includes(i));
+  let nouv="";if(manq.length){const i=pick(manq);S.carnet.push(i);nouv="📖 Nouveau fait dans ton carnet !";sfx("carnet");}
+  sauve();
+  const f=pick(FAITS);
+  $("finScore").textContent=G.score+" pts";
+  $("finInfo").innerHTML=(record?"🏆 Nouveau record !<br>":"")+"niveau "+G.niv+" · +"+gagne+" 🪙"+(nouv?"<br>"+nouv:"");
+  $("finSav").innerHTML="<b>Le saviez-vous ?</b><br>"+f[0]+"<small>Source : "+f[1]+"</small>";
+  $("finDefi").textContent=msg;
+  $("fin").classList.remove("cache");
 }
 
-// ---------------------------------------------------------------- écran, HUD
-const SVG_VIE = c => `<svg viewBox="0 0 32 32"><path d="M16 9c-5-6-13-3-13 4 0 8 13 15 13 15s13-7 13-15c0-7-8-10-13-4z" fill="${c}" stroke="#4a1a04" stroke-width="1.5"/><path d="M15 9c0-3 2-5 5-6" stroke="#2f7a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/><g class="x" opacity="0"><path d="M8 8l16 16M24 8L8 24" stroke="#e8322a" stroke-width="4" stroke-linecap="round"/></g></svg>`;
-function majVies() { $('vies').innerHTML = [0, 1, 2].map(i => SVG_VIE('#ffb21e').replace('<svg', `<svg class="${i >= vies ? 'perdue' : ''}"`)).join(''); }
-function majScore() { $('score').textContent = score; $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
-function popup(txt, pos, cls, couleur) {
-  const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt;
-  if (couleur) e.style.color = couleur;
-  e.style.left = Math.min(Math.max(s.x, 120), W - 120) + 'px'; e.style.top = Math.min(Math.max(s.y, 120), H - 160) + 'px';
-  document.body.appendChild(e); setTimeout(() => e.remove(), 1400);
+/* ---------- Dessin ---------- */
+function txt(t,x,y,s,col="#fff",ombre="#000",al="center"){
+  g.font=`${s}px Bangers,"Baloo 2",sans-serif`;g.textAlign=al;g.textBaseline="middle";
+  g.lineWidth=Math.max(3,s*.12);g.strokeStyle=ombre;g.lineJoin="round";g.strokeText(t,x,y);g.fillStyle=col;g.fillText(t,x,y);
 }
-function toScreen(v) { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; }
-function pxRayon(r) { return r * H / viewH; }
+function rr(x,y,w,h,r){g.beginPath();g.roundRect?g.roundRect(x,y,w,h,r):g.rect(x,y,w,h);}
+function sprite(im,x,y,size,rot,flip,alpha=1){
+  if(!ok(im))return;
+  const s=size/Math.max(im.naturalWidth,im.naturalHeight);
+  g.save();g.translate(x,y);g.rotate(rot);if(flip)g.scale(-1,1);g.globalAlpha=alpha;g.drawImage(im,-im.naturalWidth*s/2,-im.naturalHeight*s/2,im.naturalWidth*s,im.naturalHeight*s);g.restore();
+}
+function scorieDessin(f){
+  g.save();g.translate(f.x,f.y);g.rotate(f.rot);const r=f.r;
+  g.shadowColor="#ff6a1a";g.shadowBlur=18;
+  g.beginPath();for(let i=0;i<9;i++){const a=i/9*6.283,rr_=r*(.82+.2*Math.sin(i*2.7+f.rk));g.lineTo(Math.cos(a)*rr_,Math.sin(a)*rr_);}
+  g.closePath();g.fillStyle="#3a2a28";g.fill();g.shadowBlur=0;
+  g.lineWidth=3;g.strokeStyle="#ff7a2a";g.stroke();
+  g.strokeStyle="#ff9a3a";g.lineWidth=2;g.beginPath();g.moveTo(-r*.4,-r*.2);g.lineTo(0,r*.1);g.lineTo(r*.3,-r*.3);g.moveTo(0,r*.1);g.lineTo(r*.1,r*.5);g.stroke();
+  g.fillStyle="#5a4038";g.beginPath();g.arc(-r*.3,r*.3,r*.15,0,7);g.arc(r*.35,r*.15,r*.1,0,7);g.fill();
+  g.restore();
+}
+function dessine(){
+  g.clearRect(0,0,W,H);
+  if(!G||mode==="menu")return;
+  const shk=G.shake>0?Math.sin(G.t*80)*6:0;g.save();g.translate(shk,0);
+  if(G.frenzy>0){g.fillStyle="rgba(255,200,40,"+(.1+.06*Math.sin(G.t*10))+")";g.fillRect(0,0,W,H);}
+  // fruits
+  for(const f of G.fruits){
+    if(f.scorie){scorieDessin(f);continue;}
+    const sz=U*FR[f.k].sc*1.0;
+    if(f.gold){g.save();g.shadowColor="#ffd24a";g.shadowBlur=30;sprite(IMG.f[f.k],f.x,f.y,sz,f.rot,false);g.restore();
+      g.beginPath();g.arc(f.x,f.y,f.r*1.15,0,7);g.lineWidth=4;g.strokeStyle="rgba(255,220,80,"+(.5+.4*Math.sin(G.t*12))+")";g.stroke();}
+    else sprite(IMG.f[f.k],f.x,f.y,sz,f.rot,false);
+  }
+  for(const m of G.moit){g.save();if(m.gold){g.shadowColor="#ffd24a";g.shadowBlur=20;}sprite(IMG.c[m.k],m.x,m.y,U*FR[m.k].sc*.9,m.rot,m.flip);g.restore();}
+  for(const q of G.parts){g.globalAlpha=Math.max(0,1-q.t/q.life);g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fillStyle=q.col;g.fill();}
+  g.globalAlpha=1;
+  // traînée du sabre
+  if(G.trail.length>1){
+    g.lineCap="round";g.lineJoin="round";
+    for(let i=1;i<G.trail.length;i++){
+      const a=G.trail[i-1],b=G.trail[i],k=1-b.t/.28;if(k<=0)continue;
+      g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.lineWidth=3+11*k;g.strokeStyle="rgba(255,255,255,"+k*.9+")";g.stroke();
+      g.lineWidth=1+4*k;g.strokeStyle="rgba(255,226,120,"+k+")";g.stroke();
+    }
+  }
+  // HUD
+  txt(G.score+"",30,CT+14,Math.min(54,W*.12),"#ffd24a","#5a2a00","left");
+  txt("Record "+S.best,30,CT+52,18,"#fff","#000","left");
+  txt("Niveau "+G.niv,W-30,CT+14,Math.min(30,W*.07),"#ffe23a","#3a1a00","right");
+  g.font="26px sans-serif";g.textAlign="right";g.textBaseline="middle";
+  if(G.zen)txt("⏱ "+Math.ceil(G.temps)+" s",W-30,CT+52,26,"#b8f0ff","#0b2a3a","right");
+  else{for(let i=0;i<maxVies();i++){g.globalAlpha=i<G.vies?1:.25;g.font="26px sans-serif";g.textAlign="center";g.fillText("🧺",W-30-(maxVies()-1-i)*34-12,CT+54);}g.globalAlpha=1;}
+  // barre de niveau
+  {const bw=Math.min(W*.5,260),bx=W/2-bw/2,by=CT+2;rr(bx,by,bw,10,5);g.fillStyle="rgba(0,0,0,.4)";g.fill();rr(bx,by,Math.max(8,bw*Math.min(1,G.cut/G.need)),10,5);g.fillStyle=G.frenzy>0?"#ffd24a":"#7bf0a0";g.fill();}
+  // commande
+  if(G.order&&!G.ry){
+    const o=G.order,bw=Math.min(W*.56,250),bh=64,bx=W/2-bw/2,by=W<700?CT+76:CT+20;
+    rr(bx,by,bw,bh,16);g.fillStyle="rgba(40,24,8,.72)";g.fill();g.lineWidth=3;g.strokeStyle="#ffd24a";g.stroke();
+    sprite(IMG.f[o.k],bx+34,by+bh/2,46,0,false);
+    txt("Commande",bx+bw/2+22,by+17,16,"#ffe27a","#000");
+    txt(o.got+" / "+o.n+" "+FR[o.k].pl,bx+bw/2+22,by+42,Math.min(22,bw*.085),"#fff","#000");
+  }
+  // pause
+  {const b=btnPause();g.beginPath();g.arc(b.x,b.y,b.r,0,7);g.fillStyle="rgba(0,0,0,.45)";g.fill();g.lineWidth=2;g.strokeStyle="#fff";g.stroke();g.fillStyle="#fff";g.fillRect(b.x-8,b.y-9,5,18);g.fillRect(b.x+3,b.y-9,5,18);}
+  // popups
+  for(const p of G.pops){const k=p.t/1.2;g.globalAlpha=Math.max(0,1-k*k);txt(p.txt,p.x,p.y-k*50,p.s,p.col,"#000");}
+  g.globalAlpha=1;
+  if(G.gros.t>0){const k=Math.min(1,G.gros.t/.4);g.globalAlpha=k;txt(G.gros.txt,W/2,H*.4,Math.min(88,W*.2),"#ffe23a","#6a3a00");g.globalAlpha=1;}
+  g.restore();
+  if(G.ry)dessineRythme();
+}
+function dessineRythme(){
+  const r=G.ry;g.fillStyle="rgba(10,30,16,.62)";g.fillRect(0,0,W,H);
+  const cx=W/2,cy=H*.5,R=Math.min(W,H)*.14;
+  const hitnow=r.hit.some((h,i)=>h!==null&&Math.abs(r.t-r.beats[i])<.15);
+  g.save();g.translate(cx,cy);const sc=hitnow?1.06:1;g.scale(sc,sc);
+  // roulèr : tonneau coupé, peau tendue sur le dessus
+  rr(-R*.9,-R*.55,R*1.8,R*1.5,14);g.fillStyle="#9a5a28";g.fill();
+  for(let i=-3;i<=3;i++){g.fillStyle=i%2?"#b06a30":"#8a4a20";g.fillRect(i*R*.25-R*.1,-R*.5,R*.2,R*1.4);}
+  g.fillStyle="#5a6068";g.fillRect(-R*.9,-R*.2,R*1.8,R*.1);g.fillRect(-R*.9,R*.5,R*1.8,R*.1);
+  g.beginPath();g.ellipse(0,-R*.55,R*.9,R*.28,0,0,7);g.fillStyle="#f0dcb0";g.fill();g.lineWidth=4;g.strokeStyle="#5a6068";g.stroke();
+  g.restore();
+  g.lineWidth=5;g.strokeStyle="#fff";g.beginPath();g.arc(cx,cy-R*.3,R*1.35,0,7);g.stroke();
+  r.beats.forEach((b,i)=>{
+    const d=b-r.t;
+    if(d>0&&d<1){g.beginPath();g.arc(cx,cy-R*.3,R*1.35*(1+d*1.6),0,7);g.lineWidth=6;g.strokeStyle="rgba(255,210,74,"+(1-d)+")";g.stroke();}
+    const bx=cx+(i-1.5)*R*.9,by=cy+R*2;
+    g.beginPath();g.arc(bx,by,13,0,7);g.fillStyle=r.hit[i]===2?"#ffd24a":r.hit[i]===1?"#fff":r.hit[i]===0?"#ff6a5a":"rgba(255,255,255,.25)";g.fill();g.lineWidth=3;g.strokeStyle="#fff";g.stroke();
+  });
+  if(r.t<1)txt("Frappe le roulèr en rythme !",cx,cy-R*2.3,Math.min(34,W*.06),"#fff","#000");
+  for(const p of G.pops){const k=p.t/1.2;g.globalAlpha=Math.max(0,1-k*k);txt(p.txt,p.x,p.y-k*50,p.s,p.col,"#000");}
+  g.globalAlpha=1;
+  if(G.gros.t>0){const k=Math.min(1,G.gros.t/.4);g.globalAlpha=k;txt(G.gros.txt,W/2,H*.2,Math.min(80,W*.18),"#ffe23a","#6a3a00");g.globalAlpha=1;}
+}
 
-function menuMangue() {
-  if (mangueMenu && mangueMenu.vivant) return;
-  const m = cache['mangue'] || prets[0]; if (!m) return;
-  mangueMenu = lancer(m, { menu: true, y: W < H ? -0.9 : -0.9 });
-  mangueMenu.obj.scale.setScalar(1.8); mangueMenu.rayon *= 1.8;
+/* ---------- Panneaux ---------- */
+function ouvreBoutique(){
+  $("boPieces").textContent="🪙 "+S.pieces+" pièces";
+  const L=$("boListe");L.innerHTML="";
+  UPS.forEach((u,i)=>{
+    const n=upv(i),max=n>=u.max,c=u.cout[n];
+    const d=document.createElement("div");d.className="lig";
+    d.innerHTML="<div><b>"+u.nom+"</b> ("+n+"/"+u.max+")<br><span style='font-weight:600;opacity:.85'>"+u.desc+"</span></div>";
+    const b=document.createElement("button");b.className="btn";b.textContent=max?"Max":"🪙 "+c;b.disabled=max||S.pieces<c;b.style.opacity=b.disabled?.5:1;
+    b.onclick=()=>{if(!max&&S.pieces>=c){S.pieces-=c;S.up[i]=n+1;sauve();sfx("piece");ouvreBoutique();majMenu();}};
+    d.appendChild(b);L.appendChild(d);
+  });
+  $("boutique").classList.remove("cache");
 }
-function demarrer(reprise) {
-  if (etat === 'jeu') return;
-  audio();
-  etat = 'jeu'; score = 0; vies = 3; temps = 0; niveau = 0; prochainLancer = 1.0;
-  niv = 1; phase = 'actif'; phaseT = 0; charge = 0; serie = 0; ralentis = 0; frenesies = 0; frenesie = 0; ralentiBonus = 0;
-  if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; niv = Math.max(1, reprise.niv | 0 || 1); }
-  majNiveauHud(); majBonus(); $('bonus').classList.add('on');
-  masquerReprise();
-  majScore(); majVies();
-  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
-  $('lien').classList.add('discret');
-  for (const o of objets) if (o.menu && o.vivant) { o.vivant = false; scene.remove(o.obj); }
-}
-function finPartie() {
-  etat = 'fin'; ralentiOr = 0; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
-  try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {}
-  if (score > record) { record = score; try { localStorage.setItem('koupkoup_record', record); } catch (e) {} }
-  $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
-  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue(); }, 1200);
+function ouvreCarnet(){
+  $("caCompte").textContent=S.carnet.length+" / "+FAITS.length+" faits trouvés (un par partie)";
+  const L=$("caListe");L.innerHTML="";
+  FAITS.forEach((f,i)=>{const d=document.createElement("div");const o=S.carnet.includes(i);d.className="fait"+(o?"":" vide");d.innerHTML=o?"• "+f[0]+"<small>Source : "+f[1]+"</small>":"• ??? (continue de jouer)";L.appendChild(d);});
+  $("carnet").classList.remove("cache");
 }
 
-// ---------------------------------------------------------------- geste de découpe
-const trait = []; let appui = false, dernier = null, comboN = 0, comboT = 0, comboPos = null, swooshT = 0;
-function pointer(e) { return { x: e.clientX, y: e.clientY, t: performance.now() }; }
-glc.addEventListener('pointerdown', e => { audio(); appui = true; dernier = pointer(e); trait.length = 0; trait.push(dernier); comboN = 0; coupeSwipe = 0; });
-addEventListener('pointermove', e => {
-  if (!appui) return;
-  const p = pointer(e);
-  if (dernier) testerCoupe(dernier, p);
-  trait.push(p); dernier = p;
+/* ---------- Boucle principale et commandes ---------- */
+let last=0;
+function frame(ts){
+  const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+  if(mode==="play")maj(dt);
+  dessine();requestAnimationFrame(frame);
+}
+let zenSel=false;
+function demarre(){
+  ["menu","fin","pause","boutique","carnet","aide"].forEach(i=>$(i).classList.add("cache"));
+  ambiance(true);nouveauJeu(zenSel);mode="play";
+}
+function lanceJeu(zen){debloque();zenSel=zen;if(!S.vu){$("menu").classList.add("cache");$("fin").classList.add("cache");$("aide").classList.remove("cache");}else demarre();}
+$("bJouer").onclick=()=>lanceJeu(false);
+$("bZen").onclick=()=>lanceJeu(true);
+$("bAideOk").onclick=()=>{S.vu=true;sauve();demarre();};
+$("bRejouer").onclick=()=>{debloque();demarre();};
+document.addEventListener("pointerdown",()=>{debloque();if(mode==="play")ambiance(true);},{once:true});
+$("bBoutique").onclick=ouvreBoutique;$("bBoutique2").onclick=ouvreBoutique;
+$("bCarnet").onclick=ouvreCarnet;
+$("bBoFerme").onclick=()=>$("boutique").classList.add("cache");
+$("bCaFerme").onclick=()=>$("carnet").classList.add("cache");
+$("bReprendre").onclick=()=>pause(false);
+$("bQuitter").onclick=()=>{$("pause").classList.add("cache");mode="menu";G=null;majMenu();$("menu").classList.remove("cache");};
+$("bMenu").onclick=()=>{$("fin").classList.add("cache");mode="menu";G=null;majMenu();$("menu").classList.remove("cache");};
+let down=false,lx=0,ly=0;
+cv.addEventListener("pointerdown",e=>{
+  e.preventDefault();debloque();if(mode!=="play"||!G)return;
+  const b=btnPause();if(Math.hypot(e.clientX-b.x,e.clientY-b.y)<b.r+8){pause(true);return;}
+  if(G.ry){tapRythme();return;}
+  down=true;lx=e.clientX;ly=e.clientY;G.swipe=0;G.trail.push({x:lx,y:ly,t:0});
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
 });
-const finAppui = () => { appui = false; dernier = null; finCombo(); };
-addEventListener('pointerup', finAppui); addEventListener('pointercancel', finAppui);
-document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-
-function testerCoupe(a, b) {
-  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy);
-  const vit = L / Math.max(b.t - a.t, 1);
-  if (L < 4 || vit < 0.1) return;
-  if (performance.now() - swooshT > 150 && vit > 0.8) { son.swoosh(vit); swooshT = performance.now(); }
-  for (const o of objets) {
-    if (!o.vivant) continue;
-    const c = toScreen(o.obj.position), r = pxRayon(o.rayon);
-    const t = Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / (L * L)));
-    const d = Math.hypot(a.x + dx * t - c.x, a.y + dy * t - c.y);
-    if (d < r) {
-      const dir = new THREE.Vector3(dx, -dy, 0).normalize();
-      couper(o, dir, d / r);
-      if (!o.roche && !o.menu) { comboN++; comboT = performance.now(); comboPos = o.obj.position.clone(); if (comboN >= 2) son.note(comboN); }
-    }
-  }
-}
-function finCombo() {
-  // plusieurs fruits d'un seul geste : les points du geste sont multipliés
-  if (comboN >= 2 && etat === 'jeu') {
-    const bonus = coupeSwipe * (comboN - 1);
-    score += bonus; majScore(); son.combo(comboN);
-    popup(`Multi ×${comboN} ! +${bonus}`, comboPos, 'combo');
-    etincelles(comboPos, 30 + comboN * 12);
-    if (comboN >= 3) { ralenti = Math.max(ralenti, 0.35); zoom = 1; }
-  }
-  comboN = 0; coupeSwipe = 0;
-}
-
-const eclats = []; // petits éclats lumineux à chaque fruit traversé
-function dessinerTrait(dt = 0.016) {
-  bctx.clearRect(0, 0, W, H);
-  const now = performance.now();
-  while (trait.length && now - trait[0].t > 150) trait.shift();
-  if (trait.length >= 2) {
-    // points lissés (Catmull-Rom) pour une traînée sans saccade
-    const pts = [];
-    for (let i = 0; i < trait.length - 1; i++) {
-      const p0 = trait[Math.max(0, i - 1)], p1 = trait[i], p2 = trait[i + 1], p3 = trait[Math.min(trait.length - 1, i + 2)];
-      for (let k = 0; k < 4; k++) {
-        const t = k / 4, t2 = t * t, t3 = t2 * t;
-        pts.push({
-          x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
-          y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
-          v: Math.hypot(p2.x - p1.x, p2.y - p1.y) / Math.max(1, p2.t - p1.t),
-        });
-      }
-    }
-    pts.push({ ...trait[trait.length - 1], v: pts.length ? pts[pts.length - 1].v : 1 });
-    bctx.lineCap = 'round'; bctx.lineJoin = 'round';
-    for (const [larg, coul, flou] of [[18, 'rgba(255,140,30,.3)', 22], [8, 'rgba(255,222,130,.9)', 12], [3, '#ffffff', 0]]) {
-      bctx.shadowBlur = flou; bctx.shadowColor = '#ff8a1e'; bctx.strokeStyle = coul;
-      for (let i = 1; i < pts.length; i++) {
-        const k = i / pts.length, vit = Math.min(2.4, 0.5 + pts[i].v * 0.6);   // plus large quand le geste est rapide
-        bctx.lineWidth = larg * k * vit;
-        bctx.beginPath(); bctx.moveTo(pts[i - 1].x, pts[i - 1].y); bctx.lineTo(pts[i].x, pts[i].y); bctx.stroke();
-      }
-    }
-    bctx.shadowBlur = 0;
-  }
-  for (let i = eclats.length - 1; i >= 0; i--) {
-    const e = eclats[i]; e.t += dt; const k = e.t / 0.22;
-    if (k >= 1) { eclats.splice(i, 1); continue; }
-    const r = 14 + k * 46, g = bctx.createRadialGradient(e.p.x, e.p.y, 0, e.p.x, e.p.y, r);
-    g.addColorStop(0, `rgba(255,255,240,${0.85 * (1 - k)})`); g.addColorStop(0.4, rgba(teinteTache(e.c), 0.5 * (1 - k))); g.addColorStop(1, 'rgba(255,200,120,0)');
-    bctx.fillStyle = g; bctx.beginPath(); bctx.arc(e.p.x, e.p.y, r, 0, 7); bctx.fill();
-  }
-}
-
-// ---------------------------------------------------------------- vagues de lancers
-function vague() {
-  niveau = Math.min(14, Math.floor((niv - 1) * 1.3 + phaseT / 16));
-  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5));
-  const chanceRoche = temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
-  for (let i = 0; i < n; i++) {
-    setTimeout(() => {
-      if (etat !== 'jeu' || !prets.length) return;
-      if (Math.random() < chanceRoche) lancer(null);
-      else lancer(prets[Math.floor(Math.random() * prets.length)]);
-      // de temps en temps, un letchi doré (un seul à la fois)
-      if (i === 0 && temps > 12 && cache['letchi'] && !objets.some(x => x.or && x.vivant) && Math.random() < 0.07) setTimeout(() => etat === 'jeu' && lancer(cache['letchi'], { or: true }), 350);
-    }, i * rnd(120, 300));
-  }
-  prochainLancer = Math.max(0.7, 2.2 - niveau * 0.12) + rnd(0, 0.5);
-}
-
-// ---------------------------------------------------------------- gestionnaire de performances commun
-// Qualité par paliers puis mode 30 i/s, arrêt complet en arrière-plan, perte de contexte WebGL,
-// sauvegarde de la partie en cours (score, vies, temps) pour la reprendre après une interruption.
-let contextePerdu = false, pauseAuto = false;
-function sauverPartie() {
-  if (etat !== 'jeu') return;
-  try { localStorage.setItem('koupkoup2_partie', JSON.stringify({ score, vies, temps, niv, t: Date.now() })); } catch (e) {}
-}
-const perf = new GestionnairePerf({
-  nom: 'koup-koup-2',
-  niveauInitial: QUALITE,
-  surPause: () => {
-    endormirAudio(actx);
-    if (etat === 'jeu') { pauseAuto = true; sauverPartie(); }
-  },
-  surReprise: () => {
-    horloge.getDelta(); // le temps passé en arrière-plan ne compte pas
-    resize();
-    if (pauseAuto) afficherPause();
-  },
-  surSauvegarde: sauverPartie,
-  surQualite: (niveau) => { if (niveau < QUALITE) { QUALITE = niveau; renderer.setPixelRatio(ratioRendu()); resize(); } },
+cv.addEventListener("pointermove",e=>{
+  if(!down||!G||mode!=="play")return;e.preventDefault();
+  const x=e.clientX,y=e.clientY;G.trail.push({x,y,t:0});segment(lx,ly,x,y);lx=x;ly=y;
 });
-perf.surveillerContexte(glc, {
-  perdu: () => { contextePerdu = true; if (etat === 'jeu') { pauseAuto = true; sauverPartie(); } },
-  restaure: () => {
-    contextePerdu = false;
-    construireEnvironnement();
-    if (rocheMat.emissiveMap) rocheMat.emissiveMap.needsUpdate = true;
-    resize();
-    if (pauseAuto) afficherPause();
-  },
-  secours: () => afficherSecours({
-    texte: "L'iPhone a libéré la mémoire graphique pendant la pause. Ton score est enregistré : tu pourras reprendre ta partie.",
-    action: () => location.reload(), // seul le jeu est relancé, à la demande du joueur
-  }),
-});
-// Pause au retour d'arrière-plan : la partie ne repart que quand le joueur touche l'écran
-function afficherPause() {
-  if ($('pauseAuto')) return;
-  const v = document.createElement('div'); v.id = 'pauseAuto';
-  v.style.cssText = 'position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(20,10,2,.55);text-align:center;touch-action:none';
-  v.innerHTML = '<div class="titre" style="font-size:clamp(44px,11vw,80px)">Pause</div><div class="sous">Touche l\'écran pour reprendre</div>';
-  v.addEventListener('pointerup', e => { e.stopPropagation(); pauseAuto = false; horloge.getDelta(); v.remove(); audio(); });
-  document.body.appendChild(v);
-}
-// Reprise d'une partie interrompue (rechargement, arrêt de l'onglet par iOS)
-let partieSauvee = null;
-try { const p = JSON.parse(localStorage.getItem('koupkoup2_partie') || 'null'); if (p && Date.now() - p.t < 48 * 3600e3 && p.vies > 0) partieSauvee = p; } catch (e) {}
-function masquerReprise() { const b = $('reprendre'); if (b) b.remove(); partieSauvee = null; }
-if (partieSauvee) {
-  const b = document.createElement('button'); b.id = 'reprendre'; b.className = 'btn zone-interactive';
-  b.textContent = `Reprendre ma partie (${partieSauvee.score} pts)`;
-  b.onclick = () => { const p = partieSauvee; masquerReprise(); demarrer(p); };
-  $('jouer').after(b);
-}
-
-// ---------------------------------------------------------------- boucle
-const horloge = new THREE.Clock();
-const fumee = new THREE.Color(0xff8a1e);
-function boucle() {
-  if (contextePerdu) return;
-  const vrai = pauseAuto ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
-  if (ralenti > 0) ralenti -= vrai;
-  if (ralentiOr > 0) ralentiOr -= vrai;
-  let dt = vrai * (ralenti > 0 ? (ralentiOr > 0 ? 0.35 : 0.3) : 1);
-  if (arret > 0) { arret -= vrai; dt = 0; }        // pause d'impact
-  document.body.classList.toggle('ralenti-or', ralentiOr > 0);
-  if (filtreRalenti) filtreRalenti.frequency.setTargetAtTime(ralentiOr > 0 ? 900 : 20000, actx.currentTime, 0.15);
-  $('dore').style.opacity = ralentiOr > 0 ? Math.min(1, ralentiOr * 2) : 0;
-  $('barreOr').style.opacity = ralentiOr > 0 ? 1 : 0;
-  if (ralentiOr > 0) $('barreOr').firstElementChild.style.width = (ralentiOr / 4 * 100) + '%';
-  if (ralentiBonus > 0) { ralentiBonus -= vrai; if (ralenti < 0.05 && ralentiBonus > 0) ralenti = ralentiBonus; }
-  if (etat === 'jeu') {
-    temps += dt; phaseT += dt; charge = Math.min(RECHARGE, charge + vrai); if (frenesie > 0) frenesie -= vrai; majBonus();
-    if (phase === 'actif') { prochainLancer -= dt; if (prochainLancer <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
-    else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochainLancer = 0.2; bandeau('Niveau ' + niv + ' ! Ça repart', 1.6); }
-  }
-  if (comboN > 0 && performance.now() - comboT > 260) finCombo();
-
-  for (let i = objets.length - 1; i >= 0; i--) {
-    const o = objets[i];
-    if (!o.vivant) { objets.splice(i, 1); continue; }
-    if (o.menu) { o.obj.position.y += Math.sin(performance.now() / 600) * 0.004; o.obj.rotateOnWorldAxis(o.axe, o.vrot * dt); continue; }
-    o.vel.y -= o.g * dt; o.obj.position.addScaledVector(o.vel, dt);
-    o.obj.rotateOnWorldAxis(o.axe, o.vrot * dt);
-    if (o.or) o.obj.traverse(m => { if (m.isMesh && m.material === matOr) matOr.emissiveIntensity = 0.45 + Math.sin(performance.now() / 120) * 0.25; });
-    if (o.roche && Math.random() < 0.35 * qx()) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .3, 0)), new THREE.Vector3(rnd(-.4, .4), rnd(0.6, 1.4), 0), rnd(0.06, 0.12), new THREE.Color(0x3a3430), 1.1, -0.05);
-    if (o.or && Math.random() < 0.7) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.4, .4), rnd(-.4, .4), 0.3)), new THREE.Vector3(rnd(-.6, .6), rnd(-.2, .8), 0), rnd(0.03, 0.06), new THREE.Color(0xffe27a).multiplyScalar(1.4), 0.6, 0.1);
-    if (o.roche && Math.random() < 0.5) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .5, 0)), new THREE.Vector3(rnd(-.5, .5), rnd(1, 2.5), 0), rnd(0.03, 0.06), fumee, 0.5, 0.15);
-    if (o.vel.y < 0 && o.obj.position.y < -viewH / 2 - 1.5) {
-      o.vivant = false; scene.remove(o.obj);
-      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); serie = 0; perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
-    }
-  }
-  for (let i = moities.length - 1; i >= 0; i--) {
-    const m = moities[i]; m.vie -= dt; m.vel.y -= 11 * dt;
-    // la face coupée continue de goutter pendant la chute
-    if (m.vie > 2.6 && Math.random() < 9 * dt * qx()) goutte(m.obj.position.clone().add(new THREE.Vector3(rnd(-.2, .2), -.15, 0.2)), new THREE.Vector3(rnd(-.3, .3), rnd(-1, 0), 0), rnd(0.03, 0.06), m.jus, rnd(0.5, 0.9), 1.1, Math.random() < 0.3);
-    m.obj.position.addScaledVector(m.vel, dt); m.obj.rotateOnWorldAxis(m.axe, m.vrot * dt);
-    if (m.vie <= 0 || m.obj.position.y < -viewH / 2 - 3) { scene.remove(m.obj); moities.splice(i, 1); }
-  }
-  majParticules(dt);
-
-  if (zoom > 0) zoom = Math.max(0, zoom - vrai * 2.2);
-  camera.position.z = 14 - 1.4 * Math.sin(zoom * Math.PI);
-  if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
-
-  if (POSTFX && QUALITE > 0) composer.render(); else renderer.render(scene, camera);
-  majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai); dessinerFanions(performance.now() / 1000);
-}
-
-// ---------------------------------------------------------------- démarrage
-addEventListener('resize', resize); resize(); majVies(); majScore(); majBoutonSon();
-$('btnSon').onclick = () => {
-  sonCoupe = !sonCoupe; try { localStorage.setItem('koupkoup_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
-  if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
-};
-$('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
-$('jouer').onclick = () => { audio(); masquerReprise(); try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {} demarrer(); };
-$('rejouer').onclick = () => { audio(); demarrer(); };
-// touchers : ne pas laisser passer aux couches inférieures
-document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function(event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
-
-(async () => {
-  const info = await (await fetch('./models/fruits.json')).json();
-  catalogue = info.fruits.slice();
-  const premiers = ['mangue', 'letchi', 'ananas', 'banane', 'papaye', 'fruit-de-la-passion'];
-  catalogue.sort((a, b) => (premiers.indexOf(b.id) >= 0) - (premiers.indexOf(a.id) >= 0) || Math.random() - 0.5);
-  let fait = 0;
-  const majCharge = () => { $('charge').textContent = fait < catalogue.length ? `Chargement des fruits… ${fait}/${catalogue.length}` : ''; };
-  // Seuls MAX_CHARGES fruits sont en mémoire ; les autres attendent leur tour (réserve)
-  const file = catalogue.slice(0, MAX_CHARGES);
-  reserve = catalogue.slice(MAX_CHARGES);
-  const total = file.length;
-  const majCharge2 = () => { $('charge').textContent = fait < total ? `Chargement des fruits… ${fait}/${total}` : ''; };
-  async function ouvrier() {
-    while (file.length) {
-      const d = file.shift();
-      try { prets.push(await charger(d)); } catch (e) { console.warn('fruit non chargé', d.id, e); }
-      fait++; majCharge2();
-      if (d.id === 'mangue' && etat === 'menu') menuMangue();
-    }
-  }
-  majCharge2();
-  await Promise.all([ouvrier(), ouvrier(), ouvrier()]);
-  window.PRET = true;
-  journal('koupkoup2', `modèles ${DOSSIER_MODELES} · ${prets.length} chargés · ${reserve.length} en réserve`);
-  // Renouvellement : toutes les 20 s, un fruit de la réserve remplace le plus ancien
-  perf.intervalle(renouveler, 4000);
-})();
-let reserve = [], tempsRenouvellement = 0, renouvellementEnCours = false;
-async function renouveler() {
-  if (renouvellementEnCours || !reserve.length || !perf.actif || contextePerdu) return;
-  const maintenant = performance.now() / 1000; // (l'intervalle ne tourne pas en arrière-plan : perf.actif)
-  if (maintenant - tempsRenouvellement < 20) return;
-  tempsRenouvellement = maintenant;
-  if (!prets.some(f => !PROTEGES.has(f.d.id) && !enVol(f))) return;
-  renouvellementEnCours = true;
-  const d = reserve.shift();
-  try {
-    const nouveau = await charger(d);
-    const ancien = prets.filter(f => !PROTEGES.has(f.d.id) && !enVol(f)).sort((a, b) => a.charge - b.charge)[0];
-    if (ancien) { oublier(ancien); reserve.push(ancien.d); }
-    prets.push(nouveau);
-  } catch (e) { console.warn('fruit non chargé', d.id, e); reserve.push(d); }
-  renouvellementEnCours = false;
-}
-// Libération complète (appelée par le site avant de quitter le jeu, et à la fermeture de la page)
-let libere = false;
-function liberer() {
-  if (libere) return; libere = true;
-  perf.detruire();
-  [...prets].forEach(oublier);
-  scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
-  if (rocheMat.emissiveMap) rocheMat.emissiveMap.dispose();
-  if (scene.environment) scene.environment.dispose();
-  renderer.dispose(); renderer.forceContextLoss();
-  [fond, taches, trace, vitre, couche, coucheVitre, fanions].forEach(libererCanvas);
-  if (actx) { try { actx.close(); } catch (e) {} }
-  journal('liberation', 'koup-koup-2');
-}
-window.kwelafeLiberer = liberer;
-window.kwelafeInfo = () => ({ ...renderer.info.memory, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
-addEventListener('pagehide', e => { if (!e.persisted) liberer(); });
-perf.boucle(boucle);
-
-// mode test : simuler une partie pour les captures
-if (TEST) {
-  window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
-}
-}
+const fin=()=>{down=false;if(G)G.swipe=0;};
+cv.addEventListener("pointerup",fin);cv.addEventListener("pointercancel",fin);
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&mode==="play")pause(true);});
+majMenu();requestAnimationFrame(frame);
+if(location.search.includes("test"))window.jeu={get G(){return G;},get mode(){return mode;},demarre,segment,lance,vague,coupe,tapRythme,S,FR,FAITS,get U(){return U;},
+  get layout(){return {W,H,CT};}};
 </script>
 </body>
 </html>
