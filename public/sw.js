@@ -5,8 +5,11 @@
 //    pouvait rester en cache et empêcher un jeu de se charger) ;
 //  - le cache est borné et les anciennes versions sont supprimées ;
 //  - les jeux (/jeux-3d/) et leurs modèles ne passent jamais par ce cache.
-const CACHE = "kwelafe-v3";
-const CACHE_PAGES = "kwelafe-pages-v1"; // pages et jeux gardés pour le hors connexion (jamais les livres)
+// v3 (26 nov. 2026) : seuls les FICHIERS (images, sons…) de /jeux/ sont gardés « cache d'abord ».
+//  Avant, les pages et données des jeux 2D (/jeux/fusion-pei, ?_rsc=…) l'étaient aussi :
+//  une mise à jour d'un jeu n'arrivait jamais sur un appareil qui l'avait déjà ouvert.
+const CACHE = "kwelafe-v4";
+const CACHE_PAGES = "kwelafe-pages-v2"; // pages et jeux gardés pour le hors connexion (jamais les livres)
 const PAGE_HORS_LIGNE = "/hors-ligne"; // servie par Cloudflare à partir de public/hors-ligne.html
 const COQUILLE = ["/manifest.webmanifest", "/icone-192.png", "/icone-512.png", PAGE_HORS_LIGNE];
 const MAX_ENTREES = 160;
@@ -46,7 +49,8 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   // Images des jeux, avatars, marque-pages, logos : cache d'abord
-  if (/^\/(jeux|avatars|marque-pages)\//.test(url.pathname) || /^\/logo-/.test(url.pathname)) {
+  const fichier = /\.(webp|png|jpe?g|gif|svg|avif|mp3|m4a|ogg|wav|glb|woff2?)$/i.test(url.pathname);
+  if ((fichier && /^\/(jeux|avatars|marque-pages)\//.test(url.pathname)) || /^\/logo-/.test(url.pathname)) {
     e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).then((rep) => {
       if (rep.ok && rep.type === "basic") { const copie = rep.clone(); e.waitUntil(caches.open(CACHE_PAGES).then((c) => c.put(e.request, copie))); }
       return rep;
