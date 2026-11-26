@@ -12,7 +12,7 @@ export default function Confidentialite() {
       </p>
 
       <h2>Responsable du traitement</h2>
-      <p>Kwélafé (Kwélafé Production), micro-entreprise de Himen Mazouz, 97 rue des Sources, 83600 Fréjus, France. SIRET 850 887 100 00020. Contact : <a href="mailto:kwelafe.contact@gmail.com">kwelafe.contact@gmail.com</a>.</p>
+      <p>Kwélafé (Kwélafé Production), micro-entreprise de Himen Nalem, 97 rue des Sources, 83600 Fréjus, France. SIRET 850 887 100 00020. Contact : <a href="mailto:kwelafe.contact@gmail.com">kwelafe.contact@gmail.com</a>.</p>
 
       <h2>Les données que nous utilisons</h2>
       <ul>
