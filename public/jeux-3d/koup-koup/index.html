@@ -744,10 +744,10 @@ function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--;
 function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
 // fin de niveau : pluie de fruits spéciaux (letchis dorés, vanille), puis 4 secondes d'accalmie
 // avant chaque niveau suivant : une ruée stressante (fruits et roches en rafale, cœur qui bat, bord rouge qui pulse)
-let battement = 0;
+let battement = 0, bombesRuee = 0;
 const dureeStress = () => 6 + Math.min(4, niv * 0.5);
 function debutStress() {
-  phase = 'stress'; phaseT = 0; prochainLancer = 0.1; battement = 0;
+  phase = 'stress'; phaseT = 0; prochainLancer = 0.1; battement = 0; bombesRuee = 0;
   bandeau('⚠ La ruée arrive ! Tiens bon, évite les roches !', 2.4);
 }
 function finDeNiveau() {
@@ -977,7 +977,7 @@ function dessinerTrait(dt = 0.016) {
 function vague(ruee = false) {
   niveau = Math.min(14, Math.floor((niv - 1) * 1.3 + phaseT / 16));
   const n = ruee ? 3 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5));
-  const chanceRoche = ruee ? Math.min(0.3 + niv * 0.015, 0.42) : temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
+  const chanceRoche = ruee ? 0 : temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
   for (let i = 0; i < n; i++) {
     setTimeout(() => {
       if (etat !== 'jeu' || !prets.length) return;
@@ -1073,7 +1073,10 @@ function boucle() {
     if (phase === 'actif') { prochainLancer -= dt; if (prochainLancer <= 0) vague(); if (phaseT > dureePhase()) debutStress(); }
     else if (phase === 'stress') {
       prochainLancer -= dt; if (prochainLancer <= 0) { vague(true); prochainLancer = rnd(0.42, 0.7) - Math.min(0.2, niv * 0.02); }
-      const k = Math.min(1, phaseT / dureeStress()); battement -= vrai; if (battement <= 0) { son.coeur(); battement = 0.85 - k * 0.5; }
+      const k = Math.min(1, phaseT / dureeStress());
+      // pendant la ruée : seulement 2 bombes (roches), la première vers le tiers, la seconde vers les trois quarts
+      if ((bombesRuee === 0 && k > 0.33) || (bombesRuee === 1 && k > 0.75)) { bombesRuee++; lancer(null); }
+      battement -= vrai; if (battement <= 0) { son.coeur(); battement = 0.85 - k * 0.5; }
       $('barreStress').firstElementChild.style.width = ((1 - k) * 100) + '%';
       if (phaseT > dureeStress()) finDeNiveau();
     }
