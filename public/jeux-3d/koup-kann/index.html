@@ -72,6 +72,33 @@
   #eclab { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
   .niveauHud { text-align:right; margin-top:4px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
   .niveauHud.saute { animation:saute .5s; }
+  #btnPause { right:max(86px, calc(env(safe-area-inset-right) + 86px)); width:48px; padding:0; display:none; }
+  #btnPause.on { display:block; }
+  #fin { padding-top:64px; padding-bottom:96px; } #fin .gros { font-size:clamp(52px,12vw,90px); } #fin .etoiles { font-size:clamp(30px,7vw,44px); } #fin .sous { margin-top:6px; } #fin .voile { padding:14px 20px 16px; }
+  .btn.mini { padding:10px 18px; font-size:17px; }
+  .btn.gris { filter:grayscale(.9) brightness(.8); }
+  .defi { margin-top:10px; font-size:clamp(15px,3.4vw,19px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.9); max-width:520px; }
+  .savoir { margin-top:12px; max-width:500px; font-size:15px; line-height:1.35; padding:10px 14px; border-radius:14px; background:rgba(20,40,10,.55); text-align:left; }
+  .savoir span, .fait span, .ligne span { opacity:.75; font-size:13px; font-weight:600; }
+  .panneau { background:rgba(8,20,6,.88); justify-content:flex-start; padding:max(80px, calc(env(safe-area-inset-top) + 70px)) 28px 40px; overflow-y:auto; touch-action:pan-y; pointer-events:auto; }
+  .panneau.cache { pointer-events:none; }
+  .titre2 { font-family:"Bangers", sans-serif; font-size:clamp(40px,9vw,64px); color:var(--or); text-shadow:0 4px 0 #7a4a08; }
+  .liste { width:100%; max-width:540px; margin:14px 0 22px; display:flex; flex-direction:column; gap:10px; text-align:left; }
+  .ligne, .fait { display:flex; gap:12px; align-items:center; padding:10px 14px; border-radius:16px; background:rgba(255,255,255,.1); font-size:15px; line-height:1.35; }
+  .fait { display:block; } .fait.verrou { opacity:.5; }
+  .ligne .ico { font-size:34px; } .ligne .txt { flex:1; }
+  .grosNiveau { position:fixed; left:0; right:0; top:42%; text-align:center; font-family:"Bangers", sans-serif; font-size:clamp(64px,17vw,130px); letter-spacing:.06em; color:#ffe23a; text-shadow:0 6px 0 #6a3a00, 0 0 34px rgba(255,200,60,.7); pointer-events:none; opacity:0; z-index:8; }
+  .grosNiveau.go { animation:gn 2s ease-out forwards; }
+  @keyframes gn { 0% { opacity:0; transform:scale(.5); } 15% { opacity:1; transform:scale(1.1); } 70% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.15) translateY(-30px); } }
+  .rythme { position:fixed; left:0; right:0; top:44%; display:none; flex-direction:column; align-items:center; gap:10px; z-index:7; pointer-events:none; }
+  .rythme.on { display:flex; }
+  .rythme #camionImg { width:min(72vw,380px); filter:drop-shadow(0 6px 8px rgba(0,0,0,.45)); }
+  .rythmeMsg { font-family:"Bangers", sans-serif; font-size:clamp(24px,6vw,36px); letter-spacing:.05em; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.6); min-height:1.2em; }
+  .rond { position:relative; pointer-events:auto; width:92px; height:92px; border-radius:50%; background:rgba(255,240,180,.35); border:4px solid #fff; display:flex; align-items:center; justify-content:center; }
+  .rond img { width:70px; pointer-events:none; }
+  .rond.tape { animation:saute .3s ease-out; }
+  .anneau { position:absolute; inset:-4px; border-radius:50%; border:5px solid #ffd24a; pointer-events:none; animation:anneau .8s linear forwards; }
+  @keyframes anneau { from { transform:scale(2.8); opacity:.3; } to { transform:scale(1); opacity:1; } }
 </style>
 </head>
 <body>
@@ -95,6 +122,8 @@
   <div class="titre">Koup Kann</div>
   <div class="sous">La campagne sucrière dans les hauts de l'Est</div>
   <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
+  <div class="modes"><button class="btn mini zone-interactive" id="btnAtelier">🛠️ Atelier</button><button class="btn mini btn2 zone-interactive" id="btnCarnet">📖 Carnet <span id="nCarnet">0/16</span></button></div>
+  <div class="defi" id="sucreMenu"></div><div class="defi" id="defiMenu"></div>
   <div class="consigne">Tranche les cannes d'un geste, le plus près du sol possible. Attention aux guêpes et aux cailloux ! À la fin de chaque niveau, le camion cachalot passe : coupe vite pour charger la benne.</div>
 </div>
 
@@ -105,11 +134,19 @@
   <div class="nouveau" id="nouveauRecord"></div>
   <div class="sous" id="cannesFin"></div>
   <div class="sous" id="recordFin">Record : 0</div>
-  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
+  <div class="defi" id="gainFin"></div><div class="defi" id="defiFin"></div>
+  <div class="savoir" id="savoirFin"></div>
+  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button><button class="btn mini zone-interactive" id="btnCarnet2">📖 Carnet</button></div>
 </div></div>
 
+<div class="grosNiveau" id="grosNiveau"></div>
+<div class="rythme" id="rythme"><img id="camionImg" src="./camion-vide.webp" alt="Camion cachalot"><div class="rythmeMsg" id="rythmeMsg"></div><div class="rond zone-interactive" id="rond"><img src="./fagot.webp" alt="Fagot de cannes"></div></div>
+<div class="ecran cache" id="pauseEcran" style="background:rgba(10,20,5,.6)"><div class="titre" style="font-size:clamp(50px,12vw,90px)">Pause</div><div class="modes"><button class="btn zone-interactive" id="reprendre">Reprendre</button><button class="btn btn2 zone-interactive" id="quitterPause">Terminer</button></div></div>
+<div class="ecran cache panneau" id="atelier"><div class="titre2">🛠️ Atelier</div><div class="defi" id="atelierSucre"></div><div class="liste" id="atelierListe"></div><button class="btn zone-interactive" id="atelierFerme">Fermer</button></div>
+<div class="ecran cache panneau" id="carnet"><div class="titre2">📖 Carnet de la canne</div><div class="defi" id="carnetNb"></div><div class="liste" id="carnetListe"></div><button class="btn zone-interactive" id="carnetFerme">Fermer</button></div>
 <div id="charge">On affûte le sabre à canne…</div>
 <button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="coin zone-interactive" id="btnPause" aria-label="Pause">Ⅱ</button>
 <button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
@@ -138,8 +175,13 @@ soleil.shadow.mapSize.set(PETIT ? 1024 : 2048, PETIT ? 1024 : 2048); soleil.shad
 Object.assign(soleil.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 }); scene.add(soleil);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const capteur = new THREE.Mesh(new THREE.PlaneGeometry(60, 14), new THREE.ShadowMaterial({ opacity: 0.35, color: 0x2a1a08 })); capteur.rotation.x = -Math.PI / 2; capteur.receiveShadow = true; scene.add(capteur);
-const texFond = new THREE.TextureLoader().load('./fond-cannes.webp', () => { resize(); $('charge').textContent = ''; window.PRET = true; }); texFond.colorSpace = THREE.SRGBColorSpace;
-const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false })); planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
+const chargeur = new THREE.TextureLoader();
+const texP = chargeur.load('./fond-portrait.webp', () => { resize(); $('charge').textContent = ''; window.PRET = true; });
+const texL = chargeur.load('./fond-paysage.webp', () => resize());
+texP.colorSpace = texL.colorSpace = THREE.SRGBColorSpace;
+renderer.localClippingEnabled = true;
+const planSol = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // les cannes sortent de terre : tout ce qui est sous le sol est coupé
+const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texP, toneMapped: false, depthWrite: false })); planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
 const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.3, 0.4, 1.25); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(new SMAAPass());
 let secousse = 0;
@@ -152,46 +194,21 @@ function resize() {
   const d = Math.min(devicePixelRatio, 2); for (const c of [trace, eclab]) { c.width = W * d; c.height = H * d; } tctx.setTransform(d, 0, 0, d, 0, 0); ectx.setTransform(d, 0, 0, d, 0, 0);
   camera.aspect = W / H; camera.updateProjectionMatrix();
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
-  sol = -viewH * 0.3; capteur.position.set(0, sol + 0.005, -2);
+  sol = -viewH * (W < H ? 0.27 : 0.29); capteur.position.set(0, sol + 0.005, -2); planSol.constant = -sol; planFond.material.map = W < H ? texP : texL;
   const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
-  let pw = wF, ph = wF / (16 / 9); if (ph < hF) { ph = hF; pw = hF * 16 / 9; }
-  planFond.scale.set(pw * 1.08, ph * 1.08, 1); planFond.position.y = (ph - hF) / 2;
+  const ar = W < H ? 2 / 3 : 4 / 3; let pw = wF, ph = wF / ar; if (ph < hF) { ph = hF; pw = hF * ar; }
+  planFond.scale.set(pw * 1.04, ph * 1.04, 1); planFond.position.y = 0;
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
 }
 
-// ---------------------------------------------------------------- canne à sucre en 3D (entrenœuds, nœuds, feuilles)
-// trois teintes de tiges : verte-jaune, violette, jaune paille
-const VARIETES = [['#4a6a14', '#a8bc34', '#7a8a2a', '#3a4a12'], ['#3a1a32', '#8a3a6a', '#6a2a50', '#2a1224'], ['#8a6a14', '#e0c048', '#b89a2a', '#6a4a10']];
-function texCanneV(v) { const c = document.createElement('canvas'); c.width = 64; c.height = 256; const g = c.getContext('2d'); const [a, b, d, e] = VARIETES[v];
-  const grd = g.createLinearGradient(0, 0, 64, 0); grd.addColorStop(0, a); grd.addColorStop(.42, b); grd.addColorStop(.72, d); grd.addColorStop(1, e);
-  g.fillStyle = grd; g.fillRect(0, 0, 64, 256);
-  for (let i = 0; i < 50; i++) { g.strokeStyle = `rgba(40,25,5,${Math.random() * .25})`; g.lineWidth = rnd(0.5, 1.5); g.beginPath(); const x = Math.random() * 64; g.moveTo(x, 0); g.lineTo(x + rnd(-2, 2), 256); g.stroke(); }
-  const pr = g.createLinearGradient(0, 0, 0, 40); pr.addColorStop(0, 'rgba(235,235,215,.55)'); pr.addColorStop(1, 'rgba(235,235,215,0)'); g.fillStyle = pr; g.fillRect(0, 0, 64, 40); // pruine cireuse sous le nœud
-  g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(22, 0, 6, 256); // reflet de la cire
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
-const matsTige = [0, 1, 2].map(v => new THREE.MeshStandardMaterial({ map: texCanneV(v), roughness: 0.35, envMapIntensity: 0.8 }));
-const matTige = matsTige[0];
-const matNoeud = new THREE.MeshStandardMaterial({ color: 0x6a4a1e, roughness: 0.6 });
-const texFeuille = (() => { const c = document.createElement('canvas'); c.width = 32; c.height = 256; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#3a7a1a'); gr.addColorStop(0.6, '#6aaa2a'); gr.addColorStop(1, '#8aa848'); g.fillStyle = gr; g.fillRect(0, 0, 32, 256); g.fillStyle = 'rgba(200,220,150,.45)'; g.fillRect(15, 0, 2, 256); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
-const matFeuilleC = new THREE.MeshStandardMaterial({ map: texFeuille, roughness: 0.75, envMapIntensity: 0.5, side: THREE.DoubleSide });
-const matChair = new THREE.MeshStandardMaterial({ color: 0xe8e2b8, roughness: 0.6 });
-const matFeuilleSeche = new THREE.MeshStandardMaterial({ color: 0xb89a5a, roughness: 0.8, side: THREE.DoubleSide });
-const SEG = 0.45, RAY = 0.12;
-const geoSeg = (() => { const p = []; for (let i = 0; i <= 8; i++) { const t = i / 8; p.push(new THREE.Vector2(RAY * (1 + 0.07 * Math.sin(t * Math.PI) - 0.04 * t), t * SEG)); } return new THREE.LatheGeometry(p, 16); })();
-const geoSegInutile = new THREE.CylinderGeometry(RAY, RAY * 1.04, SEG, 12); 
-const geoNoeud = new THREE.TorusGeometry(RAY * 1.02, RAY * 0.12, 6, 18); geoNoeud.rotateX(Math.PI / 2);
-const geoBourgeon = new THREE.SphereGeometry(RAY * 0.28, 8, 6);
-const geoFeuilleC = (() => { const s = new THREE.Shape(); s.moveTo(-0.05, 0); s.quadraticCurveTo(0.1, 0.8, 0.015, 2.3); s.lineTo(-0.015, 2.3); s.quadraticCurveTo(-0.12, 0.8, -0.05, 0); const g = new THREE.ShapeGeometry(s, 10); const uv = g.attributes.uv; const ps = g.attributes.position; for (let i = 0; i < ps.count; i++) uv.setXY(i, (ps.getX(i) + 0.12) / 0.24, ps.getY(i) / 2.3); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setZ(i, 0.25 * y * y); } g.computeVertexNormals(); return g; })();
-const geoCoupe = new THREE.CircleGeometry(RAY, 12);
-function construireCanne(n, v = Math.floor(Math.random() * 3)) {
-  const g = new THREE.Group(), mt = matsTige[v];
-  for (let i = 0; i < n; i++) { const s = new THREE.Mesh(geoSeg, mt); s.position.y = i * SEG; s.rotation.y = rnd(0, 6); s.castShadow = true; g.add(s); const nd = new THREE.Mesh(geoNoeud, matNoeud); nd.position.y = i * SEG; g.add(nd); const b = new THREE.Mesh(geoBourgeon, matNoeud); const a = i * 2.4; b.position.set(Math.cos(a) * RAY, i * SEG + 0.04, Math.sin(a) * RAY); b.scale.set(0.7, 1.2, 0.7); g.add(b); }
-  const tete = new THREE.Group(); tete.position.y = n * SEG;
-  for (let k = 0; k < 9; k++) { const f = new THREE.Mesh(geoFeuilleC, matFeuilleC); f.castShadow = true; f.rotation.set(rnd(-0.4, 0.4), k / 9 * Math.PI * 2, rnd(-1, 1)); tete.add(f); }
-  // quelques feuilles sèches qui pendent le long de la tige
-  for (let k = 0; k < 2; k++) { const f = new THREE.Mesh(geoFeuilleC, matFeuilleSeche); f.position.y = rnd(1, n - 2) * SEG; f.rotation.set(Math.PI * 0.85, rnd(0, 6), rnd(-0.3, 0.3)); f.scale.setScalar(0.6); g.add(f); }
-  g.add(tete); return g;
-}
+// ---------------------------------------------------------------- objets peints (images réalistes générées pour le jeu)
+const texCache = {}; const tex = n => texCache[n] || (texCache[n] = (() => { const t = chargeur.load('./' + n + '.webp'); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })());
+const SEG = 0.45;
+const NOMS_CANNE = ['canne0', 'canne1', 'canne2', 'doree'], LARG_CANNE = [0.4, 0.38, 0.47, 0.756];
+const matsCanne = NOMS_CANNE.map(n => new THREE.MeshBasicMaterial({ map: tex(n), transparent: true, alphaTest: 0.25, side: THREE.DoubleSide, toneMapped: false, clippingPlanes: [planSol] }));
+// une tranche de la canne peinte (de v0 à v1, en hauteur), pivot en bas
+function tranche(v, h, v0, v1) { const g = new THREE.PlaneGeometry(h * LARG_CANNE[v], (v1 - v0) * h); g.translate(0, (v1 - v0) * h / 2, 0); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, v0 + uv.getY(i) * (v1 - v0)); return new THREE.Mesh(g, matsCanne[v]); }
+function construireCanne(n, v = Math.floor(Math.random() * 3)) { const g = new THREE.Group(), h = n * SEG; g.add(tranche(v, h, 0, 1)); g.userData = { v, h }; return g; }
 
 // guêpe : abdomen rayé jaune et noir, ailes translucides
 const matJaune = new THREE.MeshStandardMaterial({ color: 0xf2c418, roughness: 0.4 }), matNoir = new THREE.MeshStandardMaterial({ color: 0x1a1408, roughness: 0.5 });
@@ -204,19 +221,9 @@ function construireGuepe() {
   const ailes = []; for (const s of [1, -1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(0.18, 10), matAile); a.scale.set(1.6, 0.6, 1); a.position.set(0, 0.12, 0.1 * s); a.rotation.x = -Math.PI / 2 + s * 0.4; g.add(a); ailes.push(a); }
   g.userData.ailes = ailes; g.scale.setScalar(1.6); return g;
 }
-const matCaillou = new THREE.MeshStandardMaterial({ color: 0x3a3632, roughness: 0.95, flatShading: true });
-function construireCaillou() { const geo = new THREE.IcosahedronGeometry(0.42, 1); const p = geo.attributes.position; for (let i = 0; i < p.count; i++) { const k = 0.8 + Math.random() * 0.35; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.8, p.getZ(i) * k); } geo.computeVertexNormals(); const m = new THREE.Mesh(geo, matCaillou); m.castShadow = true; return m; }
-// camion cachalot : cabine et grande benne chargée de cannes
-function construireCachalot() {
-  const g = new THREE.Group();
-  const rouge = new THREE.MeshStandardMaterial({ color: 0xc8281e, roughness: 0.5 }), gris = new THREE.MeshStandardMaterial({ color: 0x6a6a6a, roughness: 0.6 }), noir = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 }), vitre = new THREE.MeshStandardMaterial({ color: 0x8ab8d8, roughness: 0.1, metalness: 0.3 });
-  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 1.0), rouge); cab.position.set(1.6, 0.7, 0); g.add(cab);
-  const vit = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.8), vitre); vit.position.set(2.16, 0.9, 0); g.add(vit);
-  const benne = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.2, 1.2), gris); benne.position.set(-0.5, 0.85, 0); g.add(benne);
-  for (let i = 0; i < 26; i++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.0, 6), matTige); c.rotation.z = Math.PI / 2 + rnd(-0.1, 0.1); c.position.set(-0.5 + rnd(-0.1, 0.1), 1.5 + rnd(0, 0.4), rnd(-0.5, 0.5)); g.add(c); }
-  for (const x of [1.6, 0.2, -1.4]) for (const z of [0.55, -0.55]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 14), noir); r.rotation.x = Math.PI / 2; r.position.set(x, 0.3, z); g.add(r); }
-  g.scale.setScalar(0.9); return g;
-}
+function construireCaillou() { const w = 0.95; return new THREE.Mesh(new THREE.PlaneGeometry(w, w * 294 / 330), new THREE.MeshBasicMaterial({ map: tex('rocher'), transparent: true, alphaTest: 0.25, toneMapped: false })); }
+// camion cachalot : benne chargée de cannes (image réaliste), il passe de gauche à droite
+function construireCachalot(plein = true) { const w = Math.min(viewW * 1.1, 8), r = plein ? 340 / 1215 : 279 / 1203; const g = new THREE.Mesh(new THREE.PlaneGeometry(w, w * r), new THREE.MeshBasicMaterial({ map: tex(plein ? 'camion-plein' : 'camion-vide'), transparent: true, alphaTest: 0.2, toneMapped: false })); g.geometry.translate(0, w * r / 2, 0); g.userData.w = w; return g; }
 
 // ---------------------------------------------------------------- particules (copeaux, jus, poussière)
 const MAXP = 1600, pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3), pAlp = new Float32Array(MAXP), pTai = new Float32Array(MAXP);
@@ -307,22 +314,127 @@ function audio() { setTimeout(chargerSons, 0); if (actx) { if (actx.state === 's
 function bruit(dur, f, q, vol, when = 0, type = 'bandpass') { if (!actx) return; const t = actx.currentTime + when, b = actx.createBuffer(1, Math.ceil(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = actx.createBufferSource(); s.buffer = b; const fi = actx.createBiquadFilter(); fi.type = type; fi.frequency.value = f; fi.Q.value = q; const g = actx.createGain(); g.gain.value = vol; s.connect(fi).connect(g).connect(maitre); s.start(t); }
 function ton(f0, f1, dur, vol, type = 'sine', when = 0) { if (!actx) return; const t = actx.currentTime + when, o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05); }
 const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['coupe-1', 'coupe-2', 'coupe-3', 'guepe', 'caillou', 'camion', 'champ']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'champ') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.3; s.connect(g).connect(maitre); s.start(); } }).catch(() => {}); }
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['coupe', 'guepe', 'caillou', 'camion', 'champ', 'charge', 'or', 'achat', 'niveau']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'champ') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.3; s.connect(g).connect(maitre); s.start(); } }).catch(() => {}); }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * rnd(0.95, 1.05); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
 const son = {
   sabre: () => bruit(0.18, 2600, 0.8, 0.12),
-  coupe: (ras, h = 0.5) => { if (jouer('coupe-' + (1 + Math.floor(Math.random() * 3)), 0.95, ras ? 0.88 : 1 + h * 0.25)) { if (ras) ton(880, 1320, 0.15, 0.04, 'triangle', 0.05); return; } bruit(0.08, 1800, 3, 0.7); bruit(0.12, 600, 1.5, 0.5, 0.01); if (ras) ton(880, 1320, 0.15, 0.05, 'triangle', 0.03); },
+  coupe: (ras, h = 0.5) => { if (jouer('coupe', 0.95, ras ? 0.85 : 1 + h * 0.3)) { if (ras) ton(880, 1320, 0.15, 0.04, 'triangle', 0.05); return; } bruit(0.08, 1800, 3, 0.7); bruit(0.12, 600, 1.5, 0.5, 0.01); if (ras) ton(880, 1320, 0.15, 0.05, 'triangle', 0.03); },
   pique: () => { if (jouer('guepe', 0.8)) return; ton(240, 240, 0.25, 0.08, 'sawtooth'); ton(180, 120, 0.3, 0.08, 'square', 0.1); },
   caillou: () => { if (jouer('caillou', 0.9)) return; bruit(0.15, 4000, 6, 0.6); ton(1800, 1200, 0.25, 0.06, 'triangle'); },
+  or: () => { if (!jouer('or', 0.9)) ton(1200, 1800, 0.3, 0.06, 'triangle'); },
+  charge: q => { if (!jouer('charge', 0.9, q)) bruit(0.12, 500, 1.5, 0.5); },
+  achat: () => { if (!jouer('achat', 0.9)) ton(900, 1400, 0.2, 0.05, 'triangle'); },
+  niveau: () => { if (!jouer('niveau', 0.8)) ton(500, 900, 0.3, 0.05, 'triangle'); },
   rate: () => ton(330, 200, 0.35, 0.06, 'triangle'),
   klaxon: () => { if (jouer('camion', 0.9)) return; ton(320, 320, 0.25, 0.08, 'square'); ton(400, 400, 0.3, 0.08, 'square', 0.3); },
 };
+
+// ---------------------------------------------------------------- progression : sucre, atelier, carnet, défi du jour
+let vieMax = 3, nbRas = 0, serieMax = 0, sucreBonus = 0, pause = false;
+const CLE = 'koupkann_v2'; let sv = { sucre: 0, up: [0, 0, 0, 0], carnet: [], defi: { j: '', ok: false } };
+try { Object.assign(sv, JSON.parse(localStorage.getItem(CLE) || '{}')); } catch (e) {}
+const enreg = () => { try { localStorage.setItem(CLE, JSON.stringify(sv)); } catch (e) {} };
+const upv = i => sv.up[i] || 0;
+const UPS = [
+  { ico: '🔪', nom: 'Sabre affûté', txt: 'La zone « au ras du sol » devient plus large.', cout: [40, 90, 160, 260] },
+  { ico: '👒', nom: 'Chapeau de paille', txt: 'Une vie de plus (niveau 1), puis deux (niveau 3).', cout: [50, 110, 190, 300] },
+  { ico: '🚜', nom: 'Charrette rapide', txt: 'Le grand coup de sabre se recharge 1 s plus vite par niveau.', cout: [50, 110, 190, 300] },
+  { ico: '⚖️', nom: 'Balance du planteur', txt: '+20 % de sucre gagné par niveau.', cout: [60, 120, 200, 320] },
+];
+const FAITS = [
+  { t: "À La Réunion, les camions qui transportent la canne s'appellent des « cachalots ». À l'usine du Gol, l'un d'eux vient décharger sa cargaison toutes les 5 minutes pendant la coupe.", s: 'Lonely Planet' },
+  { t: "La campagne sucrière concentre la production cannière de l'île de la fin juin à la fin décembre.", s: 'DAAF Réunion, fiche filière 2023' },
+  { t: "Avec environ 21 000 hectares, la canne représente plus de la moitié de la surface agricole de l'île.", s: 'DAAF Réunion, fiche filière 2023' },
+  { t: "Plus de 2 700 exploitations agricoles réunionnaises cultivent la canne à sucre.", s: 'DAAF Réunion, fiche filière 2023' },
+  { t: "Une exploitation cannière mesure en moyenne 7,6 hectares, une petite taille comparée aux exploitations de betteraves d'Europe continentale.", s: 'Sénat, rapport sur la filière canne' },
+  { t: "Une tonne de canne produit en moyenne 320 kg de bagasse, la fibre qui reste après le broyage et l'extraction du jus.", s: 'Connaissance des énergies, d’après Tereos' },
+  { t: "La bagasse brûle dans les centrales thermiques des usines : en 2012, elle a fourni environ 9 % de l'électricité de l'île, deuxième énergie renouvelable après l'hydroélectricité.", s: 'Connaissance des énergies' },
+  { t: "L'usine du Gol, à Saint-Louis, a été construite en 1892. Avec Bois-Rouge, c'est l'une des deux usines sucrières encore en activité sur l'île.", s: 'Connaissance des énergies' },
+  { t: "Les variétés de canne R 570 et R 579, créées à La Réunion par eRcane, sont cultivées aussi dans de nombreux autres pays producteurs.", s: 'eRcane' },
+  { t: "Le génome complet de la canne à sucre a été séquencé à partir de la variété réunionnaise R 570 (publication dans la revue Nature, mars 2025).", s: 'eRcane' },
+  { t: "Il faut plus de quinze ans de sélection avant qu'une nouvelle variété de canne soit mise à la disposition des planteurs réunionnais.", s: 'Revue des Ingénieurs des mines (annales.org), d’après Tereos' },
+  { t: "Une fois récoltée, la canne à sucre ne se stocke pas : elle doit partir rapidement à l'usine.", s: 'Ministère de l’Agriculture, mission canne-sucre-rhum' },
+  { t: "La Réunion est le premier producteur européen de sucres spéciaux, des sucres roux fabriqués uniquement à partir de canne.", s: 'IEDOM, la filière canne-sucre en 2017' },
+  { t: "Implantée dès le XVIIe siècle, la canne à sucre a d'abord servi à produire de l'alcool artisanal.", s: 'DAAF Réunion, fiche filière 2023' },
+  { t: "Les feuilles de canne peuvent atteindre 1,50 m de long. Le long de la tige, les nœuds portent les « yeux » (bourgeons) et les entre-nœuds sont gorgés d'eau sucrée.", s: 'Stella Matutina, « Une histoire de la canne à sucre »' },
+  { t: "La campagne 2024 a été la pire de l'histoire sucrière de l'île : seulement 1,137 million de tonnes de canne broyées.", s: 'DAAF Réunion, note de conjoncture janvier 2025' },
+];
+const DEFIS = [
+  { t: 'Coupe 20 cannes au ras du sol dans une partie', k: () => nbRas, n: 20 },
+  { t: 'Coupe 40 cannes dans une partie', k: () => cannes, n: 40 },
+  { t: 'Enchaîne une série de 15 cannes', k: () => serieMax, n: 15 },
+  { t: 'Atteins le niveau 4', k: () => niv, n: 4 },
+];
+const aujourdhui = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const defiJour = () => { let h = 0; for (const c of aujourdhui()) h = (h * 31 + c.charCodeAt(0)) >>> 0; return DEFIS[h % DEFIS.length]; };
+function majMenu() {
+  $('sucreMenu').textContent = '🍬 ' + sv.sucre + ' kg de sucre';
+  const d = defiJour(), fait = sv.defi.j === aujourdhui() && sv.defi.ok;
+  $('defiMenu').innerHTML = (fait ? '✅ ' : '🎯 ') + 'Défi du jour : ' + d.t + (fait ? '' : ' (+30 kg)');
+  $('nCarnet').textContent = sv.carnet.length + '/16';
+}
+function ouvrirAtelier() {
+  $('atelierSucre').textContent = '🍬 ' + sv.sucre + ' kg de sucre';
+  $('atelierListe').innerHTML = UPS.map((u, i) => { const l = upv(i), max = l >= 4, c = u.cout[l];
+    return `<div class="ligne"><div class="ico">${u.ico}</div><div class="txt"><b>${u.nom}</b> · niveau ${l}/4<br><span>${u.txt}</span></div><button class="btn mini ${max || sv.sucre < c ? 'gris' : ''}" data-i="${i}">${max ? 'Max' : c + ' kg'}</button></div>`; }).join('');
+  $('atelier').classList.remove('cache');
+}
+function ouvrirCarnet() {
+  $('carnetNb').textContent = sv.carnet.length + ' / 16 faits découverts';
+  $('carnetListe').innerHTML = FAITS.map((f, i) => sv.carnet.includes(i)
+    ? `<div class="fait"><b>${i + 1}.</b> ${f.t}<br><span>Source : ${f.s}</span></div>` : `<div class="fait verrou"><b>${i + 1}.</b> 🔒 Fait à découvrir en jouant</div>`).join('');
+  $('carnet').classList.remove('cache');
+}
+function bilanFin() {
+  const gain = Math.round((Math.floor(score / 8) + sucreBonus) * (1 + 0.2 * upv(3)));
+  let defiTxt = '';
+  const d = defiJour();
+  if (!(sv.defi.j === aujourdhui() && sv.defi.ok)) { if (d.k() >= d.n) { sv.defi = { j: aujourdhui(), ok: true }; sv.sucre += 30; defiTxt = '🎯 Défi du jour réussi ! +30 kg de sucre'; } else defiTxt = '🎯 Défi du jour : ' + d.t + ' (' + Math.min(d.k(), d.n) + '/' + d.n + ')'; }
+  else defiTxt = '✅ Défi du jour déjà réussi';
+  sv.sucre += gain;
+  let idx = FAITS.findIndex((_, i) => !sv.carnet.includes(i)), neuf = idx >= 0;
+  if (!neuf) idx = Math.floor(Math.random() * FAITS.length); else sv.carnet.push(idx);
+  enreg();
+  $('gainFin').textContent = '🍬 +' + gain + ' kg de sucre (total : ' + sv.sucre + ')';
+  $('defiFin').textContent = defiTxt;
+  $('savoirFin').innerHTML = `<b>Le saviez-vous ?</b>${neuf ? ' <i>(nouveau dans le carnet : ' + sv.carnet.length + '/16)</i>' : ''}<br>${FAITS[idx].t}<br><span>Source : ${FAITS[idx].s}</span>`;
+  majMenu();
+}
+function grosNiveau() { const e = $('grosNiveau'); e.textContent = 'Niveau ' + niv; e.classList.remove('go'); void e.offsetWidth; e.classList.add('go'); son.niveau(); }
+
+// ---------------------------------------------------------------- accalmie : chargement du camion, en rythme (savoir-faire réel : les cannes coupées sont chargées dans le cachalot)
+const BATTUES = [0.5, 1.2, 1.9, 2.6], DUREE_ANNEAU = 0.8;
+let ryth = null;
+function lancerRythme() {
+  fermerRythme(); const t0 = performance.now() / 1000; ryth = { t0, res: [], pts: 0, timers: [] };
+  const e = $('rythme'); e.classList.add('on'); $('camionImg').src = './camion-vide.webp'; $('rythmeMsg').textContent = 'Charge le camion : touche au bon moment !';
+  BATTUES.forEach((b, i) => {
+    ryth.timers.push(setTimeout(() => { const a = document.createElement('div'); a.className = 'anneau'; $('rond').appendChild(a); setTimeout(() => a.remove(), DUREE_ANNEAU * 1000 + 150); }, (b - DUREE_ANNEAU) * 1000));
+    ryth.timers.push(setTimeout(() => { if (ryth && ryth.res[i] === undefined) { ryth.res[i] = 0; $('rythmeMsg').textContent = 'Raté…'; } }, (b + 0.3) * 1000));
+  });
+  ryth.timers.push(setTimeout(finRythme, 3.4 * 1000));
+}
+function toucheRond() {
+  if (!ryth) return; const t = performance.now() / 1000 - ryth.t0;
+  let k = -1, best = 9; BATTUES.forEach((b, i) => { if (ryth.res[i] === undefined && Math.abs(t - b) < best) { best = Math.abs(t - b); k = i; } });
+  if (k < 0 || best > 0.4) return;
+  const q = best < 0.13 ? 2 : best < 0.26 ? 1 : 0; ryth.res[k] = q + 1; const gagne = [1, 2, 4][q]; ryth.pts += gagne;
+  $('rythmeMsg').textContent = ['Un peu juste', 'Bien !', 'Parfait !'][q]; son.charge(0.9 + q * 0.12);
+  const r = $('rond'); r.classList.remove('tape'); void r.offsetWidth; r.classList.add('tape');
+}
+function finRythme() {
+  if (!ryth) return; const bons = ryth.res.filter(x => x >= 2).length; sucreBonus += ryth.pts;
+  if (bons >= 3) { $('camionImg').src = './camion-plein.webp'; score += 10; majScore(); }
+  $('rythmeMsg').textContent = bons >= 3 ? 'Camion chargé ! +' + ryth.pts + ' kg, +10 points' : '+' + ryth.pts + ' kg de sucre';
+  ryth.timers.forEach(clearTimeout); ryth.timers = [];
+}
+function fermerRythme() { if (ryth) ryth.timers.forEach(clearTimeout); ryth = null; $('rythme').classList.remove('on'); }
 
 // ---------------------------------------------------------------- partie
 const DUREE_ZEN = 90;
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, cannes = 0, cachalot = 0, camion = null, prochainCachalot = 1e9;
 let niv = 1, phase = 'actif', phaseT = 0, charge = 0, serie = 0, ralentis = 0, frenesies = 0, ralenti = 0, frenesie = 0;
-const RECHARGE = 12, dureePhase = () => Math.min(34, 20 + niv * 2);
+let RECHARGE = 12; const dureePhase = () => Math.min(34, 20 + niv * 2);
 const objets = [], morceaux = [], flashes = [];
 function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
 function majNiveauHud() { const e = $('niveauHud'); e.textContent = 'Niveau ' + niv; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
@@ -337,22 +449,22 @@ function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--;
 function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
 // fin de niveau : le camion cachalot passe (points doublés) avec une poussée de cannes, puis 4 secondes d'accalmie
 function finDeNiveau() {
-  phase = 'speciales'; phaseT = 0; lancerCachalot(); bandeau('Le cachalot arrive ! Points doublés', 2.5);
+  phase = 'speciales'; phaseT = 0; lancerCachalot(); setTimeout(() => { if (etat === 'jeu') surgir('doree'); }, 1800); bandeau('Le cachalot arrive ! Points doublés', 2.5);
   for (let i = 0; i < 6 + Math.min(6, niv); i++) setTimeout(() => { if (etat === 'jeu') surgir('canne'); }, 300 + i * 260);
-  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); bandeau('Accalmie… Niveau ' + niv, 3.2); }, 7500);
+  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); grosNiveau(); lancerRythme(); }, 7500);
 }
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
-function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🌾</span>`).join(''); }
+function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = Array.from({ length: vieMax }, (_, i) => `<span class="${i >= vies ? 'perdue' : ''}">🌾</span>`).join(''); }
 function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
 function niveau() { return Math.min(14, (niv - 1) * 1.4 + phaseT / 14); }
 function surgir(type) {
+  if (pause) return;
   const x = rnd(-viewW * 0.42, viewW * 0.42), z = rnd(-0.4, 0.4);
-  if (type === 'canne') {
-    const n = Math.floor(rnd(6, 9)), g = construireCanne(n);
-    g.traverse(m => { if (m.isMesh && m.geometry === geoSeg) m.castShadow = true; });
+  if (type === 'canne' || type === 'doree') {
+    const dor = type === 'doree', n = dor ? 7 : Math.floor(rnd(6, 9)), g = construireCanne(n, dor ? 3 : undefined);
     g.position.set(x, sol - n * SEG, z); g.rotation.z = rnd(-0.08, 0.08); scene.add(g);
-    objets.push({ type, obj: g, n, haut: n * SEG, t: 0, monte: rnd(0.45, 0.6) / (1 + niveau() * 0.05), reste: Math.max(1.3, 2.6 - niveau() * 0.12), vivant: true });
+    objets.push({ type: 'canne', doree: dor, obj: g, n, haut: n * SEG, t: 0, monte: rnd(0.45, 0.6) / (1 + niveau() * 0.05), reste: Math.max(1.3, 2.6 - niveau() * 0.12), vivant: true });
   } else if (type === 'caillou') {
     const m = construireCaillou(); m.position.set(x, sol - 0.5, z + 0.5); scene.add(m);
     objets.push({ type, obj: m, t: 0, vy: rnd(6.5, 8), vivant: true });
@@ -366,23 +478,23 @@ function vague() {
   const n = 1 + Math.floor(Math.random() * Math.min(1.3 + niveau() * 0.5, 6));
   for (let i = 0; i < n; i++) setTimeout(() => { if (etat === 'jeu') surgir('canne'); }, i * rnd(120, 300));
   if (temps > 6 && Math.random() < Math.min(0.18 + niveau() * 0.035, 0.5)) setTimeout(() => etat === 'jeu' && surgir(Math.random() < .55 ? 'guepe' : 'caillou'), rnd(200, 600));
+  if (niv >= 2 && Math.random() < 0.05) setTimeout(() => etat === 'jeu' && surgir('doree'), 500);
   prochain = Math.max(0.55, 1.8 - niveau() * 0.11) + rnd(0, 0.35);
 }
 function couperCanne(o, yMonde, dir) {
   o.vivant = false;
   const base = o.obj.position.y + 0.0, hauteurCoupe = yMonde - Math.max(base, sol);
-  const ratio = Math.max(0, hauteurCoupe) / Math.max(0.5, (o.obj.position.y + o.haut) - Math.max(base, sol));
-  const ras = ratio < 0.18, milieu = ratio < 0.5;
-  let pts = ras ? 5 : milieu ? 3 : 1;
+  const ratio = Math.max(0, hauteurCoupe) / Math.max(0.5, (base + o.haut * 0.7) - Math.max(base, sol));
+  const ras = ratio < 0.18 + 0.035 * upv(0), milieu = ratio < 0.5;
+  let pts = ras ? 5 : milieu ? 3 : 1; if (o.doree) { pts = 25; sucreBonus += 8; son.or(); } if (ras) nbRas++;
   if (cachalot > 0) pts *= 2; if (frenesie > 0) pts *= 2;
-  serie++; if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } majBonus(); }
+  serie++; serieMax = Math.max(serieMax, serie); if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } majBonus(); }
   score += pts; cannes++; majScore();
   // le morceau du haut s'envole, la souche reste
   const yLocal = yMonde - o.obj.position.y;
-  const haut = new THREE.Group(), bas = new THREE.Group();
-  [...o.obj.children].forEach(c => { (c.position.y >= yLocal ? haut : bas).add(c); });
+  const hh = o.obj.userData.h, vv = o.obj.userData.v, rr = Math.min(0.96, Math.max(0.03, yLocal / hh));
+  const haut = new THREE.Group(), bas = new THREE.Group(), mh = tranche(vv, hh, rr, 1); mh.position.y = rr * hh; haut.add(mh); bas.add(tranche(vv, hh, 0, rr));
   haut.position.copy(o.obj.position); bas.position.copy(o.obj.position); bas.rotation.copy(o.obj.rotation); haut.rotation.copy(o.obj.rotation);
-  const face = new THREE.Mesh(geoCoupe, matChair); face.rotation.x = -Math.PI / 2; face.position.y = yLocal; bas.add(face);
   scene.remove(o.obj); scene.add(haut, bas);
   morceaux.push({ obj: haut, vx: dir.x * 3 + rnd(-1, 1), vy: rnd(2.5, 4.5), vr: rnd(-6, 6), t: 0 });
   morceaux.push({ obj: bas, vx: 0, vy: 0, vr: 0, t: 0, souche: true });
@@ -400,18 +512,19 @@ function couperCanne(o, yMonde, dir) {
 }
 function lancerCachalot() {
   prochainCachalot = cannes + 30; cachalot = 8; son.klaxon();
-  camion = construireCachalot(); camion.traverse(m => { if (m.isMesh) m.castShadow = true; }); camion.position.set(-viewW / 2 - 4, sol - 0.15, -2.5); scene.add(camion);
+  camion = construireCachalot(); camion.position.set(-viewW / 2 - camion.userData.w / 2 - 0.5, sol - 0.15, -2.5); scene.add(camion);
 }
 function demarrer(m) {
-  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; cannes = 0; cachalot = 0; prochainCachalot = 1e9; niv = 1; phase = 'actif'; phaseT = 0; charge = 0; serie = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0; vitre.length = 0; majNiveauHud(); majBonus(); $('bonus').classList.add('on');
+  audio(); mode = m; etat = 'jeu'; score = 0; vieMax = 3 + [0, 1, 1, 2, 2][upv(1)]; vies = vieMax; RECHARGE = 12 - upv(2); nbRas = 0; serieMax = 0; sucreBonus = 0; pause = false; temps = 0; prochain = 0.6; cannes = 0; cachalot = 0; prochainCachalot = 1e9; niv = 1; phase = 'actif'; phaseT = 0; charge = 0; serie = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0; vitre.length = 0; majNiveauHud(); majBonus(); $('bonus').classList.add('on');
   try { record = +localStorage.getItem('koupkann_record_' + mode) || 0; } catch (e) {}
   [...objets, ...morceaux].forEach(o => scene.remove(o.obj)); objets.length = 0; morceaux.length = 0;
   if (camion) { scene.remove(camion); camion = null; } $('bandeau').classList.remove('on');
   majScore(); majVies();
-  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('lien').classList.add('discret');
+  fermerRythme(); $('btnPause').classList.add('on'); $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('lien').classList.add('discret');
 }
 function finPartie() {
-  etat = 'fin'; $('bandeau').classList.remove('on'); $('bonus').classList.remove('on');
+  if (etat === 'fin') return;
+  etat = 'fin'; fermerRythme(); $('btnPause').classList.remove('on'); $('pauseEcran').classList.add('cache'); $('bandeau').classList.remove('on'); $('bonus').classList.remove('on'); bilanFin();
   const nouveau = score > record && score > 0;
   if (nouveau) { record = score; try { localStorage.setItem('koupkann_record_' + mode, record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
@@ -430,7 +543,7 @@ addEventListener('pointermove', e => { if (!appui) return; const p = pointeur(e)
 addEventListener('pointerup', () => { appui = false; }); addEventListener('pointercancel', () => { appui = false; });
 const versMonde = (x, y) => { const v = new THREE.Vector3(x / W * 2 - 1, -(y / H) * 2 + 1, 0.5).unproject(camera); const d = v.sub(camera.position).normalize(); const t = -camera.position.z / d.z; return camera.position.clone().addScaledVector(d, t); };
 function tester(a, b) {
-  if (etat !== 'jeu') return;
+  if (etat !== 'jeu' || pause) return;
   const dist = Math.hypot(b.x - a.x, b.y - a.y); if (dist < 4) return;
   if (dist > 25 && Math.random() < 0.3) son.sabre();
   const A = versMonde(a.x, a.y), B = versMonde(b.x, b.y), dir = B.clone().sub(A).normalize();
@@ -442,7 +555,7 @@ function tester(a, b) {
       const bas = Math.max(p.y, sol), haut = p.y + o.haut;
       if ((A.x - p.x) * (B.x - p.x) > 0 || Math.abs(B.x - A.x) < 1e-3) continue;
       const t = (p.x - A.x) / (B.x - A.x), y = A.y + t * (B.y - A.y);
-      if (y > bas + 0.02 && y < haut - 0.1) couperCanne(o, y, dir);
+      if (y > bas + 0.02 && y < p.y + o.haut * 0.68) couperCanne(o, y, dir);
     } else {
       const s = toScreen(p), r = (o.type === 'guepe' ? 0.5 : 0.55) * H / viewH;
       const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy, t = Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L));
@@ -469,16 +582,16 @@ function dessinerTrait() {
 // ---------------------------------------------------------------- boucle
 const horloge = new THREE.Clock(); let ambiance = 0;
 function boucle() {
-  const dt = Math.min(horloge.getDelta(), 0.05);
+  const dt = pause ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
   matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
   if (etat === 'jeu') {
     temps += dt; phaseT += dt; charge = Math.min(RECHARGE, charge + dt); if (ralenti > 0) ralenti -= dt; if (frenesie > 0) frenesie -= dt; majBonus();
     if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
-    else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochain = 0.2; bandeau('Niveau ' + niv + ' ! Ça repart', 1.6); }
+    else if (phase === 'accalmie' && phaseT > 4) { fermerRythme(); phase = 'actif'; phaseT = 0; prochain = 0.2; bandeau('Niveau ' + niv + ' ! Ça repart', 1.6); }
     if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
   }
   else { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; if (objets.filter(o => o.vivant).length < 3) surgir('canne'); } }
-  if (cachalot > 0) { cachalot -= dt; if (camion) { camion.position.x += dt * (viewW + 8) / 8; camion.position.y = sol - 0.15 + Math.abs(Math.sin(performance.now() / 90)) * 0.03; } if (cachalot <= 0) { if (camion) { scene.remove(camion); camion = null; } } }
+  if (cachalot > 0) { cachalot -= dt; if (camion) { camion.position.x += dt * (viewW + camion.userData.w + 1) / 8; camion.position.y = sol - 0.15 + Math.abs(Math.sin(performance.now() / 90)) * 0.03; } if (cachalot <= 0) { if (camion) { scene.remove(camion); camion = null; } } }
   const dl = ralenti > 0 ? dt * 0.45 : dt;
   for (let i = objets.length - 1; i >= 0; i--) {
     const o = objets[i];
@@ -490,7 +603,7 @@ function boucle() {
       else if (o.t < o.monte + o.reste) { o.obj.position.y = cible; o.obj.rotation.z = Math.sin(o.t * 2 + o.n) * 0.03; }
       else { o.obj.position.y -= dl * o.haut / 0.45; if (o.obj.position.y < depart) { o.vivant = false; scene.remove(o.obj); if (etat === 'jeu') { son.rate(); serie = 0; popup('Ratée !', new THREE.Vector3(o.obj.position.x, sol + 0.6, 0), 'aie'); if (mode === 'classique') perdreVie(); } } }
     } else if (o.type === 'caillou') {
-      o.vy -= 9 * dl; o.obj.position.y += o.vy * dl; o.obj.rotation.x += dt * 2; o.obj.rotation.z += dt * 1.4;
+      o.vy -= 9 * dl; o.obj.position.y += o.vy * dl; o.obj.rotation.z += dt * 2.2;
       if (o.vy < 0 && o.obj.position.y < sol - 0.8) { o.vivant = false; scene.remove(o.obj); }
     } else {
       o.obj.position.x += o.vx * dl; o.obj.position.y = o.y0 + Math.sin(o.t * 4) * 0.4;
@@ -518,16 +631,23 @@ const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; 
 $('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('koupkann_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
 $('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
 $('jouer').onclick = () => demarrer('classique');
+$('btnAtelier').onclick = ouvrirAtelier; $('btnCarnet').onclick = ouvrirCarnet; $('btnCarnet2').onclick = ouvrirCarnet;
+$('atelierFerme').onclick = () => { $('atelier').classList.add('cache'); majMenu(); }; $('carnetFerme').onclick = () => $('carnet').classList.add('cache');
+$('atelierListe').onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; const i = +b.dataset.i, l = upv(i), c = UPS[i].cout[l]; if (l >= 4 || sv.sucre < c) return; sv.sucre -= c; sv.up[i] = l + 1; enreg(); son.achat(); ouvrirAtelier(); };
+$('rond').addEventListener('pointerdown', e => { e.stopPropagation(); toucheRond(); });
+const basculerPause = () => { if (etat !== 'jeu' || phase === 'accalmie') return; pause = !pause; $('pauseEcran').classList.toggle('cache', !pause); $('btnPause').textContent = pause ? '▶' : 'Ⅱ'; };
+$('btnPause').onclick = basculerPause; $('reprendre').onclick = basculerPause;
+$('quitterPause').onclick = () => { pause = false; $('pauseEcran').classList.add('cache'); $('btnPause').textContent = 'Ⅱ'; finPartie(); };
 $('jouerZen').onclick = () => demarrer('zen');
 $('rejouer').onclick = () => demarrer(mode);
-$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
+$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); majMenu(); };
 $('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
-addEventListener('resize', resize); resize(); majVies(); majScore();
+addEventListener('resize', resize); resize(); majVies(); majScore(); majMenu();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { objets, toScreen, get etat() { return etat; }, demarrer, finPartie, tester, get sol() { return sol; }, lancerCachalot, finDeNiveau, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+if (TEST) window.jeu = { get sv() { return sv; }, lancerRythme, toucheRond, bilanFin, objets, toScreen, get etat() { return etat; }, demarrer, finPartie, tester, get sol() { return sol; }, lancerCachalot, finDeNiveau, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 </script>
 </body>
 </html>
