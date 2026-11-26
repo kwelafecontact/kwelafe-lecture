@@ -60,6 +60,14 @@ const progression: Progression = {
   carnet: () => ({ titre: "Carnet du jardin créole", total: FAITS.length, pages: FAITS.map((f, i) => (save.faits.includes(i) ? f : null)) }),
 };
 
+// hauteur (fraction de l'image) du sol des trois terrasses du décor
+const TERRASSES = [0.385, 0.565, 0.745];
+// calage vertical du décor : centré, mais remonté ou descendu pour que les trois terrasses restent visibles
+function fondHaut(L: number, H: number, h: number) {
+  const centre = (H - h) / 2, min = H - 40 - TERRASSES[2] * h, max = 150 - TERRASSES[0] * h;
+  const y = min <= max ? Math.min(max, Math.max(min, centre)) : centre;
+  return Math.min(0, Math.max(H - h, y)); // jamais de bord vide
+}
 type Sortie = { trou: number; type: "fruit" | "gate" | "guepe" | "or" | "merle"; id: string; vie: number; max: number; touche: number; vole?: boolean };
 
 class Rekolt implements Jeu {
@@ -97,9 +105,13 @@ class Rekolt implements Jeu {
     if (!d.fait && d.type === type && this.stats[type] >= d.cible) { save.defi!.fait = true; save.graines += 5; sauver(); this.c.fx.texte("Défi du jour réussi ! +5 🌱", this.L / 2, this.H * 0.2, "#ffe066", 24); this.c.sons.victoire(); }
   }
   trous() {
-    const cols = 3, lignes = 3, w = Math.min(this.L / cols, 200), h = Math.min((this.H * 0.56) / lignes, 165);
-    const x0 = (this.L - w * cols) / 2, y0 = this.H * 0.3;
-    return Array.from({ length: 9 }, (_, i) => ({ x: x0 + (i % cols) * w + w / 2, y: y0 + Math.floor(i / cols) * h + h * 0.6, t: Math.min(w, h) }));
+    const cols = 3, w = Math.min(this.L / cols, 200);
+    // les buissons sont posés sur les trois terrasses du décor (même calage que le moteur)
+    const s = Math.max(this.L / 1024, this.H / 1542), fh = 1542 * s, haut = fondHaut(this.L, this.H, fh);
+    const terre = TERRASSES.map((f) => haut + f * fh);
+    const t = Math.min(w, (terre[1] - terre[0]) * 0.92);
+    const x0 = (this.L - w * cols) / 2;
+    return Array.from({ length: 9 }, (_, i) => ({ x: x0 + (i % cols) * w + w / 2, y: terre[Math.floor(i / cols)] - t * 0.22, t }));
   }
   posSortie(s: Sortie) { const p = this.trous()[s.trou]; return { x: p.x, y: p.y - p.t * 0.35, t: p.t }; }
 
@@ -269,19 +281,14 @@ class Rekolt implements Jeu {
           }
         }
       }
-      // buisson
-      ctx.save();
-      const verts = this.pousse ? ["#3a9a30", "#4ab040", "#5ac84a"] : ["#2f7a2a", "#3a8f34", "#4aa63e"];
-      for (let k = 0; k < 7; k++) {
-        ctx.fillStyle = verts[k % 3];
-        const a = (k / 7) * Math.PI - Math.PI, bx = p.x + Math.cos(a) * p.t * 0.38, by = p.y + p.t * 0.12 + Math.sin(a) * p.t * 0.12;
-        ctx.beginPath(); ctx.arc(bx, by, p.t * 0.2 + Math.sin(this.temps * 2 + k + i) * 1.5, 0, 7); ctx.fill();
-      }
-      ctx.fillStyle = verts[1]; ctx.beginPath(); ctx.ellipse(p.x, p.y + p.t * 0.25, p.t * 0.48, p.t * 0.16, 0, 0, 7); ctx.fill();
-      ctx.restore();
+      // buisson peint (même aquarelle que le décor), qui se balance doucement
+      const im = this.c.img("buisson"), bw = p.t * 1.08, bh = im && im.naturalWidth ? bw * im.naturalHeight / im.naturalWidth : bw * 0.55;
+      ctx.save(); ctx.fillStyle = "rgba(40,25,10,0.28)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + p.t * 0.33, bw * 0.42, p.t * 0.06, 0, 0, 7); ctx.fill(); ctx.restore();
+      if (im && im.naturalWidth) { ctx.save(); ctx.translate(p.x, p.y + p.t * 0.34); ctx.rotate(Math.sin(this.temps * 1.6 + i) * 0.015); ctx.drawImage(im, -bw / 2, -bh, bw, bh); ctx.restore(); }
+      if (this.pousse && Math.sin(this.temps * 5 + i) > 0.7) { ctx.fillStyle = "rgba(255,255,200,0.9)"; ctx.beginPath(); ctx.arc(p.x + Math.cos(this.temps + i) * bw * 0.3, p.y - p.t * 0.05, 2.5, 0, 7); ctx.fill(); }
     });
     // panier des trois derniers fruits (pour viser le trio)
-    const pw = 150, px = this.L / 2 - pw / 2, py = this.H * 0.3 - 66;
+    const pw = 150, px = this.L / 2 - pw / 2, py = Math.max(96, tr[0].y - tr[0].t * 0.75 - 50);
     ctx.save(); ctx.fillStyle = "rgba(255,248,230,0.88)"; arrondi(ctx, px, py, pw, 46, 14); ctx.fill(); ctx.strokeStyle = "#a8742a"; ctx.lineWidth = 2; arrondi(ctx, px, py, pw, 46, 14); ctx.stroke(); ctx.restore();
     texteContour(ctx, "Trio", px + 22, py + 24, 13, "#7a4a1a");
     for (let k = 0; k < 3; k++) {
@@ -320,6 +327,8 @@ const def: DefJeu = {
   niveaux: 20,
   theme: THEMES.jardin,
   visuels: "photos",
+  images: { buisson: "/jeux/fonds/rekolt-la-buisson.webp" },
+  fondHaut,
   creer: (c, n) => new Rekolt(c, n),
   progression,
 };
