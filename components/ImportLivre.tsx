@@ -9,10 +9,10 @@ import { UNIVERS } from "@/lib/config";
 import CATALOGUE from "@/lib/catalogue-shopify.json";
 
 type FicheBoutique = { id: string; titre: string; univers: string; url: string; couverture: string | null; resume: string };
-const catalogue = CATALOGUE as FicheBoutique[];
+export const catalogue = CATALOGUE as FicheBoutique[];
 
 // Packs et coffrets : un livre dont le titre contient l'un de ces mots est aussi débloqué par le pack
-const PACKS: { id: string; mots: RegExp }[] = [
+export const PACKS: { id: string; mots: RegExp }[] = [
   { id: "11046937297233", mots: /creole reunionnais tome (1|2)/ }, // Pack créole Tome I et II
   { id: "11387035812177", mots: /creole reunionnais tome (1|2)|guide indispensable du voyageur/ }, // Coffret Apprendre le créole
   { id: "10834500026705", mots: /100 proverbes expressions de la reunion volume (1|2)/ }, // Pack proverbes
@@ -21,7 +21,7 @@ const PACKS: { id: string; mots: RegExp }[] = [
   { id: "11387035877713", mots: /kosa in shoz|sirandanes|premiers mots|abecedaire/ }, // Coffret Rire et apprendre
 ];
 // Titre de base, sans la mention du format (PDF, EPUB…), pour retrouver les versions d'un même livre
-const base = (t: string) =>
+export const base = (t: string) =>
   t.split("|")[0]
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/\d+\s*pages/g, "")
