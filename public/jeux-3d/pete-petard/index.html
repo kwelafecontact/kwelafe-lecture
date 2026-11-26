@@ -272,7 +272,7 @@ function ton(f0, f1, dur, vol, type = 'sine', when = 0) {
   o.connect(g).connect(maitre); o.start(t); o.stop(t + dur + 0.05);
 }
 const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['boum-petit', 'boum-moyen', 'boum-gros', 'sifflet-1', 'sifflet-2', 'petard-1', 'petard-2']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; }).catch(() => {}); }
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['boum-petit', 'boum-moyen', 'boum-gros', 'sifflet-1', 'sifflet-2', 'petard-1', 'petard-2', 'etoile', 'constellation', 'eteint']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; }).catch(() => {}); }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * rnd(0.94, 1.06); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(maitre); s.start(); return true; }
 const son = {
   sifflet: () => { if (!jouer(Math.random() < .5 ? 'sifflet-1' : 'sifflet-2', 0.28)) ton(rnd(500, 700), rnd(1600, 2400), rnd(0.6, 0.9), 0.035, 'sine'); },
@@ -573,17 +573,17 @@ function traceC() {
 }
 function toucheConstel(p) {
   if (!constel || constel.fini) return; const [x, y] = constel.pts[constel.i];
-  if (Math.hypot(p.x - x, p.y - y) < 42) { constel.els[constel.i].classList.add('allumee'); constel.i++; ton(600 + constel.i * 110, 900 + constel.i * 110, 0.15, 0.06, 'triangle'); traceC(); if (constel.i >= constel.pts.length) finConstel(true); }
+  if (Math.hypot(p.x - x, p.y - y) < 42) { constel.els[constel.i].classList.add('allumee'); constel.i++; if (!jouer('etoile', 0.55, 1 + constel.i * 0.07)) ton(600 + constel.i * 110, 900 + constel.i * 110, 0.15, 0.06, 'triangle'); traceC(); if (constel.i >= constel.pts.length) finConstel(true); }
 }
 function finConstel(ok) {
   if (!constel || constel.fini) return; constel.fini = true;
   if (ok) {
     const v = new THREE.Vector3((W / 2 / W * 2 - 1), 0, 0); const cy = viewH * 0.08;
-    dessinCiel(0, cy, constel.c.nom, Math.min(viewW * 0.7, 5.2), PETIT ? 380 : 520); son.boum(1.4); secousse = 0.3;
+    dessinCiel(0, cy, constel.c.nom, Math.min(viewW * 0.7, 5.2), PETIT ? 380 : 520); jouer('constellation', 0.85); son.boum(1.4); secousse = 0.3;
     const pts = 50 + niveauJeu * 5; score += pts; etincPartie += 2; majScore(); compter('constellations');
     if (!save.album.includes(constel.c.nom)) { save.album.push(constel.c.nom); sauver(); }
     setTimeout(() => popup(`${DESSINS[constel.c.nom].nom} +${pts} et 2 ✨`, new THREE.Vector3(0, -viewH * 0.12, 0), 'chaine'), 400);
-  } else { son.rate(); bandeau('Les étoiles se sont éteintes…', 1.8); }
+  } else { if (!jouer('eteint', 0.7)) son.rate(); bandeau('Les étoiles se sont éteintes…', 1.8); }
   const c = constel; setTimeout(() => { c.els.forEach(e => e.remove()); if (constel === c) { constel = null; traceC(); } }, ok ? 700 : 300);
 }
 const FORMES = ['dodo', 'paille', 'hibiscus', 'vanille', 'reunion', 'cocotier', 'kaz'], MESSAGES = ['m974', 'mLela', 'mAzot', 'mAou'];
