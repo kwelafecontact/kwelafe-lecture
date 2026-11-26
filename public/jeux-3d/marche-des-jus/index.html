@@ -89,17 +89,17 @@ const V="?v=1";
 
 /* ---------- Données ---------- */
 const FRUITS=[
- {n:"letchi",nom:"Letchi",prix:6,fiche:[0,315,327]},
- {n:"mangue",nom:"Mangue",prix:5,fiche:[323,269,329]},
- {n:"ananas",nom:"Ananas Victoria",prix:7,fiche:[600,226,352]},
- {n:"passion",nom:"Fruit de la passion",prix:6,fiche:[834,354,277]},
- {n:"banane",nom:"Banane",prix:4,fiche:[1196,330,312]},
- {n:"citron",nom:"Citron galet",prix:4,fiche:[1534,352,248]}];
+ {n:"letchi",nom:"Letchi",prix:6,fiche:[0,315,327],c:"#e8607a",jus:"#f6c9d6"},
+ {n:"mangue",nom:"Mangue",prix:5,fiche:[323,269,329],c:"#ffa51e",jus:"#f7a41c"},
+ {n:"ananas",nom:"Ananas Victoria",prix:7,fiche:[600,226,352],c:"#ffc83a",jus:"#f7dc4c"},
+ {n:"passion",nom:"Fruit de la passion",prix:6,fiche:[834,354,277],c:"#c88a1a",jus:"#f2a824"},
+ {n:"banane",nom:"Banane",prix:4,fiche:[1196,330,312],c:"#ffe36a",jus:"#eddcb2"},
+ {n:"citron",nom:"Citron galet",prix:4,fiche:[1534,352,248],c:"#8fd04a",jus:"#c4e28e"}];
 const SPE={dore:[0,420,323],pourri:[428,420,281],guepe:[856,420,266],piece:[1284,420,217]};
 const EQ={presse:[0,352,520],pichet:[360,283,493],caisse:[651,497,286]};
 const VERRE=i=>[i*154,146,332];
 const IMG={};
-["fruits","speciaux","verres","equip"].forEach(k=>{const im=new Image();im.src=k+".webp"+V;IMG[k]=im;});
+["fruits","speciaux","verres","equip","blender"].forEach(k=>{const im=new Image();im.src=k+".webp"+V;IMG[k]=im;});
 
 const FAITS=[
  "L'ananas Victoria de La Réunion a le Label rouge depuis 2006.",
@@ -121,7 +121,7 @@ const FAITS=[
 
 const UPS=[
  {id:"pat",nom:"Clients patients",desc:"+4 s de patience par niveau",max:3,cout:[25,50,90]},
- {id:"pre",nom:"Presse précise",desc:"Zone verte plus large",max:3,cout:[25,50,90]},
+ {id:"pre",nom:"Blender turbo",desc:"Plus de temps pour un mixage parfait",max:3,cout:[25,50,90]},
  {id:"gla",nom:"Glaçons rapides",desc:"Recharge 12 s → 9 s → 7 s → 5 s",max:3,cout:[30,60,100]},
  {id:"pan",nom:"Gros panier",desc:"1 fruit de moins par commande",max:2,cout:[40,90]}];
 
@@ -131,7 +131,7 @@ try{const r=JSON.parse(localStorage.getItem("mdj")||"null");if(r)S=Object.assign
 const sauve=()=>{try{localStorage.setItem("mdj",JSON.stringify(S));}catch(e){}};
 
 /* ---------- Sons (ElevenLabs v2 + repli synthétique) ---------- */
-const SONS={prise:.7,presse:.9,caisse:.9,faux:.8,guepe:.6,swat:.9,verse:.7,fache:.7,dore:.9,niveau:.9,glacons:.9};
+const SONS={mixeur:.9,panier:.8,prise:.7,presse:.9,caisse:.9,faux:.8,guepe:.6,swat:.9,verse:.7,fache:.7,dore:.9,niveau:.9,glacons:.9};
 const buf={};let ac=null;
 function debloque(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(ac&&ac.state==="suspended")ac.resume();}
 function bip(f,d,t="sine",v=.15){if(!ac)return;const o=ac.createOscillator(),gn=ac.createGain();o.type=t;o.frequency.value=f;gn.gain.value=v;gn.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(gn);gn.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}
@@ -139,7 +139,16 @@ function sfx(n,vol=1,vit=1){
   const src="sons/"+n+".mp3"+V;
   try{const a=new Audio(src);a.volume=Math.min(1,(SONS[n]||.8)*vol);a.playbackRate=vit;a.play().catch(()=>repli(n));a.onerror=()=>repli(n);}catch(e){repli(n);}
 }
-function repli(n){const m={prise:[520,.08],presse:[160,.2,"sawtooth"],caisse:[880,.15],faux:[120,.25,"square"],guepe:[300,.2,"sawtooth"],swat:[200,.1,"square"],verse:[400,.2],fache:[140,.2,"triangle"],dore:[1200,.2],niveau:[700,.3],glacons:[1000,.15]}[n];if(m)bip(m[0],m[1],m[2]);}
+function repli(n){const m={mixeur:[150,.5,"sawtooth"],panier:[300,.1],prise:[520,.08],presse:[160,.2,"sawtooth"],caisse:[880,.15],faux:[120,.25,"square"],guepe:[300,.2,"sawtooth"],swat:[200,.1,"square"],verse:[400,.2],fache:[140,.2,"triangle"],dore:[1200,.2],niveau:[700,.3],glacons:[1000,.15]}[n];if(m)bip(m[0],m[1],m[2]);}
+
+let amb=[];
+function ambiance(on){
+  if(!on){amb.forEach(a=>a.pause());return;}
+  if(!amb.length){
+    [[.2,1],[.11,.9]].forEach(([v,r],i)=>{const a=new Audio("sons/ambiance.mp3"+V);a.loop=true;a.volume=v;a.playbackRate=r;amb.push(a);if(i)setTimeout(()=>{if(amb.length&&!amb[1].paused)return;amb[1].play().catch(()=>{});},1700);});
+  }
+  amb[0].play().catch(()=>{});
+}
 
 /* ---------- Mise en page ---------- */
 let W,H,DPR,CY,CT=0;
@@ -162,10 +171,12 @@ function ordre(){
   G.o.pat=G.o.max;phase="fall";G.fly=[];G.verre=null;
 }
 function nouveau(){
-  G={t:0,score:0,vies:3,niv:1,serv:0,streak:0,x:[],fly:[],pops:[],gros:{txt:"",t:0},ice:{cd:0,on:0},spawn:0.6,fin:false,verre:null,gauge:null,srv:{},press:0,carnet:null};
+  G={parts:[],tr:0,mix:null,t:0,score:0,vies:3,niv:1,serv:0,streak:0,x:[],fly:[],pops:[],gros:{txt:"",t:0},ice:{cd:0,on:0},spawn:0.6,fin:false,verre:null,gauge:null,srv:{},press:0,carnet:null};
   ordre();phase="fall";
 }
-function cible(){return {x:W*.42,y:CY-ux()*.1};}
+function cible(){return {x:W*.27,y:CY-ux()*.08};}
+function bld(){return {x:W*.64,y:CY,h:ux()*.42};}
+function verrePos(){return {x:Math.min(W*.85,bld().x+ux()*.31),y:CY};}
 function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
 
 function spawn(){
@@ -216,10 +227,13 @@ function maj(dt){
   G.x=G.x.filter(f=>!f.dead);
   for(const f of G.fly){f.p+=dt/.28;}
   const arr=G.fly.filter(f=>f.p>=1);
-  if(arr.length){G.fly=G.fly.filter(f=>f.p<1);o.got+=arr.length;G.press=.25;sfx("verse",.5,1.4);}
+  if(arr.length){G.fly=G.fly.filter(f=>f.p<1);o.got+=arr.length;G.press=.25;sfx("panier",.9,1+Math.random()*.2);}
   if(G.press>0)G.press-=dt;
-  if(phase==="fall"&&o.got>=o.need&&G.fly.length===0){phase="gauge";const hw=.1+.035*upv(1);G.gauge={p:0,dir:1,c:rnd(.3,.7),hw,v:1.1+G.niv*.1};G.x=G.x.filter(f=>f.k==="dore"&&false);}
-  if(phase==="gauge"){const q=G.gauge;q.p+=q.dir*q.v*dt;if(q.p>=1){q.p=1;q.dir=-1;}if(q.p<=0){q.p=0;q.dir=1;}}
+  if(phase==="fall"&&o.got>=o.need&&G.fly.length===0){phase="mix";G.mix={n:0,t:0,sh:0};G.tr=.45;G.x=G.x.filter(f=>f.k==="dore");sfx("panier",.6,.8);}
+  if(phase==="mix"){G.mix.t+=dt;if(G.mix.sh>0)G.mix.sh-=dt;}
+  if(G.tr>0)G.tr-=dt;
+  for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
+  G.parts=G.parts.filter(q=>q.t<q.life);
   for(const p of G.pops){p.t+=dt;}G.pops=G.pops.filter(p=>p.t<1.6);
   if(G.gros.t>0)G.gros.t-=dt;
 }
@@ -236,16 +250,24 @@ function tap(x,y){
   // glaçons
   const bi=btnIce();
   if(Math.hypot(x-bi.x,y-bi.y)<bi.r+8){if(G.ice.cd<=0){G.ice.on=6;G.ice.cd=12;sfx("glacons");pop("Glaçons !",bi.x,bi.y-50,"#b8f0ff",28);}return;}
-  if(phase==="gauge"){
-    const q=G.gauge,d=Math.abs(q.p-q.c);
-    let m=.6,txt="Raté…";
-    if(d<q.hw*.4){m=1.5;txt="PARFAIT !";}else if(d<q.hw){m=1;txt="Bien !";}
-    G.o.q=m;sfx("presse");pop(txt,W/2,CY-ux()*.38,m>1?"#ffd24a":m===1?"#fff":"#ff9a8a",38);
-    phase="serve";G.verre={t:0};G.gauge=null;return;
+  if(phase==="mix"){
+    const b=bld();
+    if(Math.hypot(x-b.x,y-(b.y-b.h*.5))<b.h*.62){
+      const m=G.mix;m.n++;m.sh=.25;vib(15);
+      if(m.n===1)sfx("mixeur");
+      burst(b.x,b.y-b.h*.45,FRUITS[G.o.t].jus,8,.5);
+      if(m.n>=3){
+        const lim=1.5+.5*upv(1),q=m.t<lim?1.5:m.t<lim*1.9?1:.7;
+        G.o.q=q;const tx=q>1?"PARFAIT !":q===1?"Bien !":"Mixé !";
+        pop(tx,b.x,b.y-b.h-10,q>1?"#ffd24a":"#fff",40);
+        phase="serve";G.verre={t:0};vib(30);
+      }
+    }
+    return;
   }
   if(phase==="serve"){
-    const c=cible(),vx=c.x+ux()*.2,vy=CY-ux()*.14;
-    if(Math.hypot(x-vx,y-vy)<ux()*.16){servir();}
+    const v=verrePos(),vy=v.y-ux()*.12;
+    if(Math.hypot(x-v.x,y-vy)<ux()*.17){servir();}
     return;
   }
   // fruits (le plus haut en premier)
@@ -256,7 +278,7 @@ function tap(x,y){
       if(f.k==="f"){
         if(f.t===G.o.t){
           if(G.o.got+G.fly.length>=G.o.need)return;
-          G.streak++;G.fly.push({t:f.t,x:f.x,y:f.y,p:0,h:f.h,x0:f.x,y0:f.y});sfx("prise",1,1+Math.min(.5,G.streak*.04));
+          G.streak++;G.fly.push({t:f.t,x:f.x,y:f.y,p:0,h:f.h,x0:f.x,y0:f.y});sfx("prise",1,1+Math.min(.5,G.streak*.04));burst(f.x,f.y,FRUITS[f.t].c,10,.6);vib(8);
           if(G.streak%5===0){const b=5*G.niv;G.score+=b;pop("Série ×"+G.streak+"  +"+b+" €",W/2,CY-ux()*.55,"#ffd24a",32);sfx("caisse",.7,1.3);}
         }else{G.streak=0;G.o.pat-=2.5;sfx("faux",.8);pop("Pas ce fruit !",f.x,f.y,"#ff9a8a",26);}
       }else if(f.k==="pourri"){G.vies--;G.streak=0;sfx("faux");pop("Pourri !",f.x,f.y,"#9aff7a",34);perdu();}
@@ -271,13 +293,15 @@ function servir(){
   let gain=Math.round((F.prix+G.niv)*o.need*(o.q||1)*(o.or?2:1));
   gain+=Math.round(o.pat*.6);
   G.score+=gain;G.serv++;G.srv[F.n]=(G.srv[F.n]||0)+1;
-  sfx("caisse");pop("+"+gain+" €",cible().x+ux()*.2,CY-ux()*.3,"#ffd24a",44);
+  sfx("caisse");pop("+"+gain+" €",verrePos().x,CY-ux()*.4,"#ffd24a",44);burst(verrePos().x,CY-ux()*.15,"#ffd24a",18,.9);vib([20,40,20]);
   G.verre=null;
   if(G.serv%3===0){G.niv++;G.gros={txt:"NIVEAU "+G.niv,t:1.8};sfx("niveau");}
   ordre();
 }
-function pause(v){if(v){mode="pause";$("pause").classList.remove("cache");}else{mode="play";$("pause").classList.add("cache");}}
-function btnIce(){return {x:W*.2,y:CY-ux()*.11,r:Math.max(26,ux()*.075)};}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+function burst(x,y,col,n,sz){for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(80,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,t:0,life:rnd(.35,.7),r:rnd(3,8)*(sz+.4),col});}}
+function pause(v){if(v){ambiance(false);mode="pause";$("pause").classList.remove("cache");}else{ambiance(true);mode="play";$("pause").classList.add("cache");}}
+function btnIce(){return {x:W*.5,y:CY+ux()*.2,r:Math.max(26,ux()*.075)};}
 
 /* ---------- Dessin ---------- */
 function spr(k,m,cx,cy,h,rot=0,al=1){
@@ -295,25 +319,48 @@ function dessine(){
   g.clearRect(0,0,W,H);
   if(!G||mode==="menu")return;
   const u=ux(),o=G.o;
-  // presse
-  const c=cible(),ph=u*.27;
-  const sq=G.press>0?Math.sin(G.press/.25*Math.PI)*4:0;
-  sprBas("equip",EQ.presse,c.x,CY+10-0,ph+sq*0);
-  // caisse de fruits devant (récolte)
-  // pichet décoratif
-  // verre
-  if(phase==="serve"&&G.verre){
-    G.verre.t+=1/60;const b=Math.sin(G.verre.t*6)*4;
-    const gh=u*.2;
-    sprBas("verres",VERRE(o.t),c.x+u*.2,CY+6+b*0,gh);
-    txt("SERVIR",c.x+u*.2,CY-gh-12+b,Math.max(24,u*.07),"#ffd24a","#5a2a00");
+  const c=cible(),bl=bld(),bw=bl.h*341/664,ch=u*.13,cw=ch*497/286;
+  // panier + fruits dedans
+  const tn=Math.sin(Math.min(1,Math.max(0,G.press/.25))*Math.PI)*5;
+  sprBas("equip",EQ.caisse,c.x,CY+6,ch+tn);
+  const n=Math.min(o.got,6);
+  for(let i=0;i<n;i++){const fh=ch*.62,fx=c.x+((i%3)-1)*cw*.26,fy=CY-ch*.55-Math.floor(i/3)*fh*.45;
+    if(phase==="fall"||G.tr>0)spr("fruits",FRUITS[o.t].fiche,fx,fy+(G.tr>0?-(1-G.tr/.45)*ch:0),fh,i*1.3);}
+  // lien visuel: fruits du panier -> blender
+  if(G.tr>0){const k=1-G.tr/.45,e=k*k;for(let i=0;i<Math.min(o.need,4);i++){const x=c.x+(bl.x-c.x)*e+(i-1.5)*8,y=c.y-ch*.4+(bl.y-bl.h*.8-c.y+ch*.4)*e-Math.sin(k*Math.PI)*u*.18;spr("fruits",FRUITS[o.t].fiche,x,y,ch*.5*(1-.4*k),k*8+i);}}
+  // blender (jus visible à travers le verre)
+  const sh=phase==="mix"&&G.mix&&G.mix.sh>0?Math.sin(G.t*90)*4:0;
+  const jus=FRUITS[o.t].jus;
+  let niv=0;if(phase==="mix"&&G.mix)niv=Math.min(1,.12+G.mix.n*.3+(G.tr>0?0:.05));if(phase==="serve")niv=1;
+  g.save();g.translate(bl.x+sh,0);
+  if(niv>0){
+    const x0=-bw/2,top=CY-bl.h+bl.h*.13,bot=CY-bl.h+bl.h*.545,fy=bot-(bot-top)*niv*.92;
+    g.beginPath();g.moveTo(x0+bw*.13,top);g.lineTo(x0+bw*.79,top);g.lineTo(x0+bw*.69,bot);g.lineTo(x0+bw*.22,bot);g.closePath();g.clip();
+    g.fillStyle=jus;g.fillRect(x0,fy,bw,bot-fy);
+    g.fillStyle="rgba(255,255,255,.28)";const wob=phase==="mix"?Math.sin(G.t*14)*5:0;
+    g.beginPath();g.ellipse(0,fy,bw*.28,5,0,0,7);g.fill();
+    for(let i=0;i<5;i++){g.beginPath();g.arc(Math.sin(G.t*6+i*2)*bw*.2,fy+ (bot-fy)*((i*.23+G.t*(phase==="mix"?1.6:.2))%1),3+i%3,0,7);g.fill();}
   }
-  // fruits en vol
-  for(const f of G.fly){const k=f.p,e=1-Math.pow(1-k,2);const x=f.x0+(c.x-f.x0)*e,y=f.y0+(c.y-ph*.6-f.y0)*e-Math.sin(k*Math.PI)*u*.12;
-    spr("fruits",FRUITS[f.t].fiche,x,y,f.h*(1-.4*k),k*6);}
+  g.restore();
+  // sprite par-dessus (verre translucide)
+  { const im=IMG.blender;if(im.complete&&im.naturalWidth){g.save();g.translate(bl.x+sh,CY+4);if(phase==="mix"&&G.mix&&G.mix.sh>0)g.rotate(Math.sin(G.t*70)*.03);g.drawImage(im,-bw/2,-bl.h,bw,bl.h);g.restore();}}
+  if(phase==="mix"){const k=1+Math.sin(G.t*8)*.07;
+    g.save();g.beginPath();g.arc(bl.x,CY-bl.h*.5,bl.h*.56*k,0,7);g.lineWidth=5;g.setLineDash([12,10]);g.lineDashOffset=-G.t*40;g.strokeStyle="rgba(255,226,90,.95)";g.stroke();g.restore();
+    for(let i=0;i<3;i++){g.beginPath();g.arc(bl.x-24+i*24,CY-bl.h-18,7,0,7);g.fillStyle=i<G.mix.n?"#ffd24a":"rgba(255,255,255,.35)";g.fill();g.lineWidth=2;g.strokeStyle="#5a2a00";g.stroke();}
+  }
+  // verre à servir
+  if(phase==="serve"&&G.verre){
+    G.verre.t+=1/60;const b=Math.sin(G.verre.t*6)*4,v=verrePos(),gh=u*.2,pop=Math.min(1,G.verre.t*5);
+    g.save();g.shadowColor="#ffd24a";g.shadowBlur=18+Math.sin(G.verre.t*6)*8;
+    sprBas("verres",VERRE(o.t),v.x,v.y+6-(1-pop)*30,gh*(.6+.4*pop));g.restore();
+    txt("SERVIR",v.x,v.y-gh-14+b,Math.max(24,u*.07),"#ffd24a","#5a2a00");
+  }
+  // fruits en vol vers le panier
+  for(const f of G.fly){const k=f.p,e=1-Math.pow(1-k,2);const x=f.x0+(c.x-f.x0)*e,y=f.y0+(c.y-ch*.7-f.y0)*e-Math.sin(k*Math.PI)*u*.12;
+    spr("fruits",FRUITS[f.t].fiche,x,y,f.h*(1-.45*k),k*6);}
   // fruits qui tombent
   for(const f of G.x){
-    if(f.k==="f")spr("fruits",FRUITS[f.t].fiche,f.x,f.y,f.h,f.rot);
+    if(f.k==="f"){if(f.t===o.t){g.save();g.beginPath();g.arc(f.x,f.y,f.h*.58+Math.sin(G.t*8)*3,0,7);g.fillStyle="rgba(255,236,120,.28)";g.fill();g.lineWidth=3;g.strokeStyle="rgba(255,236,120,.9)";g.stroke();g.restore();}spr("fruits",FRUITS[f.t].fiche,f.x,f.y,f.h,f.rot);}
     else if(f.k==="pourri")spr("speciaux",SPE.pourri,f.x,f.y,f.h,f.rot);
     else if(f.k==="guepe")spr("speciaux",SPE.guepe,f.x,f.y,f.h*.9,f.rot);
     else if(f.k==="dore"){g.save();g.shadowColor="#ffd24a";g.shadowBlur=24;spr("speciaux",SPE.dore,f.x,f.y,f.h,f.rot);g.restore();}
@@ -344,17 +391,17 @@ function dessine(){
   rr(tx+68,ty+68,pw,9,5);g.fillStyle="rgba(255,255,255,.25)";g.fill();
   rr(tx+68,ty+68,pw*pp,9,5);g.fillStyle=pp>.5?"#7be04a":pp>.25?"#ffc02a":"#ff4a3a";g.fill();
   if(o.or)txt("×2",tx+tw-26,ty+24,26,"#ffd24a","#5a2a00");
-  // jauge de presse
-  if(phase==="gauge"&&G.gauge){
-    const q=G.gauge,gw=Math.min(300,W*.74),gx=W/2-gw/2,gy=CY-u*.42;
-    rr(gx-10,gy-52,gw+20,110,20);g.fillStyle="rgba(30,10,0,.75)";g.fill();
-    txt("PRESSE ! Touche dans le vert",W/2,gy-30,22);
-    rr(gx,gy,gw,26,13);g.fillStyle="#6a2a14";g.fill();
-    rr(gx+(q.c-q.hw)*gw,gy,q.hw*2*gw,26,13);g.fillStyle="#7be04a";g.fill();
-    rr(gx+(q.c-q.hw*.4)*gw,gy,q.hw*.8*gw,26,13);g.fillStyle="#ffe24a";g.fill();
-    g.fillStyle="#fff";g.fillRect(gx+q.p*gw-4,gy-8,8,42);
-    txt("TOUCHE ICI",W/2,gy+50,26,"#ffd24a","#5a2a00");
-  }
+  // consigne + combo
+  {const hy=ty+84+16;let h="";
+   if(phase==="fall")h="Attrape : "+FRUITS[o.t].nom+" !";
+   else if(phase==="mix")h="Touche le blender ×3 !";
+   else if(phase==="serve")h="Touche le verre pour servir !";
+   g.font='800 17px "Baloo 2",sans-serif';const tw2=g.measureText(h).width+28;
+   rr(W/2-tw2/2,hy-15,tw2,30,15);g.fillStyle="rgba(30,10,0,.6)";g.fill();g.fillStyle="#fff";g.textAlign="center";g.textBaseline="middle";g.fillText(h,W/2,hy+1);
+   if(G.streak>=3){const ss=1+Math.sin(G.t*10)*.05;g.save();g.translate(W/2,hy+38);g.scale(ss,ss);txt("🔥 COMBO ×"+G.streak,0,0,26,"#ffb21e","#7a2a00");g.restore();}}
+  // particules
+  for(const q of G.parts){g.globalAlpha=Math.max(0,1-q.t/q.life);g.fillStyle=q.col;g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fill();}
+  g.globalAlpha=1;
   // popups
   for(const p of G.pops){const a=1-p.t/1.6;g.globalAlpha=Math.max(0,Math.min(1,a*2));txt(p.txt,p.x,p.y-p.t*50,p.s,p.col,"#000");}
   g.globalAlpha=1;
@@ -412,9 +459,9 @@ function ouvreCarnet(){
 }
 function demarre(){
   ["menu","fin","pause","atelier","carnet"].forEach(i=>$(i).classList.add("cache"));
-  nouveau();mode="play";G.gros={txt:"NIVEAU 1",t:1.4};sfx("niveau",.6);
+  ambiance(true);nouveau();mode="play";G.gros={txt:"NIVEAU 1",t:1.4};sfx("niveau",.6);
 }
-$("bJouer").onclick=()=>{debloque();demarre();};
+$("bJouer").onclick=()=>{debloque();demarre();};document.addEventListener("pointerdown",()=>{debloque();if(mode!=="pause")ambiance(true);},{once:true});
 $("bRejouer").onclick=()=>{debloque();demarre();};
 $("bAtelier").onclick=()=>{ouvreAtelier();};
 $("bAtelier2").onclick=()=>{ouvreAtelier();};
@@ -427,7 +474,7 @@ $("bMenu").onclick=()=>{$("fin").classList.add("cache");mode="menu";G=null;majMe
 cv.addEventListener("pointerdown",e=>{e.preventDefault();tap(e.clientX,e.clientY);});
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&mode==="play")pause(true);});
 majMenu();requestAnimationFrame(frame);
-if(location.search.includes("test"))window.jeu={get G(){return G;},get mode(){return mode;},get phase(){return phase;},tap,demarre,servir,spawn,ordre,get CY(){return CY;},cible,ux};
+if(location.search.includes("test"))window.jeu={get G(){return G;},get mode(){return mode;},get phase(){return phase;},tap,demarre,servir,spawn,ordre,bld,verrePos,get CY(){return CY;},cible,ux};
 </script>
 </body>
 </html>
