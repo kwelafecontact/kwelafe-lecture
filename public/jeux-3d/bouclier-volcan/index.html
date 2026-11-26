@@ -81,6 +81,33 @@
   .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
   @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
   @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
+  .panneau { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.92); width:min(90vw, 480px); max-height:78vh; overflow:auto; padding:18px 20px 20px; border-radius:22px; background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .3s cubic-bezier(.2,1.4,.4,1); z-index:18; text-align:center; }
+  .panneau.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  .panneau h2 { margin:0 0 6px; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:28px; color:#7a3a10; }
+  .amelio { display:flex; align-items:center; gap:10px; text-align:left; padding:10px; margin:8px 0; border-radius:14px; background:rgba(122,78,36,.12); }
+  .amelio .ic { font-size:30px; }
+  .amelio .tx { flex:1; font-size:14px; line-height:1.25; }
+  .amelio .tx b { font-size:16px; }
+  .amelio button { pointer-events:auto; border:0; border-radius:999px; padding:9px 14px; font:800 14px "Baloo 2", sans-serif; background:linear-gradient(#ffe27a, #ffb21e); color:#3a1a04; box-shadow:0 3px 0 #a8580a; white-space:nowrap; }
+  .amelio button:disabled { filter:grayscale(1); opacity:.5; }
+  .fait { text-align:left; font-size:14px; padding:8px 10px; margin:6px 0; border-radius:12px; background:rgba(122,78,36,.10); }
+  .fait.cache { color:rgba(58,36,16,.35); }
+  .defi { margin-top:14px; padding:8px 16px; border-radius:14px; background:rgba(10,30,10,.6); font-weight:700; font-size:clamp(14px, 3.4vw, 17px); }
+  .jauge { position:fixed; left:50%; top:46%; transform:translate(-50%,-50%); width:min(80vw, 420px); padding:14px 16px 16px; border-radius:20px; background:rgba(20,12,4,.78); text-align:center; z-index:9; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .jauge.on { opacity:1; pointer-events:auto; }
+  .jauge .barre { position:relative; height:26px; margin:10px 0 6px; border-radius:13px; background:linear-gradient(90deg, #3a7ad8, #6ad0e8 30%, #f0d040 60%, #f06a20 85%, #d81a10); }
+  .jauge .zone { position:absolute; top:-4px; bottom:-4px; border:3px solid #fff; border-radius:8px; box-shadow:0 0 12px #fff; }
+  .jauge .aiguille { position:absolute; top:-8px; bottom:-8px; width:5px; margin-left:-2px; border-radius:3px; background:#fff; box-shadow:0 0 8px #000; }
+  .jauge .t { font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:24px; color:#ffe27a; }
+  .jauge .p { font-size:14px; font-weight:600; }
+  .savoir { margin:10px auto 2px; max-width:440px; padding:12px 16px; border-radius:16px; background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:3px solid #7a4e24; text-align:center; }
+  .savoir b { display:block; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:22px; color:#7a3a10; }
+  .savoir span { font-weight:600; font-size:clamp(14px, 3.6vw, 17px); line-height:1.3; }
+  .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,160,40,.6); }
+  .niveauHud.saute { animation:saute .5s; }
+  #sismo { display:block; width:100%; height:70px; margin-top:8px; border-radius:10px; background:#f8f2e2; }
+  .alerte { position:fixed; pointer-events:none; transform:translate(-50%,-100%); font-size:30px; filter:drop-shadow(0 2px 4px #000); animation:clignote .5s infinite alternate; z-index:5; }
+  @keyframes clignote { from { transform:translate(-50%,-100%) scale(1); } to { transform:translate(-50%,-110%) scale(1.2); } }
 </style>
 </head>
 <body>
@@ -90,10 +117,10 @@
 <canvas id="trace"></canvas>
 
 <div class="hud" id="hud">
-  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
-  <div class="vies" id="vies"></div>
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div><div class="meilleur" id="olivHud">💚 0 olivine</div></div>
+  <div class="vies" id="vies"></div><div class="niveauHud" id="niveau">Niveau 1</div>
 </div>
-<div class="niveau" id="niveau"></div>
+
 <div class="bandeau" id="bandeau">Bouclier activé !</div>
 <div class="bonus" id="bonus">
   <button class="bbtn zone-interactive" id="bBouclier" aria-label="Bouclier"><div class="rempli" id="rBouclier"></div>🛡️</button>
@@ -105,7 +132,9 @@
   <div class="titre">Bouclier volcan</div>
   <div class="sous">Dans l'Enclos Fouqué du Piton de la Fournaise</div>
   <div class="modes"><button class="btn zone-interactive" id="jouer">Classique</button><button class="btn btn2 zone-interactive" id="jouerZen">Zen · 90 s</button></div>
-  <div class="consigne">Tranche les bombes de lave d'un geste et protège les randonneurs et les paille-en-queue ! Enchaîne les coupes pour gagner des bonus, et lance le bouclier 🛡️ dès qu'il est chargé.</div>
+  <div class="modes" style="margin-top:12px"><button class="btn btn2 zone-interactive" id="ouvrirAtelier">🎒 Mon équipement</button><button class="btn btn2 zone-interactive" id="ouvrirCarnet">📖 Carnet</button></div>
+  <div class="defi" id="defiMenu"></div>
+  <div class="consigne">1. Tranche les bombes de lave d'un geste. 2. Touche un randonneur qui quitte le balisage blanc ⚠ pour le ramener. 3. Ramasse les olivines vertes. 4. Entre deux niveaux, lis le sismographe !</div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
@@ -115,10 +144,13 @@
   <div class="nouveau" id="nouveauRecord"></div>
   <div class="sous" id="bombesFin"></div>
   <div class="sous" id="recordFin">Record : 0</div>
+  <div class="savoir"><b id="savoirTitre">Le saviez-vous ?</b><span id="savoirTexte"></span></div>
   <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
 </div></div>
 
-<div class="fiche" id="fiche"><div class="num" id="ficheNum"></div><h2>Le saviez-vous ?</h2><p id="ficheTexte"></p><button class="btn zone-interactive" id="ficheOk">On continue</button></div>
+<div class="jauge zone-interactive" id="jauge"><div class="t">Sismographe de l'OVPF</div><div class="p">Le volcan gronde ! Touche quand le signal dépasse la ligne rouge pour donner l'alerte.</div><canvas id="sismo" width="600" height="140"></canvas></div>
+<div class="panneau" id="atelier"><h2>Mon équipement</h2><div id="stock"></div><div id="amelios"></div><button class="btn zone-interactive" id="fermerAtelier" style="margin-top:10px">Fermer</button></div>
+<div class="panneau" id="carnet"><h2>Carnet du volcan</h2><div id="faits"></div><button class="btn zone-interactive" id="fermerCarnet" style="margin-top:10px">Fermer</button></div>
 
 <div id="charge">Le volcan se réveille…</div>
 <button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
@@ -141,18 +173,46 @@ const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
 const PETIT = Math.min(innerWidth, innerHeight) < 500 || /iPhone/.test(navigator.userAgent);
 
 // Faits vérifiés : préfecture de La Réunion (ORSEC Volcan), OVPF, académie de La Réunion, guides de randonnée
-const FICHES = [
-  "Le Piton de la Fournaise est l'un des volcans les plus actifs du monde.",
+const FAITS = [
+  "Le Piton de la Fournaise est l'un des volcans les plus actifs du monde : il entre en éruption en moyenne plus d'une fois par an.",
   "L'Enclos Fouqué est la grande caldeira du volcan. On y descend depuis le Pas de Bellecombe par plus de 500 marches.",
-  "Dans l'Enclos, le sentier est balisé par des taches blanches peintes sur la lave : il faut toujours rester dessus.",
+  "Dans l'Enclos, le sentier est balisé par des traces de peinture blanche sur la lave : il faut toujours rester dessus.",
   "Les éruptions de la Fournaise sont surtout effusives : la lave coule, le plus souvent à l'intérieur de l'Enclos.",
-  "Depuis 1979, l'Observatoire volcanologique du Piton de la Fournaise (OVPF) surveille le volcan avec un réseau de capteurs.",
+  "Depuis 1979, l'Observatoire volcanologique du Piton de la Fournaise (OVPF) surveille le volcan jour et nuit.",
+  "Une centaine d'instruments, répartis sur plus de 50 sites, enregistrent en continu les moindres frémissements du volcan.",
+  "Avant une éruption, les sismographes de l'OVPF enregistrent souvent une crise sismique : une série de petits séismes.",
   "Pendant une éruption, la préfecture peut fermer l'Enclos. Avant d'y aller, consulte toujours les bulletins officiels.",
   "Le dispositif ORSEC Volcan a plusieurs niveaux : vigilance, alerte 1 (éruption probable) et alerte 2 (éruption en cours).",
-  "Le volcan dépasse 2 000 mètres d'altitude : prends de l'eau, un vêtement chaud, et pars tôt le matin.",
-  "L'Enclos Fouqué s'est formé il y a environ 4 500 ans.",
+  "Le Formica Leo, petit cône couleur ocre au pied du Pas de Bellecombe, s'est formé en 1753.",
+  "Le 5 avril 2007, le fond du cratère Dolomieu s'est effondré en 24 heures : il a gagné environ 340 mètres de profondeur.",
+  "L'éruption d'avril 2007 a été l'une des plus fortes du siècle : la lave a atteint la mer en onze heures.",
+  "Les laves de la Fournaise contiennent souvent des cristaux d'olivine, un minéral vert.",
+  "Le volcan dépasse 2 600 mètres d'altitude : prends de l'eau, un vêtement chaud, et pars tôt le matin.",
+  "Le Pas de Bellecombe, à plus de 2 300 mètres, est la porte d'entrée de l'Enclos Fouqué.",
   "Dans ce jeu, les bombes de lave sont imaginaires : en vrai, on ne s'approche jamais d'une éruption hors des zones autorisées.",
 ];
+const CLE = 'bouclier_v2';
+let save = { oliv: 0, amelio: { bouclier: 0, lame: 0, jumelles: 0, sismo: 0 }, faits: [], defi: null, record: 0, recordZen: 0 };
+try { const sv = JSON.parse(localStorage.getItem(CLE) || 'null'); if (sv) save = Object.assign(save, sv, { amelio: Object.assign(save.amelio, sv.amelio || {}) }); } catch (e) {}
+const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(save)); } catch (e) {} };
+const AMELIOS = [
+  { id: 'bouclier', ic: '🛡️', nom: 'Bouclier renforcé', txt: 'Le bouclier dure une seconde de plus.', prix: [6, 15, 30] },
+  { id: 'lame', ic: '🖐️', nom: 'Grand geste', txt: 'Ton geste tranche plus large.', prix: [5, 12, 25] },
+  { id: 'jumelles', ic: '🔭', nom: 'Jumelles', txt: 'Tu as plus de temps pour ramener un randonneur égaré.', prix: [5, 12, 25] },
+  { id: 'sismo', ic: '📈', nom: 'Sismographe précis', txt: 'L\'alerte est plus facile à donner.', prix: [8, 18] },
+];
+const DEFIS = [
+  { type: 'coupes', cible: 60, txt: n => `Tranche ${n} bombes de lave` },
+  { type: 'rappels', cible: 6, txt: n => `Ramène ${n} randonneurs sur le balisage` },
+  { type: 'olivines', cible: 6, txt: n => `Ramasse ${n} olivines` },
+  { type: 'alertes', cible: 2, txt: n => `Donne ${n} alertes à temps au sismographe` },
+  { type: 'fuseaux', cible: 2, txt: n => `Tranche ${n} bombes en fuseau` },
+];
+function defiDuJour() {
+  const d = new Date(), cle = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  if (!save.defi || save.defi.date !== cle) { save.defi = { date: cle, k: (d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate()) % DEFIS.length, fait: false }; sauver(); }
+  return Object.assign({}, DEFIS[save.defi.k], { fait: save.defi.fait });
+}
 
 const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: TEST });
 renderer.setPixelRatio(Math.min(devicePixelRatio, PETIT ? 1.75 : 2));
@@ -386,7 +446,9 @@ const son = {
 };
 
 // ---------------------------------------------------------------- partie
-const DUREE_ZEN = 90, PAR_NIVEAU = 20, RECHARGE_BOUCLIER = 12, DUREE_BOUCLIER = 5;
+const DUREE_ZEN = 90, RECHARGE_BOUCLIER = 12; let DUREE_BOUCLIER = 5;
+let phase = 'actif', phaseT = 0, stats = {}, olivPartie = 0, prochainEgare = 9; const olivines = [], balises = [];
+const dureePhase = () => Math.min(34, 20 + niveau * 2);
 let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupees = 0, niveau = 1, ficheIdx = 0, bouclier = 0, charge = 0, serie = 0, ralentis = 0, ondes = 0, ralenti = 0;
 const bombes = [], marcheurs = [], oiseaux = []; let prochainOiseau = 6;
 const COULEURS = [0xd81e1e, 0x1e5ad8, 0x18a048, 0x8a2ad0];
@@ -401,7 +463,9 @@ function resize() {
   planFond.scale.set(pw * 1.08, ph * 1.08, 1); planFond.position.y = (ph - hF) / 2;
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H);
   const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
-  marcheurs.forEach(m => scene.remove(m.obj)); marcheurs.length = 0;
+  balises.forEach(b => scene.remove(b)); balises.length = 0;
+  for (let x = -viewW / 2; x < viewW / 2; x += 1.1) { const b = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), new THREE.MeshStandardMaterial({ color: 0xf4f4ee, roughness: 0.8 })); b.rotation.x = -Math.PI / 2; b.position.set(x + rnd(-0.1, 0.1), sol + 0.02, 1.2); b.scale.set(1.4, 1, 0.8); scene.add(b); balises.push(b); }
+  marcheurs.forEach(m => { scene.remove(m.obj); m.alerte && m.alerte.remove(); }); marcheurs.length = 0;
   const n = viewW < 8 ? 2 : 3;
   const dep = Math.floor(Math.random() * 4);
   for (let i = 0; i < n; i++) { const o = randonneur(dep + i); const m = { obj: o, voix: (dep + i) % 4, cri: 0, derniere: -1, x: rnd(-viewW * .4, viewW * .4), dir: Math.random() < .5 ? 1 : -1, v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0 }; o.position.set(m.x, sol, 0.8); scene.add(o); marcheurs.push(m); }
@@ -409,9 +473,12 @@ function resize() {
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
 function majVies() { if (mode === 'zen') { $('vies').innerHTML = `<div class="temps">${Math.max(0, Math.ceil(DUREE_ZEN - temps))} s</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🧡</span>`).join(''); }
-function majNiveau() { $('niveau').textContent = 'Niveau ' + niveau + ' · ' + coupees + ' bombes'; }
+function majNiveau() { const e = $('niveau'); e.textContent = 'Niveau ' + niveau; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
+function majOliv() { $('olivHud').textContent = `💚 ${olivPartie} olivine${olivPartie > 1 ? 's' : ''}`; }
+function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
+function compter(type, n = 1) { stats[type] = (stats[type] || 0) + n; const d = defiDuJour(); if (!d.fait && d.type === type && stats[type] >= d.cible) { save.defi.fait = true; save.oliv += 5; sauver(); bandeau('Défi du jour réussi ! +5 olivines', 3); son.niveau(); } }
 function perdreVie() { if (etat !== 'jeu') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
-function lancerBombe() {
+function lancerBombe(fuseau = false) {
   // tirée depuis le cratère (haut de l'écran), retombe vers le sentier en visant souvent un randonneur
   const vise = Math.random() < 0.85 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)] : null;
   const cible = vise ? vise.x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45);
@@ -420,10 +487,10 @@ function lancerBombe() {
   const duree = Math.max(1.05, 2.5 - niveau * 0.12) + rnd(0, 0.4);
   const g = 3.8 + niveau * 0.22;
   const vy = ((sol + 0.6) - y0 + 0.5 * g * duree * duree) / duree, vx = (cible - x0) / duree;
-  const m = new THREE.Mesh(rocheGeo, rocheMat); const s = rnd(0.7, 1.15); m.scale.setScalar(s);
+  const m = new THREE.Mesh(rocheGeo, rocheMat); const s = fuseau ? 1.1 : rnd(0.7, 1.15); m.scale.setScalar(s); if (fuseau) m.scale.set(0.75, 1.6, 0.75);
   const h = new THREE.Sprite(halo); h.scale.setScalar(3); m.add(h);
   m.castShadow = true; m.position.set(x0, y0, 0.6); scene.add(m);
-  bombes.push({ obj: m, vx, vy, g, vr: rnd(-3, 3), rayon: 0.72 * s, vivant: true });
+  bombes.push({ obj: m, vx, vy, g, vr: fuseau ? 0.6 : rnd(-3, 3), rayon: 0.72 * s * (fuseau ? 1.2 : 1), vivant: true, fuseau });
   son.tir();
 }
 function vague() {
@@ -433,23 +500,70 @@ function vague() {
 }
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupees = 0; niveau = 1; ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
-  try { record = +localStorage.getItem('bouclier_record_' + mode) || 0; } catch (e) {}
+  phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; prochainEgare = 9; majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); marcheurs.forEach(mm => { mm.egare = 0; mm.alerte && mm.alerte.remove(); mm.alerte = null; });
+  record = mode === 'zen' ? save.recordZen : save.record;
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
-  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('niveau').classList.add('on'); $('lien').classList.add('discret');
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('lien').classList.add('discret');
 }
 function finPartie() {
-  etat = 'fin'; $('bonus').classList.remove('on'); $('niveau').classList.remove('on'); $('bandeau').classList.remove('on');
+  if (etat !== 'jeu') return;
+  etat = 'fin'; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on'); $('jauge').classList.remove('on'); sismo = null;
+  marcheurs.forEach(mm => { mm.alerte && mm.alerte.remove(); mm.alerte = null; mm.egare = 0; });
   const nouveau = score > record && score > 0;
-  if (nouveau) { record = score; try { localStorage.setItem('bouclier_record_' + mode, record); } catch (e) {} }
+  if (nouveau) { record = score; if (mode === 'zen') save.recordZen = score; else save.record = score; }
+  save.oliv += olivPartie;
+  { const d = defiDuJour(); if (!d.fait && d.type === 'jour' && niveau >= d.cible) { save.defi.fait = true; save.oliv += 5; } }
+  const restants = FAITS.map((_, i) => i).filter(i => !save.faits.includes(i)); let idx, neuf = false;
+  if (restants.length) { idx = restants[Math.floor(Math.random() * restants.length)]; save.faits.push(idx); neuf = true; } else idx = Math.floor(Math.random() * FAITS.length);
+  sauver();
+  $('savoirTitre').textContent = neuf ? `Nouveau dans ton carnet (${save.faits.length}/${FAITS.length})` : 'Le saviez-vous ?'; $('savoirTexte').textContent = FAITS[idx];
   $('scoreFin').textContent = score; $('recordFin').textContent = (mode === 'zen' ? 'Record Zen : ' : 'Record : ') + record;
   $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
-  $('bombesFin').textContent = coupees + (coupees > 1 ? ' bombes tranchées' : ' bombe tranchée') + ' · niveau ' + niveau;
+  $('bombesFin').textContent = coupees + (coupees > 1 ? ' bombes tranchées' : ' bombe tranchée') + ' · niveau ' + niveau + ` · +${olivPartie} 💚 (réserve : ${save.oliv})`;
   const et = coupees >= 70 ? 3 : coupees >= 35 ? 2 : coupees >= 12 ? 1 : 0;
   $('etoilesFin').innerHTML = [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
   setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
 }
-function montrerFiche() { etat = 'fiche'; $('ficheNum').textContent = 'Niveau ' + (niveau - 1) + ' réussi'; $('ficheTexte').textContent = FICHES[ficheIdx % FICHES.length]; ficheIdx++; $('fiche').classList.add('on'); }
+// fin de niveau : fontaine de lave (avec une bombe en fuseau), puis accalmie et sismographe
+function finDeNiveau() {
+  phase = 'speciales'; phaseT = 0; bandeau('Fontaine de lave !', 2.2); secousse = 0.4;
+  const n = 5 + Math.min(6, niveau);
+  for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 150 + i * 200);
+  setTimeout(() => etat === 'jeu' && lancerBombe(true), 900);
+  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; lancerSismo(); }, 4400);
+}
+let sismo = null;
+function lancerSismo() { sismo = { t: 0, pic: rnd(1.4, 2.4), fini: false, trace: [] }; $('jauge').classList.add('on'); }
+const seuil = () => 0.62 - save.amelio.sismo * 0.07;
+function amplitude(t) { const e = Math.exp(-((t - sismo.pic) ** 2) / 0.35); return Math.min(1, 0.08 + e); }
+function arreterSismo() {
+  if (!sismo || sismo.fini) return; sismo.fini = true;
+  const ok = amplitude(sismo.t) >= seuil();
+  if (ok) { score += 40; olivPartie++; majOliv(); majScore(); compter('alertes'); son.niveau(); bandeau('Alerte donnée à temps ! +40 et 1 olivine', 2.4); }
+  else { son.touche(); bandeau(sismo.t < sismo.pic ? 'Trop tôt : le signal était encore faible' : 'Trop tard : la crise est passée', 2.4); }
+  setTimeout(() => $('jauge').classList.remove('on'), 500);
+}
+function dessinerSismo(dt) {
+  if (!sismo) return; const c = $('sismo'), g = c.getContext('2d'), w = c.width, h = c.height;
+  if (!sismo.fini) { sismo.t += dt; const a = amplitude(sismo.t); for (let k = 0; k < 6; k++) sismo.trace.push((Math.random() * 2 - 1) * a); if (sismo.trace.length > w / 2) sismo.trace.splice(0, sismo.trace.length - w / 2); if (sismo.t > 3.6) arreterSismo(); }
+  g.fillStyle = '#f8f2e2'; g.fillRect(0, 0, w, h);
+  const s_ = seuil(); g.strokeStyle = '#d02010'; g.setLineDash([8, 6]); g.lineWidth = 2; for (const y of [h / 2 - s_ * h * 0.45, h / 2 + s_ * h * 0.45]) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } g.setLineDash([]);
+  g.strokeStyle = '#1a1a2a'; g.lineWidth = 2; g.beginPath(); sismo.trace.forEach((v, i) => { const x = i * 2, y = h / 2 + v * h * 0.45; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+}
+// randonneur qui quitte le balisage
+function egarer() { const libres = marcheurs.filter(m => !m.egare && m.choc <= 0); if (!libres.length) return; const m = libres[Math.floor(Math.random() * libres.length)]; m.egare = 4 + save.amelio.jumelles; const e = document.createElement('div'); e.className = 'alerte'; e.textContent = '⚠️'; document.body.appendChild(e); m.alerte = e; crier(m); }
+function rappeler(m) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; score += 12; majScore(); compter('rappels'); son.bouclier(); popup('Reste sur le balisage ! +12', m.obj.position.clone().add(new THREE.Vector3(0, 2.4, 0)), 'chaine'); }
+// olivine tombée d'une grosse bombe
+function poserOlivine(x) {
+  const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0), new THREE.MeshStandardMaterial({ color: 0x7ad030, emissive: 0x3a8a10, emissiveIntensity: 1.2, roughness: 0.2, metalness: 0.1 }));
+  m.position.set(Math.max(-viewW * 0.45, Math.min(viewW * 0.45, x)), sol + 0.3, 1.0); m.scale.set(1, 1.4, 1); scene.add(m); olivines.push({ obj: m, t: 0 });
+}
+function tapper(px, py) {
+  for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); ton(1500, 2200, 0.15, 0.07, 'triangle'); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); return true; } }
+  for (const m of marcheurs) { if (!m.egare) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 1, 0))); if (Math.hypot(sc.x - px, sc.y - py) < 70) { rappeler(m); return true; } }
+  return false;
+}
 function majBonus() {
   const k = Math.min(1, charge / RECHARGE_BOUCLIER);
   const pc = (bouclier > 0 ? 100 : k * 100).toFixed(1); $('bBouclier').style.background = `linear-gradient(to top, rgba(90,180,255,.65) ${pc}%, rgba(40,10,0,.6) ${pc}%)`;
@@ -459,7 +573,7 @@ function majBonus() {
 }
 function activerBouclier() { if (etat !== 'jeu' || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
 function activerRalenti() { if (etat !== 'jeu' || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
-function activerOnde() { if (etat !== 'jeu' || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); majNiveau(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
+function activerOnde() { if (etat !== 'jeu' || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
 function lancerOiseau() {
   const dir = Math.random() < 0.5 ? 1 : -1, obj = pailleEnQueue();
   obj.rotation.order = 'YXZ'; obj.rotation.y = dir > 0 ? -0.3 : Math.PI + 0.3; obj.rotation.x = 0.55;
@@ -488,7 +602,8 @@ function eclater(b, dir) {
 // ---------------------------------------------------------------- geste
 let appui = false, dernier = null, chaine = 0, chaineT = 0; const trait = [];
 const pointeur = e => ({ x: e.clientX, y: e.clientY, t: performance.now() });
-addEventListener('pointerdown', e => { if (e.target.closest('.zone-interactive')) return; audio(); appui = true; dernier = pointeur(e); trait.length = 0; trait.push(dernier); chaine = 0; });
+let depart = null;
+addEventListener('pointerdown', e => { if (e.target.closest('.zone-interactive')) return; audio(); appui = true; dernier = pointeur(e); depart = dernier; trait.length = 0; trait.push(dernier); chaine = 0; if (etat === 'jeu') tapper(e.clientX, e.clientY); });
 addEventListener('pointermove', e => { if (!appui) return; const p = pointeur(e); trait.push(p); if (trait.length > 14) trait.shift(); trancher(dernier, p); dernier = p; });
 addEventListener('pointerup', () => { appui = false; finChaine(); }); addEventListener('pointercancel', () => { appui = false; });
 function finChaine() { if (chaine >= 2 && etat === 'jeu') { const bonus = chaine * 3; score += bonus; majScore(); popup('Coup double ! +' + bonus, new THREE.Vector3(0, 0, 0), 'chaine'); son.niveau(); } chaine = 0; }
@@ -497,16 +612,16 @@ function trancher(a, b) {
   const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy; if (L < 16) return;
   for (const bo of bombes) {
     if (!bo.vivant || bo.morceau) continue;
-    const s = toScreen(bo.obj.position), r = bo.rayon * H / viewH + 16;
+    const s = toScreen(bo.obj.position), r = bo.rayon * H / viewH + 16 + save.amelio.lame * 7;
     const t = Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L));
     if ((a.x + t * dx - s.x) ** 2 + (a.y + t * dy - s.y) ** 2 < r * r) {
       const dir = new THREE.Vector3(dx, -dy, 0).normalize();
       eclater(bo, dir); son.coupe(bo.obj.scale.x); coupees++; chaine++; serie++;
       if (serie % 6 === 0) { if (serie % 12 === 0) { ondes = Math.min(3, ondes + 1); popup('Série de ' + serie + ' ! Bonus onde de choc 💥', new THREE.Vector3(0, 1.5, 0), 'chaine'); } else { ralentis = Math.min(3, ralentis + 1); popup('Série de ' + serie + ' ! Bonus ralenti ⏳', new THREE.Vector3(0, 1.5, 0), 'chaine'); } son.bouclier(); majBonus(); }
-      const haut = bo.obj.position.y > 0; const pts = haut ? 3 : 2;
-      score += pts; majScore(); majNiveau();
+      const haut = bo.obj.position.y > 0; const pts = bo.fuseau ? 15 : haut ? 3 : 2; compter('coupes'); if (bo.fuseau) { compter('fuseaux'); popup('Bombe en fuseau !', bo.obj.position.clone().add(new THREE.Vector3(0, -0.8, 0)), 'chaine'); }
+      if (bo.fuseau || (bo.obj.scale.x > 0.98 && Math.random() < 0.45)) poserOlivine(bo.obj.position.x);
+      score += pts; majScore();
       popup('+' + pts, bo.obj.position, 'pts', '#ffd27a');
-      if (coupees % PAR_NIVEAU === 0) { niveau++; son.niveau(); majNiveau(); setTimeout(() => { if (etat === 'jeu') montrerFiche(); }, 700); }
     }
   }
 }
@@ -534,8 +649,15 @@ function boucle() {
   const dt = Math.min(horloge.getDelta(), 0.05);
   matP.uniforms.echelle.value = matF.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
   const joue = etat === 'jeu', fige = etat === 'fiche';
-  if (joue) { temps += dt; prochain -= dt; if (prochain <= 0) vague(); if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); } }
-  else if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; lancerBombe(); } }
+  if (joue) {
+    temps += dt; phaseT += dt;
+    if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); prochainEgare -= dt; if (prochainEgare <= 0) { egarer(); prochainEgare = Math.max(5, 12 - niveau) + rnd(0, 4); } }
+    else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; son.niveau(); majNiveau(); bandeau('Niveau ' + niveau + ' : le volcan repart', 1.8); }
+    if (mode === 'zen') { majVies(); if (temps >= DUREE_ZEN) finPartie(); }
+  }
+  dessinerSismo(dt);
+  for (let i = olivines.length - 1; i >= 0; i--) { const o = olivines[i]; o.t += dt; o.obj.rotation.y += dt * 2; o.obj.position.y = sol + 0.3 + Math.sin(o.t * 4) * 0.06; o.obj.material.emissiveIntensity = 1 + Math.sin(o.t * 8) * 0.4; if (o.prise || o.t > 6) { scene.remove(o.obj); olivines.splice(i, 1); } else if (o.t > 4.5) o.obj.visible = Math.floor(o.t * 10) % 2 === 0; }
+  if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; lancerBombe(); } }
   if (joue) { if (bouclier > 0) { bouclier -= dt; if (bouclier <= 0) $('bandeau').classList.remove('on'); } else charge = Math.min(RECHARGE_BOUCLIER, charge + dt); if (ralenti > 0) { ralenti -= dt; if (ralenti <= 0 && bouclier <= 0) $('bandeau').classList.remove('on'); } majBonus(); }
   const tb = ralenti > 0 ? dt * 0.4 : dt;
   // fumerolles permanentes sur les côtés
@@ -544,6 +666,9 @@ function boucle() {
   // randonneurs qui marchent sur le sentier balisé
   for (const m of marcheurs) {
     if (!fige) { m.t += dt; if (m.choc > 0) { m.choc -= dt; m.x += m.dir * dt * 2.2; } else m.x += m.dir * m.v * dt; }
+    // randonneur égaré : il s'éloigne du sentier (vers le fond), il faut le toucher avant la fin du compte à rebours
+    const zc = m.egare ? -1.2 : 0.8; m.obj.position.z += (zc - m.obj.position.z) * Math.min(1, dt * 0.8);
+    if (m.egare && joue) { m.egare -= dt; if (m.alerte) { const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 2.1, 0))); m.alerte.style.left = sc.x + 'px'; m.alerte.style.top = sc.y + 'px'; } if (m.egare <= 0) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; crier(m, true); son.touche(); bandeau('Un randonneur a quitté le balisage…', 2); m.obj.position.z = 0.8; if (mode === 'classique') perdreVie(); else { score = Math.max(0, score - 5); majScore(); } } }
     if (Math.abs(m.x) > viewW * 0.44) { m.dir *= -1; m.x = Math.sign(m.x) * viewW * 0.44; }
     m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * 8);
     animer(m.obj, m.t, m.choc > 0);
@@ -616,15 +741,21 @@ $('bBouclier').onclick = activerBouclier; $('bRalenti').onclick = activerRalenti
 $('jouer').onclick = () => demarrer('classique');
 $('jouerZen').onclick = () => demarrer('zen');
 $('rejouer').onclick = () => demarrer(mode);
-$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
-$('ficheOk').onclick = () => { $('fiche').classList.remove('on'); etat = 'jeu'; horloge.getDelta(); };
+$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); majMenu(); };
+$('jauge').onclick = arreterSismo;
+function majAtelier() { $('stock').innerHTML = `<b>Réserve : ${save.oliv} olivine${save.oliv > 1 ? 's' : ''} 💚</b>`; $('amelios').innerHTML = AMELIOS.map(a => { const n = save.amelio[a.id], max = a.prix.length, prix = a.prix[n]; return `<div class="amelio"><div class="ic">${a.ic}</div><div class="tx"><b>${a.nom}</b> · niveau ${n}/${max}<br>${a.txt}</div>${n < max ? `<button class="zone-interactive" data-a="${a.id}" ${save.oliv < prix ? 'disabled' : ''}>${prix} 💚</button>` : '<span>✔</span>'}</div>`; }).join(''); $('amelios').querySelectorAll('button').forEach(b => b.onclick = () => { const a = AMELIOS.find(x => x.id === b.dataset.a), n = save.amelio[a.id]; if (save.oliv >= a.prix[n]) { save.oliv -= a.prix[n]; save.amelio[a.id]++; sauver(); son.niveau(); majAtelier(); } }); }
+function majCarnet() { $('faits').innerHTML = `<p><b>${save.faits.length}/${FAITS.length}</b> pages découvertes. Une nouvelle page à chaque partie !</p>` + FAITS.map((f, i) => save.faits.includes(i) ? `<div class="fait">🌋 ${f}</div>` : `<div class="fait cache">🔒 Page à découvrir</div>`).join(''); }
+function majMenu() { const d = defiDuJour(); $('defiMenu').textContent = (d.fait ? '✅ ' : '🎯 ') + 'Défi du jour : ' + d.txt(d.cible) + (d.fait ? ' (réussi)' : ' · +5 💚'); }
+$('ouvrirAtelier').onclick = () => { majAtelier(); $('atelier').classList.add('on'); }; $('fermerAtelier').onclick = () => $('atelier').classList.remove('on');
+$('ouvrirCarnet').onclick = () => { majCarnet(); $('carnet').classList.add('on'); }; $('fermerCarnet').onclick = () => $('carnet').classList.remove('on');
+majMenu();
 $('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
 addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, voixBuf, crier, oiseaux, lancerOiseau, get actx() { return actx; } };
+if (TEST) window.jeu = { finDeNiveau, egarer, poserOlivine, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, voixBuf, crier, oiseaux, lancerOiseau, get actx() { return actx; } };
 </script>
 </body>
 </html>
