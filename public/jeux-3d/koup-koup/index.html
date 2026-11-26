@@ -323,11 +323,13 @@ const son = {
   ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
 };
 const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'goutte', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(maitre); s.start(); return true; }
-const _coupe = son.coupe, _roche = son.roche, _or = son.or;
+const _coupe = son.coupe, _roche = son.roche, _or = son.or, _goutte = son.goutte;
 son.coupe = (id, rayon = 0.6) => { const v = Math.max(0.75, Math.min(1.25, 1.35 - rayon * 0.6)); const n = CROQUANTS.has(id) ? 'croquant-' + (1 + (Math.random() * 2 | 0)) : SOURDS.has(id) ? 'sourd' : 'juteux-' + (1 + (Math.random() * 2 | 0)); if (!jouer(n, 0.95, v)) _coupe(id); };
 son.roche = () => { if (!jouer('roche', 1)) _roche(); };
+let dernierSplat = 0;
+son.goutte = () => { const t = performance.now(); if (t - dernierSplat < 90) return; dernierSplat = t; if (!jouer('goutte', 0.5, rnd(0.9, 1.15))) _goutte(); };
 son.or = () => { if (!jouer('or', 0.8)) _or(); else sTone(110, 1.2, 0.18, 'sine', 0, 0.5); };
 let dernierPloc = 0;
 function ploc() { const t = performance.now(); if (t - dernierPloc > 70) { dernierPloc = t; son.ploc(); } }
@@ -568,16 +570,38 @@ function tache(sx, sy, color, taille, dir) {
   const delai = Math.max(60, Math.abs(cy - sy) / 900 * 1000);
   gouttes.push({ x: cx, y0: Math.min(sy, cy - 4), y1: cy, t: 0, d: delai / 1000, c, taille: t, ang });
 }
+const imagesTaches = [0, 1, 2, 3].map(i => { const im = new Image(); im.src = './v2/tache' + i + '.webp'; return im; });
+const cacheTeinte = new Map();
+function teinterTache(k, c) {
+  const cle = k + '_' + c.getHexString(); let cv = cacheTeinte.get(cle); if (cv) return cv;
+  const im = imagesTaches[k]; cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+  const x = cv.getContext('2d');
+  x.drawImage(im, 0, 0);
+  x.globalCompositeOperation = 'source-atop'; x.fillStyle = rgba(c, 0.8); x.fillRect(0, 0, cv.width, cv.height);   // couleur du jus
+  x.globalAlpha = 0.28; x.drawImage(im, 0, 0);                                                                  // reflets et relief de la photo
+  if (cacheTeinte.size > 200) cacheTeinte.clear();
+  cacheTeinte.set(cle, cv); return cv;
+}
 const gouttes = [];  // gouttes qui tombent vers la table avant de s'écraser
 function posePlat(g) {
   cctx.save(); cheminTable(cctx, geoTable()); cctx.clip();
   cctx.globalCompositeOperation = 'source-over';
-  blob(cctx, g.x, g.y1, g.taille, g.ang, 1.9, g.c, 0.85, true);               // flaque aplatie : vue en perspective
-  for (let i = 0; i < 16; i++) {
-    const a = rnd(0, 6.28), d = g.taille * rnd(1.0, 2.8);
-    const r = Math.max(1.2, g.taille * 0.2 * (1 - d / (g.taille * 3.4)) * rnd(0.4, 1.1));
-    blob(cctx, g.x + Math.cos(a) * d * 1.6, g.y1 + Math.sin(a) * d * 0.55, r, a, rnd(1.2, 2), g.c, rnd(0.7, 0.9));
+  const im = imagesTaches.length === 4 && imagesTaches.every(i => i.complete && i.naturalWidth) ? imagesTaches : null;
+  if (im) {
+    // tache photoréaliste (générée sur ElevenLabs), teintée à la couleur du jus et posée en perspective
+    const k = Math.floor(Math.random() * 4), teinte = teinterTache(k, g.c);
+    const w = g.taille * rnd(5.2, 6.4), h = w * teinte.height / teinte.width * 0.62;
+    cctx.save(); cctx.translate(g.x, g.y1); cctx.rotate(g.ang * 0.6); if (Math.random() < 0.5) cctx.scale(-1, 1);
+    cctx.globalAlpha = 0.92; cctx.drawImage(teinte, -w / 2, -h / 2, w, h); cctx.restore();
+  } else {
+    blob(cctx, g.x, g.y1, g.taille, g.ang, 1.9, g.c, 0.85, true);               // secours : flaque dessinée par le code
+    for (let i = 0; i < 16; i++) {
+      const a = rnd(0, 6.28), d = g.taille * rnd(1.0, 2.8);
+      const r = Math.max(1.2, g.taille * 0.2 * (1 - d / (g.taille * 3.4)) * rnd(0.4, 1.1));
+      blob(cctx, g.x + Math.cos(a) * d * 1.6, g.y1 + Math.sin(a) * d * 0.55, r, a, rnd(1.2, 2), g.c, rnd(0.7, 0.9));
+    }
   }
+  son.goutte();
   reflets.push({ x: g.x - g.taille * 0.4, y: g.y1 - g.taille * 0.15, rx: g.taille * 0.5, ry: g.taille * 0.12, a: 0, t: 0 });
   cctx.restore();
 }
