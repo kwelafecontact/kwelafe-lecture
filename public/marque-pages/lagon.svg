@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 600" width="200" height="600">
+<defs>
+<clipPath id="f"><path d="M0 0H200V600L100.0 566L0 600Z"/></clipPath>
+<linearGradient id="lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>
+
+<linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fb3ea"/><stop offset="1" stop-color="#c9ecff"/></linearGradient>
+<linearGradient id="mer" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b7fc4"/><stop offset=".25" stop-color="#22b5c9"/><stop offset=".7" stop-color="#63e0d4"/><stop offset="1" stop-color="#b8f3e4"/></linearGradient>
+</defs>
+<g clip-path="url(#f)">
+
+<rect width="200" height="600" fill="url(#ciel)"/>
+<g fill="#fff" opacity=".9"><ellipse cx="50" cy="80" rx="34" ry="10"/><ellipse cx="70" cy="72" rx="22" ry="10"/><ellipse cx="150" cy="130" rx="30" ry="8"/></g>
+<rect x="0" y="230" width="200" height="300" fill="url(#mer)"/>
+<path d="M0 262 C40 256 70 268 110 260 C150 252 175 264 200 258" stroke="#fff" stroke-width="4" fill="none" opacity=".9"/>
+<g stroke="#fff" stroke-width="1.5" opacity=".45" fill="none"><path d="M10 320 q20 -6 40 0 t40 0"/><path d="M90 360 q20 -6 40 0 t40 0"/><path d="M20 410 q20 -6 40 0 t40 0"/></g>
+<path d="M0 470 C60 450 120 480 200 455 L200 600 L0 600Z" fill="#f4e2b6"/>
+<path d="M0 490 C60 470 120 500 200 475" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>
+<path d="M160 470 C150 380 140 330 118 290" stroke="#6b4a2b" stroke-width="7" fill="none" stroke-linecap="round"/>
+<g fill="#1f8a3e"><path d="M118 290 C100 270 80 275 66 290 C88 284 104 288 118 290Z"/><path d="M118 290 C110 262 92 250 76 252 C96 262 108 275 118 290Z"/><path d="M118 290 C126 264 144 254 162 258 C142 266 128 278 118 290Z"/><path d="M118 290 C138 280 158 286 170 302 C150 292 134 292 118 290Z"/><path d="M118 290 C118 270 126 252 136 244 C128 262 124 276 118 290Z"/></g>
+<rect x="0" y="430" width="200" height="170" fill="url(#lb)"/>
+<text x="100.0" y="508" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="20" font-weight="700" fill="#fff" letter-spacing=".5">Le lagon</text>
+<line x1="74.0" y1="522" x2="126.0" y2="522" stroke="#f2b705" stroke-width="2"/>
+<text x="100.0" y="540" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#fff" opacity=".85" letter-spacing="3">KWÉLAFÉ</text>
+</g>
+<path d="M0 0H200V600L100.0 566L0 600Z" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="3"/>
+</svg>

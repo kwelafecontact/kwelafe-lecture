@@ -48,7 +48,7 @@ export default async function Accueil() {
     <>
       <VersPortails />
       <main className="page">
-        <div className="barre-haut">
+        <div className="entete-accueil">
           <Link href="/portails" aria-label="Choisir un espace">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-kwelafe.webp" alt="Kwélafé Production" />

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 600" width="200" height="600">
+<defs>
+<clipPath id="f"><path d="M0 0H200V600L100.0 566L0 600Z"/></clipPath>
+<linearGradient id="lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>
+
+<linearGradient id="aube" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3a7a"/><stop offset=".4" stop-color="#e57a6a"/><stop offset=".7" stop-color="#ffc77a"/><stop offset="1" stop-color="#fff0c9"/></linearGradient>
+</defs>
+<g clip-path="url(#f)">
+
+<rect width="200" height="600" fill="url(#aube)"/>
+<circle cx="132" cy="250" r="26" fill="#fff6c9" opacity=".95"/>
+<path d="M0 300 L30 260 L55 285 L85 240 L115 280 L145 250 L175 275 L200 255 L200 600 L0 600Z" fill="#7c6ca8" opacity=".75"/>
+<path d="M0 350 L25 320 L50 340 L80 300 L110 335 L140 310 L170 330 L200 305 L200 600 L0 600Z" fill="#5a4d8c"/>
+<g fill="#fff" opacity=".85"><ellipse cx="40" cy="365" rx="60" ry="12"/><ellipse cx="150" cy="372" rx="70" ry="13"/><ellipse cx="100" cy="385" rx="80" ry="10"/></g>
+<path d="M0 420 L40 395 L70 410 L110 380 L150 405 L200 385 L200 600 L0 600Z" fill="#3b315f"/>
+<path d="M0 470 C40 440 70 455 100 440 C130 425 170 450 200 430 L200 600 L0 600Z" fill="#2a2244"/>
+<g stroke="#2a2244" stroke-width="2"><line x1="30" y1="460" x2="30" y2="440"/><line x1="44" y1="455" x2="44" y2="432"/></g>
+<g fill="#5f8d4e"><circle cx="30" cy="438" r="5"/><circle cx="44" cy="430" r="6"/></g>
+<rect x="0" y="430" width="200" height="170" fill="url(#lb)"/>
+<text x="100.0" y="508" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="20" font-weight="700" fill="#fff" letter-spacing=".5">Le Maïdo</text>
+<line x1="74.0" y1="522" x2="126.0" y2="522" stroke="#f2b705" stroke-width="2"/>
+<text x="100.0" y="540" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#fff" opacity=".85" letter-spacing="3">KWÉLAFÉ</text>
+</g>
+<path d="M0 0H200V600L100.0 566L0 600Z" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="3"/>
+</svg>

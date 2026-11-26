@@ -2,6 +2,7 @@
 // Lecteur Kwélafé : EPUB à mise en page fixe, EPUB à texte redimensionnable et PDF (pages en images).
 // iPad / tablette : une page en portrait, deux pages en paysage.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MARQUE_PAGES } from "@/lib/marque-pages";
 import Link from "next/link";
 import type { Manifeste } from "@/lib/donnees";
 
@@ -60,7 +61,11 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   const raccourcis = useRef({ marque: () => {}, plein: () => {} });
   const [taille, setTaille] = useState(115);
   const [theme, setTheme] = useState<Theme>("clair");
-  const [zoom, setZoom] = useState(false);
+  const [zoomNiv, setZoomNiv] = useState(1); // 1 = page entière, jusqu'à 4
+  const zoom = zoomNiv > 1.01;
+  const [cadrage, setCadrage] = useState<"page" | "largeur">("page");
+  const [eclair, setEclair] = useState<"" | "g" | "d">("");
+  const [motif, setMotif] = useState("lagon");
   const [fin, setFin] = useState(false);
   const [dims, setDims] = useState({ w: 1024, h: 768 });
   const cadres = useRef<(HTMLIFrameElement | null)[]>([]);
@@ -76,11 +81,14 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     setChaud(lirePref("kw_chaud", 0));
     setNuitPages(lirePref("kw_nuit_pages", false));
     setRappel(lirePref("kw_rappel", 0));
+    setCadrage(lirePref<"page" | "largeur">("kw_cadrage", window.innerWidth < 600 && window.innerHeight > window.innerWidth ? "largeur" : "page"));
+    setMotif(lirePref("kw_marque_motif", "lagon"));
     return () => window.removeEventListener("resize", maj);
   }, []);
 
   const paysage = dims.w > dims.h;
-  const double = mode !== "texte" && paysage && dims.w >= 700 && !zoom;
+  const grandEcran = dims.w >= 900 && dims.h >= 560;
+  const double = mode !== "texte" && paysage && grandEcran && !zoom && cadrage === "page";
   const colonnes = mode === "texte" && paysage && dims.w >= 900 ? 2 : 1;
 
   /* ---------- Pages affichées (simple ou double) ---------- */
@@ -119,10 +127,12 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   };
 
   const basculerBarre = useCallback(() => setBarre((b) => !b), []);
+  const flash = (c: "g" | "d") => { setEclair(c); setTimeout(() => setEclair(""), 260); };
+  const changerZoom = useCallback((z: number) => setZoomNiv(Math.round(Math.min(4, Math.max(1, z)) * 100) / 100), []);
   const toucher = useCallback(
     (x: number) => {
-      if (x < 0.15) precedent();
-      else if (x > 0.85) suivant();
+      if (x < 0.25) { flash("g"); precedent(); }
+      else if (x > 0.75) { flash("d"); suivant(); }
       else basculerBarre();
     },
     [precedent, suivant, basculerBarre]
@@ -157,6 +167,8 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [affichees, toucher, suivant, precedent, i, total]);
 
+  useEffect(() => { setZoomNiv(1); }, [i]);
+
   /* ---------- Rythme de lecture (pour estimer le temps restant) ---------- */
   useEffect(() => { tours.current.n++; }, [i, etatTexte.page]);
 
@@ -165,7 +177,9 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     const k = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") suivant();
       if (e.key === "ArrowLeft") precedent();
-      if (e.key === "Escape") setPanneau(null);
+      if (e.key === "Escape") { setPanneau(null); setZoomNiv(1); }
+      if (e.key === "+" || e.key === "=") setZoomNiv((z) => Math.min(4, z + 0.5));
+      if (e.key === "-") setZoomNiv((z) => Math.max(1, z - 0.5));
       if (e.key === "b" || e.key === "B") raccourcis.current.marque();
       if (e.key === "f" || e.key === "F") raccourcis.current.plein();
     };
@@ -314,11 +328,22 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
 
   /* ---------- Gestes sur les pages PDF ---------- */
   const depart = useRef<{ x: number; y: number } | null>(null);
+  const pince = useRef<{ d: number; z: number } | null>(null);
+  const dernierTap = useRef(0);
+  const ecart = (t: React.TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const surDebutToucher = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) { pince.current = { d: ecart(e.touches), z: zoomNiv }; depart.current = null; return; }
     if (e.touches.length === 1) depart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     else depart.current = null;
   };
+  const surBougerToucher = (e: React.TouchEvent) => {
+    if (pince.current && e.touches.length === 2) changerZoom(pince.current.z * (ecart(e.touches) / pince.current.d));
+  };
   const surFinToucher = (e: React.TouchEvent) => {
+    if (pince.current) { if (e.touches.length < 2) pince.current = null; return; }
+    const maintenant = Date.now();
+    if (maintenant - dernierTap.current < 300 && depart.current) { dernierTap.current = 0; depart.current = null; changerZoom(zoom ? 1 : 2); e.preventDefault(); return; }
+    dernierTap.current = maintenant;
     if (!depart.current || zoom) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - depart.current.x, dy = t.clientY - depart.current.y;
@@ -327,22 +352,28 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
   };
 
   /* ---------- Mise à l'échelle ---------- */
-  const marge = 12;
+  // Marges : presque rien sur téléphone, un peu d'air sur tablette et ordinateur
+  const marge = dims.w < 600 ? 2 : dims.w < 1100 ? 10 : 24;
   const zoneL = dims.w - marge * 2;
   const zoneH = dims.h - marge * 2;
+  const surface = (lp: number, hp: number, n: number) => {
+    const entiere = Math.min(zoneL / (lp * n), zoneH / hp);
+    const largeur = Math.min(zoneL / (lp * n), (zoneL > 1100 ? 1100 : zoneL) / (lp * n));
+    return (cadrage === "largeur" ? largeur : entiere) * zoomNiv;
+  };
   let echelle = 1, larg = 768, haut = 1024;
   if (mode === "fixe" && m.type === "epub") {
     larg = m.largeur || 768;
     haut = m.hauteur || 1024;
-    echelle = Math.min(zoneL / (larg * affichees.length), zoneH / haut);
+    echelle = surface(larg, haut, affichees.length);
   }
   let hImg = 0, lImg = 0;
   if (m.type === "pdf") {
-    const n = affichees.length;
-    hImg = Math.min(zoneH, (zoneL / n) * m.ratio);
-    lImg = hImg / m.ratio;
-    if (zoom) { lImg = Math.min(dims.w * 2, 2400); hImg = lImg * m.ratio; }
+    const k = surface(1000, 1000 * m.ratio, affichees.length);
+    lImg = 1000 * k;
+    hImg = lImg * m.ratio;
   }
+  const deborde = mode !== "texte" && ((m.type === "pdf" && (hImg > zoneH + 2 || lImg * affichees.length > zoneL + 2)) || (mode === "fixe" && (haut * echelle > zoneH + 2 || larg * echelle * affichees.length > zoneL + 2)));
 
   const fond = mode === "texte" ? THEMES[theme].fond : "#efeae1";
   const sombre = mode === "texte" && theme === "nuit";
@@ -367,9 +398,11 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
     <div className={`lecteur ${sombre || (nuitPages && mode !== "texte") ? "sombre" : ""}`} style={{ background: fondFinal }}>
       {/* ----- Zone de lecture ----- */}
       <div
-        className={`scene ${zoom ? "zoom" : ""}`}
+        className={`scene ${deborde ? "defile" : ""}`}
         onTouchStart={mode === "pdf" ? surDebutToucher : undefined}
+        onTouchMove={mode === "pdf" ? surBougerToucher : undefined}
         onTouchEnd={mode === "pdf" ? surFinToucher : undefined}
+        onWheel={mode !== "texte" ? (e) => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); changerZoom(zoomNiv - e.deltaY / 300); } } : undefined}
         onClick={mode === "pdf" ? (e) => toucher(zoom ? 0.5 : e.clientX / dims.w) : undefined}
         onContextMenu={(e) => e.preventDefault()}
       >
@@ -420,7 +453,21 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
       </div>
       {chaud > 0 && <div className="calque-chaud" style={{ opacity: chaud * 0.35 }} aria-hidden />}
       {lumiere < 1 && <div className="calque-lumiere" style={{ opacity: (1 - lumiere) * 0.85 }} aria-hidden />}
-      {marqueIci >= 0 && <div className="ruban-marque" aria-label="Page marquée">🔖</div>}
+      {marqueIci >= 0 && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="marque-page-visuel" src={`/marque-pages/${motif}.svg`} alt="Page marquée" />
+      )}
+      <button className={`fleche-page gauche ${barre ? "visible" : ""}`} onClick={(e) => { e.stopPropagation(); flash("g"); precedent(); }} aria-label="Page précédente">‹</button>
+      <button className={`fleche-page droite ${barre ? "visible" : ""}`} onClick={(e) => { e.stopPropagation(); flash("d"); suivant(); }} aria-label="Page suivante">›</button>
+      {eclair && <div className={`eclair-zone ${eclair}`} aria-hidden />}
+      {zoom && mode !== "texte" && (
+        <div className="pastille-zoom" role="group" aria-label="Zoom">
+          <button onClick={() => changerZoom(zoomNiv - 0.5)} aria-label="Dézoomer">−</button>
+          <span>{Math.round(zoomNiv * 100)} %</span>
+          <button onClick={() => changerZoom(zoomNiv + 0.5)} aria-label="Zoomer">+</button>
+          <button onClick={() => setZoomNiv(1)} aria-label="Revenir à la page entière">✕</button>
+        </div>
+      )}
       <div className={`progression-fine ${barre ? "cachee" : ""}`} aria-hidden><i style={{ width: `${Math.min(100, fin ? 100 : pourcentage)}%` }} /></div>
       {toast && <div className="toast-lecteur" role="status">{toast}</div>}
 
@@ -453,7 +500,16 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
           <span className="pourcent">{Math.round(fin ? 100 : pourcentage)} % · ⏱ {texteRestant}</span>
           <span className="outils-bas">
             {diaporama > 0 && <button className="bouton-texte actif" onClick={() => setDiaporama(0)}>⏸ Arrêter</button>}
-            {mode === "pdf" && <button className="bouton-texte" onClick={() => setZoom(!zoom)}>{zoom ? "Taille normale" : "🔍 Agrandir"}</button>}
+            {mode !== "texte" && (
+              <>
+                <button className="bouton-texte" onClick={() => changerZoom(zoomNiv - 0.5)} aria-label="Dézoomer" disabled={!zoom}>−</button>
+                <button className="bouton-texte" onClick={() => setZoomNiv(1)} title="Revenir à 100 %">🔍 {Math.round(zoomNiv * 100)} %</button>
+                <button className="bouton-texte" onClick={() => changerZoom(zoomNiv + 0.5)} aria-label="Zoomer">+</button>
+                <button className="bouton-texte" onClick={() => { const c = cadrage === "page" ? "largeur" : "page"; setCadrage(c); ecrirePref("kw_cadrage", c); setZoomNiv(1); }}>
+                  {cadrage === "page" ? "↔ Pleine largeur" : "▣ Page entière"}
+                </button>
+              </>
+            )}
           </span>
         </div>
       </footer>
@@ -555,6 +611,27 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email }
                 </div>
               </>
             )}
+            {mode !== "texte" && (
+              <>
+                <h3 className="titre-reglage">Cadrage de la page</h3>
+                <div className="choix-ligne">
+                  {([["page", "▣ Page entière"], ["largeur", "↔ Pleine largeur"]] as const).map(([c, nom]) => (
+                    <button key={c} className={`pastille ${cadrage === c ? "active" : ""}`} onClick={() => { setCadrage(c); ecrirePref("kw_cadrage", c); setZoomNiv(1); }}>{nom}</button>
+                  ))}
+                </div>
+                <p className="texte-doux" style={{ fontSize: 13, margin: "6px 0 0" }}>Pour zoomer : pince avec deux doigts, touche deux fois la page, ou Ctrl + molette sur ordinateur.</p>
+              </>
+            )}
+            <h3 className="titre-reglage">🔖 Mon marque-page</h3>
+            <div className="choix-marques">
+              {MARQUE_PAGES.map((mp) => (
+                <button key={mp.id} className={`choix-marque ${motif === mp.id ? "actif" : ""}`} onClick={() => { setMotif(mp.id); ecrirePref("kw_marque_motif", mp.id); }} aria-label={mp.nom}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/marque-pages/${mp.id}.svg`} alt="" loading="lazy" />
+                  <small>{mp.nom}</small>
+                </button>
+              ))}
+            </div>
             {mode !== "texte" && (
               <label className="interrupteur">
                 <span>🌙 Mode nuit <small>Pages sombres, plus douces pour les yeux le soir</small></span>
