@@ -163,6 +163,7 @@
 <button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
+<script src="../commun/pixi.min.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -265,20 +266,34 @@ const contre = new THREE.DirectionalLight(0xff5a20, 1.4); contre.position.set(-4
 scene.add(new THREE.HemisphereLight(0xffc8a0, 0x201010, 0.7));
 let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3;
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
-const trace = $('trace'), tctx = trace.getContext('2d');
+const trace = $('trace');
+let tapp = null, gTr = null;
+{ const a = new PIXI.Application(); a.init({ canvas: trace, width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: Math.min(devicePixelRatio, 2), autoDensity: false, autoStart: false }).then(() => { gTr = new PIXI.Graphics(); a.stage.addChild(gTr); tapp = a; }); }
+// textures calculées à la main (sans canvas 2D) : dégradé radial et réseau de fissures incandescentes
+function radialTex(stops, R0, R1) {
+  const N = 128, d = new Uint8Array(N * N * 4);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const r = Math.hypot(x + 0.5 - 64, y + 0.5 - 64), t = Math.max(0, Math.min(1, (r - R0) / (R1 - R0)));
+    let k = 0; while (k < stops.length - 2 && t > stops[k + 1][0]) k++;
+    const A = stops[k], B = stops[k + 1], u = Math.max(0, Math.min(1, (t - A[0]) / (B[0] - A[0]))), o = (y * N + x) * 4;
+    for (let c = 0; c < 4; c++) d[o + c] = (A[1][c] + (B[1][c] - A[1][c]) * u) * (c === 3 ? 255 : 1);
+  }
+  const tx = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); tx.minFilter = tx.magFilter = THREE.LinearFilter; tx.generateMipmaps = false; tx.needsUpdate = true; return tx;
+}
 
 // ---------------------------------------------------------------- bombe de lave : scorie poreuse, fissures incandescentes (reprise de Koup Koup, améliorée)
 function rocheTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
-  g.fillStyle = '#000'; g.fillRect(0, 0, 512, 512);
-  g.lineCap = 'round';
+  const N = 512, d = new Uint8Array(N * N * 4); for (let i = 3; i < d.length; i += 4) d[i] = 255;
+  const stamp = (x, y, r, c, a, hard) => { for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(N - 1, Math.ceil(y + r)); j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(N - 1, Math.ceil(x + r)); i++) {
+    const q = Math.hypot(i + 0.5 - x, j + 0.5 - y) / r; if (q > 1) continue; const f = (hard ? 1 : (1 - q) * (1 - q)) * a, o = (j * N + i) * 4;
+    for (let k = 0; k < 3; k++) d[o + k] = Math.min(255, d[o + k] + c[k] * f); } };
   for (let i = 0; i < 34; i++) {
-    let x = Math.random() * 512, y = Math.random() * 512; g.lineWidth = rnd(1.5, 6); g.strokeStyle = Math.random() < .5 ? '#ff6a10' : '#ffb020';
-    g.shadowColor = '#ffcc40'; g.shadowBlur = 14; g.beginPath(); g.moveTo(x, y);
-    for (let k = 0; k < 8; k++) { x += rnd(-40, 40); y += rnd(-40, 40); g.lineTo(x, y); } g.stroke();
+    let x = Math.random() * N, y = Math.random() * N; const lw = rnd(1.5, 6), c = Math.random() < .5 ? [255, 106, 16] : [255, 176, 32];
+    for (let k = 0; k < 8; k++) { const nx = x + rnd(-40, 40), ny = y + rnd(-40, 40), n = Math.ceil(Math.hypot(nx - x, ny - y) / 2);
+      for (let m = 0; m <= n; m++) { const px = x + (nx - x) * m / n, py = y + (ny - y) * m / n; stamp(px, py, lw * 2.6, [255, 204, 64], 0.10, false); stamp(px, py, lw / 2, c, 1, true); } x = nx; y = ny; }
   }
-  for (let i = 0; i < 120; i++) { g.fillStyle = `rgba(255,${rnd(80, 180) | 0},20,${rnd(.3, .9)})`; g.beginPath(); g.arc(Math.random() * 512, Math.random() * 512, rnd(1, 4), 0, 7); g.fill(); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  for (let i = 0; i < 120; i++) stamp(Math.random() * N, Math.random() * N, rnd(1, 4), [255, rnd(80, 180) | 0, 20], rnd(.3, .9), true);
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true; return t;
 }
 const rocheGeo = (() => {
   const g = new THREE.IcosahedronGeometry(0.68, 4), p = g.attributes.position, v = new THREE.Vector3();
@@ -286,12 +301,12 @@ const rocheGeo = (() => {
   g.computeVertexNormals(); return g;
 })();
 const rocheMat = new THREE.MeshStandardMaterial({ color: 0x2a2624, roughness: 0.92, metalness: 0.05, emissive: 0xffffff, emissiveMap: rocheTexture(), emissiveIntensity: 3.2, flatShading: true });
-const halo = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 4, 64, 64, 64); r.addColorStop(0, 'rgba(255,190,80,.9)'); r.addColorStop(.4, 'rgba(255,90,10,.35)'); r.addColorStop(1, 'rgba(255,40,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); return new THREE.SpriteMaterial({ map: t, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5 }); })();
+const halo = (() => new THREE.SpriteMaterial({ map: radialTex([[0, [255, 190, 80, .9]], [.4, [255, 90, 10, .35]], [1, [255, 40, 0, 0]]], 4, 64), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5 }))();
 // pierre à cristaux : roche sombre hérissée de cristaux verts (olivine), à trancher 2 ou 3 fois
 const matCaillou = new THREE.MeshStandardMaterial({ color: 0x4a5a50, roughness: 0.75, metalness: 0.12, emissive: 0x0e5a28, emissiveIntensity: 0.45, flatShading: true });
 const matCristal = new THREE.MeshStandardMaterial({ color: 0x1fa850, emissive: 0x0e8a3a, emissiveIntensity: 0.8, roughness: 0.12, metalness: 0.1, flatShading: true });
 const geoCristal = new THREE.ConeGeometry(0.16, 0.72, 6);
-const haloVert = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 4, 64, 64, 64); r.addColorStop(0, 'rgba(150,255,170,.85)'); r.addColorStop(.4, 'rgba(40,220,100,.32)'); r.addColorStop(1, 'rgba(0,200,80,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.12 }); })();
+const haloVert = (() => new THREE.SpriteMaterial({ map: radialTex([[0, [150, 255, 170, .85]], [.4, [40, 220, 100, .32]], [1, [0, 200, 80, 0]]], 4, 64), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.12 }))();
 function pierreCristal() {
   const m = new THREE.Mesh(rocheGeo, matCaillou), Y = new THREE.Vector3(0, 1, 0);
   for (let i = 0; i < 18; i++) {
@@ -501,7 +516,7 @@ const cratere = { x: 0, y: 4, jx: 0, jy: 4 }; // bouche du cratère : décor (x,
 const SENTIER_L = 0.83; // ligne du sentier dans l'image horizontale
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
-  const d = Math.min(devicePixelRatio, 2); trace.width = W * d; trace.height = H * d; tctx.setTransform(d, 0, 0, d, 0, 0);
+  if (tapp) tapp.renderer.resize(W, H, Math.min(devicePixelRatio, 2));
   camera.aspect = W / H; camera.updateProjectionMatrix();
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
   sol = -viewH * 0.4; capteur.position.set(0, sol + 0.005, -2);
@@ -618,7 +633,8 @@ function finDeNiveau() {
   setTimeout(() => etat === 'jeu' && lancerBombe(true), 900);
   setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; lancerSismo(); }, 4400);
 }
-let sismo = null;
+let sismo = null, sapp = null, gSi = null;
+{ const a = new PIXI.Application(); a.init({ canvas: $('sismo'), width: 600, height: 140, backgroundAlpha: 0, antialias: true, resolution: 1, autoDensity: false, autoStart: false }).then(() => { gSi = new PIXI.Graphics(); a.stage.addChild(gSi); sapp = a; }); }
 function lancerSismo() { sismo = { t: 0, pic: rnd(1.4, 2.4), fini: false, trace: [] }; $('jauge').classList.add('on'); }
 const seuil = () => 0.62 - save.amelio.sismo * 0.07;
 function amplitude(t) { const e = Math.exp(-((t - sismo.pic) ** 2) / 0.35); return Math.min(1, 0.08 + e); }
@@ -630,11 +646,13 @@ function arreterSismo() {
   setTimeout(() => $('jauge').classList.remove('on'), 500);
 }
 function dessinerSismo(dt) {
-  if (!sismo) return; const c = $('sismo'), g = c.getContext('2d'), w = c.width, h = c.height;
+  if (!sismo || !sapp) return; const w = 600, h = 140;
   if (!sismo.fini) { sismo.t += dt; const a = amplitude(sismo.t); for (let k = 0; k < 6; k++) sismo.trace.push((Math.random() * 2 - 1) * a); if (sismo.trace.length > w / 2) sismo.trace.splice(0, sismo.trace.length - w / 2); if (sismo.t > 3.6) arreterSismo(); }
-  g.fillStyle = '#f8f2e2'; g.fillRect(0, 0, w, h);
-  const s_ = seuil(); g.strokeStyle = '#d02010'; g.setLineDash([8, 6]); g.lineWidth = 2; for (const y of [h / 2 - s_ * h * 0.45, h / 2 + s_ * h * 0.45]) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } g.setLineDash([]);
-  g.strokeStyle = '#1a1a2a'; g.lineWidth = 2; g.beginPath(); sismo.trace.forEach((v, i) => { const x = i * 2, y = h / 2 + v * h * 0.45; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  gSi.clear();
+  const s_ = seuil(); for (const y of [h / 2 - s_ * h * 0.45, h / 2 + s_ * h * 0.45]) { for (let x = 0; x < w; x += 16) gSi.moveTo(x, y).lineTo(Math.min(w, x + 8), y); }
+  gSi.stroke({ width: 3, color: 0xd02010 });
+  sismo.trace.forEach((v, i) => { const x = i * 2, y = h / 2 + v * h * 0.45; i ? gSi.lineTo(x, y) : gSi.moveTo(x, y); }); gSi.stroke({ width: 3, color: 0x1a1a2a, join: 'round' });
+  sapp.render();
 }
 // randonneur qui quitte le balisage
 function egarer() { const libres = marcheurs.filter(m => !m.egare && m.choc <= 0); if (!libres.length) return; const m = libres[Math.floor(Math.random() * libres.length)]; m.egare = 4 + save.amelio.jumelles; const e = document.createElement('div'); e.className = 'alerte'; e.textContent = '⚠️'; document.body.appendChild(e); m.alerte = e; crier(m); }
@@ -719,15 +737,17 @@ function trancher(a, b) {
   }
 }
 function dessinerTrait() {
-  tctx.clearRect(0, 0, W, H);
+  if (!tapp) return; gTr.clear();
   const now = performance.now(); while (trait.length && now - trait[0].t > 160) trait.shift();
-  if (trait.length < 2) return;
-  for (let i = 1; i < trait.length; i++) { const k = i / trait.length; tctx.strokeStyle = `rgba(200,240,255,${k * 0.9})`; tctx.lineWidth = 2 + k * 9; tctx.lineCap = 'round'; tctx.shadowColor = 'rgba(120,200,255,.9)'; tctx.shadowBlur = 14; tctx.beginPath(); tctx.moveTo(trait[i - 1].x, trait[i - 1].y); tctx.lineTo(trait[i].x, trait[i].y); tctx.stroke(); }
+  if (trait.length >= 2) for (let i = 1; i < trait.length; i++) { const k = i / trait.length, A = trait[i - 1], B = trait[i];
+    gTr.moveTo(A.x, A.y).lineTo(B.x, B.y).stroke({ width: 2 + k * 9 + 12, color: 0x78c8ff, alpha: k * 0.22, cap: 'round' });
+    gTr.moveTo(A.x, A.y).lineTo(B.x, B.y).stroke({ width: 2 + k * 9, color: 0xc8f0ff, alpha: k * 0.9, cap: 'round' }); }
+  tapp.render();
 }
 
 // taches de lave au sol : incandescentes puis refroidies
 const taches = [];
-const texTache = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 4, 64, 64, 62); r.addColorStop(0, '#fff2a0'); r.addColorStop(.3, '#ff8a20'); r.addColorStop(.7, 'rgba(160,20,0,.8)'); r.addColorStop(1, 'rgba(40,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+const texTache = radialTex([[0, [255, 242, 160, 1]], [.3, [255, 138, 32, 1]], [.7, [160, 20, 0, .8]], [1, [40, 0, 0, 0]]], 4, 62);
 function tache(x) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.7), new THREE.MeshBasicMaterial({ map: texTache, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, color: new THREE.Color(3, 3, 3) })); m.position.set(x, sol + 0.05, 0.4); m.rotation.x = -1.2; scene.add(m); taches.push({ m, vie: 3 }); }
 // onde de choc et anneau lumineux à la coupe
 const anneaux = [];
