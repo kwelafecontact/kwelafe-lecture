@@ -30,7 +30,6 @@ export default async function Compte() {
             <Avatar taille={64} cle="kw-avatar-eleve" />
             <div><div className="sur-titre">Espace élève</div><h1>{session.prenom || "Moi"}</h1></div>
           </header>
-        {editeur && <EspaceCreateur />}
           <section className="panneau">
             <h2>🎒 Ma classe</h2>
             <p>{info ? <><b>{info.groupe.nom}</b> · {info.etab.nom}</> : "Classe introuvable"}</p>
@@ -66,6 +65,7 @@ export default async function Compte() {
             <h1>Mon compte</h1>
           </div>
         </header>
+        {editeur && <EspaceCreateur />}
 
         {session.visiteur && <BandeauVisiteur />}
         {!session.visiteur && <a className="btn secondaire large" href="/mes-livres-hors-ligne" style={{ marginBottom: 18 }}>⬇️ Mes livres hors connexion</a>}
