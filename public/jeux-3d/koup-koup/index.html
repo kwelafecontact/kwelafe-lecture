@@ -95,6 +95,7 @@
   <div class="titre">Koup Koup 2</div>
   <div class="sous">Les fruits et légumes péi en 3D</div>
   <div class="consigne">Coupe la mangue d'un coup de doigt pour jouer</div>
+  <div class="defi" id="defiMenu"></div>
   <button class="btn zone-interactive" id="jouer">Jouer</button>
 </div>
 
@@ -102,6 +103,7 @@
   <div class="sous" style="margin-top:0">Partie terminée</div>
   <div class="gros" id="scoreFin">0</div>
   <div class="sous" id="recordFin">Record : 0</div>
+  <div class="defi" id="bilanFin"></div>
   <div class="consigne">Coupe la mangue pour rejouer</div>
   <button class="btn zone-interactive" id="rejouer">Rejouer</button>
 </div>
@@ -121,9 +123,11 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
   location.href = '/jeux';
 });
 </script>
+<style>.defi{margin-top:10px;font:700 clamp(14px,3.6vw,17px)/1.35 "Baloo 2",system-ui,sans-serif;color:#ffe9b0;text-shadow:0 2px 0 rgba(58,26,0,.8);max-width:min(88vw,520px)}.defi b{color:#ffd23a}#bilanFin{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(env(safe-area-inset-bottom),0px) + 88px);width:max-content;margin:0;font-size:clamp(13px,3.2vw,15px)}</style>
 <button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
+<script src="../commun/kwelafe-fx.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -743,11 +747,26 @@ function finDeNiveau() {
   for (let i = 0; i < n; i++) setTimeout(() => { if (etat !== 'jeu' || !prets.length) return; const x = -viewW * 0.38 + (i / (n - 1)) * viewW * 0.76; lancer(prets[Math.floor(Math.random() * prets.length)], { x }); }, 200 + i * 170);
   setTimeout(() => { if (etat === 'jeu' && cache['letchi']) lancer(cache['letchi'], { or: true, x: rnd(-viewW * 0.2, viewW * 0.2) }); }, 900);
   if (cache['vanille']) setTimeout(() => { if (etat === 'jeu') lancer(cache['vanille']); }, 1300);
-  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); bandeau('Accalmie… Niveau ' + niv, 3.2); }, 4200);
+  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); if (fx) fx.evenement('niveau', { niveau: niv }); bandeau('Accalmie… Niveau ' + niv, 3.2); }, 4200);
 } // points gagnés pendant le geste en cours
 const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
 function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
 try { record = +(localStorage.getItem('koupkoup_record') || 0); } catch (e) {}
+// ---------------------------------------------------------------- KwFX, le directeur d'effets Kwélafé
+// Mode complément : le jeu garde son jus 3D, ses taches et ses sons ; KwFX ajoute la mise en scène
+// (onomatopées créoles, lignes de vitesse, aura, image d'impact, pièces qui volent vers le score),
+// les pépites surprises, la collection d'objets rares péi, le défi du jour et le record.
+const fx = window.KwFX ? KwFX.init({
+  theme: 'fruits', public: 'enfant', manga: 2, mode: 'probleme', support: 'web', jeu: 'koup-koup-2',
+  complement: true, sons: false, messages: false, secousses: false,
+  cibleScore: $('score'), zoneShake: glc, dprMax: MOBILE ? 1.5 : 2,
+  onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
+}) : null;
+function majDefi() {
+  if (!fx) return; const d = fx.defiDuJour();
+  $('defiMenu').innerHTML = '<b>Défi du jour :</b> ' + d.texte + (d.reussi ? ' ✓' : '');
+}
+majDefi();
 
 function lancer(fruit, opts = {}) {
   const roche = !fruit;
@@ -783,6 +802,7 @@ function couper(o, dir, precision = 1) {
     son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
     const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
     popup('Aïe ! Une roche du volcan !', pos, 'aie'); serie = 0;
+    if (fx && etat === 'jeu') { const s0 = toScreen(pos); fx.evenement('erreur', { x: s0.x, y: s0.y, grave: true }); }
     perdreVie(); perdreVie();
     return;
   }
@@ -824,6 +844,15 @@ function couper(o, dir, precision = 1) {
   if (parfait) pts += 1;
   if (frenesie > 0) pts *= 2;
   score += pts; coupeSwipe += pts; majScore();
+  if (fx && etat === 'jeu') {
+    const d = fx.evenement('coupe', { x: s.x, y: s.y, couleur: '#' + jus.getHexString() });
+    if (d.pepite) { score += 10; majScore(); setTimeout(() => popup('Pépite ! +10', pos.clone().add(new THREE.Vector3(0, 1.7, 0)), 'or'), 200); }
+    if (o.or) {
+      fx.joue('pepite', { x: s.x, y: s.y, intensite: 1 });
+      const ob = fx.tirerObjet();
+      setTimeout(() => popup((ob.nouveau ? 'Nouveau : ' : '') + ob.nom + ' (' + ob.total + '/' + ob.sur + ')', pos.clone().add(new THREE.Vector3(0, -1.2, 0)), 'bonus'), 700);
+    }
+  }
   const clair = teinteTache(jus).offsetHSL(0, 0.15, 0.08);
   popup('+' + pts, pos, 'pts', '#' + clair.getHexString());
   if (!o.vanille && f.d.nom) popup(f.d.nom, pos.clone().add(new THREE.Vector3(0, 1.1, 0)), 'nom');
@@ -863,6 +892,7 @@ function demarrer(reprise) {
   niv = 1; phase = 'actif'; phaseT = 0; charge = 0; serie = 0; ralentis = 0; frenesies = 0; frenesie = 0; ralentiBonus = 0;
   if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; niv = Math.max(1, reprise.niv | 0 || 1); }
   majNiveauHud(); majBonus(); $('bonus').classList.add('on');
+  if (fx) fx.evenement('debut');
   masquerReprise();
   majScore(); majVies();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
@@ -874,6 +904,11 @@ function finPartie() {
   try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {}
   if (score > record) { record = score; try { localStorage.setItem('koupkoup_record', record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
+  if (fx) {
+    const b = fx.finPartie(score);
+    $('bilanFin').innerHTML = '<b>Défi du jour :</b> ' + b.defi.texte + (b.defi.reussi ? ' ✓ réussi' : '') + '<br><b>Collection péi :</b> ' + b.collection.obtenus + ' / ' + b.collection.total + ' objets rares';
+    majDefi();
+  }
   setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue(); }, 1200);
 }
 
@@ -916,6 +951,7 @@ function finCombo() {
     popup(`Multi ×${comboN} ! +${bonus}`, comboPos, 'combo');
     etincelles(comboPos, 30 + comboN * 12);
     if (comboN >= 3) { ralenti = Math.max(ralenti, 0.35); zoom = 1; }
+    if (fx) { const s = toScreen(comboPos); fx.evenement('combo', { n: comboN, x: s.x, y: s.y }); }
   }
   comboN = 0; coupeSwipe = 0;
 }
@@ -1069,7 +1105,7 @@ function boucle() {
     if (o.roche && Math.random() < 0.5) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .5, 0)), new THREE.Vector3(rnd(-.5, .5), rnd(1, 2.5), 0), rnd(0.03, 0.06), fumee, 0.5, 0.15);
     if (o.vel.y < 0 && o.obj.position.y < -viewH / 2 - 1.5) {
       o.vivant = false; scene.remove(o.obj);
-      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); serie = 0; perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
+      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); serie = 0; if (fx) fx.evenement('erreur', { x: toScreen(o.obj.position).x, y: H - 140 }); perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
     }
   }
   for (let i = moities.length - 1; i >= 0; i--) {
