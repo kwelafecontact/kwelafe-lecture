@@ -24,6 +24,7 @@
     rafale: 0, // force de la rafale de vent
     recharge: {},
     ambianceT: 0,
+    file: [], // gouttes tardives programmées : le jus continue de couler après l'éclat
     etat: { jouant: false, calme: true, cascade: 1, W: 360, H: 640, zone: { x0: 0, x1: 360, y0: 0, y1: 640 } },
 
     /* ---- 1. VENT : champ de flux sans divergence + rafales, renvoie [vx, vy, vz] en pixels par seconde au carré ---- */
@@ -64,7 +65,8 @@
       switch (type) {
         case "coup": { // un fruit éclate
           this.excitation = Math.min(1, this.excitation + 0.03);
-          f.jus(x, y, col, u, this.n(4 + Math.ceil((o.n || 6) / 2)), this.excitation > 0.55 ? this.cibleXY : null);
+          f.jus(x, y, col, u, Math.max(2, Math.round(this.n(4 + Math.ceil((o.n || 6) / 2)) * rnd(0.6, 1.5))), this.excitation > 0.55 ? this.cibleXY : null);
+          for (let i = Math.floor(rnd(0, 3.2)); i > 0; i--) this.file.push({ t: this.t + rnd(0.15, 0.9), x: x + rnd(-u * 0.4, u * 0.4), y: y + rnd(-u * 0.2, u * 0.5), u, c: col });
           if (this.excitation > 0.7 && this.libre("lucioles-coup", 0.25)) f.etincelles(x, y, this.n(5), u * 4, u, null, 0.8);
           break;
         }
@@ -123,6 +125,7 @@
       this.t += dt;
       if (etat) Object.assign(this.etat, etat);
       this.surveille(dt);
+      for (let i = this.file.length - 1; i >= 0; i--) { const q = this.file[i]; if (this.t >= q.t) { const f2 = F(); if (f2) f2.jus(q.x, q.y, q.c, q.u * rnd(0.5, 0.9), 1 + Math.floor(rnd(0, 2.5))); this.file.splice(i, 1); } }
       this.excitation *= Math.exp(-dt * (this.etat.calme ? 0.9 : 0.55));
       this.rafale *= Math.exp(-dt * 1.4);
       const f = F(); if (!f || !this.etat.jouant) return;

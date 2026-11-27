@@ -57,7 +57,7 @@ function reserve(nom, geo, mat, max, add) {
 function ajoute(nom, o) {
   const k = kinds[nom];
   if (!k || !ready || k.p.length >= k.max) return;
-  o.t = 0; o.rx = o.rx ?? rnd(0, TAU); o.ry = o.ry ?? rnd(0, TAU); o.rz = o.rz ?? rnd(0, TAU);
+  o.t = o.t ?? 0; o.rx = o.rx ?? rnd(0, TAU); o.ry = o.ry ?? rnd(0, TAU); o.rz = o.rz ?? rnd(0, TAU);
   o.vrx = o.vrx ?? 0; o.vry = o.vry ?? 0; o.vrz = o.vrz ?? 0; o.g = o.g ?? 0; o.drag = o.drag ?? 0; o.z = o.z ?? 0; o.vz = o.vz ?? 0;
   o.c = new THREE.Color(o.c ?? 0xffffff); o.sx = o.sx ?? 1; o.sy = o.sy ?? 1; o.sz = o.sz ?? 1; o.pop = o.pop ?? 0.1;
   o.vent = o.vent ?? 0; o.ph = rnd(0, TAU);
@@ -69,6 +69,7 @@ function majReserve(k, dt) {
   for (let i = 0; i < P.length; i++) {
     const q = P[i];
     q.t += dt;
+    if (q.t < 0) continue;
     if (q.t >= q.life) { if (q.split) nouvelles.push(q); continue; }
     // vent en champ de flux et attraction vers la cible, décidés par le chef d'orchestre
     if (q.vent && brain && brain.vent) { const w = brain.vent(q.x, q.y, q.z, T); q.vx += w[0] * q.vent * dt; q.vy += w[1] * q.vent * dt; q.vz += w[2] * q.vent * dt; }
@@ -197,17 +198,20 @@ const FX3D = {
     if (!ready) return;
     const c = new THREE.Color(couleur);
     ajoute("gelees", { x: wx(x), y: wy(y), z: 6, s: u * 0.5, c: c.clone().lerp(new THREE.Color(0xffffff), 0.12), life: 0.6, wob: 0.38, pop: 0.05, sx: 1.1, sy: 0.9 });
-    const couronne = Math.ceil(n * 0.6);
-    for (let i = 0; i < couronne; i++) {
-      const a = (i / couronne) * TAU + rnd(-0.2, 0.2), v = rnd(2.6, 4.2) * u * 1.5;
-      ajoute("gouttes", { x: wx(x), y: wy(y), z: rnd(0, 14), vx: Math.cos(a) * v * 0.85, vy: v * rnd(0.55, 1.05), vz: Math.sin(a) * v * 0.5,
-        g: u * 12, s: rnd(0.2, 0.36) * u, c, life: rnd(0.7, 1.1), orient: 1, ref: u * 7, etire: 1.3, split: Math.random() < 0.55 ? 2 : 0, drag: 0.25, vent: 0.35,
-        seek: seek ? { x: wx(seek.x), y: wy(seek.y), f: u * 28, delai: 0.32, r: u * 0.45 } : null });
-    }
-    for (let i = couronne; i < n; i++) {
-      const a = rnd(0, TAU), v = rnd(0.8, 3.2) * u * 1.5, e = rnd(0.4, 1);
-      ajoute("gouttes", { x: wx(x), y: wy(y), z: rnd(-5, 20), vx: Math.cos(a) * v, vy: -Math.sin(a) * v * e + u * 1.6, vz: rnd(0, 3) * u * 0.8,
-        g: u * 11, s: rnd(0.14, 0.27) * u, c, life: rnd(0.65, 1.1), orient: 1, ref: u * 6, split: 1, drag: 0.3, vent: 0.4 });
+    // chaque goutte est unique : taille en loi log-normale, forme, teinte, vitesse, pesanteur, départ décalé
+    const ln = () => Math.exp(rnd(-0.55, 0.65) + (Math.random() < 0.12 ? 0.5 : 0)); // surtout petites, parfois très grosses
+    const teinte = () => { const k = c.clone(); k.offsetHSL(rnd(-0.03, 0.03), rnd(-0.08, 0.1), rnd(-0.07, 0.1)); return k; };
+    const total = Math.round(n * rnd(1.2, 1.8)), dispersion = rnd(0.7, 1.35), lourde = rnd(0.8, 1.25);
+    for (let i = 0; i < total; i++) {
+      const crown = Math.random() < 0.6, sz = ln();
+      const a = crown ? (i / total) * TAU * 1.6 + rnd(-0.5, 0.5) : rnd(0, TAU);
+      const v = rnd(1.2, 4.4) * u * 1.5 * dispersion / Math.sqrt(sz);   // les petites volent plus loin
+      ajoute("gouttes", { x: wx(x) + rnd(-u * 0.12, u * 0.12), y: wy(y) + rnd(-u * 0.12, u * 0.12), z: rnd(-5, 16),
+        vx: Math.cos(a) * v * rnd(0.7, 1.1), vy: (crown ? v * rnd(0.4, 1.1) : -Math.sin(a) * v * rnd(0.3, 1) + u * rnd(0.8, 2.2)), vz: Math.sin(a) * v * rnd(0.1, 0.55),
+        g: u * rnd(8, 15) * lourde, s: Math.max(0.05, 0.19 * sz * rnd(0.7, 1.25)) * u, c: teinte(),
+        sx: rnd(0.8, 1.25), sy: rnd(0.85, 1.2), life: rnd(0.45, 1.25) * (0.8 + 0.35 * sz) - rnd(0, 0.0) , t: -rnd(0, 0.16),
+        orient: 1, ref: u * rnd(5, 9), etire: rnd(0.8, 1.9), split: Math.random() < 0.3 * sz ? (sz > 1.2 ? 3 : 2) : 0, drag: rnd(0.1, 0.8), vent: rnd(0.15, 0.7), wob: rnd(0, 0.25),
+        seek: crown && seek ? { x: wx(seek.x), y: wy(seek.y), f: u * rnd(20, 34), delai: rnd(0.22, 0.5), r: u * 0.45 } : null });
     }
     for (let i = 0; i < Math.ceil(n / 2); i++) {
       const a = rnd(0, TAU), v = rnd(1, 4) * u * 1.4;
