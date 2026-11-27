@@ -1,0 +1,191 @@
+{
+ "version": 1,
+ "fruits": [
+  {
+   "id": "ananas",
+   "nom": "Ananas",
+   "type": "fruit",
+   "image": "ananas.webp"
+  },
+  {
+   "id": "avocat",
+   "nom": "Avocat",
+   "type": "fruit",
+   "image": "avocat.webp"
+  },
+  {
+   "id": "banane",
+   "nom": "Banane",
+   "type": "fruit",
+   "image": "banane.webp"
+  },
+  {
+   "id": "bibasse",
+   "nom": "Bibasse",
+   "type": "fruit",
+   "image": "bibasse.webp"
+  },
+  {
+   "id": "carambole",
+   "nom": "Carambole",
+   "type": "fruit",
+   "image": "carambole.webp"
+  },
+  {
+   "id": "chadeque",
+   "nom": "Chadèque",
+   "type": "agrume",
+   "image": "chadeque.webp"
+  },
+  {
+   "id": "citron",
+   "nom": "Citron",
+   "type": "agrume",
+   "image": "citron.webp"
+  },
+  {
+   "id": "citron-vert",
+   "nom": "Citron vert",
+   "type": "agrume",
+   "image": "citron-vert.webp"
+  },
+  {
+   "id": "coco",
+   "nom": "Coco",
+   "type": "fruit",
+   "image": "coco.webp"
+  },
+  {
+   "id": "corossol",
+   "nom": "Corossol",
+   "type": "fruit",
+   "image": "corossol.webp"
+  },
+  {
+   "id": "fraise",
+   "nom": "Fraise",
+   "type": "fruit",
+   "image": "fraise.webp"
+  },
+  {
+   "id": "fruit-a-pain",
+   "nom": "Fruit à pain",
+   "type": "fruit",
+   "image": "fruit-a-pain.webp"
+  },
+  {
+   "id": "goyave",
+   "nom": "Goyave",
+   "type": "fruit",
+   "image": "goyave.webp"
+  },
+  {
+   "id": "goyavier",
+   "nom": "Goyavier",
+   "type": "fruit",
+   "image": "goyavier.webp"
+  },
+  {
+   "id": "grenadine",
+   "nom": "Grenadine (fruit de la passion)",
+   "type": "fruit",
+   "image": "grenadine.webp"
+  },
+  {
+   "id": "jamalac",
+   "nom": "Jamalac",
+   "type": "fruit",
+   "image": "jamalac.webp"
+  },
+  {
+   "id": "jamblon",
+   "nom": "Jamblon",
+   "type": "fruit",
+   "image": "jamblon.webp"
+  },
+  {
+   "id": "jaque",
+   "nom": "Jaque",
+   "type": "fruit",
+   "image": "jaque.webp"
+  },
+  {
+   "id": "letchi",
+   "nom": "Letchi",
+   "type": "fruit",
+   "image": "letchi.webp"
+  },
+  {
+   "id": "longani",
+   "nom": "Longani",
+   "type": "fruit",
+   "image": "longani.webp"
+  },
+  {
+   "id": "mandarine",
+   "nom": "Mandarine",
+   "type": "agrume",
+   "image": "mandarine.webp"
+  },
+  {
+   "id": "mangue",
+   "nom": "Mangue",
+   "type": "fruit",
+   "image": "mangue.webp"
+  },
+  {
+   "id": "maracudja",
+   "nom": "Maracudja",
+   "type": "fruit",
+   "image": "maracudja.webp"
+  },
+  {
+   "id": "orange",
+   "nom": "Orange",
+   "type": "agrume",
+   "image": "orange.webp"
+  },
+  {
+   "id": "papaye",
+   "nom": "Papaye",
+   "type": "fruit",
+   "image": "papaye.webp"
+  },
+  {
+   "id": "pitaya",
+   "nom": "Pitaya",
+   "type": "fruit",
+   "image": "pitaya.webp"
+  },
+  {
+   "id": "pok-pok",
+   "nom": "Pok-pok",
+   "type": "fruit",
+   "image": "pok-pok.webp"
+  },
+  {
+   "id": "pomme-cannelle",
+   "nom": "Pomme cannelle",
+   "type": "fruit",
+   "image": "pomme-cannelle.webp"
+  },
+  {
+   "id": "peche",
+   "nom": "Pêche",
+   "type": "fruit",
+   "image": "peche.webp"
+  },
+  {
+   "id": "tamarin",
+   "nom": "Tamarin",
+   "type": "fruit",
+   "image": "tamarin.webp"
+  },
+  {
+   "id": "evis",
+   "nom": "Évis",
+   "type": "fruit",
+   "image": "evis.webp"
+  }
+ ]
+}

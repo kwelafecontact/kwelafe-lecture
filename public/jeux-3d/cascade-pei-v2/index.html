@@ -115,6 +115,7 @@ input[type=range]{width:100%;accent-color:#ffb21e}
 </div>
 
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
+<script src="../commun/fx-ia.js"></script>
 <script type="module" src="./fx3d.js"></script>
 <script src="../commun/pixi.min.js"></script>
 <script src="../commun/pixi-filters.js"></script>
@@ -136,6 +137,7 @@ const FRUITS=[
 const hsv=(h,s=.85,v=1)=>{h=((h%360)+360)%360/60;const i=Math.floor(h),f=h-i,p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f)),a=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6];return (Math.round(a[0]*255)<<16)|(Math.round(a[1]*255)<<8)|Math.round(a[2]*255);};
 const hsvS=(h)=>"#"+hsv(h).toString(16).padStart(6,"0");
 const F3=()=>window.FX3D&&window.FX3D.ready?window.FX3D:null;
+const EV=(t,o)=>{if(window.FXIA)FXIA.evenement(t,o);}; // le chef d'orchestre FXIA compose les effets 3D
 const IMG={fruits:FRUITS.map(f=>{const im=new Image();im.src="./fruit-"+f.n+".webp"+V;return im;})};
 
 const FAITS=[
@@ -198,6 +200,7 @@ function resize(){
   const top=CT+142,bas=H-96;
   CELL=Math.floor(Math.min(W*.96/NB,(bas-top)/NR,96));
   OX=(W-CELL*NB)/2;OY=top+Math.max(0,((bas-top)-CELL*NR)/2);
+  if(window.FXIA)FXIA.cible(Math.max(24,W*.06)+36,CT+34); // le score : les étoiles et gouttes y volent
 }
 addEventListener("resize",resize);resize();
 
@@ -362,7 +365,7 @@ function nettoie(){
   const mid=[...kill][0];const mc=Math.floor(mid/NR),mr=mid%NR;
   pop((G.cascade>1?"Cascade ×"+G.cascade+"  ":"")+"+"+pts,OX+(mc+.5)*CELL,OY+(mr+.5)*CELL,G.cascade>1?"#ffd24a":"#fff",G.cascade>1?34:28);
   sfx("pop",1,1+Math.min(.6,(G.cascade-1)*.12));vib(10);
-  if(G.cascade>=3){const f=F3();if(f)f.cascade(W/2,OY+CELL*3.5,CELL);secoue(4);}
+  if(G.cascade>=3){EV("cascade",{x:W/2,y:OY+CELL*3.5,u:CELL,niveau:G.cascade});secoue(4);}
   G.state="clearing";G.timer=.24;
 }
 function goal(t){for(const x of G.goals)if(x.t===t&&x.got<x.n)x.got++;}
@@ -453,10 +456,11 @@ function frame(ts){
   if(mode==="play")maj(d);
   if(window.FX3D&&!window.FX3D.tried){FX3D.tried=1;FX3D.init(document.getElementById("c3"));FX3D.resize(W,H,DPR);}
   const f3=F3();if(f3){if(!G||mode==="menu")f3.clear();else f3.update(d);}
+  if(window.FXIA)FXIA.tick(d,{jouant:!!G&&mode==="play",calme:!!G&&G.calme,cascade:G?G.cascade:1,u:CELL,W,H,zone:{x0:OX,x1:OX+CELL*NB,y0:OY,y1:OY+CELL*NR}});
   dessine();if(f3)f3.render();requestAnimationFrame(frame);
 }
-function petales(){const f=F3();if(f)f.petales(OX,OX+CELL*NB,OY-CELL*.5,3,CELL);}
-function fwBurst(){petales();const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=[0xffe25a,0xff5a5a,0x5ae0ff,0x8aff5a,0xff8ae8],f=F3();if(f)f.feu(x,y,cols[Math.floor(rnd(0,5))],CELL);}
+function petales(){EV("petales",{x0:OX,x1:OX+CELL*NB,y0:OY-CELL*.5,n:3,u:CELL});}
+function fwBurst(){petales();const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=[0xffe25a,0xff5a5a,0x5ae0ff,0x8aff5a,0xff8ae8];EV("feu",{x,y,u:CELL,c:cols[Math.floor(rnd(0,5))],x0:OX,x1:OX+CELL*NB,y0:OY});}
 function stable(){
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(!k)return false;if(Math.abs(k.vx-c)>.02||Math.abs(k.vy-r)>.02||k.sc<.98)return false;}
   return true;
@@ -495,14 +499,14 @@ function animCells(dt){
     else if(k.sc<1)k.sc=Math.min(1,k.sc+dt*5);
   }
 }
-function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,f=F3();if(f)f.jus(x,y,col.length===7?hx(col):0xffffff,CELL,Math.min(10,4+Math.ceil((n||6)/2)));}
-function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,f=F3();if(f){f.anneau(x,y,col.length===7?hx(col):0xffffff,R*CELL,0,.55,1.1);f.etincelles(x,y,16,CELL*4,CELL,null,.8);}if(R>=2.4)grandMoment(x,y,col);}
+function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;EV("coup",{x,y,u:CELL,n,c:col.length===7?hx(col):0xffffff});}
+function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;EV("bombe",{x,y,u:CELL,R,c:col.length===7?hx(col):0xffffff});if(R>=2.4)grandMoment(x,y,col);}
 function grandMoment(x,y,col){
-  const f3=F3();if(f3)f3.grand(x,y,col.length===7?hx(col):0xffa020,CELL); // 3D : anneaux, bulle d'onde de choc, jus, étoiles, étincelles, confettis
+  EV("grand",{x,y,u:CELL,c:col.length===7?hx(col):0xffa020}); // scénario complet décidé par FXIA
   G.slow=Math.max(G.slow||0,.32);G.zoom=1;G.onde={x,y,t:0};sfx("impact",.9);sfx("eclat",.6,1.05);
 }
 function feuArtifice(){G.fw=1.8;sfx("petales",.7);sfx("montee",.5,.9);}
-function fxBeam(horiz,c,r,col){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,f=F3();if(f)f.faisceau(horiz,horiz?OX+CELL*NB/2:x,horiz?y:OY+CELL*NR/2,horiz?CELL*NB+8:CELL*NR,0xfff2c0,CELL);}
+function fxBeam(horiz,c,r,col){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,bw=CELL*NB,bh=CELL*NR;EV("rayon",{horiz,x,y,cx:OX+bw/2,cy:OY+bh/2,len:horiz?bw+8:bh,x0:OX,x1:OX+bw,y0:OY,y1:OY+bh,u:CELL});}
 function secoue(v){G.shake=Math.max(G.shake,v);}
 function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
