@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le volcan de La Réunion · Kwélafé Éducation</title>
+<style>
+:root{
+  --nuit:#140a07; --basalte:#2a1c17; --basalte2:#3a2820; --lave:#ff4d00; --orange:#ff8c00; --jaune:#ffd23f;
+  --rouge:#b3001b; --creme:#fff1c1; --bleu:#1E5AA8; --vert:#2A9D5C; --texte:#fff6e8; --doux:#d8c3b4;
+  --r:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#140a07}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;
+  color:var(--texte); background:radial-gradient(ellipse at 50% 110%,#5a1a06 0%,#2a0f07 35%,var(--nuit) 70%) fixed;
+  min-height:100vh; display:flex; flex-direction:column; overflow-x:hidden;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+.barre{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:10px 14px;
+  padding-top:max(10px,env(safe-area-inset-top));background:rgba(20,10,7,.82);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,140,0,.18)}
+.marque{display:flex;flex-direction:column;line-height:1.05;flex:1;min-width:0}
+.marque b{font-size:15px;letter-spacing:.12em;background:linear-gradient(90deg,#4f8ff0,#ffd23f 45%,#ff5a4a 70%,#3cc27a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.marque span{font-size:12px;color:var(--doux);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pastille{display:flex;align-items:center;gap:6px;background:rgba(255,210,63,.12);border:1px solid rgba(255,210,63,.35);padding:6px 10px;border-radius:999px;font-weight:800}
+.btn-ico{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:20px}
+.btn-ico:active{transform:scale(.94)}
+main{flex:1;width:100%;max-width:980px;margin:0 auto;padding:16px 16px 30px}
+footer{text-align:center;padding:18px 12px calc(22px + env(safe-area-inset-bottom))}
+.lien-feu{display:inline-block;padding:10px 20px;border-radius:999px;color:#fff;text-decoration:none;font-weight:800;letter-spacing:.04em;
+  background:linear-gradient(90deg,#b3001b,#ff4d00,#ffb000,#ff4d00,#b3001b);background-size:300% 100%;animation:feu 3.5s linear infinite;
+  box-shadow:0 0 14px rgba(255,90,0,.75),0 0 34px rgba(255,140,0,.45),inset 0 0 8px rgba(255,255,255,.35)}
+@keyframes feu{to{background-position:300% 0}}
+.signature{font-size:12px;color:var(--doux);margin-top:10px}
+
+/* Accueil */
+.hero{display:grid;grid-template-columns:1fr;gap:12px;align-items:center;text-align:center;margin-bottom:14px}
+.hero h1{margin:0;font-size:clamp(28px,6vw,46px);line-height:1.05}
+.hero h1 em{font-style:normal;color:var(--jaune);text-shadow:0 0 18px rgba(255,140,0,.6)}
+.hero p{margin:6px 0 0;color:var(--doux)}
+.volcan-accueil{width:min(420px,92%);margin:0 auto;display:block;cursor:pointer;filter:drop-shadow(0 18px 30px rgba(0,0,0,.5))}
+.volcan-accueil:active{transform:scale(.98)}
+.astuce{font-size:13px;color:var(--jaune);margin-top:-4px}
+.savais b{display:block}
+.savais{flex-wrap:wrap;background:linear-gradient(135deg,rgba(30,90,168,.25),rgba(42,157,92,.18));border:1px solid rgba(255,255,255,.12);border-radius:var(--r);padding:12px 14px;margin:10px 0 16px;display:flex;gap:10px;align-items:center;min-height:64px}
+.savais b{color:var(--jaune);white-space:nowrap}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tuile{position:relative;text-align:left;padding:14px 14px 12px;border-radius:var(--r);min-height:132px;display:flex;flex-direction:column;gap:6px;
+  background:linear-gradient(160deg,var(--basalte2),var(--basalte));border:1px solid rgba(255,140,0,.22);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.tuile:active{transform:scale(.97)}
+.tuile .ico{font-size:30px}
+.tuile .num{position:absolute;top:10px;right:12px;font-size:12px;color:var(--doux)}
+.tuile h3{margin:0;font-size:16px;line-height:1.15}
+.tuile small{color:var(--doux);font-size:12.5px;line-height:1.25}
+.tuile .et{margin-top:auto;letter-spacing:2px;color:#6b5348;font-size:18px}
+.tuile .et .on{color:var(--jaune);text-shadow:0 0 8px rgba(255,210,63,.7)}
+.tuile.defi{background:linear-gradient(160deg,#5a1406,#2a0c06);border-color:rgba(255,210,63,.5)}
+.bas-accueil{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+
+/* Écrans de module */
+.titre-mod{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
+.titre-mod .ico{font-size:30px}
+.titre-mod h2{margin:0;font-size:clamp(21px,4.6vw,30px);line-height:1.1}
+.titre-mod p{margin:2px 0 0;color:var(--doux);font-size:14px}
+.etapes{display:flex;gap:6px;margin:0 0 12px}
+.etapes i{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.12)}
+.etapes i.on{background:linear-gradient(90deg,var(--lave),var(--jaune))}
+.carte{background:rgba(42,28,23,.88);border:1px solid rgba(255,140,0,.2);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:0 10px 26px rgba(0,0,0,.3)}
+.consigne{font-size:17px;font-weight:800;margin:0 0 10px;line-height:1.3}
+.consigne .cible{color:var(--jaune)}
+.texte{font-size:16px;line-height:1.5;margin:0 0 10px}
+.svgbox{width:100%;max-width:640px;margin:0 auto;display:block;border-radius:14px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.btn{padding:13px 18px;border-radius:14px;font-weight:800;font-size:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);min-height:48px}
+.btn:active{transform:scale(.96)}
+.btn.feu{background:linear-gradient(135deg,#ff4d00,#ff8c00);border-color:transparent;box-shadow:0 6px 18px rgba(255,77,0,.4)}
+.btn.bleu{background:linear-gradient(135deg,#1E5AA8,#3a7bd5);border-color:transparent}
+.btn.vert{background:linear-gradient(135deg,#1f7a46,#2A9D5C);border-color:transparent}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.choix{display:grid;gap:10px}
+.choix.deux{grid-template-columns:1fr 1fr}
+.choix button{text-align:left;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.12);font-size:16px;font-weight:700;min-height:54px;line-height:1.25}
+.choix button:active{transform:scale(.98)}
+.choix button.juste{background:rgba(42,157,92,.35);border-color:#3cc27a}
+.choix button.faux{background:rgba(179,0,27,.25);border-color:#ff6b6b}
+.choix button.montre{border-color:#3cc27a;border-style:dashed}
+.kwelafe{display:flex;gap:10px;align-items:flex-start;background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.35);border-radius:16px;padding:10px 12px;margin:10px 0}
+.kwelafe svg{flex:0 0 46px;width:46px;height:46px}
+.kwelafe div{font-size:15px;line-height:1.4}
+.kwelafe b{display:block;color:var(--jaune);font-size:13px;letter-spacing:.04em}
+.info{min-height:86px}
+.info h4{margin:0 0 4px;color:var(--jaune);font-size:18px}
+.info p{margin:0;font-size:15.5px;line-height:1.45}
+.cache{display:none!important}
+.retour-msg{min-height:26px;font-weight:800;margin-top:8px;font-size:16px}
+.retour-msg.ok{color:#5be08f}.retour-msg.ko{color:#ffb38a}
+.secoue{animation:secoue .38s}
+@keyframes secoue{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.pop{animation:pop .4s}
+@keyframes pop{40%{transform:scale(1.08)}}
+
+/* Frise */
+.frise{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;position:relative;margin:6px 0 14px}
+.frise:after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:4px;border-radius:4px;background:linear-gradient(90deg,#7a4a30,var(--lave),var(--jaune))}
+.creneau{min-height:96px;border-radius:12px;border:2px dashed rgba(255,255,255,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;text-align:center;font-size:12px;line-height:1.2}
+.creneau.plein{border-style:solid;border-color:var(--orange);background:rgba(255,77,0,.18)}
+.creneau .an{font-size:18px;font-weight:900;color:var(--jaune)}
+.etiquettes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.etiq{padding:10px 12px;border-radius:12px;background:var(--creme);color:#3a1d10;font-weight:700;text-align:left;font-size:14px;line-height:1.25;min-height:70px;box-shadow:0 4px 0 #c9a46a}
+.etiq b{display:block;font-size:20px;color:#b3001b}
+.etiq.place{display:none}
+
+/* Maths */
+.barres{display:flex;align-items:flex-end;justify-content:space-around;height:220px;gap:12px;padding:10px 6px 0;border-bottom:3px solid rgba(255,255,255,.3)}
+.barre-alt{flex:1;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.barre-alt .col{width:100%;border-radius:12px 12px 0 0;transition:height 1.1s cubic-bezier(.2,.8,.2,1);height:0;position:relative}
+.barre-alt .val{font-weight:900;font-size:15px;margin-bottom:4px}
+.barre-alt .nom{font-size:12.5px;text-align:center;margin-top:6px;color:var(--doux);min-height:32px}
+.barre-alt button{all:unset;cursor:pointer;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.barre-alt.choisi .col{outline:3px solid var(--jaune)}
+.clavier{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:340px;margin:10px auto 0}
+.clavier button{padding:14px 0;border-radius:14px;background:rgba(255,255,255,.1);font-size:22px;font-weight:900;min-height:54px}
+.clavier button.ok{background:linear-gradient(135deg,#1f7a46,#2A9D5C)}
+.ecran-num{max-width:340px;margin:0 auto;text-align:center;font-size:34px;font-weight:900;padding:10px;border-radius:14px;background:rgba(0,0,0,.35);min-height:62px;letter-spacing:.06em}
+.defi-cm2{display:inline-block;background:var(--jaune);color:#3a1d10;font-weight:900;font-size:12px;padding:2px 8px;border-radius:999px;margin-right:6px}
+
+/* Alertes */
+.echelle{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.niv{padding:12px 6px;border-radius:14px;font-weight:900;font-size:14px;line-height:1.15;min-height:64px;color:#fff;border:3px solid transparent;opacity:.75}
+.niv.on{opacity:1;border-color:#fff;transform:translateY(-3px)}
+.niv.vu:after{content:" ✓"}
+.n-vig{background:#2A9D5C}.n-a1{background:#e07a00}.n-a2{background:#c1121f}.n-sau{background:#6a3fb5}
+.relie{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.relie .col{display:grid;gap:8px}
+.relie button{padding:12px;border-radius:12px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.14);font-weight:700;min-height:54px;font-size:15px;line-height:1.2}
+.relie button.sel{border-color:var(--jaune);background:rgba(255,210,63,.18)}
+.relie button.fini{opacity:.45;border-color:#3cc27a;pointer-events:none}
+
+/* Créole */
+.cartes-kreol{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.flip{perspective:800px;height:120px}
+.flip .in{position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d}
+.flip.tourne .in{transform:rotateY(180deg)}
+.flip .face{position:absolute;inset:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:8px;text-align:center}
+.flip .avant{background:linear-gradient(150deg,#ff4d00,#b3001b);font-size:24px;font-weight:900}
+.flip .arriere{background:var(--creme);color:#3a1d10;transform:rotateY(180deg);font-size:18px;font-weight:800}
+.phrase-kreol{font-size:18px;font-weight:800;color:var(--jaune);line-height:1.45}
+.trou{display:inline-block;min-width:90px;border-bottom:3px solid var(--jaune);text-align:center}
+textarea{width:100%;min-height:80px;border-radius:14px;border:2px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);color:#fff;font:inherit;font-size:17px;padding:10px}
+
+/* Défi */
+.score-defi{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:800}
+.score-defi .sc{font-size:26px;color:var(--jaune)}
+.bilan{text-align:center}
+.bilan .gros{font-size:44px;font-weight:900;color:var(--jaune)}
+.badge{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:linear-gradient(90deg,#ff4d00,#ffb000);color:#2a0c06;font-weight:900;margin:8px 0}
+.mode{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-weight:800;white-space:nowrap}
+.mode.pb{background:rgba(255,77,0,.3);border-color:var(--orange)}
+.prof table{width:100%;border-collapse:collapse;font-size:14px}
+.prof td,.prof th{border-bottom:1px solid rgba(255,255,255,.12);padding:7px 6px;text-align:left;vertical-align:top}
+.prof th{color:var(--jaune)}
+@media (min-width:760px){
+  .hero{grid-template-columns:1.1fr 1fr;text-align:left}
+  .grille{grid-template-columns:repeat(4,1fr)}
+}
+@media (max-width:620px){ .frise{grid-template-columns:1fr;gap:6px} .frise:after{display:none} .creneau{min-height:46px;flex-direction:row;gap:10px;justify-content:flex-start;font-size:14px;text-align:left} .creneau .an{font-size:18px} }
+@media (max-width:420px){ .niv{font-size:12px} }
+</style>
+</head>
+<body>
+<header class="barre">
+  <button class="btn-ico cache" id="bSortie" aria-label="Retour aux jeux de l'école">‹</button>
+  <button class="btn-ico" id="bAccueil" aria-label="Accueil">🏠</button>
+  <div class="marque"><b>KWÉLAFÉ ÉDUCATION</b><span>Le volcan de La Réunion · Cycle 3</span></div>
+  <button class="mode" id="bMode">Mi vé zoué trankil</button>
+  <div class="pastille" id="hEtoiles">⭐ <span id="hScore">0</span></div>
+</header>
+<main id="ecran"></main>
+<footer>
+  <a class="lien-feu" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+  <div class="signature">Préserver aujourd'hui ce que nous voulons transmettre demain.</div>
+</footer>
+
+<script src="kwelafe-fx.js"></script>
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var ecran = $('#ecran');
+var melange = function(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+var attendre = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+
+/* ---------- Sauvegarde ---------- */
+var CLE = 'kwelafe-education-volcan-v1';
+var etat = { etoiles: {}, mode: 'trankil', phrase: '' };
+try { var lu = JSON.parse(localStorage.getItem(CLE) || 'null'); if (lu) etat = Object.assign(etat, lu); } catch (e) {}
+function sauver(){ try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {} }
+
+/* ---------- KwFX : le directeur d'effets ---------- */
+var fx = KwFX.init({
+  theme: 'volcan', public: 'enfant', mode: etat.mode, support: 'web', jeu: 'volcan-cycle3',
+  conteneur: document.body, cibleScore: $('#hEtoiles'), ambiance: false, sonsPack: '../commun/kwfx-sons/'
+});
+var panaches = [];
+function stopPanaches(){ panaches.forEach(function(p){ try { p.arreter(); } catch (e) {} }); panaches = []; try { fx.cendres(false); } catch (e) {} }
+function posEl(el){ var r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+function svgPt(svg, x, y){ var pt = svg.createSVGPoint(); pt.x = x; pt.y = y; var p = pt.matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y }; }
+function eruptionEn(p, k){ fx.joue('eruption', { x: p.x, y: p.y, intensite: k || .9 }); fx.son('volcan'); setTimeout(function(){ fx.joue('braises', { x: p.x, y: p.y, intensite: .7 }); }, 250); }
+
+function bonne(el, extra){ var d = fx.evenement('bonne', Object.assign({ element: el, points: 10 }, extra || {})); if (el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } return d; }
+function erreur(el){ fx.evenement('erreur', { element: el }); if (el) { el.classList.remove('secoue'); void el.offsetWidth; el.classList.add('secoue'); } }
+
+function majEtoiles(){ var t = 0; Object.keys(etat.etoiles).forEach(function(k){ t += etat.etoiles[k] || 0; }); $('#hScore').textContent = t; return t; }
+majEtoiles();
+var bMode = $('#bMode');
+function majMode(){ bMode.textContent = etat.mode === 'probleme' ? 'Mi rode problèm' : 'Mi vé zoué trankil'; bMode.classList.toggle('pb', etat.mode === 'probleme'); }
+majMode();
+bMode.addEventListener('click', function(){ etat.mode = etat.mode === 'probleme' ? 'trankil' : 'probleme'; fx.regler({ mode: etat.mode }); sauver(); majMode(); fx.evenement('clic', { element: bMode }); });
+
+/* ---------- Mascotte paille-en-queue ---------- */
+var OISEAU = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#1E5AA8"/><path d="M14 36c6-10 18-14 28-10l8-6-2 9c2 4 1 8-3 11-8 6-21 5-31-4z" fill="#fff"/><path d="M44 40c6 6 10 12 12 20" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M42 41c3 7 4 13 4 21" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="40" cy="27" r="2.2" fill="#14213d"/><path d="M47 28l9 1-8 3z" fill="#ffb000"/><path d="M24 33c4 2 10 2 14 0" stroke="#14213d" stroke-width="1.6" fill="none"/></svg>';
+function kwelafe(txt){ return '<div class="kwelafe">' + OISEAU + '<div><b>Kwélafé t\'explique</b>' + txt + '</div></div>'; }
+
+/* ---------- Modules ---------- */
+var MODULES = [
+  { id: 'coupe', ico: '🌋', titre: 'Dans le volcan', sous: 'Coupe du volcan, magma et lave' },
+  { id: 'lave', ico: '🍯', titre: 'Effusif ou explosif ?', sous: 'L\'expérience miel et dentifrice' },
+  { id: 'carte', ico: '🗺️', titre: 'Je situe le volcan', sous: 'La carte de l\'île' },
+  { id: 'frise', ico: '⏳', titre: 'Les grandes éruptions', sous: 'La frise de 1977 à 2007' },
+  { id: 'maths', ico: '📏', titre: 'Les maths du volcan', sous: 'Altitudes et éruptions' },
+  { id: 'alerte', ico: '🚨', titre: 'Je me protège', sous: 'Les niveaux d\'alerte' },
+  { id: 'kreol', ico: '🗣️', titre: 'Les mots du volcan', sous: 'En créole réunionnais' },
+  { id: 'defi', ico: '🏆', titre: 'Le grand défi', sous: 'Je vérifie ce que j\'ai appris' }
+];
+var SAVAIS = [
+  'Le Piton de la Fournaise est né il y a environ 530 000 ans. C\'est le plus jeune volcan de l\'île.',
+  'Le Piton des Neiges a fait sortir l\'île de l\'océan il y a environ 3 millions d\'années. Il ne fait plus d\'éruption.',
+  'C\'est un volcan de point chaud, comme les volcans d\'Hawaï : le magma monte des profondeurs de la Terre.',
+  'Depuis 1979, le volcan est en éruption en moyenne 1 jour sur 8.',
+  'Au sommet du Piton de la Fournaise, il y a deux cratères : Dolomieu et Bory.',
+  'Quand la lave arrive dans l\'océan, l\'eau bout et forme un grand nuage blanc de vapeur.',
+  'En refroidissant, la lave devient une roche noire : le basalte.'
+];
+
+function etoilesTxt(n){ var s = ''; for (var i = 0; i < 3; i++) s += '<span class="' + (i < n ? 'on' : '') + '">★</span>'; return s; }
+
+/* ---------- Navigation ---------- */
+var minuteurs = [];
+function plusTard(f, ms){ var t = setTimeout(f, ms); minuteurs.push(t); return t; }
+function nettoyer(){ minuteurs.forEach(clearTimeout); minuteurs = []; stopPanaches(); fx.reinitialiser(); }
+function aller(id){
+  nettoyer();
+  window.scrollTo(0, 0);
+  if (id === 'accueil' || !ECRANS[id]) return accueil();
+  fx.evenement('clic');
+  ECRANS[id]();
+}
+$('#bAccueil').addEventListener('click', function(){ aller('accueil'); });
+/* Dans l'application Kwélafé Lecture : bouton de sortie et libération propre */
+var dansAppli = false; try { dansAppli = window.top !== window; } catch (e) { dansAppli = true; }
+if (dansAppli) $('#bSortie').classList.remove('cache');
+$('#bSortie').addEventListener('click', function(){ try { if (window.top.location.origin === location.origin) { window.top.location.href = '/ecole/jeux'; return; } } catch (e) {} location.href = '/ecole/jeux'; });
+window.kwelafeLiberer = function(){ try { nettoyer(); fx.detruire(); } catch (e) {} };
+
+function enTete(m, nEtapes){
+  var h = '<div class="titre-mod"><div class="ico">' + m.ico + '</div><div><h2>' + m.titre + '</h2><p>' + m.sous + '</p></div></div>';
+  if (nEtapes) { h += '<div class="etapes">'; for (var i = 0; i < nEtapes; i++) h += '<i></i>'; h += '</div>'; }
+  return h;
+}
+function etape(n){ $$('.etapes i').forEach(function(e, i){ e.classList.toggle('on', i < n); }); }
+function mod(id){ return MODULES.filter(function(m){ return m.id === id; })[0]; }
+
+function finModule(id, erreurs, extraHtml){
+  var n = erreurs === 0 ? 3 : erreurs <= 2 ? 2 : 1;
+  var avant = etat.etoiles[id] || 0;
+  if (n > avant) { etat.etoiles[id] = n; sauver(); }
+  majEtoiles();
+  fx.evenement('victoire');
+  var i = MODULES.findIndex(function(m){ return m.id === id; });
+  var suivant = MODULES[i + 1];
+  var c = document.createElement('div');
+  c.className = 'carte bilan';
+  c.innerHTML = '<p class="consigne">Bravo, module terminé !</p><p class="texte">' + (erreurs === 0 ? 'Aucune erreur : tu es un vrai scientifique du volcan.' : 'Tu as fait ' + erreurs + ' petite' + (erreurs > 1 ? 's' : '') + ' erreur' + (erreurs > 1 ? 's' : '') + '. Chaque essai t\'aide à apprendre.') + '</p>' + (extraHtml || '') +
+    '<div class="actions" style="justify-content:center"><button class="btn" data-a="rejouer">Rejouer</button>' + (suivant ? '<button class="btn feu" data-a="suivant">' + suivant.ico + ' ' + suivant.titre + '</button>' : '') + '<button class="btn" data-a="accueil">Accueil</button></div>';
+  ecran.appendChild(c);
+  c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  plusTard(function(){ fx.etoilesFin(n); }, 700);
+  c.addEventListener('click', function(e){
+    var a = e.target.closest('[data-a]'); if (!a) return;
+    if (a.dataset.a === 'rejouer') aller(id); else if (a.dataset.a === 'suivant') aller(suivant.id); else aller('accueil');
+  });
+}
+
+/* QCM générique : renvoie une promesse (nombre d'erreurs) */
+function qcm(zone, question, options, juste, explication, opts){
+  opts = opts || {};
+  return new Promise(function(resoudre){
+    var erreurs = 0, fini = false;
+    var ordre = opts.garderOrdre ? options.map(function(_, i){ return i; }) : melange(options.map(function(_, i){ return i; }));
+    var c = document.createElement('div'); c.className = 'carte';
+    c.innerHTML = '<p class="consigne">' + question + '</p><div class="choix' + (options.length === 2 ? ' deux' : '') + '">' +
+      ordre.map(function(i){ return '<button data-i="' + i + '">' + options[i] + '</button>'; }).join('') + '</div><div class="retour-msg"></div><div class="expl"></div>';
+    zone.appendChild(c);
+    var msg = $('.retour-msg', c);
+    $('.choix', c).addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b || fini || b.classList.contains('faux')) return;
+      var i = +b.dataset.i;
+      if (i === juste) {
+        fini = true; b.classList.add('juste');
+        var d = bonne(b, opts.rapide ? { rapide: true } : null);
+        msg.className = 'retour-msg ok'; msg.textContent = 'C\'est juste !';
+        if (explication) $('.expl', c).innerHTML = kwelafe(explication);
+        resoudre({ erreurs: erreurs, decision: d, carte: c });
+      } else {
+        erreurs++; b.classList.add('faux'); erreur(b);
+        msg.className = 'retour-msg ko'; msg.textContent = opts.indice || 'Pas grave, essaie encore !';
+        if (erreurs >= 2) { var bj = $('[data-i="' + juste + '"]', c); bj.classList.add('montre'); }
+      }
+    });
+  });
+}
+function boutonSuite(zone, texte){
+  return new Promise(function(r){
+    var d = document.createElement('div'); d.className = 'actions';
+    d.innerHTML = '<button class="btn feu">' + (texte || 'Continuer') + ' ➜</button>';
+    zone.appendChild(d); d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('button', d).addEventListener('click', function(){ fx.evenement('clic', { element: d.firstChild }); d.remove(); r(); });
+  });
+}
+
+/* ================= ACCUEIL ================= */
+function volcanSVG(cls){
+  return '<svg class="' + cls + '" viewBox="0 0 400 260" role="img" aria-label="Le Piton de la Fournaise, touche-le !">' +
+  '<defs><linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b0e2e"/><stop offset=".7" stop-color="#5a1a06"/><stop offset="1" stop-color="#a33a06"/></linearGradient>' +
+  '<linearGradient id="mont" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3329"/><stop offset="1" stop-color="#1c120e"/></linearGradient>' +
+  '<radialGradient id="lueur" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd23f" stop-opacity=".95"/><stop offset=".5" stop-color="#ff4d00" stop-opacity=".5"/><stop offset="1" stop-color="#ff4d00" stop-opacity="0"/></radialGradient></defs>' +
+  '<rect width="400" height="260" rx="22" fill="url(#ciel)"/>' +
+  '<g fill="#fff" opacity=".7"><circle cx="40" cy="30" r="1.2"/><circle cx="90" cy="60" r="1"/><circle cx="330" cy="40" r="1.4"/><circle cx="360" cy="90" r="1"/><circle cx="250" cy="22" r="1"/></g>' +
+  '<circle id="lueurC" cx="200" cy="78" r="70" fill="url(#lueur)"><animate attributeName="r" values="60;74;60" dur="2.6s" repeatCount="indefinite"/></circle>' +
+  '<path d="M0 260 L0 200 L80 170 L170 82 L230 82 L320 172 L400 196 L400 260 Z" fill="url(#mont)"/>' +
+  '<path d="M170 82 L230 82 L222 92 L178 92 Z" fill="#ff8c00"/>' +
+  '<path d="M214 90 C230 120 240 150 262 175 C275 190 300 205 330 214" stroke="#ff4d00" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"><animate attributeName="stroke" values="#ff4d00;#ffb000;#ff4d00" dur="1.8s" repeatCount="indefinite"/></path>' +
+  '<rect x="0" y="232" width="400" height="28" fill="#0b3b66" opacity=".85"/>' +
+  '</svg>';
+}
+function accueil(){
+  var nbFaits = MODULES.filter(function(m){ return etat.etoiles[m.id]; }).length;
+  var h = '<section class="hero"><div><h1>Le volcan de <em>La Réunion</em></h1><p>Comprendre le Piton de la Fournaise, lire ses données et savoir se protéger.</p></div>' +
+    '<div>' + volcanSVG('volcan-accueil') + '<p class="astuce">Touche le volcan !</p></div></section>' +
+    '<div class="savais"><b>Le savais-tu ?</b><span id="savaisTxt"></span></div>' +
+    '<div class="grille">' + MODULES.map(function(m, i){
+      return '<button class="tuile' + (m.id === 'defi' ? ' defi' : '') + '" data-m="' + m.id + '"><span class="num">' + (i + 1) + '/8</span><span class="ico">' + m.ico + '</span><h3>' + m.titre + '</h3><small>' + m.sous + '</small><span class="et">' + etoilesTxt(etat.etoiles[m.id] || 0) + '</span></button>';
+    }).join('') + '</div>' +
+    (nbFaits === 8 ? '<div style="text-align:center"><span class="badge">🌋 Gardien du volcan</span></div>' : '') +
+    '<div class="bas-accueil"><button class="btn" id="bProf">👩🏽‍🏫 Pour l\'enseignant</button></div>';
+  ecran.innerHTML = h;
+  var i = Math.floor(Math.random() * SAVAIS.length);
+  var st = $('#savaisTxt'); st.textContent = SAVAIS[i];
+  (function tourne(){ plusTard(function(){ i = (i + 1) % SAVAIS.length; st.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 }); st.textContent = SAVAIS[i]; tourne(); }, 6500); })();
+  var v = $('.volcan-accueil');
+  var touches = 0;
+  v.addEventListener('click', function(){
+    touches++;
+    var p = svgPt(v, 200, 84);
+    eruptionEn(p, Math.min(1, .55 + touches * .15));
+    if (touches % 3 === 0) { fx.joue('onomatopee', { x: p.x, y: p.y - 40, texte: 'BOUF !' }); fx.joue('anneau', { x: p.x, y: p.y }); }
+  });
+  $('.grille').addEventListener('click', function(e){ var t = e.target.closest('[data-m]'); if (t) aller(t.dataset.m); });
+  $('#bProf').addEventListener('click', prof);
+  plusTard(function(){ fx.evenement('debut'); }, 300);
+}
+
+/* ================= 1. DANS LE VOLCAN ================= */
+var ZONES = {
+  chambre: { nom: 'Chambre magmatique', txt: 'Zone où le magma s\'accumule en profondeur. Le magma, c\'est de la roche si chaude qu\'elle a fondu.' },
+  cheminee: { nom: 'Cheminée / fissure', txt: 'Passage du magma vers la surface. Au Piton de la Fournaise, le magma sort souvent par des fissures sur les pentes.' },
+  cratere: { nom: 'Cratère', txt: 'Ouverture au sommet du volcan. Au sommet du Piton de la Fournaise, il y a deux cratères : Dolomieu et Bory.' },
+  coulee: { nom: 'Coulée de lave', txt: 'Lave fluide qui s\'écoule sur les pentes. Elle descend souvent jusqu\'à la mer.' },
+  ocean: { nom: 'Océan', txt: 'Quand la lave arrive dans l\'océan, elle refroidit d\'un coup : un nuage blanc de vapeur monte et l\'île s\'agrandit.' }
+};
+function coupeSVG(){
+  return '<svg class="svgbox" id="coupe" viewBox="0 0 400 270">' +
+  '<defs><linearGradient id="cielC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc4f0"/><stop offset="1" stop-color="#cfe9f7"/></linearGradient>' +
+  '<linearGradient id="sol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b4034"/><stop offset=".35" stop-color="#3b2a22"/><stop offset="1" stop-color="#22160f"/></linearGradient>' +
+  '<radialGradient id="magma" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#ffd23f"/><stop offset=".55" stop-color="#ff6a00"/><stop offset="1" stop-color="#b3001b"/></radialGradient>' +
+  '<linearGradient id="eau" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f8fd1"/><stop offset="1" stop-color="#0b3b66"/></linearGradient></defs>' +
+  '<rect width="400" height="270" fill="url(#cielC)" rx="14"/>' +
+  '<rect x="270" y="172" width="130" height="98" fill="url(#eau)"/>' +
+  '<path d="M0 196 L70 176 L150 62 L172 52 L208 52 L232 64 L322 172 L400 214 L400 270 L0 270 Z" fill="url(#sol)"/>' +
+  '<g stroke="#2a1c17" stroke-width="1" opacity=".5" fill="none"><path d="M40 210 Q200 196 360 222"/><path d="M20 236 Q200 222 390 246"/></g>' +
+  '<rect x="186" y="56" width="8" height="150" fill="#1a0f0b"/>' +
+  '<rect id="montee" x="186" y="206" width="8" height="0" fill="#ff6a00"/>' +
+  '<ellipse id="chambreV" cx="190" cy="222" rx="62" ry="22" fill="url(#magma)"><animate attributeName="ry" values="21;23;21" dur="2.4s" repeatCount="indefinite"/></ellipse>' +
+  '<ellipse cx="190" cy="53" rx="18" ry="4.5" fill="#1a0f0b"/>' +
+  '<path id="coulee" d="M207 56 L232 66 L322 172" stroke="#ff4d00" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="200" stroke-dashoffset="200"/>' +
+  '<g id="etiquettes" font-size="11" font-weight="800" fill="#fff" style="paint-order:stroke" stroke="#140a07" stroke-width="3"></g>' +
+  /* zones cliquables */
+  '<ellipse data-z="chambre" cx="190" cy="222" rx="70" ry="30" fill="transparent"/>' +
+  '<rect data-z="cheminee" x="174" y="70" width="32" height="128" fill="transparent"/>' +
+  '<circle data-z="cratere" cx="190" cy="50" r="22" fill="transparent"/>' +
+  '<path data-z="coulee" d="M212 62 L236 74 L320 176" stroke="transparent" stroke-width="30" fill="none"/>' +
+  '<rect data-z="ocean" x="330" y="180" width="70" height="90" fill="transparent"/>' +
+  '</svg>';
+}
+var POS_ETIQ = { chambre: [190, 258, 'middle'], cheminee: [200, 140, 'start'], cratere: [190, 36, 'middle'], coulee: [262, 106, 'start'], ocean: [365, 205, 'middle'] };
+function poserEtiquette(svg, z){
+  if ($('[data-et="' + z + '"]', svg)) return;
+  var p = POS_ETIQ[z], t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', p[0]); t.setAttribute('y', p[1]); t.setAttribute('text-anchor', p[2]); t.setAttribute('data-et', z);
+  t.textContent = ZONES[z].nom.split(' / ')[0];
+  $('#etiquettes', svg).appendChild(t);
+}
+function animerEruption(svg){
+  return new Promise(function(resoudre){
+    var r = $('#montee', svg), c = $('#coulee', svg), t0 = performance.now();
+    c.style.transition = 'none'; c.setAttribute('stroke-dashoffset', '200');
+    fx.son('volcan');
+    (function monte(t){
+      var k = Math.min(1, (t - t0) / 1400), h = 150 * k * k;
+      r.setAttribute('y', 206 - h); r.setAttribute('height', h);
+      if (k < 1) return requestAnimationFrame(monte);
+      var p = svgPt(svg, 190, 50);
+      eruptionEn(p, 1);
+      fx.joue('etincellesChaudes', { x: p.x, y: p.y });
+      c.style.transition = 'stroke-dashoffset 2.2s ease-in'; c.setAttribute('stroke-dashoffset', '0');
+      setTimeout(function(){
+        var m = svgPt(svg, 322, 172);
+        fx.joue('vapeur', { x: m.x, y: m.y, intensite: 1 }); fx.joue('plouf', { x: m.x, y: m.y, intensite: .6 });
+        var pa = fx.panache(m.x, m.y - 4, { type: 'vapeur', force: .8 }); panaches.push(pa);
+        setTimeout(function(){ try { pa.arreter(); } catch (e) {} }, 3500);
+        resoudre();
+      }, 2200);
+    })(t0);
+  });
+}
+ECRANS = {};
+ECRANS.coupe = function(){
+  var m = mod('coupe');
+  ecran.innerHTML = enTete(m, 3) +
+    '<div class="carte"><p class="consigne">1. Touche chaque partie du volcan pour la découvrir.</p>' + coupeSVG() +
+    '<div class="info" id="info"><p class="texte">Il reste <b id="reste">5</b> parties à découvrir.</p></div></div><div id="suite"></div>';
+  etape(1);
+  var svg = $('#coupe'), vus = {}, info = $('#info'), suite = $('#suite'), phase = 'explore';
+  var aTrouver = [], cible = null, erreurs = 0;
+  svg.addEventListener('click', function(e){
+    var z = e.target.getAttribute && e.target.getAttribute('data-z'); if (!z) return;
+    if (phase === 'explore') {
+      poserEtiquette(svg, z);
+      info.innerHTML = '<h4>' + ZONES[z].nom + '</h4><p>' + ZONES[z].txt + '</p>';
+      if (!vus[z]) { vus[z] = 1; fx.evenement('trouve', { event: e, points: 10 }); } else fx.evenement('clic', { event: e });
+      var n = Object.keys(vus).length;
+      if (n === 5) { phase = 'attente'; finExplore(); }
+    } else if (phase === 'legende') {
+      if (z === cible) {
+        bonne(null, { event: e }); $('#consL').innerHTML = 'Bien joué : <span class="cible">' + ZONES[z].nom + '</span> !';
+        prochaine();
+      } else { erreurs++; fx.evenement('erreur', { event: e }); $('#consL').innerHTML = 'Ce n\'est pas ça, cherche encore : <span class="cible">' + ZONES[cible].nom + '</span>'; }
+    }
+  });
+  function finExplore(){
+    etape(2);
+    suite.innerHTML = '<div class="carte"><p class="consigne">2. Fais monter le magma !</p><p class="texte">Le magma est sous la terre. Dès qu\'il sort, on dit <b>la lave</b>.</p><div class="actions"><button class="btn feu" id="bErupt">🌋 Lancer l\'éruption</button></div></div>';
+    suite.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('#bErupt').addEventListener('click', function(){
+      this.disabled = true;
+      animerEruption(svg).then(function(){
+        suite.insertAdjacentHTML('beforeend', kwelafe('Le magma est monté par la cheminée. En sortant, il est devenu de la <b>lave</b>. Elle a coulé jusqu\'à l\'océan : c\'est un volcan <b>effusif</b>. En refroidissant, elle devient du <b>basalte</b>.'));
+        boutonSuite(suite, 'Défi légende').then(legende);
+      });
+    });
+  }
+  function legende(){
+    etape(3); phase = 'legende';
+    $$('#etiquettes text', svg).forEach(function(t){ t.remove(); });
+    aTrouver = melange(Object.keys(ZONES));
+    var d = document.createElement('div'); d.className = 'carte';
+    d.innerHTML = '<p class="consigne">3. Défi légende</p><p class="consigne" id="consL"></p>';
+    suite.appendChild(d); svg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    prochaine(true);
+  }
+  function prochaine(premier){
+    if (!premier && cible) poserEtiquette(svg, cible);
+    if (!aTrouver.length) { phase = 'fin'; plusTard(function(){ finModule('coupe', erreurs, '<div class="carte" style="text-align:left"><p class="texte"><b>Je retiens :</b> un volcan est un endroit où le magma, roche fondue venue des profondeurs, sort à la surface. Quand il sort, on l\'appelle la lave. Le Piton de la Fournaise est un volcan effusif : sa lave est fluide et coule. En refroidissant, elle devient du basalte. Le volcan est surveillé jour et nuit par l\'Observatoire.</p></div>'); }, 600); return; }
+    cible = aTrouver.shift();
+    plusTard(function(){ $('#consL').innerHTML = 'Touche : <span class="cible">' + ZONES[cible].nom + '</span>'; }, premier ? 0 : 700);
+  }
+};
+
+/* ================= 2. EFFUSIF OU EXPLOSIF ================= */
+ECRANS.lave = function(){
+  var m = mod('lave'), erreurs = 0;
+  ecran.innerHTML = enTete(m, 3) +
+    '<div class="carte"><p class="consigne">1. L\'expérience : verse du miel et du dentifrice sur une planche penchée.</p>' +
+    '<svg class="svgbox" id="plan" viewBox="0 0 400 220"><rect width="400" height="220" rx="14" fill="#f3e3c3"/>' +
+    '<g transform="rotate(14 40 60)"><rect x="30" y="58" width="350" height="16" rx="4" fill="#a0683a"/><rect x="30" y="94" width="350" height="16" rx="4" fill="#a0683a"/>' +
+    '<line id="miel" x1="44" y1="56" x2="44" y2="56" stroke="#e8a317" stroke-width="12" stroke-linecap="round" opacity=".92"/>' +
+    '<line id="dent" x1="44" y1="92" x2="44" y2="92" stroke="#e9fbff" stroke-width="13" stroke-linecap="round"/>' +
+    '<text x="40" y="48" font-size="13" font-weight="800" fill="#7a4a14">Miel</text><text x="40" y="128" font-size="13" font-weight="800" fill="#2b6b84">Dentifrice</text></g>' +
+    '<rect x="0" y="196" width="400" height="24" fill="#d9c49c"/></svg>' +
+    '<div class="actions"><button class="btn feu" id="bVerse">Verser !</button></div></div><div id="suite"></div>';
+  etape(1);
+  var suite = $('#suite');
+  $('#bVerse').addEventListener('click', function(){
+    this.disabled = true; fx.evenement('clic', { element: this });
+    var mi = $('#miel'), de = $('#dent'), t0 = performance.now();
+    (function an(t){
+      var s = (t - t0) / 1000;
+      mi.setAttribute('x2', 44 + 320 * (1 - Math.exp(-s / 1.3)));
+      de.setAttribute('x2', 44 + 38 * (1 - Math.exp(-s / .7)));
+      if (s < 4) return requestAnimationFrame(an);
+      fx.joue('etoiles', { element: mi, intensite: .5 });
+      qcm(suite, 'Lequel ressemble à la lave du Piton de la Fournaise ?', ['Le miel : il est fluide et coule loin', 'Le dentifrice : il est épais et reste sur place'], 0,
+        'La lave du Piton de la Fournaise est très <b>fluide</b>, comme le miel. Elle forme des fontaines et des coulées : on dit que c\'est un volcan <b>effusif</b>.').then(function(r){ erreurs += r.erreurs; return boutonSuite(suite); }).then(simulateur);
+    })(t0);
+  });
+  function petitVolcan(){
+    return '<svg class="svgbox" id="pv" viewBox="0 0 400 200"><rect width="400" height="200" rx="14" fill="#2b1a3a"/><path d="M40 200 L170 70 L230 70 L360 200 Z" fill="#4a3329"/><path d="M170 70 L230 70 L222 80 L178 80 Z" fill="#ff8c00"/>' +
+      '<path id="pvL" d="M208 78 C240 120 270 160 300 200 M192 78 C160 120 130 160 100 200" stroke="#ff4d00" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="190" stroke-dashoffset="190"/></svg>';
+  }
+  function simulateur(){
+    etape(2);
+    var d = document.createElement('div'); d.className = 'carte';
+    d.innerHTML = '<p class="consigne">2. Deux façons d\'entrer en éruption. Essaie les deux !</p>' + petitVolcan() +
+      '<div class="actions"><button class="btn feu" id="bEff">Lave fluide</button><button class="btn" id="bExp" style="background:#5a5a66">Lave épaisse + gaz</button></div><div class="info" id="infoS"><p class="texte">Choisis une lave.</p></div>';
+    suite.appendChild(d); d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var svg = $('#pv'), vus = {};
+    $('#bEff').addEventListener('click', function(){
+      var p = svgPt(svg, 200, 74), l = $('#pvL'); l.style.transition = 'none'; l.setAttribute('stroke-dashoffset', '190'); void l.getBoundingClientRect();
+      l.style.transition = 'stroke-dashoffset 2s ease-in'; l.setAttribute('stroke-dashoffset', '0');
+      eruptionEn(p, .9); vus.eff = 1;
+      $('#infoS').innerHTML = '<h4>Effusif</h4><p>La lave est fluide : elle jaillit en fontaines et coule loin sur les pentes. C\'est le cas du <b>Piton de la Fournaise</b>.</p>';
+      fini();
+    });
+    $('#bExp').addEventListener('click', function(){
+      var p = svgPt(svg, 200, 74), l = $('#pvL'); l.style.transition = 'none'; l.setAttribute('stroke-dashoffset', '190');
+      fx.joue('hitstop', { duree: 90 }); fx.joue('impact', { intensite: .6 }); fx.joue('secousse', { intensite: .9 });
+      fx.joue('fumeeNoire', { x: p.x, y: p.y, intensite: 1 }); fx.joue('cendresVol', { x: p.x, y: p.y, intensite: .9 }); fx.joue('anneau', { x: p.x, y: p.y });
+      fx.joue('onomatopee', { x: p.x, y: p.y - 30, texte: 'BOUF !' }); fx.son('impact');
+      vus.exp = 1;
+      $('#infoS').innerHTML = '<h4>Explosif</h4><p>La lave est épaisse : le gaz reste coincé, puis il explose. Des cendres et des roches sont projetées très haut.</p>';
+      fini();
+    });
+    function fini(){ if (vus.eff && vus.exp && !vus.ok) { vus.ok = 1; boutonSuite(suite, 'Je trie').then(tri); } }
+  }
+  function tri(){
+    etape(3);
+    var cartes = melange([
+      ['La lave est fluide, elle coule.', 0], ['Le gaz explose.', 1], ['C\'est le cas du Piton de la Fournaise.', 0],
+      ['La lave est épaisse.', 1], ['Des coulées descendent jusqu\'à la mer.', 0], ['Des cendres sont projetées très haut.', 1]
+    ]);
+    var d = document.createElement('div'); d.className = 'carte';
+    d.innerHTML = '<p class="consigne">3. Effusif ou explosif ? <span id="nTri" style="color:var(--doux)"></span></p><div class="etiq" id="phraseTri" style="font-size:17px;min-height:60px;text-align:center;display:flex;align-items:center;justify-content:center"></div>' +
+      '<div class="choix deux" style="margin-top:10px"><button data-r="0">🌊 Effusif</button><button data-r="1">💥 Explosif</button></div><div class="retour-msg"></div>';
+    suite.appendChild(d); d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var i = 0, msg = $('.retour-msg', d), bloque = false;
+    function montre(){ $('#phraseTri').textContent = cartes[i][0]; $('#nTri').textContent = (i + 1) + '/' + cartes.length; $('#phraseTri').animate([{ transform: 'scale(.9)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 250 }); }
+    montre();
+    $('.choix', d).addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b || bloque) return;
+      if (+b.dataset.r === cartes[i][1]) {
+        bonne(b); msg.className = 'retour-msg ok'; msg.textContent = 'Oui !'; bloque = true;
+        plusTard(function(){ bloque = false; i++; msg.textContent = ''; if (i < cartes.length) montre(); else finModule('lave', erreurs); }, 650);
+      } else { erreurs++; erreur(b); msg.className = 'retour-msg ko'; msg.textContent = 'Pense au miel et au dentifrice, essaie l\'autre.'; }
+    });
+  }
+};
+
+/* ================= 3. LA CARTE ================= */
+var LIEUX = [
+  { l: 'A', nom: 'Saint-Denis, chef-lieu', x: 182, y: 42, ex: 182, ey: 76, a: 'middle' },
+  { l: 'B', nom: 'Piton des Neiges', x: 158, y: 152, ex: 158, ey: 126, a: 'middle' },
+  { l: 'C', nom: 'Sainte-Rose', x: 346, y: 138, ex: 324, ey: 142, a: 'end' },
+  { l: 'D', nom: 'Piton de la Fournaise', x: 258, y: 224, ex: 236, ey: 228, a: 'end' },
+  { l: 'E', nom: 'Enclos Fouqué (zone fermée en alerte)', x: 322, y: 192, ex: 318, ey: 168, a: 'middle' },
+  { l: 'F', nom: 'Route nationale RN2', x: 352, y: 246, ex: 330, ey: 250, a: 'end' },
+  { l: 'G', nom: 'Saint-Philippe', x: 292, y: 290, ex: 270, ey: 294, a: 'end' }
+];
+function carteSVG(){
+  return '<svg class="svgbox" id="carteR" viewBox="0 0 400 330"><rect width="400" height="330" rx="14" fill="#0e5a8f"/>' +
+  '<g fill="#fff" opacity=".18"><path d="M10 40 q20 -8 40 0" stroke="#fff" fill="none"/><path d="M340 300 q20 -8 40 0" stroke="#fff" fill="none"/></g>' +
+  '<path d="M150 28 L205 22 L255 40 L302 70 L340 108 L366 160 L372 206 L356 252 L322 286 L272 306 L210 312 L150 297 L100 272 L60 232 L36 182 L40 130 L66 86 L106 48 Z" fill="#3f8f4f" stroke="#e9d8a6" stroke-width="4"/>' +
+  '<path d="M110 110 Q160 80 210 120 Q190 190 120 190 Q90 150 110 110 Z" fill="#5c7a3b" opacity=".75"/>' +
+  '<path d="M250 160 L350 150 L366 160 L372 206 L360 250 L262 252 Q236 206 250 160 Z" fill="#5a3b2e" opacity=".9"/>' +
+  '<path id="rn2" d="M340 108 L366 160 L372 206 L356 252 L322 286 L272 306" stroke="#ff3b3b" stroke-width="4" stroke-dasharray="8 6" fill="none" transform="translate(-9 0)"/>' +
+  '<path id="couleeC" d="M258 224 C285 216 310 214 330 222 C345 226 360 230 372 232" stroke="#ff4d00" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="130" stroke-dashoffset="130"/>' +
+  '<g id="pointsC"></g><g id="nomsC" font-size="11" font-weight="800" fill="#fff" stroke="#0b2a40" stroke-width="3" style="paint-order:stroke"></g>' +
+  '<text x="20" y="318" font-size="10" fill="#cfe9f7">Carte simplifiée, sans échelle</text><text x="372" y="26" font-size="16" font-weight="900" fill="#fff">N↑</text></svg>';
+}
+ECRANS.carte = function(){
+  var m = mod('carte'), erreurs = 0;
+  ecran.innerHTML = enTete(m, 2) + '<div class="carte"><p class="consigne" id="consC"></p>' + carteSVG() + '<div class="retour-msg"></div></div><div id="suite"></div>';
+  etape(1);
+  var svg = $('#carteR'), g = $('#pointsC', svg), noms = $('#nomsC', svg), msg = $('.retour-msg'), suite = $('#suite');
+  var NS = 'http://www.w3.org/2000/svg';
+  LIEUX.forEach(function(p){
+    var c = document.createElementNS(NS, 'g'); c.setAttribute('data-l', p.l); c.style.cursor = 'pointer';
+    c.innerHTML = '<circle cx="' + p.x + '" cy="' + p.y + '" r="16" fill="#ffd23f" stroke="#140a07" stroke-width="2.5"/><text x="' + p.x + '" y="' + (p.y + 5) + '" text-anchor="middle" font-size="15" font-weight="900" fill="#140a07">' + p.l + '</text><circle cx="' + p.x + '" cy="' + p.y + '" r="24" fill="transparent"/>';
+    g.appendChild(c);
+  });
+  var file = melange(LIEUX), cible = null, bloque = false;
+  function suivant(){ cible = file.shift(); $('#consC').innerHTML = 'Quelle lettre est : <span class="cible">' + cible.nom + '</span> ?'; }
+  suivant();
+  g.addEventListener('click', function(e){
+    var el = e.target.closest('[data-l]'); if (!el || bloque || el.dataset.ok) return;
+    if (el.dataset.l === cible.l) {
+      el.dataset.ok = 1; $('circle', el).setAttribute('fill', '#3cc27a');
+      fx.evenement('trouve', { element: el, points: 10 });
+      var t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', cible.ex); t.setAttribute('y', cible.ey); t.setAttribute('text-anchor', cible.a);
+      t.textContent = cible.nom.split(' (')[0].replace(', chef-lieu', '').replace('Route nationale ', ''); noms.appendChild(t);
+      msg.className = 'retour-msg ok'; msg.textContent = 'Oui, c\'est la lettre ' + cible.l + ' !';
+      bloque = true;
+      plusTard(function(){ bloque = false; msg.textContent = ''; if (file.length) suivant(); else fin(); }, 700);
+    } else {
+      erreurs++; fx.evenement('erreur', { element: el });
+      msg.className = 'retour-msg ko'; msg.textContent = cible.l === 'C' || cible.l === 'G' ? 'Indice : c\'est une ville au bord de la mer, à l\'est ou au sud-est.' : 'Pas grave, regarde bien la carte et essaie encore !';
+    }
+  });
+  function fin(){
+    etape(2);
+    $('#consC').innerHTML = 'Bravo ! Regarde maintenant où coule la lave.';
+    suite.innerHTML = '<div class="carte">' + kwelafe('La lave coule surtout dans l\'Enclos, vers la mer à l\'est. C\'est pour ça que la RN2 est parfois coupée !') + '<div class="actions"><button class="btn feu" id="bCoul">🌋 Voir une coulée</button></div></div>';
+    $('#bCoul').addEventListener('click', function(){
+      this.disabled = true;
+      var c = $('#couleeC', svg); c.style.transition = 'stroke-dashoffset 2.6s ease-in'; c.setAttribute('stroke-dashoffset', '0');
+      eruptionEn(svgPt(svg, 258, 224), .7);
+      plusTard(function(){ var p = svgPt(svg, 352, 230); fx.joue('fumee', { x: p.x, y: p.y }); fx.joue('onomatopee', { x: p.x, y: p.y - 30, texte: 'RN2 koupé !' }); }, 1700);
+      plusTard(function(){ var p = svgPt(svg, 372, 232); fx.joue('vapeur', { x: p.x, y: p.y, intensite: .9 }); }, 2600);
+      plusTard(function(){ finModule('carte', erreurs); }, 3600);
+    });
+  }
+};
+
+/* ================= 4. LA FRISE ================= */
+var EVTS = [
+  { an: 1977, court: 'Le village de Piton Sainte-Rose est touché.', long: 'Éruption hors de l\'Enclos : la lave détruit en partie le village de Piton Sainte-Rose.' },
+  { an: 1979, court: 'L\'Observatoire commence le suivi.', long: 'Fin 1979 : début du suivi par l\'Observatoire volcanologique du Piton de la Fournaise.' },
+  { an: 1986, court: 'Éruption sur le flanc sud-est.', long: 'Nouvelle éruption hors de l\'Enclos (mars), sur le flanc sud-est.' },
+  { an: 1998, court: 'Fin de 5 ans et demi de calme.', long: 'Réveil après 5 ans et demi de calme : dernière éruption hors Enclos.' },
+  { an: 2007, court: '240 millions de m³ de lave.', long: 'Plus grande éruption connue : 240 millions de m³ de lave.' }
+];
+ECRANS.frise = function(){
+  var m = mod('frise'), erreurs = 0, placees = 0;
+  ecran.innerHTML = enTete(m, 2) +
+    '<div class="carte"><p class="consigne">1. Remets les étiquettes dans l\'ordre : touche d\'abord la plus ancienne.</p>' +
+    '<div class="frise">' + EVTS.map(function(){ return '<div class="creneau">?</div>'; }).join('') + '</div>' +
+    kwelafe('Une frise se lit de gauche à droite : du plus ancien au plus récent.') +
+    '<div class="etiquettes">' + melange(EVTS).map(function(e){ return '<button class="etiq" data-an="' + e.an + '"><b>' + e.an + '</b>' + e.court + '</button>'; }).join('') + '</div><div class="retour-msg"></div></div><div id="suite"></div>';
+  etape(1);
+  var cren = $$('.creneau'), msg = $('.retour-msg'), suite = $('#suite');
+  $('.etiquettes').addEventListener('click', function(e){
+    var b = e.target.closest('.etiq'); if (!b || b.classList.contains('place')) return;
+    var attendu = EVTS[placees];
+    if (+b.dataset.an === attendu.an) {
+      b.classList.add('place');
+      var c = cren[placees]; c.className = 'creneau plein'; c.innerHTML = '<span class="an">' + attendu.an + '</span>' + attendu.court;
+      bonne(c); placees++;
+      msg.className = 'retour-msg ok'; msg.textContent = attendu.long;
+      if (placees === EVTS.length) plusTard(questions, 900);
+    } else {
+      erreurs++; erreur(b);
+      msg.className = 'retour-msg ko'; msg.textContent = +b.dataset.an > attendu.an ? 'Il y a une étiquette plus ancienne. Regarde les années !' : 'Essaie encore !';
+    }
+  });
+  function questions(){
+    etape(2);
+    var p = svgPt; void p;
+    fx.joue('etincelles', { element: $('.frise'), intensite: .6 });
+    var Q = [
+      ['En quelle année la lave a-t-elle atteint un village ?', ['1977', '1986', '2007'], 0, 'En 1977, la lave a détruit en partie le village de Piton Sainte-Rose.'],
+      ['Quelle est la plus grande éruption connue ?', ['1998', '2007', '1977'], 1, '2007 : 240 millions de m³ de lave !'],
+      ['Combien d\'années entre la création de l\'Observatoire (1979) et l\'éruption de 2007 ?', ['18 ans', '28 ans', '38 ans'], 1, '2007 − 1979 = 28 ans.'],
+      ['L\'Observatoire existait-il en 1977 ?', ['Oui', 'Non, il commence fin 1979'], 1, 'L\'Observatoire commence le suivi du volcan fin 1979, deux ans après.']
+    ];
+    var i = 0;
+    (function suivante(){
+      if (i >= Q.length) return finModule('frise', erreurs);
+      var q = Q[i++];
+      qcm(suite, q[0], q[1], q[2], q[3], { garderOrdre: true }).then(function(r){ erreurs += r.erreurs; return attendre(500); }).then(suivante);
+    })();
+  }
+};
+
+/* ================= 5. LES MATHS ================= */
+function clavier(zone, question, juste, opts){
+  opts = opts || {};
+  return new Promise(function(resoudre){
+    var erreurs = 0, val = '', fini = false;
+    var c = document.createElement('div'); c.className = 'carte';
+    c.innerHTML = '<p class="consigne">' + question + '</p><div class="ecran-num">…</div><div class="clavier">' +
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '✓'].map(function(k){ return '<button data-k="' + k + '"' + (k === '✓' ? ' class="ok"' : '') + '>' + k + '</button>'; }).join('') +
+      '</div><div class="retour-msg" style="text-align:center"></div><div class="expl"></div>';
+    zone.appendChild(c); c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var aff = $('.ecran-num', c), msg = $('.retour-msg', c);
+    $('.clavier', c).addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b || fini) return;
+      var k = b.dataset.k;
+      if (k === '⌫') val = val.slice(0, -1);
+      else if (k === '✓') {
+        if (!val) return;
+        var n = +val, ok = opts.accepte ? opts.accepte.indexOf(n) >= 0 : n === juste;
+        if (ok) {
+          fini = true; aff.style.color = '#5be08f';
+          var d = bonne(aff); msg.className = 'retour-msg ok'; msg.textContent = 'Bravo, c\'est juste !';
+          if (opts.expl) $('.expl', c).innerHTML = kwelafe(opts.expl);
+          $('.clavier', c).style.opacity = '.4';
+          return resoudre({ erreurs: erreurs, decision: d });
+        }
+        erreurs++;
+        if (Math.abs(n - juste) <= Math.max(2, juste * .1)) { fx.evenement('presque', { element: aff }); msg.className = 'retour-msg ko'; msg.textContent = 'Tu y es presque ! Vérifie ton calcul.'; }
+        else { erreur(aff); msg.className = 'retour-msg ko'; msg.textContent = erreurs >= 2 && opts.methode ? 'Méthode : ' + opts.methode : 'Pas grave, essaie encore !'; }
+        val = '';
+      } else if (val.length < 5) { val += k; fx.evenement('clic', { element: b }); }
+      aff.textContent = val ? Number(val).toLocaleString('fr-FR') : '…';
+    });
+  });
+}
+ECRANS.maths = function(){
+  var m = mod('maths'), erreurs = 0;
+  var ALT = [{ nom: 'Piton de la Fournaise', h: 2632, c: '#ff6a00' }, { nom: 'Piton des Neiges', h: 3070, c: '#2A9D5C' }, { nom: 'Pas de Bellecombe', h: 2311, c: '#1E5AA8' }];
+  ecran.innerHTML = enTete(m, 3) +
+    '<div class="carte"><p class="consigne">1. Les altitudes. Touche les trois lieux du plus haut au plus bas.</p><div class="barres">' +
+    ALT.map(function(a, i){ return '<div class="barre-alt" data-i="' + i + '"><button><span class="val">' + a.h.toLocaleString('fr-FR') + ' m</span><span class="col" style="background:linear-gradient(180deg,' + a.c + ',rgba(0,0,0,.25))"></span></button><span class="nom">' + a.nom + '</span></div>'; }).join('') +
+    '</div><div class="retour-msg"></div></div><div id="suite"></div>';
+  etape(1);
+  var suite = $('#suite'), msg = $('.retour-msg');
+  requestAnimationFrame(function(){ $$('.barre-alt').forEach(function(b){ var a = ALT[+b.dataset.i]; $('.col', b).style.height = (a.h / 3200 * 170) + 'px'; }); });
+  var ordre = [1, 0, 2], pos = 0;
+  $('.barres').addEventListener('click', function(e){
+    var b = e.target.closest('.barre-alt'); if (!b || b.classList.contains('choisi') || pos >= 3) return;
+    if (+b.dataset.i === ordre[pos]) { b.classList.add('choisi'); bonne(b); $('.val', b).textContent = (pos + 1) + '. ' + ALT[ordre[pos]].h.toLocaleString('fr-FR') + ' m'; pos++; if (pos === 3) { msg.className = 'retour-msg ok'; msg.textContent = 'Piton des Neiges, Piton de la Fournaise, Pas de Bellecombe.'; plusTard(partie2, 800); } }
+    else { erreurs++; erreur(b); msg.className = 'retour-msg ko'; msg.textContent = 'Compare les nombres : lequel est le plus grand ?'; }
+  });
+  function partie2(){
+    etape(2);
+    clavier(suite, 'Du Pas de Bellecombe (2 311 m) au sommet du Piton de la Fournaise (2 632 m), combien de mètres faut-il monter ?', 321, { methode: 'fais une soustraction : 2 632 − 2 311.', expl: '2 632 − 2 311 = <b>321 m</b> à monter à pied.' })
+      .then(function(r){ erreurs += r.erreurs; return clavier(suite, 'Quelle est la différence d\'altitude entre le Piton des Neiges (3 070 m) et le Piton de la Fournaise (2 632 m) ?', 438, { methode: '3 070 − 2 632.', expl: '3 070 − 2 632 = <b>438 m</b>.' }); })
+      .then(function(r){ erreurs += r.erreurs; return partie3(); });
+  }
+  function partie3(){
+    etape(3);
+    return clavier(suite, 'Le volcan fait environ 2 éruptions par an. Combien en 10 ans ?', 20, { methode: '2 × 10.' })
+      .then(function(r){ erreurs += r.erreurs; return clavier(suite, 'Et en 25 ans ?', 50, { methode: '2 × 25.' }); })
+      .then(function(r){ erreurs += r.erreurs; return clavier(suite, '<span class="defi-cm2">★ Défi CM2</span>Depuis 1979, il a été en éruption 1 jour sur 8. Combien de jours environ sur une année de 365 jours ?', 45, { accepte: [45, 46], methode: '365 ÷ 8, c\'est environ…', expl: '365 ÷ 8 ≈ 45,6. Environ <b>45 jours</b> d\'éruption par an, en moyenne.' }); })
+      .then(function(r){ erreurs += r.erreurs; return qcm(suite, '<span class="defi-cm2">★ Défi CM2</span>Que veut dire « 1 jour sur 8 » ?', ['En moyenne, sur 8 jours, le volcan est en éruption pendant 1 jour', 'Le volcan fait 8 éruptions par jour', 'Le volcan entre en éruption tous les 8 jours, exactement'], 0, 'C\'est une <b>moyenne</b> : certaines années il y a beaucoup d\'éruptions, d\'autres très peu.'); })
+      .then(function(r){ erreurs += r.erreurs; finModule('maths', erreurs); });
+  }
+};
+
+/* ================= 6. JE ME PROTÈGE ================= */
+var NIVEAUX = [
+  { id: 'vig', nom: 'Vigilance', cls: 'n-vig', court: 'Volcan calme et surveillé', txt: 'Le volcan est calme et surveillé. On peut randonner.', enclos: true },
+  { id: 'a1', nom: 'Alerte 1', cls: 'n-a1', court: 'Éruption probable', txt: 'Éruption probable. L\'enclos est fermé : les randonneurs doivent sortir.', enclos: false },
+  { id: 'a2', nom: 'Alerte 2', cls: 'n-a2', court: 'Éruption en cours', txt: 'Éruption en cours. L\'enclos reste fermé.', enclos: false },
+  { id: 'sau', nom: 'Sauvegarde', cls: 'n-sau', court: 'Éruption finie, zone dangereuse', txt: 'Éruption finie, mais la zone reste dangereuse : la lave met longtemps à refroidir.', enclos: false }
+];
+ECRANS.alerte = function(){
+  var m = mod('alerte'), erreurs = 0;
+  ecran.innerHTML = enTete(m, 3) +
+    '<div class="carte"><p class="consigne">1. Quand une éruption approche, le préfet déclenche une alerte et ferme l\'enclos. Touche chaque niveau.</p>' +
+    volcanSVG('svgbox') + '<div class="echelle" style="margin-top:10px">' + NIVEAUX.map(function(n){ return '<button class="niv ' + n.cls + '" data-n="' + n.id + '">' + n.nom + '</button>'; }).join('') + '</div>' +
+    '<div class="info" id="infoN" style="margin-top:10px"><p class="texte">Touche un niveau pour voir ce qui se passe.</p></div></div><div id="suite"></div>';
+  etape(1);
+  var svg = $('.svgbox'), suite = $('#suite'), vus = {}, panA = null;
+  $('#lueurC', svg).setAttribute('opacity', '.25');
+  $('.echelle').addEventListener('click', function(e){
+    var b = e.target.closest('.niv'); if (!b) return;
+    var n = NIVEAUX.filter(function(x){ return x.id === b.dataset.n; })[0];
+    $$('.niv').forEach(function(x){ x.classList.toggle('on', x === b); });
+    b.classList.add('vu'); vus[n.id] = 1;
+    if (panA) { try { panA.arreter(); } catch (er) {} panA = null; }
+    var p = svgPt(svg, 200, 86);
+    $('#lueurC', svg).setAttribute('opacity', n.id === 'a2' ? '1' : n.id === 'a1' ? '.5' : '.25');
+    if (n.id === 'vig') { fx.joue('feuilles', { x: p.x, y: p.y + 40, intensite: .4 }); fx.son('oiseau'); }
+    if (n.id === 'a1') { fx.joue('secousse', { intensite: .5 }); fx.joue('anneau', { x: p.x, y: p.y + 30 }); fx.son('impact'); }
+    if (n.id === 'a2') { eruptionEn(p, .9); }
+    if (n.id === 'sau') { panA = fx.panache(p.x, p.y, { type: 'volcan', force: .6 }); panaches.push(panA); }
+    $('#infoN').innerHTML = '<h4>' + n.nom + ' ' + (n.enclos ? '🟢 Enclos ouvert' : '🔒 Enclos fermé') + '</h4><p>' + n.txt + '</p>' +
+      (n.id === 'a2' ? '<p style="margin-top:6px;color:var(--doux);font-size:14px">Pour aller plus loin : les adultes entendent parfois « alerte 2-1 » ou « alerte 2-2 ». Ce sont des précisions de l\'alerte 2 selon l\'endroit de l\'éruption et les menaces.</p>' : '');
+    if (Object.keys(vus).length === 4 && !vus.ok) { vus.ok = 1; fx.evenement('trouve', { element: b }); boutonSuite(suite, 'Jeu de rôle').then(jeuRole); }
+  });
+  function jeuRole(){
+    etape(2);
+    if (panA) { try { panA.arreter(); } catch (er) {} }
+    qcm(suite, '🎭 L\'alerte 1 est déclenchée. Tu randonnes dans l\'enclos avec ta famille. Que fais-tu ?',
+      ['On sort de l\'enclos tout de suite, et je préviens les autres randonneurs', 'On s\'approche du cratère pour voir l\'éruption', 'On reste là pour prendre des photos'], 0,
+      'En alerte 1, l\'enclos est fermé : on sort tout de suite par le chemin balisé et on écoute les consignes. On peut dire aux autres : « L\'alerte 1 est déclenchée, il faut sortir de l\'enclos ! »')
+      .then(function(r){ erreurs += r.erreurs; return qcm(suite, 'Pendant une éruption, un message dit : « La lave arrive à Saint-Denis ! » Que fais-tu ?', ['Je vérifie l\'information auprès de la préfecture ou de l\'Observatoire', 'Je partage le message à tout le monde tout de suite'], 0, 'Avant de partager, on vérifie : une rumeur peut faire peur pour rien. Les informations sûres viennent de la préfecture et de l\'Observatoire. (Saint-Denis est très loin du volcan !)'); })
+      .then(function(r){ erreurs += r.erreurs; return boutonSuite(suite, 'Je relie'); }).then(relie);
+  }
+  function relie(){
+    etape(3);
+    var d = document.createElement('div'); d.className = 'carte';
+    var droite = melange(NIVEAUX);
+    d.innerHTML = '<p class="consigne">3. Relie : touche un niveau, puis ce qu\'il veut dire.</p><div class="relie"><div class="col">' +
+      NIVEAUX.map(function(n){ return '<button data-g="' + n.id + '" class="' + n.cls + '" style="color:#fff">' + n.nom + '</button>'; }).join('') + '</div><div class="col">' +
+      droite.map(function(n){ return '<button data-d="' + n.id + '">' + n.court + '</button>'; }).join('') + '</div></div><div class="retour-msg"></div>';
+    suite.appendChild(d); d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var sel = null, faits = 0, msg = $('.retour-msg', d);
+    d.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.g) { $$('[data-g]', d).forEach(function(x){ x.classList.remove('sel'); }); b.classList.add('sel'); sel = b; fx.evenement('clic', { element: b }); return; }
+      if (!b.dataset.d) return;
+      if (!sel) { msg.className = 'retour-msg ko'; msg.textContent = 'Touche d\'abord un niveau à gauche.'; return; }
+      if (b.dataset.d === sel.dataset.g) {
+        b.classList.add('fini'); sel.classList.add('fini'); sel.classList.remove('sel'); bonne(b); sel = null; faits++;
+        msg.className = 'retour-msg ok'; msg.textContent = 'Bien relié !';
+        if (faits === 4) plusTard(function(){ finModule('alerte', erreurs); }, 600);
+      } else { erreurs++; erreur(b); msg.className = 'retour-msg ko'; msg.textContent = 'Pas tout à fait. Relis les niveaux et essaie encore.'; }
+    });
+  }
+};
+
+/* ================= 7. CRÉOLE ================= */
+var MOTS = [['volkan', 'le volcan'], ['la lav', 'la lave'], ['ros', 'la roche'], ['dofé', 'le feu'], ['la pété', 'il entre en éruption']];
+ECRANS.kreol = function(){
+  var m = mod('kreol'), erreurs = 0;
+  ecran.innerHTML = enTete(m, 3) +
+    '<div class="carte"><p class="consigne">1. Touche chaque carte pour la retourner.</p><div class="cartes-kreol">' +
+    MOTS.map(function(w, i){ return '<div class="flip" data-i="' + i + '"><div class="in"><div class="face avant">' + w[0] + '</div><div class="face arriere">' + w[1] + '</div></div></div>'; }).join('') + '</div></div><div id="suite"></div>';
+  etape(1);
+  var suite = $('#suite'), vus = {};
+  $('.cartes-kreol').addEventListener('click', function(e){
+    var f = e.target.closest('.flip'); if (!f) return;
+    f.classList.toggle('tourne');
+    if (!vus[f.dataset.i]) { vus[f.dataset.i] = 1; fx.evenement('trouve', { element: f, points: 10 }); } else fx.evenement('clic', { element: f });
+    if (Object.keys(vus).length === 5 && !vus.ok) { vus.ok = 1; plusTard(phrase, 700); }
+  });
+  function phrase(){
+    etape(2);
+    var d = document.createElement('div'); d.className = 'carte';
+    d.innerHTML = '<p class="consigne">2. Lis la phrase en créole, puis touche-la pour voir le français.</p><p class="phrase-kreol" id="pk" style="cursor:pointer">Piton la Fournèz sé in volkan vivan. Kan li pèt, la lav i koul ziska la mèr. Lo Préfé i fèrm lansklo pou protèz bann moun.</p><p class="texte cache" id="pf">Le Piton de la Fournaise est un volcan vivant. Quand il entre en éruption, la lave coule jusqu\'à la mer. Le préfet ferme l\'enclos pour protéger les gens.</p>';
+    suite.appendChild(d); d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('#pk').addEventListener('click', function(){
+      if (!$('#pf').classList.contains('cache')) return;
+      $('#pf').classList.remove('cache'); fx.evenement('trouve', { element: $('#pf') });
+      boutonSuite(suite, 'J\'écris en créole').then(ecrire);
+    });
+  }
+  function ecrire(){
+    etape(3);
+    var d = document.createElement('div'); d.className = 'carte';
+    d.innerHTML = '<p class="consigne">3. Complète : « Kan volkan i pèt, la <span class="trou" id="trou">…</span> i koul. »</p>';
+    suite.appendChild(d);
+    qcm(suite, 'Quel mot va dans le trou ?', ['lav', 'ros', 'dofé'], 0, 'Kan volkan i pèt, la <b>lav</b> i koul : quand le volcan entre en éruption, la lave coule.').then(function(r){
+      erreurs += r.erreurs; $('#trou').textContent = 'lav'; fx.joue('braises', { element: $('#trou'), intensite: .6 });
+      return qcm(suite, 'Comment dit-on « la roche » en créole ?', ['ros', 'volkan', 'la lav'], 0);
+    }).then(function(r){
+      erreurs += r.erreurs;
+      return qcm(suite, 'Que veut dire « dofé » ?', ['le feu', 'la mer', 'le volcan'], 0);
+    }).then(function(r){
+      erreurs += r.erreurs;
+      var c = document.createElement('div'); c.className = 'carte';
+      c.innerHTML = '<p class="consigne">Invente une phrase avec le mot <span class="cible">volkan</span>.</p><textarea id="maPhrase" placeholder="Écris ta phrase ici…"></textarea><p class="texte" style="color:var(--doux);font-size:14px;margin-top:8px">Montre ta phrase à ton maître ou à ta maîtresse pour la faire relire.</p><div class="actions"><button class="btn feu" id="bGarde">Garder ma phrase</button></div>';
+      suite.appendChild(c); c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      $('#maPhrase').value = etat.phrase || '';
+      $('#bGarde').addEventListener('click', function(){
+        etat.phrase = $('#maPhrase').value.trim(); sauver();
+        if (etat.phrase.toLowerCase().indexOf('volkan') >= 0) fx.evenement('pepite', { element: this }); else fx.evenement('presque', { element: this });
+        this.disabled = true; finModule('kreol', erreurs);
+      });
+    });
+  }
+};
+
+/* ================= 8. LE GRAND DÉFI ================= */
+var QUIZ = [
+  ['Comment appelle-t-on le magma quand il sort du volcan ?', ['La lave', 'Le basalte', 'La cendre'], 0],
+  ['Vrai ou faux : la lave du Piton de la Fournaise est très fluide.', ['Vrai', 'Faux'], 0],
+  ['Que se passe-t-il pour les randonneurs en alerte 1 ?', ['L\'enclos est fermé, il faut sortir', 'On peut randonner normalement', 'On doit aller voir le cratère'], 0],
+  ['Le volcan fait environ 2 éruptions par an. Combien en 5 ans ?', ['7', '10', '25'], 1],
+  ['Quel est le mot créole pour « volcan » ?', ['dofé', 'ros', 'volkan'], 2],
+  ['En refroidissant, la lave devient…', ['du basalte', 'du sable blanc', 'du magma'], 0],
+  ['« La lave est orange. » Est-ce que…', ['J\'observe', 'J\'interprète'], 0],
+  ['« L\'île grandit avec la lave. » Est-ce que…', ['J\'observe', 'J\'interprète'], 1],
+  ['Pourquoi le Piton de la Fournaise est-il un volcan effusif ?', ['Sa lave est fluide et coule', 'Son gaz explose très fort', 'Il ne fait jamais d\'éruption'], 0],
+  ['Quel volcan de l\'île ne fait plus d\'éruption ?', ['Le Piton de la Fournaise', 'Le Piton des Neiges'], 1],
+  ['Qui surveille le volcan jour et nuit ?', ['Les scientifiques de l\'Observatoire', 'Personne', 'Les randonneurs'], 0],
+  ['Quelle est l\'altitude du Piton de la Fournaise ?', ['2 311 m', '2 632 m', '3 070 m'], 1]
+];
+ECRANS.defi = function(){
+  var m = mod('defi'), erreurs = 0, score = 0, i = 0;
+  var liste = etat.mode === 'probleme' ? melange(QUIZ) : QUIZ.slice();
+  ecran.innerHTML = enTete(m) + '<div class="score-defi"><span id="qn">Question 1/' + liste.length + '</span><span class="sc" id="sc">0</span></div><div id="zq"></div>';
+  var zq = $('#zq');
+  fx.evenement('debut');
+  (function suivante(){
+    if (i >= liste.length) return bilan();
+    var q = liste[i]; $('#qn').textContent = 'Question ' + (i + 1) + '/' + liste.length; i++;
+    zq.innerHTML = '';
+    var t0 = performance.now();
+    qcm(zq, q[0], q[1], q[2], null, { garderOrdre: q[1].length === 2, rapide: etat.mode === 'probleme' }).then(function(r){
+      erreurs += r.erreurs;
+      var pts = r.erreurs === 0 ? 10 : r.erreurs === 1 ? 5 : 2;
+      if (etat.mode === 'probleme' && r.erreurs === 0 && performance.now() - t0 < 6000) pts += 5;
+      var gain = Math.round(pts * (r.decision.multiplicateur || 1)) + (r.decision.pepite ? 20 : 0);
+      score += gain; fx.compteur($('#sc'), score);
+      plusTard(suivante, 850);
+    });
+  })();
+  function bilan(){
+    var res = fx.finPartie(score);
+    var n = erreurs === 0 ? 3 : erreurs <= 3 ? 2 : 1;
+    if (n > (etat.etoiles.defi || 0)) { etat.etoiles.defi = n; sauver(); }
+    var total = majEtoiles(), tous = MODULES.every(function(x){ return etat.etoiles[x.id]; });
+    fx.evenement('victoire');
+    zq.innerHTML = '<div class="carte bilan"><p class="consigne">Ton score</p><div class="gros" id="scF">0</div>' +
+      '<p class="texte">' + (res.nouveauRecord ? '🎉 Nouveau record ! ' : '') + 'Record : <b>' + res.record + '</b></p>' +
+      '<p class="texte">Défi du jour : ' + res.defi.texte + (res.defi.reussi ? ' ✅' : '') + '</p>' +
+      '<p class="texte">Objets rares péi : <b>' + res.collection.obtenus + ' / ' + res.collection.total + '</b></p>' +
+      (tous ? '<span class="badge">🌋 Gardien du volcan</span>' : '<p class="texte" style="color:var(--doux)">Termine les 8 modules pour devenir <b>Gardien du volcan</b>.</p>') +
+      '</div><div class="carte"><p class="consigne">Je m\'auto-évalue. Je sais…</p><div class="choix" id="auto">' +
+      ['expliquer magma et lave', 'dire pourquoi le volcan est effusif', 'lire un graphique', 'citer les niveaux d\'alerte', 'utiliser des mots créoles'].map(function(s){ return '<button>☐ ' + s + '</button>'; }).join('') + '</div></div>' +
+      '<div class="carte">' + kwelafe('<b style="display:inline;color:#fff">À la maison : enquête gramoun.</b> Demande à un adulte de ta famille : as-tu déjà vu une éruption ? Qu\'as-tu ressenti ? Connais-tu un mot ou une histoire créole sur le volcan ?') + '</div>' +
+      '<div class="actions" style="justify-content:center"><button class="btn feu" id="bRe">Rejouer</button><button class="btn" id="bAcc">Accueil</button></div>';
+    fx.compteur($('#scF'), score);
+    plusTard(function(){ fx.etoilesFin(n); }, 900);
+    if (tous) plusTard(function(){ fx.joue('feu', { intensite: 1 }); fx.joue('banniere', { texte: 'Gardien du volcan !' }); }, 2600);
+    $('#auto').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; var on = b.textContent[0] === '☐'; b.textContent = (on ? '☑' : '☐') + b.textContent.slice(1); b.classList.toggle('juste', on); if (on) fx.evenement('bonne', { element: b, points: 0 }); });
+    $('#bRe').addEventListener('click', function(){ aller('defi'); });
+    $('#bAcc').addEventListener('click', function(){ aller('accueil'); });
+  }
+};
+
+/* ================= ENSEIGNANT ================= */
+function prof(){
+  nettoyer(); window.scrollTo(0, 0);
+  ecran.innerHTML = '<div class="titre-mod"><div class="ico">👩🏽‍🏫</div><div><h2>Pour l\'enseignant</h2><p>Ressource n°1 · Nature et environnement · Cycle 3 (CM1-CM2, adaptable en 6e)</p></div></div>' +
+    '<div class="carte prof"><p class="consigne">À la fin, l\'élève sait…</p><p class="texte">1. Expliquer ce qu\'est un volcan et d\'où vient la lave. 2. Dire pourquoi le Piton de la Fournaise est un volcan effusif. 3. Lire un graphique et un tableau de données. 4. Citer les niveaux d\'alerte et le bon comportement. 5. Utiliser 5 mots du volcan en créole.</p>' +
+    '<table><tr><th>Module</th><th>Séance</th><th>Disciplines</th></tr>' +
+    '<tr><td>1. Dans le volcan</td><td>1</td><td>Sciences</td></tr><tr><td>2. Effusif ou explosif</td><td>2</td><td>Sciences (états de la matière)</td></tr>' +
+    '<tr><td>3. Je situe le volcan</td><td>1</td><td>Géographie</td></tr><tr><td>4. Les grandes éruptions</td><td>2</td><td>Histoire, lecture de frise</td></tr>' +
+    '<tr><td>5. Les maths du volcan</td><td>3</td><td>Maths (★ défi CM2)</td></tr><tr><td>6. Je me protège</td><td>4</td><td>EMC, géographie</td></tr>' +
+    '<tr><td>7. Les mots du volcan</td><td>4</td><td>Créole, français</td></tr><tr><td>8. Le grand défi</td><td>4</td><td>Évaluation et auto-évaluation</td></tr></table>' +
+    '<p class="texte" style="margin-top:10px">Au tableau numérique, l\'application s\'affiche en grand. Le bouton « Mi vé zoué trankil / Mi rode problèm » règle l\'intensité des effets ; en mode problèm, le grand défi mélange les questions et récompense la rapidité. Les progrès sont gardés sur l\'appareil. Aucune voix : uniquement des bruitages.</p></div>' +
+    '<div class="carte prof"><p class="consigne">Sources</p><table><tr><th>Information</th><th>Source</th></tr>' +
+    '<tr><td>Altitude 2 632 m, laves fluides, 2 éruptions par an</td><td>OVPF-IPGP, bulletin mensuel janvier 2026</td></tr>' +
+    '<tr><td>En éruption 1 jour sur 8 depuis 1979</td><td>Ministère de la Transition écologique, chiffres clés des risques naturels</td></tr>' +
+    '<tr><td>Niveaux d\'alerte, fermeture de l\'enclos, alertes 2-1 et 2-2</td><td>Préfecture de La Réunion, disposition spécifique ORSEC Volcan</td></tr>' +
+    '<tr><td>Éruptions 1977, 1986, 1998 et 2007 (240 millions de m³)</td><td>OVPF-IPGP ; Encyclopædia Universalis</td></tr>' +
+    '<tr><td>Âge du volcan (530 000 ans), cratères Dolomieu et Bory, point chaud</td><td>Encyclopædia Universalis ; Futura-Sciences</td></tr>' +
+    '<tr><td>Naissance de l\'île il y a environ 3 millions d\'années</td><td>Académie de La Réunion (ressources SVT)</td></tr>' +
+    '<tr><td>Piton des Neiges 3 070 m</td><td>CNES, Géoimage</td></tr></table>' +
+    '<p class="texte" style="margin-top:10px;color:var(--doux);font-size:14px">Créole à faire relire dans la graphie de l\'Académie de La Réunion. Textes, schémas, activités © Kwélafé Production.</p></div>' +
+    '<div class="actions"><button class="btn" id="bRaz">Effacer les progrès</button><button class="btn feu" id="bAcc2">Accueil</button></div>';
+  $('#bAcc2').addEventListener('click', function(){ aller('accueil'); });
+  $('#bRaz').addEventListener('click', function(){ etat.etoiles = {}; etat.phrase = ''; sauver(); majEtoiles(); this.textContent = 'Progrès effacés'; this.disabled = true; });
+}
+
+var ECRANS;
+accueil();
+})();
+</script>
+</body>
+</html>
