@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 
 const ONGLETS_PUBLIC = [
   { href: "/", ico: "🏠", nom: "Accueil", c: "#d6332a" },
-  { href: "/livres", ico: "📖", nom: "Mes lectures", c: "#1f6fb2" },
   { href: "/catalogue", ico: "📚", nom: "Ma bibliothèque", c: "#2e9d4f" },
+  { href: "/livres", ico: "📖", nom: "Mes lectures", c: "#1f6fb2" },
   { href: "/jeux", ico: "🎮", nom: "Jeux", c: "#e8a200" },
   { href: "/compte", ico: "👤", nom: "Mon compte", c: "#4b3a78" },
 ];

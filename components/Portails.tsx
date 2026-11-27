@@ -61,7 +61,7 @@ export default function Portails({ prenom, visiteur, eleve, nbLivres, nbJeux, en
     : profil === "famille"
       ? [
           { href: "/", nom: "Bibliothèque", ico: "📚", c: "#1f6fb2", detail: `${nbLivres} livres pour tous`, couv: couvertures },
-          { href: "/catalogue?public=enfants", nom: "Coin des enfants", ico: "🧸", c: "#2e9d4f", detail: "Albums, contes, imagiers" },
+          { href: "/enfants", nom: "Coin des enfants", ico: "🧸", c: "#2e9d4f", detail: "Albums, contes, imagiers" },
           { href: "/jeux", nom: "Jeux en famille", ico: "🎲", c: "#e8a200", detail: `${nbJeux} jeux péi` },
           { href: "/compte", nom: "Mon espace", ico: "⭐", c: "#d6332a", detail: visiteur ? "Créer mon compte" : "Progrès et favoris" },
         ]

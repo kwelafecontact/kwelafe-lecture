@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
+import Carrousel from "@/components/Carrousel";
 import LienSite from "@/components/LienSite";
 import BandeauVisiteur from "@/components/BandeauVisiteur";
 import VersPortails from "@/components/VersPortails";
@@ -73,14 +74,18 @@ export default async function Accueil() {
         {session.visiteur && <BandeauVisiteur />}
 
         <nav className="raccourcis" aria-label="Accès rapides">
-          <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📖</span>Mes lectures</Link>
           <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>📚</span>Ma bibliothèque</Link>
-          <Link href="/jeux" style={{ ["--c" as any]: "#e8a200" }}><span aria-hidden>🎮</span>Jeux</Link>
-          <Link href="/compte" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>⭐</span>Mes progrès</Link>
+          <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📖</span>Mes lectures</Link>
+          <Link href="/enfants" style={{ ["--c" as any]: "#f2b705" }}><span aria-hidden>🧸</span>Coin des enfants</Link>
+          <Link href="/jeux" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>🎮</span>Jeux</Link>
         </nav>
 
         <section className="section univers-accueil" aria-label="Choisis ton univers">
-          <h2>Choisis ton univers</h2>
+          <div className="bloc-editorial">
+            <div className="eyebrow">Votre bibliothèque</div>
+            <h2>Tout un univers à découvrir.</h2>
+            <p>Des lectures pour découvrir, comprendre et transmettre les richesses de La Réunion.</p>
+          </div>
           <div className="univers">
             {UNIVERS.map((u) => (
               <Link key={u.id} href={`/univers/${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
@@ -117,17 +122,22 @@ export default async function Accueil() {
 
         {top.length >= 3 && (
           <section className="section">
-            <h2>❤️ Les livres les plus aimés</h2>
-            <div className="top10">
+            <div className="bloc-editorial petit"><div className="eyebrow">Coups de cœur</div><h2>Les livres les plus aimés</h2></div>
+            <Carrousel libelle="Les livres les plus aimés"><div className="top10">
               {top.map((l, k) => (
                 <Link key={l.id} href={`/livre/${l.slug}`} aria-label={`Numéro ${k + 1} : ${l.titre}`}>
                   <span className="rang" aria-hidden>{k + 1}</span>
                   <Couverture livre={l} verrouille={!acces.get(l.id)} />
                 </Link>
               ))}
-            </div>
+            </div></Carrousel>
           </section>
         )}
+
+        <Link href="/enfants" className="encart-enfants">
+          <div><div className="eyebrow">Coin des enfants</div><h2>Grandir avec son île.</h2><p>Des activités simples, joyeuses et éducatives pour apprendre et transmettre en famille.</p></div>
+          <span className="ee-emoji" aria-hidden>🧸</span>
+        </Link>
 
         {!abonne && (
           <section className="section panneau panneau-couleur" style={{ textAlign: "center" }}>
