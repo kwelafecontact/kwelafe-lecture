@@ -7,7 +7,7 @@
 | Polices Bangers (fichier local), Baloo 2 | Google Fonts | SIL OFL 1.1 |
 | fond-portrait.webp, fond-paysage.webp | Images générées pour Kwélafé (ElevenLabs) | Usage commercial (abonnement ElevenLabs, confirmé le 26/11/2026) |
 | fruit-*.webp (letchi, mangue, grenadine, citron, banane, ananas : fruits entiers) | Images générées ElevenLabs (seedream-5.5, fond transparent), flow 5OxD4OdthL4FQTuNOVmw, détourées et recadrées | Usage commercial (abonnement ElevenLabs) |
-| fx3d.js : effets 3D (gouttes de jus, étincelles, étoiles, confettis, pétales, anneaux, ondes de choc, faisceaux) | Code Kwélafé Production, géométries Three.js générées par le code (aucune image) | Propriété Kwélafé |
+| ../commun/fx3d.js : effets 3D (gouttes de jus, étincelles, étoiles, confettis, pétales, anneaux, ondes de choc, faisceaux) | Code Kwélafé Production, géométries Three.js générées par le code (aucune image) | Propriété Kwélafé |
 | ../commun/fx-ia.js : chef d'orchestre des effets (vent en champ de flux, excitation, budget d'images, scénarios) | Code Kwélafé Production, entièrement local (pas de modèle de langage) | Propriété Kwélafé |
 | ../commun/fruits-reunion/ : catalogue de 31 fruits | Voir ../commun/fruits-reunion/credits.md | Usage commercial |
 | musique-calme.mp3, musique-intense.mp3 | ElevenLabs Music v2, flow aen6qeoBJjH5rNkg9Pr5, vérifiées sans voix (transcription vide) | Usage commercial |
