@@ -58,6 +58,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1f4a1a;font-family:"B
   <div class="fait">• Glisse un fruit vers son voisin pour les échanger et aligner 3 fruits identiques ou plus.</div>
   <div class="fait">• 4 alignés : un fruit à rayures vide toute une ligne ou une colonne.</div>
   <div class="fait">• 5 alignés : une bombe péi 🌈 fait disparaître tous les fruits d'une sorte.</div>
+  <div class="fait">• Aligne 4 fruits : un fruit à rayures qui vide une ligne. 5 fruits : une bombe péi. Un L ou un T : un pétard qui explose en carré. Mélange deux spéciaux : combos géants !</div>
   <div class="fait">• Les gonis (sacs de jute) bloquent un fruit : fais-le partir dans un alignement pour le libérer.</div>
   <div class="fait">• Ramasse les fruits demandés avant la fin des coups. Tu as 3 ❤️.</div>
   <div class="modes"><button class="btn" id="bAideOk">C'est parti !</button></div></div>
@@ -171,7 +172,7 @@ let mode="menu",G=null;
 const rnd=(a,b)=>a+Math.random()*(b-a),ri=n=>Math.floor(Math.random()*n),pick=a=>a[ri(a.length)];
 
 function nouvellePartie(){
-  G={niv:1,score:0,coeurs:3+upv(2),melanges:1+upv(3),cleared:0,lvlOk:0,t:0,parts:[],pops:[],gros:{txt:"",t:0},cnt:{},grid:[],state:"idle",timer:0,sel:null,drag:null,cascade:1,idle:0,hint:null,forced:[],creat:[],coupsBonus:0,fin:false,rythme:null};
+  G={niv:1,score:0,coeurs:3+upv(2),melanges:1+upv(3),cleared:0,lvlOk:0,t:0,parts:[],pops:[],fx:[],shake:0,flash:0,bonus:0,gros:{txt:"",t:0},cnt:{},grid:[],state:"idle",timer:0,sel:null,drag:null,cascade:1,idle:0,hint:null,forced:[],creat:[],coupsBonus:0,fin:false,rythme:null};
   lance();
 }
 function lance(){
@@ -246,17 +247,24 @@ function apresEchange(){
   const [a,b]=G.last,A=G.grid[a[0]][a[1]],B=G.grid[b[0]][b[1]];
   const al=trouveAlign();
   const speciaux=[];
+  let combo=false;
   if(A.sp===3||B.sp===3){
     if(A.sp===3&&B.sp===3)G.forced.push({all:true});
-    else{const bomb=A.sp===3?A:B,autre=A.sp===3?B:A;G.forced.push({type:autre.t,cell:bomb});}
-    speciaux.push(1);
+    else{const bomb=A.sp===3?A:B,autre=A.sp===3?B:A;G.forced.push({type:autre.t,cell:bomb,conv:autre.sp===4?4:(autre.sp?1:0)});}
+    speciaux.push(1);combo=true;
+  }else if(A.sp&&B.sp){
+    const at=[b[0],b[1]];
+    if(A.sp===4&&B.sp===4)G.forced.push({combo:"mega",at});
+    else if(A.sp===4||B.sp===4)G.forced.push({combo:"large",at});
+    else G.forced.push({combo:"croix",at});
+    speciaux.push(1);combo=true;
   }
-  if(A.sp&&A.sp!==3)speciaux.push(A);
-  if(B.sp&&B.sp!==3)speciaux.push(B);
+  if(!combo){if(A.sp&&A.sp!==3)speciaux.push(A);if(B.sp&&B.sp!==3)speciaux.push(B);}
   if(!al.length&&!speciaux.length){echangeLogique(a,b);G.state="unswap";G.timer=.2;sfx("erreur");return;}
   G.coups--;
   G.cascade=1;
   for(const s of speciaux){if(s&&s.sp)G.forced.push({cell:s});}
+  if(combo){G.forced.push({cell:A});G.forced.push({cell:B});}
   nettoie();
 }
 function nettoie(){
@@ -266,16 +274,33 @@ function nettoie(){
   for(const run of al){
     for(const [c,r] of run.cells)kill.add(key(c,r));
     const n=run.cells.length;
-    if(n>=4){
+    if(n>=4&&!run.lt){
       let pos=run.cells[Math.floor(n/2)];
       if(G.last)for(const l of G.last)if(run.cells.some(x=>x[0]===l[0]&&x[1]===l[1])){pos=l;break;}
       const ref=G.grid[pos[0]][pos[1]];
       G.creat.push({c:pos[0],r:pos[1],t:ref.t,sp:n>=5?3:(run.horiz?2:1)});
     }
   }
+  // formes en L ou en T : une ligne et une colonne qui se croisent -> pétard (explose en carré)
+  for(const h of al)if(h.horiz)for(const v of al)if(!v.horiz){
+    const x=h.cells.find(a=>v.cells.some(b=>a[0]===b[0]&&a[1]===b[1]));
+    if(x){const ref=G.grid[x[0]][x[1]];
+      G.creat=G.creat.filter(q=>!(h.cells.some(a=>a[0]===q.c&&a[1]===q.r)||v.cells.some(a=>a[0]===q.c&&a[1]===q.r)));
+      if(!G.creat.some(q=>q.c===x[0]&&q.r===x[1])){G.creat.push({c:x[0],r:x[1],t:ref.t,sp:4});G.bonus+=60;pop("Pétard !",OX+(x[0]+.5)*CELL,OY+(x[1]+.5)*CELL-20,"#ffb23a",32);}
+    }
+  }
+  for(const run of al){const n=run.cells.length;if(n===4){G.bonus+=40;}else if(n>=5){G.bonus+=100;pop("Bombe péi !",OX+(run.cells[2][0]+.5)*CELL,OY+(run.cells[2][1]+.5)*CELL-20,"#d28bff",34);}}
   for(const f of G.forced){
+    if(f.combo){
+      const [cc,cr]=f.at;
+      if(f.combo==="croix"){for(let x=0;x<NB;x++)kill.add(key(x,cr));for(let y=0;y<NR;y++)kill.add(key(cc,y));fxBeam(true,cc,cr,"#fff");fxBeam(false,cc,cr,"#fff");pop("Croix !",OX+(cc+.5)*CELL,OY+(cr+.5)*CELL-30,"#fff",40);secoue(10);}
+      else if(f.combo==="large"){for(let x=0;x<NB;x++)for(let dy=-1;dy<=1;dy++)if(cr+dy>=0&&cr+dy<NR)kill.add(key(x,cr+dy));for(let y=0;y<NR;y++)for(let dx=-1;dx<=1;dx++)if(cc+dx>=0&&cc+dx<NB)kill.add(key(cc+dx,y));for(let d=-1;d<=1;d++){fxBeam(true,cc,cr+d,"#ffd24a");fxBeam(false,cc+d,cr,"#ffd24a");}pop("Explosion !",OX+(cc+.5)*CELL,OY+(cr+.5)*CELL-30,"#ffd24a",42);secoue(16);G.flash=.5;}
+      else if(f.combo==="mega"){for(let x=-3;x<=3;x++)for(let y=-3;y<=3;y++){const a=cc+x,b=cr+y;if(a>=0&&a<NB&&b>=0&&b<NR)kill.add(key(a,b));}fxRing(cc,cr,"#ff7a2a",4.5);fxRing(cc,cr,"#fff",3);pop("Méga explosion !",OX+(cc+.5)*CELL,OY+(cr+.5)*CELL-30,"#ff7a2a",44);secoue(22);G.flash=.8;}
+      G.bonus+=150;sfx("bombe");vib([30,20,30]);continue;
+    }
     if(f.all){for(let c=0;c<NB;c++)for(let r=0;r<NR;r++)kill.add(key(c,r));sfx("bombe");}
-    else if(f.type!==undefined){for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(k.t===f.type)kill.add(key(c,r));}
+    else if(f.type!==undefined){for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(k.t===f.type){if(f.conv)k.sp=f.conv===4?4:1+ri(2);kill.add(key(c,r));fxRing(c,r,FRUITS[f.type].c,.8);}}
+      secoue(8);G.flash=.3;if(f.conv)pop(f.conv===4?"Jackpot !":"Pluie de rayures !",W/2,OY+CELL*2,"#d28bff",40);
       for(let c=0;c<NB;c++)for(let r=0;r<NR;r++)if(G.grid[c][r]===f.cell)kill.add(key(c,r));sfx("bombe");}
     else if(f.cell){for(let c=0;c<NB;c++)for(let r=0;r<NR;r++)if(G.grid[c][r]===f.cell)kill.add(key(c,r));}
   }
@@ -284,8 +309,9 @@ function nettoie(){
   for(let i=0;i<file.length;i++){
     const c=Math.floor(file[i]/NR),r=file[i]%NR,k=G.grid[c][r];
     if(!k)continue;
-    if(k.sp===1){sfx("zekler");for(let x=0;x<NB;x++)if(!kill.has(key(x,r))){kill.add(key(x,r));file.push(key(x,r));}}
-    else if(k.sp===2){sfx("zekler");for(let y=0;y<NR;y++)if(!kill.has(key(c,y))){kill.add(key(c,y));file.push(key(c,y));}}
+    if(k.sp===1){sfx("zekler");fxBeam(true,c,r,"#fff");secoue(5);G.bonus+=30;for(let x=0;x<NB;x++)if(!kill.has(key(x,r))){kill.add(key(x,r));file.push(key(x,r));}}
+    else if(k.sp===2){sfx("zekler");fxBeam(false,c,r,"#fff");secoue(5);G.bonus+=30;for(let y=0;y<NR;y++)if(!kill.has(key(c,y))){kill.add(key(c,y));file.push(key(c,y));}}
+    else if(k.sp===4){sfx("bombe",.9,1.2);fxRing(c,r,"#ffb23a",2.6);secoue(12);G.flash=Math.max(G.flash,.35);G.bonus+=50;for(let x=-2;x<=2;x++)for(let y=-2;y<=2;y++){const a=c+x,b=r+y;if(a>=0&&a<NB&&b>=0&&b<NR&&!kill.has(key(a,b))){kill.add(key(a,b));file.push(key(a,b));}}}
   }
   if(!kill.size){fin_cascade();return;}
   let pts=0,nb=0;
@@ -297,7 +323,7 @@ function nettoie(){
     else burst(c,r,"#fff",8);
   }
   if(nb===0){G.state="falling";return;}
-  pts*=G.cascade;G.score+=pts;
+  pts+=G.bonus;G.bonus=0;pts*=G.cascade;G.score+=pts;
   const mid=[...kill][0];const mc=Math.floor(mid/NR),mr=mid%NR;
   pop((G.cascade>1?"Cascade ×"+G.cascade+"  ":"")+"+"+pts,OX+(mc+.5)*CELL,OY+(mr+.5)*CELL,G.cascade>1?"#ffd24a":"#fff",G.cascade>1?34:28);
   sfx("pop",1,1+Math.min(.6,(G.cascade-1)*.12));vib(10);
@@ -394,6 +420,7 @@ function stable(){
 }
 function maj(dt){
   G.t+=dt;
+  for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<f.life);G.shake=Math.max(0,G.shake-dt*40);G.flash=Math.max(0,G.flash-dt*2.2);
   if(G.rythme){majRythme(dt);animCells(dt);return;}
   animCells(dt);
   if(G.timer>0)G.timer-=dt;
@@ -426,6 +453,9 @@ function animCells(dt){
   }
 }
 function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(60,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:600,t:0,life:rnd(.3,.65),r:rnd(3,7),col});}}
+function fxRing(c,r,col,R){G.fx.push({k:"ring",x:OX+(c+.5)*CELL,y:OY+(r+.5)*CELL,col,R:R*CELL,t:0,life:.55});}
+function fxBeam(horiz,c,r,col){G.fx.push({k:"beam",horiz,x:OX+(c+.5)*CELL,y:OY+(r+.5)*CELL,col,t:0,life:.45});}
+function secoue(v){G.shake=Math.max(G.shake,v);}
 function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
 
@@ -485,7 +515,8 @@ function dessineCell(k,c,r){
     g.beginPath();g.arc(x,y,CELL*.44*k.sc,0,7);g.stroke();g.shadowBlur=0;
     g.fillStyle="#fff";const a=CELL*.26;
     if(k.sp===1){g.fillRect(x-a,y-2,a*2,4);arrow(x-a,y,-1,0);arrow(x+a,y,1,0);}
-    else{g.fillRect(x-2,y-a,4,a*2);arrow(x,y-a,0,-1);arrow(x,y+a,0,1);}
+    else if(k.sp===2){g.fillRect(x-2,y-a,4,a*2);arrow(x,y-a,0,-1);arrow(x,y+a,0,1);}
+    else if(k.sp===4){g.fillStyle="#ffb23a";g.strokeStyle="#fff";g.lineWidth=2;g.beginPath();for(let i=0;i<16;i++){const ang=G.t*1.5+i*Math.PI/8,rad=(i%2?CELL*.3:CELL*.5)*k.sc;g.lineTo(x+Math.cos(ang)*rad,y+Math.sin(ang)*rad);}g.closePath();g.globalAlpha=.55;g.fill();g.globalAlpha=1;g.stroke();}
   }
   if(k.bl>0){
     g.fillStyle="rgba(176,128,64,.62)";rr(x-CELL*.4,y-CELL*.4,CELL*.8,CELL*.8,CELL*.12);g.fill();
@@ -501,6 +532,7 @@ function dessine(){
   g.clearRect(0,0,W,H);
   if(!G||mode==="menu")return;
   const bw=CELL*NB,bh=CELL*NR;
+  g.save();if(G.shake>0)g.translate(rnd(-1,1)*G.shake,rnd(-1,1)*G.shake);
   // plateau
   rr(OX-8,OY-8,bw+16,bh+16,22);g.fillStyle="rgba(60,34,10,.55)";g.fill();g.lineWidth=4;g.strokeStyle="rgba(255,226,140,.85)";g.stroke();
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){if((c+r)%2===0){g.fillStyle="rgba(255,240,200,.1)";g.fillRect(OX+c*CELL,OY+r*CELL,CELL,CELL);}}
@@ -513,7 +545,13 @@ function dessine(){
   g.restore();
   // particules
   for(const q of G.parts){g.globalAlpha=Math.max(0,1-q.t/q.life);g.fillStyle=q.col;g.beginPath();g.arc(q.x,q.y,q.r,0,7);g.fill();}
+  for(const f of G.fx){const p=f.t/f.life;g.save();g.globalAlpha=Math.max(0,1-p);
+    if(f.k==="ring"){g.lineWidth=10*(1-p)+2;g.strokeStyle=f.col;g.shadowColor=f.col;g.shadowBlur=24;g.beginPath();g.arc(f.x,f.y,f.R*p+8,0,7);g.stroke();}
+    else{g.shadowColor=f.col;g.shadowBlur=30;g.fillStyle=f.col;const th=CELL*.5*(1-p)+4;if(f.horiz)g.fillRect(OX-4,f.y-th/2,CELL*NB+8,th);else g.fillRect(f.x-th/2,OY,th,CELL*NR);}
+    g.restore();}
   g.globalAlpha=1;
+  if(G.flash>0){g.fillStyle=`rgba(255,255,255,${Math.min(.7,G.flash)})`;g.fillRect(OX-8,OY-8,CELL*NB+16,CELL*NR+16);}
+  g.restore();
   // HUD
   const sx=Math.max(24,W*.06);
   txt(G.score+"",sx,CT+10,Math.max(36,Math.min(54,W*.1)),"#ffd24a","#7a4a08","left");
