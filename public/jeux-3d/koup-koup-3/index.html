@@ -206,6 +206,8 @@ function initPixi() {
     sprV = new PIXI.Sprite(); gGout = new PIXI.Graphics(); gTr = new PIXI.Graphics();
     gVS = new PIXI.Graphics(); gFadeV = new PIXI.Graphics(); gFadeV.blendMode = 'erase';
     a2.stage.addChild(sprV, gGout, gTr);
+    // aucun besoin du système d'événements de Pixi : il écoutait les doigts pour rien et pouvait gêner le jeu
+    for (const ap of [a1, a2]) { try { ap.renderer.events.autoPreventDefault = false; ap.renderer.events.destroy(); } catch (e) {} ap.canvas.style.touchAction = ''; ap.canvas.style.pointerEvents = 'none'; }
     pd = a1; pu = a2; calerPixi();
   });
 }
@@ -682,7 +684,8 @@ function majVitre(dt) {
   fadeV += dt * 0.45; if (fadeV >= 0.012) { pâlir(pu, rtV, gFadeV, fadeV); fadeV = 0; }   // traînées qui sèchent vite
   gGout.clear(); for (const l of lentilles) l.sp.visible = false;
   const src = glc, sc = src.width / W; let nl = 0;
-  if (QUALITE > 0) { if (!lensSrc || lensSrc.pixelWidth !== src.width || lensSrc.pixelHeight !== src.height) { lensSrc = new PIXI.CanvasSource({ resource: src }); for (const l of lentilles) l.tx = null; } else lensSrc.update(); }
+  const veutLentille = QUALITE > 0 && gouttesVitre.some(g => g.r * (0.4 + 0.6 * g.apparition) > 5);   // on ne recopie l'image 3D que si une goutte en a besoin
+  if (veutLentille) { if (!lensSrc || lensSrc.pixelWidth !== src.width || lensSrc.pixelHeight !== src.height) { lensSrc = new PIXI.CanvasSource({ resource: src }); for (const l of lentilles) l.tx = null; } else lensSrc.update(); }
   for (let i = gouttesVitre.length - 1; i >= 0; i--) {
     const g = gouttesVitre[i];
     g.apparition = Math.min(1, g.apparition + dt * 6);
@@ -698,7 +701,7 @@ function majVitre(dt) {
     if (g.attente <= 0 && Math.random() < dt * 6) gVS.circle(g.x + rnd(-g.r * 0.4, g.r * 0.4), g.y - g.r * rnd(1, 2.5), rnd(1, 2.4)).fill({ color: hexc(g.c), alpha: 0.45 });
     const r = g.r * (0.4 + 0.6 * g.apparition), ey = g.y + r * 0.12;
     // effet de lentille : la scène derrière la goutte apparaît agrandie
-    if (QUALITE > 0 && r > 5 && lensSrc) {
+    if (veutLentille && r > 5 && lensSrc) {
       const sr = r * 0.62, l = lentille(nl++);
       const fx = Math.max(0, Math.min(src.width - 2, (g.x - sr) * sc)), fy = Math.max(0, Math.min(src.height - 2, (g.y - sr) * sc));
       const fw = Math.max(2, Math.min(sr * 2 * sc, src.width - fx)), fh = Math.max(2, Math.min(sr * 2 * sc, src.height - fy));
