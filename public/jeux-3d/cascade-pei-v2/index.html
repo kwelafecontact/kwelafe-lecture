@@ -14,6 +14,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1f4a1a;font-family:"B
 #fond{position:fixed;inset:0;background:#1f4a1a url("./fond-portrait.webp?v=2") center bottom/cover no-repeat}
 @media (min-aspect-ratio:1/1){#fond{background-image:url("./fond-paysage.webp?v=2")}}
 #c{position:fixed;inset:0;width:100%;height:100%}
+#c3{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
 .ecran{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 28px;pointer-events:none;transition:opacity .35s;background:rgba(10,40,10,.35)}
 .ecran.cache{opacity:0}.ecran.cache *{pointer-events:none!important}
 .titre{font-family:"Bangers",sans-serif;font-size:clamp(58px,14vw,116px);line-height:.95;letter-spacing:.04em;transform:rotate(-3deg);background:linear-gradient(90deg,#ff3b3b,#ff9a1f,#ffe23a,#5fe04a,#2fb4ff,#b45cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 4px 0 #123a08) drop-shadow(0 0 22px rgba(255,220,60,.5))}
@@ -44,6 +45,7 @@ input[type=range]{width:100%;accent-color:#ffb21e}
 <body>
 <div id="fond"></div>
 <canvas id="c"></canvas>
+<canvas id="c3"></canvas>
 
 <div class="ecran" id="menu">
   <div class="titre">CASCADE<br>PÉI</div>
@@ -112,6 +114,8 @@ input[type=range]{width:100%;accent-color:#ffb21e}
   <div class="modes"><button class="btn" id="bCaFerme">Retour</button></div></div>
 </div>
 
+<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
+<script type="module" src="./fx3d.js"></script>
 <script src="../commun/pixi.min.js"></script>
 <script src="../commun/pixi-filters.js"></script>
 <script>
@@ -131,13 +135,7 @@ const FRUITS=[
  {n:"ananas",nom:"Ananas Victoria",c:"#ffb21e"}];
 const hsv=(h,s=.85,v=1)=>{h=((h%360)+360)%360/60;const i=Math.floor(h),f=h-i,p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f)),a=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6];return (Math.round(a[0]*255)<<16)|(Math.round(a[1]*255)<<8)|Math.round(a[2]*255);};
 const hsvS=(h)=>"#"+hsv(h).toString(16).padStart(6,"0");
-const FXN=["e-etincelles","e-onde","e-jus","etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
-for(const n of FXN){const im=new Image();im.src=(n[0]==="e"&&n[1]==="-"?"./":"../commun/fx/")+n+".webp"+V;FXT[n]={im};}
-function fxTex(n){const o=FXT[n];if(!o||!o.im.complete||!o.im.naturalWidth)return null;return o.t||(o.t=PIXI.Texture.from(o.im));}
-function fxSpr(n,x,y,w,rot,al,tint,add){const t=fxTex(n);if(!t)return;const L=add?"a":"n",P=FXP[L],i=FXU[L]++;let s=P[i];
-  if(!s){s=new PIXI.Sprite();s.anchor.set(.5);(add?fxA:fxN).addChild(s);P[i]=s;}
-  s.texture=t;s.position.set(x,y);s.width=w;s.height=w*t.height/t.width;s.rotation=rot;s.alpha=al;s.tint=tint||0xffffff;s.visible=true;}
-function fxSp(o){(G.sp||(G.sp=[])).push(Object.assign({t:0,rot:rnd(0,6.28),vr:rnd(-4,4),vx:0,vy:0,g:0,grow:0,al:1,tint:0xffffff},o));}
+const F3=()=>window.FX3D&&window.FX3D.ready?window.FX3D:null;
 const IMG={fruits:FRUITS.map(f=>{const im=new Image();im.src="./fruit-"+f.n+".webp"+V;return im;})};
 
 const FAITS=[
@@ -195,7 +193,7 @@ function majVol(){if(musCur)musCur.volume=musVol();$("btnSon").textContent=S.mut
 /* ---------- Mise en page ---------- */
 let W,H,DPR,CT=0,CELL=50,OX=0,OY=0;
 function resize(){
-  DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;if(app)app.renderer.resize(W,H,DPR);
+  DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;if(app)app.renderer.resize(W,H,DPR);if(window.FX3D&&FX3D.ready)FX3D.resize(W,H,DPR);
   CT=Math.max(78,(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--st"))||0)+64);
   const top=CT+142,bas=H-96;
   CELL=Math.floor(Math.min(W*.96/NB,(bas-top)/NR,96));
@@ -364,7 +362,7 @@ function nettoie(){
   const mid=[...kill][0];const mc=Math.floor(mid/NR),mr=mid%NR;
   pop((G.cascade>1?"Cascade ×"+G.cascade+"  ":"")+"+"+pts,OX+(mc+.5)*CELL,OY+(mr+.5)*CELL,G.cascade>1?"#ffd24a":"#fff",G.cascade>1?34:28);
   sfx("pop",1,1+Math.min(.6,(G.cascade-1)*.12));vib(10);
-  if(G.cascade>=3){fxSp({k:"e-etincelles",add:1,x:W/2,y:OY+CELL*3.5,w:CELL*3,grow:CELL*8,life:1,vr:.4,al:1});for(let i=0;i<14;i++){const a=rnd(0,6.28),v=rnd(150,420);fxSp({k:"etoile",add:1,x:W/2,y:OY+CELL*3,w:rnd(.3,.7)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:380,life:rnd(.7,1.2),tint:hsv(rnd(0,360))});}secoue(4);}
+  if(G.cascade>=3){const f=F3();if(f)f.cascade(W/2,OY+CELL*3.5,CELL);secoue(4);}
   G.state="clearing";G.timer=.24;
 }
 function goal(t){for(const x of G.goals)if(x.t===t&&x.got<x.n)x.got++;}
@@ -453,11 +451,12 @@ function frame(ts){
   let d=dt;if(G&&G.slow>0){G.slow-=dt;d=dt*.3;}if(G){G.zoom=Math.max(0,(G.zoom||0)-dt*2.4);if(G.onde){G.onde.t+=dt;if(G.onde.t>1.1)G.onde=null;}
     if(G.fw>0){G.fw-=dt;if(Math.random()<dt*7)fwBurst();}}
   if(mode==="play")maj(d);
-  dessine();requestAnimationFrame(frame);
+  if(window.FX3D&&!window.FX3D.tried){FX3D.tried=1;FX3D.init(document.getElementById("c3"));FX3D.resize(W,H,DPR);}
+  const f3=F3();if(f3){if(!G||mode==="menu")f3.clear();else f3.update(d);}
+  dessine();if(f3)f3.render();requestAnimationFrame(frame);
 }
-function petales(){for(let i=0;i<3;i++)fxSp({k:i%2?"petale":"feuille",x:rnd(OX,OX+CELL*NB),y:OY-CELL*.5,w:rnd(.4,.7)*CELL,vx:rnd(-40,40),vy:rnd(60,140),g:30,life:rnd(2.2,3.2),vr:rnd(-3,3)});}
-function fwBurst(){fxSp({k:"paillettes",add:1,x:rnd(OX,OX+CELL*NB),y:rnd(OY,OY+CELL*NR*.5),w:CELL*2.2,grow:CELL*2,life:.9,vr:0,rot:0});petales();const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=["#ffe25a","#ff5a5a","#5ae0ff","#8aff5a","#ff8ae8"],c=cols[Math.floor(rnd(0,5))];
-  for(let i=0;i<28;i++){const a=i/28*6.28,v=rnd(160,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:260,t:0,life:rnd(.8,1.3),r:rnd(2.5,5),col:c});}}
+function petales(){const f=F3();if(f)f.petales(OX,OX+CELL*NB,OY-CELL*.5,3,CELL);}
+function fwBurst(){petales();const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=[0xffe25a,0xff5a5a,0x5ae0ff,0x8aff5a,0xff8ae8],f=F3();if(f)f.feu(x,y,cols[Math.floor(rnd(0,5))],CELL);}
 function stable(){
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(!k)return false;if(Math.abs(k.vx-c)>.02||Math.abs(k.vy-r)>.02||k.sc<.98)return false;}
   return true;
@@ -483,7 +482,6 @@ function maj(dt){
   if((G.state==="win"||G.state==="lose")&&G.timer<=0)suite();
   for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
   G.parts=G.parts.filter(q=>q.t<q.life);
-  if(G.sp){for(const q of G.sp){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;q.rot+=q.vr*dt;q.w+=q.grow*dt/q.life;}G.sp=G.sp.filter(q=>q.t<q.life);}
   for(const p of G.pops)p.t+=dt;G.pops=G.pops.filter(p=>p.t<1.4);
   if(G.gros.t>0)G.gros.t-=dt;
 }
@@ -497,23 +495,14 @@ function animCells(dt){
     else if(k.sc<1)k.sc=Math.min(1,k.sc+dt*5);
   }
 }
-function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;
-  if(!G.sp||G.sp.length<260){fxSp({k:"e-jus",add:1,x,y,w:CELL*.9,grow:CELL*1.6,life:.5,vr:0,rot:rnd(0,6.28),al:.85});for(let i=0;i<3;i++){const a=rnd(0,6.28),v=rnd(120,300);fxSp({k:i%2?"goutte":"paillettes",add:i%2?0:1,x,y,w:rnd(.2,.45)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,life:rnd(.5,.9),tint:i%2?hx(col.length===7?col:"#ffffff"):hsv(rnd(0,360))});}}
-  for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(60,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:600,t:0,life:rnd(.3,.65),r:rnd(3,7),col});}}
-function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;G.fx.push({k:"ring",x,y,col,R:R*CELL,t:0,life:.55});if(R>=2.4)grandMoment(x,y,col);}
+function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,f=F3();if(f)f.jus(x,y,col.length===7?hx(col):0xffffff,CELL,Math.min(10,4+Math.ceil((n||6)/2)));}
+function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,f=F3();if(f){f.anneau(x,y,col.length===7?hx(col):0xffffff,R*CELL,0,.55,1.1);f.etincelles(x,y,16,CELL*4,CELL,null,.8);}if(R>=2.4)grandMoment(x,y,col);}
 function grandMoment(x,y,col){
-  for(let i=0;i<6;i++)G.fx.push({k:"ring",x,y,col:hsvS(i*60),R:(2.6+i*.5)*CELL,t:-i*.07,life:.7}); // ralenti, zoom, onde de choc et gerbe d'étincelles dorées
+  const f3=F3();if(f3)f3.grand(x,y,col.length===7?hx(col):0xffa020,CELL); // 3D : anneaux, bulle d'onde de choc, jus, étoiles, étincelles, confettis
   G.slow=Math.max(G.slow||0,.32);G.zoom=1;G.onde={x,y,t:0};sfx("impact",.9);sfx("eclat",.6,1.05);
-  for(let i=0;i<46;i++){const a=rnd(0,6.28),v=rnd(120,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-160,g:520,t:0,life:rnd(.5,1.1),r:rnd(2,6),col:i%3?"#ffe25a":col});}
-  fxSp({k:"e-onde",add:1,x,y,w:CELL*1.5,grow:CELL*7,life:.8,vr:0,rot:0,al:.8});fxSp({k:"e-etincelles",add:1,x,y,w:CELL*2,grow:CELL*6,life:.9,vr:.6,al:.6});
-  fxSp({k:"flare",add:1,x,y,w:CELL*.9,grow:CELL*3.2,life:.5,al:.4});
-  fxSp({k:"anneau",add:1,x,y,w:CELL*.8,grow:CELL*6,life:.7,vr:0,rot:0});
-  fxSp({k:"jus",x,y,w:CELL*1.1,grow:CELL*2.2,life:.7,vr:0,rot:0,tint:hx(col.length===7?col:"#ffa020")});
-  for(let i=0;i<10;i++){const a=rnd(0,6.28),v=rnd(140,420);fxSp({k:"etoile",add:1,x,y,w:rnd(.35,.8)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:360,life:rnd(.6,1.1)});}
-  for(let i=0;i<6;i++){const a=rnd(0,6.28),v=rnd(80,300);fxSp({k:"goutte",x,y,w:rnd(.25,.45)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:900,life:rnd(.7,1.1)});}
 }
 function feuArtifice(){G.fw=1.8;sfx("petales",.7);sfx("montee",.5,.9);}
-function fxBeam(horiz,c,r,col){G.fx.push({k:"beam",horiz,x:OX+(c+.5)*CELL,y:OY+(r+.5)*CELL,col,t:0,life:.45});}
+function fxBeam(horiz,c,r,col){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL,f=F3();if(f)f.faisceau(horiz,horiz?OX+CELL*NB/2:x,horiz?y:OY+CELL*NR/2,horiz?CELL*NB+8:CELL*NR,0xfff2c0,CELL);}
 function secoue(v){G.shake=Math.max(G.shake,v);}
 function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
@@ -613,7 +602,7 @@ function dessineCell(k,c,r){
   }
   if(k.t>=0){
     {const gl=.5+.5*Math.sin(G.t*3+c+r),cc=hx(FRUITS[k.t].c);gAdd.circle(x,y,CELL*.5*k.sc).fill({color:cc,alpha:(.07+.04*gl)*al});gAdd.circle(x,y,CELL*.38*k.sc).fill({color:cc,alpha:(.1+.05*gl)*al});}
-    const ph=(G.t*.9+((c*13+r*7)%10)*.7)%7;if(ph<.55&&al>.9)fxSpr("etoile",x-CELL*.22,y-CELL*.26,CELL*.34*Math.sin(ph/.55*Math.PI),G.t*2,.95,0xffffff,true);}
+  }
   spr("cell",x,y,h,al,k.t);
   if(k.sp){
     const pulse=.5+.5*Math.sin(G.t*8),Rr=CELL*.44*k.sc;
@@ -642,8 +631,6 @@ function dessine(){
    world.position.set(cx+(G.shake>0?rnd(-1,1)*G.shake:0),cy+(G.shake>0?rnd(-1,1)*G.shake:0));
    if(shockF&&G.onde){shockF.center={x:G.onde.x*DPR,y:G.onde.y*DPR};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}
   gAdd.clear();
-  for(const L of ["n","a"]){const P=FXP[L];for(let i=0;i<FXU[L]&&i<P.length;i++)P[i].visible=false;FXU[L]=0;}
-  if(G.sp)for(const q of G.sp){const k=q.t/q.life;fxSpr(q.k,q.x,q.y,q.w,q.rot,Math.min(1,(1-k)*2)*q.al,q.tint,q.add);}
   if(G.cascade>=2){const a=Math.min(.9,.3+G.cascade*.15);for(let i=0;i<3;i++)gAdd.roundRect(OX-10-i*3,OY-10-i*3,bw+20+i*6,bh+20+i*6,24).stroke({width:6-i*1.5,color:hsv(G.t*140+i*50),alpha:a/(i+1)});}
   for(let i=0;i<5;i++){const a=G.t*.25+i*1.26;gAdd.poly([W/2,-20,W/2+Math.cos(a)*H*1.4-60,H,W/2+Math.cos(a)*H*1.4+60,H]).fill({color:hsv(i*70+G.t*30,.4,1),alpha:.035});}
   gBoard.roundRect(OX-8,OY-8,bw+16,bh+16,22).fill({color:0x3c220a,alpha:.55}).stroke({width:4,color:0xffe28c,alpha:.85});
@@ -652,7 +639,6 @@ function dessine(){
   if(G.hint){const a=.5+.5*Math.sin(G.t*8);for(const [c,r] of G.hint)gBoard.rect(OX+c*CELL+3,OY+r*CELL+3,CELL-6,CELL-6).stroke({width:4,color:0xffe25a,alpha:.4+a*.6});}
   cellMask.rect(OX-4,OY,bw+8,bh).fill(0xffffff);
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(k)dessineCell(k,c,r);}
-  for(const q of G.parts){const al=Math.max(0,1-q.t/q.life),c=hx(q.col.length===7?q.col:"#ffffff");gAdd.circle(q.x,q.y,q.r*2.2).fill({color:c,alpha:al*.25});gAdd.circle(q.x,q.y,q.r).fill({color:c,alpha:al});gAdd.circle(q.x,q.y,q.r*.45).fill({color:0xffffff,alpha:al});}
   for(const f of G.fx){const p=f.t/f.life,al=Math.max(0,1-p),col=f.col.length===7?hx(f.col):0xffffff;
     if(f.t<0)continue;
     if(f.k==="ring"){const R=f.R*p+8;gFx.circle(f.x,f.y,R).stroke({width:26*(1-p)+4,color:col,alpha:al*.3});gFx.circle(f.x,f.y,R).stroke({width:10*(1-p)+2,color:col,alpha:al});}
