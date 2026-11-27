@@ -9,7 +9,7 @@ export type FicheJeu = {
   image?: string;            // chemin d'une autre image de vignette
   emoji?: string;            // ou un pictogramme
   fond: string;              // dégradé de la carte
-  serie: "fruits" | "reunion";
+  serie: "fruits" | "reunion" | "memoire";
   troisD?: boolean;          // jeu 3D avec sa propre page (Koup Koup)
 };
 
@@ -34,6 +34,9 @@ export const CATALOGUE: FicheJeu[] = [
   { id: "gardiens-de-l-ile", titre: "Les Gardiens de l'île", accroche: "Reconnais les animaux de La Réunion.", vignette: "", emoji: "🦎", fond: "linear-gradient(135deg,#bff0a8,#2e7d4f)", serie: "reunion" },
   { id: "expressions-a-recoller", titre: "Expressions à recoller", accroche: "Relie les expressions créoles à leur sens.", vignette: "", emoji: "💬", fond: "linear-gradient(135deg,#ff9ab0,#d9442b)", serie: "reunion" },
   { id: "case-bleue", titre: "L'énigme de la Case Bleue", accroche: "Escape game dans la kaz de Gramoun Zélie.", vignette: "", emoji: "🔑", fond: "linear-gradient(135deg,#7ab0f0,#1b2a4a)", serie: "reunion" },
+  { id: "traces-des-libres", titre: "Sur les traces des libres", accroche: "La frise de la liberté et les lieux du marronnage.", vignette: "", emoji: "⛰️", fond: "linear-gradient(135deg,#f4c27a,#7a3a1a)", serie: "memoire" },
+  { id: "kabar-marmay", titre: "Kabar Marmay", accroche: "Ose parler : défis en créole et en français.", vignette: "", emoji: "🥁", fond: "linear-gradient(135deg,#ffb36a,#a8321d)", serie: "memoire" },
+  { id: "nout-leritaz", titre: "Nout Léritaz", accroche: "Enquête auprès d'un gramoun et remplis ton carnet.", vignette: "", image: "/jeux/lontan/obj-lanp.webp", fond: "linear-gradient(135deg,#bfe8d8,#2e7d4f)", serie: "memoire" },
   { id: "coulee-de-lave", titre: "Coulée de lave", accroche: "Guide la lave du volcan jusqu'à la mer.", vignette: "", emoji: "🌋", fond: "linear-gradient(135deg,#ff9a5a,#5a2a1c)", serie: "reunion" },
 ];
 
@@ -63,6 +66,9 @@ export async function chargerJeu(id: string): Promise<DefJeu | null> {
     case "expressions-a-recoller": return (await import("./jeux/expressions-a-recoller")).default;
     case "case-bleue": return (await import("./jeux/case-bleue")).default;
     case "coulee-de-lave": return (await import("./jeux/coulee-de-lave")).default;
+    case "traces-des-libres": return (await import("./jeux/traces-des-libres")).default;
+    case "kabar-marmay": return (await import("./jeux/kabar-marmay")).default;
+    case "nout-leritaz": return (await import("./jeux/nout-leritaz")).default;
     default: return null;
   }
 }
