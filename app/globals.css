@@ -780,3 +780,17 @@ body { background: var(--ivoire); }
 .liste-devoirs-prof { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .liste-devoirs-prof li { display: flex; justify-content: space-between; gap: 10px; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.04); }
 .liste-devoirs-prof li div { display: flex; flex-direction: column; gap: 2px; } .liste-devoirs-prof li.passe { opacity: .55; }
+/* Éditeur : import en lot */
+.resume-import { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 14px; }
+.resume-import input { margin-left: auto; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,.2); min-width: 200px; }
+.alerte-import { color: #b5562e; }
+.table-import { overflow-x: auto; max-height: 70vh; overflow-y: auto; border: 1px solid rgba(0,0,0,.1); border-radius: 12px; }
+.table-import table { width: 100%; font-size: 13px; border-collapse: collapse; }
+.table-import th { position: sticky; top: 0; background: #f3f1ea; text-align: left; padding: 8px; z-index: 1; }
+.table-import td { padding: 6px 8px; border-top: 1px solid rgba(0,0,0,.06); vertical-align: top; }
+.table-import select, .table-import td input:not([type=checkbox]) { width: 100%; min-width: 180px; padding: 6px; border-radius: 8px; border: 1px solid rgba(0,0,0,.2); font-size: 13px; }
+.cell-fichier { max-width: 260px; word-break: break-word; } .cell-fichier small { display: block; color: #888; }
+.badge-format { display: inline-block; padding: 1px 6px; border-radius: 6px; font-size: 11px; font-weight: 800; color: #fff; }
+.badge-format.pdf { background: #d6332a; } .badge-format.epub { background: #1f6fb2; }
+.ligne-ecartee { opacity: .45; } .ligne-sans-fiche td:nth-child(3) select { border-color: #e8a200; background: #fff8e6; }
+.etat-import { white-space: nowrap; } .etat-import.fait { color: #2e9d4f; font-weight: 700; } .etat-import.erreur { color: #d6332a; white-space: normal; }
