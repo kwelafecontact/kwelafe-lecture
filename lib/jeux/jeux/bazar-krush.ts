@@ -1,4 +1,4 @@
-// Bazar Krush : on échange deux fruits voisins pour en aligner trois ou plus.
+// Cascade Péi : on échange deux fruits voisins pour en aligner trois ou plus.
 import { couleurDe } from "../commun/photos";
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, arrondi, texteContour, etoilesPour, melanger } from "../commun/moteur2d";
 import { produit } from "../commun/produits";
@@ -204,7 +204,7 @@ class Krush implements Jeu {
 
 const def: DefJeu = {
   id: "bazar-krush",
-  titre: "Bazar Krush",
+  titre: "Cascade Péi",
   accroche: "Aligne les fruits péi par trois et enchaîne les cascades !",
   regles: ["Fais glisser un fruit vers son voisin pour les échanger.", "Trois fruits identiques alignés disparaissent.", "Quatre alignés : un fruit rayé qui vide une ligne. Cinq : une étoile qui vide tous les fruits d'une sorte.", "Atteins l'objectif avant la fin des coups."],
   niveaux: 30,

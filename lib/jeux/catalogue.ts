@@ -17,7 +17,7 @@ export const CATALOGUE: FicheJeu[] = [
   { id: "koup-koup", titre: "Koup Koup", accroche: "Coupe les fruits péi en 3D et évite la lave.", vignette: "mangue-coupe", fond: "linear-gradient(135deg,#f39a12,#e8283a 55%,#6e2a5c)", serie: "fruits", troisD: true },
   { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Prépare les jus que les clients commandent.", vignette: "ananas-coupe", fond: "linear-gradient(135deg,#ffcf8a,#e9845a)", serie: "fruits" },
   { id: "fusion-pei", titre: "Fusion péi", accroche: "Fusionne les fruits, du goyavier au ti jacque géant.", vignette: "pasteque", fond: "linear-gradient(135deg,#8fe0ff,#2aa6c8)", serie: "fruits" },
-  { id: "bazar-krush", titre: "Bazar Krush", accroche: "Aligne trois fruits identiques, enchaîne les cascades.", vignette: "letchi", fond: "linear-gradient(135deg,#bff0a8,#3f8a3a)", serie: "fruits" },
+  { id: "bazar-krush", titre: "Cascade Péi", accroche: "Aligne trois fruits identiques, enchaîne les cascades.", vignette: "letchi", fond: "linear-gradient(135deg,#bff0a8,#3f8a3a)", serie: "fruits" },
   { id: "2048-pei", titre: "2048 péi", accroche: "Fais glisser et grandir les fruits.", vignette: "papaye", fond: "linear-gradient(135deg,#ffb08a,#b04a6a)", serie: "fruits" },
   { id: "memory-pei", titre: "Memory péi", accroche: "Retrouve les paires de fruits et légumes.", vignette: "carambole", fond: "linear-gradient(135deg,#ff9ab0,#d94a6a)", serie: "fruits" },
   { id: "kel-fri-sa", titre: "Kel fri sa ?", accroche: "Devine le fruit qui se dévoile peu à peu.", vignette: "grenadine-coupe", fond: "linear-gradient(135deg,#c9a8ff,#6a4ab0)", serie: "fruits" },
