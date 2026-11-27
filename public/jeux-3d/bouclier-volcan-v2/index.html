@@ -153,6 +153,7 @@
   <div class="nouveau" id="nouveauRecord"></div>
   <div class="sous" id="bombesFin"></div>
   <div class="sous" id="recordFin">Record : 0</div>
+  <div class="sous" id="collectionFin"></div>
   <div class="savoir"><b id="savoirTitre">Le saviez-vous ?</b><span id="savoirTexte"></span></div>
   <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
 </div></div>
@@ -171,6 +172,7 @@
 <button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
+<script src="../commun/kwelafe-fx.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -521,6 +523,27 @@ const son = {   // échantillons ElevenLabs uniquement
   annonce: () => sfx('annonce', 1.0, 1),   // voix ElevenLabs d'ouverture
 };
 
+// ---------------------------------------------------------------- KwFX, le directeur d'effets Kwélafé
+// Mode complément : le jeu garde ses braises 3D, ses taches de lave et ses bruitages ElevenLabs ;
+// KwFX ajoute la mise en scène (onomatopées créoles, plan dramatique, hit stop, halos, pièces vers le score),
+// les messages créoles de série, les pépites surprises (bouclier rechargé), la collection d'objets rares péi et le record.
+let arret = 0, recordFete = false, recordDepart = 0;
+const BLEU = ['#9EE7FF', '#FFFFFF', '#5AB4FF', '#2A8AFF'], VERT = ['#B8FF9A', '#5FE07A', '#1FA850', '#E8FFE0'], LAVE = ['#FFF1C1', '#FFD23F', '#FF8C00', '#FF4D00'];
+const fx = window.KwFX ? KwFX.init({
+  theme: 'volcan', public: 'enfant', manga: 1, mode: 'trankil', support: 'web', jeu: 'bouclier-volcan-v2',
+  complement: true, secousses: false,   // le jeu a déjà sa propre secousse de caméra
+  sons: true, sonsPack: '../commun/kwfx-sons/', sonsEvenements: ['pepite', 'record', 'victoire', 'defaite', 'debut', 'clic', 'presque', 'arrivee'],
+  volume: sonCoupe ? 0 : 0.85,
+  messages: true, messagesTypes: ['serie', 'record', 'victoire', 'defaite', 'encourage', 'pepite', 'debut'], echelleMessages: 0.55, hautMessages: '34%',
+  cibleScore: $('score'), zoneShake: $('gl'), dprMax: PETIT ? 1.5 : 2,
+  onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
+}) : null;
+const ecran = v => toScreen(v);
+const fxJoue = (nom, v, o = {}) => { if (!fx) return; const e = v ? ecran(v) : {}; fx.joue(nom, Object.assign({ x: e.x, y: e.y }, o)); };
+const fxEvt = (type, v, o = {}) => { if (!fx) return {}; const e = v ? ecran(v) : {}; return fx.evenement(type, Object.assign({ x: e.x, y: e.y }, o)) || {}; };
+const fxSon = () => { if (fx) fx.regler({ volume: sonCoupe ? 0 : 0.85 * Math.max(0.2, S.fx) }); };
+fxSon();
+
 // ---------------------------------------------------------------- partie
 const DUREE_ZEN = 90, RECHARGE_BOUCLIER = 12; let DUREE_BOUCLIER = 5;
 let phase = 'actif', phaseT = 0, stats = {}, olivPartie = 0, prochainEgare = 9; const olivines = [], balises = [];
@@ -634,6 +657,7 @@ function demarrer(m) {
   record = calme() ? 0 : save.record; ambiancer(); musique(calme() ? 'musique-calme' : 'musique-intense'); vitesseMusique();
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
+  if (fx) { fx.regler({ mode: calme() ? 'trankil' : 'probleme' }); fx.evenement('debut'); } recordFete = false; recordDepart = record; arret = 0;
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('lien').classList.add('discret'); $('btnPause').classList.add('on'); pause = false; $('pause').classList.remove('on');
 }
 function finPartie() {
@@ -649,7 +673,12 @@ function finPartie() {
   sauver();
   $('savoirTitre').textContent = neuf ? `Nouveau dans ton carnet (${save.faits.length}/${FAITS.length})` : 'Le saviez-vous ?'; $('savoirTexte').textContent = FAITS[idx];
   $('scoreFin').textContent = score; $('recordFin').textContent = calme() ? (etoilesC ? '★ ' + etoilesC + (etoilesC > 1 ? ' étoiles' : ' étoile') : 'Pas de record, juste le plaisir') : 'Record : ' + record;
-  $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
+  $('nouveauRecord').textContent = nouveau ? 'Nouvo rékor !' : '';
+  if (fx) {
+    setTimeout(() => fx.evenement(calme() || nouveau ? 'victoire' : 'defaite'), 350);
+    const b = fx.finPartie(calme() ? null : score);
+    $('collectionFin').textContent = '🎁 Objets rares péi : ' + b.collection.obtenus + '/' + b.collection.total;
+  }
   $('bombesFin').textContent = coupees + (coupees > 1 ? ' bombes tranchées' : ' bombe tranchée') + ' · niveau ' + niveau + ` · +${olivPartie} 💚 (réserve : ${save.oliv})`;
   const et = calme() ? (coupees >= 40 ? 3 : coupees >= 20 ? 2 : coupees >= 8 ? 1 : 0) : (coupees >= 70 ? 3 : coupees >= 35 ? 2 : coupees >= 12 ? 1 : 0);
   $('etoilesFin').innerHTML = [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
@@ -658,11 +687,11 @@ function finPartie() {
 // fin de niveau : fontaine de lave (avec une bombe en fuseau), puis accalmie et sismographe
 function finDeNiveau() {
   if (!calme() && niveau % 5 === 0) {   // éruption majeure : la bombe-mère, lente et énorme, à briser en plusieurs coupes
-    phase = 'speciales'; phaseT = 0; bandeau('ÉRUPTION MAJEURE ! Brise la bombe-mère', 3); secousse = 0.6; son.grand(); lancerBombe(false, true, true);
+    phase = 'speciales'; phaseT = 0; bandeau('ÉRUPTION MAJEURE ! Brise la bombe-mère', 3); secousse = 0.6; son.grand(); fxJoue('plan', new THREE.Vector3(cratere.jx, cratere.jy - 1, 0), { duree: 1300 }); fxJoue('aberration', null, { intensite: 0.5 }); fxJoue('eruption', new THREE.Vector3(cratere.jx, cratere.jy - 1.2, 0), { intensite: 1, couleurs: LAVE }); lancerBombe(false, true, true);
     for (let i = 0; i < 4; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 1800 + i * 1100);
     setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; lancerSismo(); }, 11500); return;
   }
-  phase = 'speciales'; phaseT = 0; bandeau('Fontaine de lave !', 2.2); secousse = 0.4;
+  phase = 'speciales'; phaseT = 0; bandeau('Fontaine de lave !', 2.2); secousse = 0.4; fxJoue('eruption', new THREE.Vector3(cratere.jx, cratere.jy - 1.2, 0), { intensite: 0.8, couleurs: LAVE }); fxJoue('halo', null, { intensite: 0.5 });
   const n = 5 + Math.min(6, niveau);
   for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 150 + i * 200);
   setTimeout(() => etat === 'jeu' && lancerBombe(true), 900);
@@ -675,8 +704,8 @@ function amplitude(t) { const e = Math.exp(-((t - sismo.pic) ** 2) / 0.35); retu
 function arreterSismo() {
   if (!sismo || sismo.fini) return; sismo.fini = true;
   const ok = amplitude(sismo.t) >= seuil();
-  if (ok) { score += 40; olivPartie++; majOliv(); majScore(); compter('alertes'); son.niveau(); bandeau('Alerte donnée à temps ! +40 et 1 olivine', 2.4); }
-  else { son.touche(); bandeau(sismo.t < sismo.pic ? 'Trop tôt : le signal était encore faible' : 'Trop tard : la crise est passée', 2.4); }
+  if (ok) { score += 40; olivPartie++; majOliv(); majScore(); compter('alertes'); son.niveau(); bandeau('Alerte donnée à temps ! +40 et 1 olivine', 2.4); if (fx) { const r = $('jauge').getBoundingClientRect(); fx.evenement('trouve', { x: r.left + r.width / 2, y: r.top + r.height / 2 }); fx.joue('confettis', { x: r.left + r.width / 2, y: r.top, intensite: 0.7 }); fx.joue('onomatopee', { texte: 'OTÉ !', x: r.left + r.width / 2, y: r.top - 30, intensite: 0.6 }); } }
+  else { son.touche(); if (fx) { const r = $('jauge').getBoundingClientRect(); fx.evenement('presque', { x: r.left + r.width / 2, y: r.top - 20 }); } bandeau(sismo.t < sismo.pic ? 'Trop tôt : le signal était encore faible' : 'Trop tard : la crise est passée', 2.4); }
   setTimeout(() => $('jauge').classList.remove('on'), 500);
 }
 function dessinerSismo(dt) {
@@ -688,14 +717,14 @@ function dessinerSismo(dt) {
 }
 // randonneur qui quitte le balisage
 function egarer() { const libres = marcheurs.filter(m => !m.egare && m.choc <= 0); if (!libres.length) return; const m = libres[Math.floor(Math.random() * libres.length)]; m.egare = (calme() ? 8 : 4) + save.amelio.jumelles; const e = document.createElement('div'); e.className = 'alerte'; e.textContent = '⚠️'; document.body.appendChild(e); m.alerte = e; son.appel(); }
-function rappeler(m) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; score += 12; majScore(); compter('rappels'); son.rappel(); popup('Reste sur le balisage ! +12', m.obj.position.clone().add(new THREE.Vector3(0, 2.4, 0)), 'chaine'); }
+function rappeler(m) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; score += 12; majScore(); compter('rappels'); son.rappel(); popup('Reste sur le balisage ! +12', m.obj.position.clone().add(new THREE.Vector3(0, 2.4, 0)), 'chaine'); const q = m.obj.position.clone().add(new THREE.Vector3(0, 1.2, 0)); fxEvt('trouve', q); fxJoue('etoiles', q, { intensite: 0.6 }); fxJoue('anneau', q, { intensite: 0.5, couleurs: ['#FFD23F', '#FFFFFF'] }); }
 // olivine tombée d'une grosse bombe
 function poserOlivine(x) {
   const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0), new THREE.MeshStandardMaterial({ color: 0x7ad030, emissive: 0x3a8a10, emissiveIntensity: 1.2, roughness: 0.2, metalness: 0.1 }));
   m.position.set(Math.max(-viewW * 0.45, Math.min(viewW * 0.45, x)), sol + 0.3, 1.0); m.scale.set(1, 1.4, 1); scene.add(m); olivines.push({ obj: m, t: 0 });
 }
 function tapper(px, py) {
-  for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); son.olivine(); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); return true; } }
+  for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); son.olivine(); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); fxJoue('eclat', o.obj.position, { intensite: 0.55, couleurs: VERT }); fxJoue('poussiereOr', o.obj.position, { intensite: 0.5, couleurs: VERT }); return true; } }
   for (const m of marcheurs) { if (!m.egare) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 1, 0))); if (Math.hypot(sc.x - px, sc.y - py) < 70) { rappeler(m); return true; } }
   return false;
 }
@@ -706,9 +735,9 @@ function majBonus() {
   $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', ralentis === 0); $('bRalenti').classList.toggle('pret', ralentis > 0);
   $('nOnde').textContent = ondes; $('bOnde').classList.toggle('vide', ondes === 0); $('bOnde').classList.toggle('pret', ondes > 0);
 }
-function activerBouclier() { if (etat !== 'jeu' || pause || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
-function activerRalenti() { if (etat !== 'jeu' || pause || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
-function activerOnde() { if (etat !== 'jeu' || pause || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau && !b.montee) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
+function activerBouclier() { if (etat !== 'jeu' || pause || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); const c = new THREE.Vector3(0, sol + 1.2, 0.5); fxJoue('anneau', c, { intensite: 1, couleurs: BLEU }); fxJoue('etincelles', c, { intensite: 0.8, couleurs: BLEU }); fxJoue('flash', null, { couleur: '#5AB4FF', intensite: 0.35 }); }
+function activerRalenti() { if (etat !== 'jeu' || pause || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); fxJoue('halo', null, { intensite: 0.6 }); fxJoue('ralenti', null, { duree: 5000 }); }
+function activerOnde() { if (etat !== 'jeu' || pause || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau && !b.montee) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); const c = new THREE.Vector3(0, 0.5, 0); fxJoue('hitstop', null, { duree: 90 }); fxJoue('onomatopee', c, { texte: 'BOUF !', intensite: 0.9 }); fxJoue('anneau', c, { intensite: 1, couleurs: LAVE }); fxJoue('aberration', null, { intensite: 0.6 }); }
 function lancerOiseau() {
   const dir = Math.random() < 0.5 ? 1 : -1, obj = pailleEnQueue();
   obj.rotation.order = 'YXZ'; obj.rotation.y = dir > 0 ? -0.3 : Math.PI + 0.3; obj.rotation.x = 0.55;
@@ -721,6 +750,7 @@ function toucheOiseau(o, b) {
   const p = o.obj.position; for (let i = 0; i < 26; i++) braise(p.x, p.y, p.z + 0.3, rnd(-2, 2), rnd(-1, 2.5), [1, 1, 0.95], rnd(0.6, 1.2), rnd(30, 50), 2);
   sfx('alerte', 0.5, 1.4);
   popup('Le paille-en-queue est touché !', p, 'aie');
+  fxEvt('erreur', p, { grave: !calme() });
   perdreVie();
 }
 function eclater(b, dir) {
@@ -741,7 +771,7 @@ let depart = null;
 addEventListener('pointerdown', e => { if (e.target.closest('.zone-interactive')) return; audio(); appui = true; dernier = pointeur(e); depart = dernier; trait.length = 0; trait.push(dernier); chaine = 0; if (etat === 'jeu' && !pause) tapper(e.clientX, e.clientY); });
 addEventListener('pointermove', e => { if (!appui) return; const p = pointeur(e); trait.push(p); if (trait.length > 14) trait.shift(); trancher(dernier, p); dernier = p; });
 addEventListener('pointerup', () => { appui = false; finChaine(); }); addEventListener('pointercancel', () => { appui = false; });
-function finChaine() { if (chaine >= 2 && etat === 'jeu') { const bonus = chaine * 3; score += bonus; majScore(); popup('Coup double ! +' + bonus, new THREE.Vector3(0, 0, 0), 'chaine'); son.combo(); } chaine = 0; }
+function finChaine() { if (chaine >= 2 && etat === 'jeu') { const bonus = chaine * 3; score += bonus; majScore(); popup('Coup double ! +' + bonus, new THREE.Vector3(0, 0, 0), 'chaine'); son.combo(); if (fx && dernier) fx.joue('onomatopee', { texte: chaine >= 4 ? 'OTÉ !' : 'VLAP !', x: dernier.x, y: dernier.y - 40, intensite: Math.min(1, 0.45 + chaine * 0.12) }); } chaine = 0; }
 function trancher(a, b) {
   if (etat !== 'jeu' || pause) return;
   const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy; if (L < 16) return;
@@ -756,16 +786,22 @@ function trancher(a, b) {
         bo.pv--; bo.garde = 0.2; bo.vy += bo.boss ? 0.6 : 2.2; bo.vx += dir.x * 1.6; bo.vr *= -1.4; { const kr = bo.boss ? 0.96 : 0.9; bo.obj.scale.multiplyScalar(kr); bo.base && bo.base.multiplyScalar(kr); bo.rayon *= bo.boss ? 0.97 : 0.92; }
         son.coupe(bo.obj.scale.x); anneau(bo.obj.position); score += 1; majScore(); serie++; chaine++;
         const q = bo.obj.position; for (let i = 0; i < 46; i++) { const a = Math.random() * 6.283, v = rnd(2, 8); braise(q.x, q.y, q.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 1, i % 3 ? [0.35, 1, 0.5] : [0.8, 1, 0.8], rnd(0.4, 1), rnd(22, 55), 5); }
-        popup(bo.pv > 1 ? 'Encore ' + bo.pv + ' coupes !' : 'Encore 1 coupe !', q, 'chaine'); continue;
+        popup(bo.pv > 1 ? 'Encore ' + bo.pv + ' coupes !' : 'Encore 1 coupe !', q, 'chaine'); fxJoue(bo.boss ? 'hitstop' : 'etincelles', q, bo.boss ? { duree: 55 } : { intensite: 0.5, couleurs: VERT }); if (bo.boss) fxJoue('onomatopee', q, { texte: 'PAF !', intensite: 0.55 }); continue;
       }
       eclater(bo, dir); son.coupe(bo.obj.scale.x); coupees++; chaine++; serie++;
+      const dfx = fxEvt('coupe', bo.obj.position, { couleur: bo.cristal ? '#5FE07A' : '#FF8C00' }), mult = dfx.multiplicateur || 1;
+      if (dfx.pepite) { charge = RECHARGE_BOUCLIER; majBonus(); olivPartie++; majOliv(); popup('Pépit ! Bouclier rechargé 🛡️', bo.obj.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 'chaine'); }
+      if (bo.boss) { fxJoue('hitstop', null, { duree: 130 }); fxJoue('onomatopee', bo.obj.position, { texte: 'KRAK !', intensite: 1 }); fxJoue('eruption', bo.obj.position, { intensite: 1, couleurs: LAVE }); fxJoue('halo', null, { intensite: 0.9 }); fxJoue('aberration', null, { intensite: 0.7 }); }
+      else if (bo.fuseau) { fxJoue('hitstop', null, { duree: 80 }); fxJoue('onomatopee', bo.obj.position, { texte: 'FIOU !', intensite: 0.75 }); }
+      else if (bo.cristal) { fxJoue('hitstop', null, { duree: 60 }); fxJoue('eclat', bo.obj.position, { intensite: 0.8, couleurs: VERT }); }
       if (bo.boss) { score += 100; for (let i = 0; i < 3; i++) poserOlivine(bo.obj.position.x + (i - 1) * 0.7); son.bonus(); bandeau('Bombe-mère brisée ! +100 et 3 olivines', 2.5); }
       if (bo.cristal) { const q = bo.obj.position; for (let i = 0; i < 90; i++) { const a = Math.random() * 6.283, v = Math.pow(Math.random(), 0.6) * rnd(4, 12); braise(q.x, q.y, q.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 1.5, i % 3 ? [0.3, 1, 0.45] : [0.85, 1, 0.9], rnd(0.6, 1.5), rnd(22, 60), 5); } poserOlivine(q.x - 0.3); poserOlivine(q.x + 0.3); score += 5; majScore(); popup('Cristaux ! +2 💚', q, 'chaine'); }
       if (serie % 6 === 0) { if (serie % 12 === 0) { ondes = Math.min(3, ondes + 1); popup('Série de ' + serie + ' ! Bonus onde de choc 💥', new THREE.Vector3(0, 1.5, 0), 'chaine'); } else { ralentis = Math.min(3, ralentis + 1); popup('Série de ' + serie + ' ! Bonus ralenti ⏳', new THREE.Vector3(0, 1.5, 0), 'chaine'); } son.combo(); majBonus(); }
       const haut = bo.obj.position.y > 0; const pts = bo.fuseau ? 15 : haut ? 3 : 2; compter('coupes'); if (bo.fuseau) { compter('fuseaux'); popup('Bombe en fuseau !', bo.obj.position.clone().add(new THREE.Vector3(0, -0.8, 0)), 'chaine'); }
       if (!bo.cristal && (bo.fuseau || (bo.obj.scale.x > 0.98 && Math.random() < 0.45))) poserOlivine(bo.obj.position.x);
-      score += pts; majScore();
-      popup('+' + pts, bo.obj.position, 'pts', '#ffd27a');
+      const ptsM = Math.round(pts * mult); score += ptsM; majScore();
+      popup('+' + ptsM + (mult > 1 ? ' ×' + mult : ''), bo.obj.position, 'pts', mult > 1 ? '#ffe23a' : '#ffd27a');
+      if (fx && !calme() && !recordFete && recordDepart > 0 && score > recordDepart) { recordFete = true; fxEvt('record', bo.obj.position); }
     }
   }
 }
@@ -796,13 +832,14 @@ const horloge = new THREE.Clock(); let ambiance = 0;
 const bulle = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhysicalMaterial({ color: 0x7ad0ff, transparent: true, opacity: 0.22, roughness: 0.1, emissive: 0x2a8aff, emissiveIntensity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
 bulle.visible = false; scene.add(bulle);
 function boucle() {
-  const dt = pause ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
+  let dt = pause ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
+  if (arret > 0) { arret -= dt; dt = 0; }   // hit stop KwFX : le coup se fige un instant
   matP.uniforms.echelle.value = matF.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
   const joue = etat === 'jeu' && !pause, fige = etat === 'fiche' || pause;
   if (joue) {
     temps += dt; phaseT += dt;
     if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); prochainEgare -= dt; if (prochainEgare <= 0) { egarer(); prochainEgare = (calme() ? 14 : Math.max(5, 12 - niveau)) + rnd(0, calme() ? 6 : 4); } }
-    else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; son.niveau(); majNiveau(); vitesseMusique(); bandeau('Niveau ' + niveau + ' : le volcan repart', 1.8); if (calme()) montrerFait(); }
+    else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; son.niveau(); majNiveau(); vitesseMusique(); bandeau('Niveau ' + niveau + ' : le volcan repart', 1.8); fxEvt('niveau', new THREE.Vector3(cratere.jx, cratere.jy, 0), { niveau }); if (calme()) montrerFait(); }
   }
   dessinerSismo(dt);
   for (let i = olivines.length - 1; i >= 0; i--) { const o = olivines[i]; o.t += dt; o.obj.rotation.y += dt * 2; o.obj.position.y = sol + 0.3 + Math.sin(o.t * 4) * 0.06; o.obj.material.emissiveIntensity = 1 + Math.sin(o.t * 8) * 0.4; if (o.prise || o.t > 6) { scene.remove(o.obj); olivines.splice(i, 1); } else if (o.t > 4.5) o.obj.visible = Math.floor(o.t * 10) % 2 === 0; }
@@ -817,7 +854,7 @@ function boucle() {
     if (!fige) { m.t += dt; if (m.choc > 0) { m.choc -= dt; m.x += m.dir * dt * 2.2; } else m.x += m.dir * m.v * dt; }
     // randonneur égaré : il s'éloigne du sentier (vers le fond), il faut le toucher avant la fin du compte à rebours
     const zc = m.egare ? -1.2 : 0.8; m.obj.position.z += (zc - m.obj.position.z) * Math.min(1, dt * 0.8);
-    if (m.egare && joue) { m.egare -= dt; if (m.alerte) { const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 2.1, 0))); m.alerte.style.left = sc.x + 'px'; m.alerte.style.top = sc.y + 'px'; } if (m.egare <= 0) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; if (!calme()) son.touche(); bandeau(calme() ? 'Le randonneur est revenu sur le sentier' : 'Un randonneur a quitté le balisage…', 2); m.obj.position.z = 0.8; perdreVie(); } }
+    if (m.egare && joue) { m.egare -= dt; if (m.alerte) { const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 2.1, 0))); m.alerte.style.left = sc.x + 'px'; m.alerte.style.top = sc.y + 'px'; } if (m.egare <= 0) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; if (!calme()) son.touche(); bandeau(calme() ? 'Le randonneur est revenu sur le sentier' : 'Un randonneur a quitté le balisage…', 2); m.obj.position.z = 0.8; if (!calme()) fxEvt('erreur', m.obj.position); perdreVie(); } }
     if (Math.abs(m.x) > viewW * 0.44) { m.dir *= -1; m.x = Math.sign(m.x) * viewW * 0.44; }
     m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * 8);
     animer(m.obj, m.t, m.choc > 0);
@@ -854,7 +891,7 @@ function boucle() {
         if (vn < 0) { b.vx = (b.vx - 2 * vn * n.x) * 0.6; b.vy = (b.vy - 2 * vn * n.y) * 0.6 + 1.5; }
         const k = 1 / Math.sqrt(q) * 1.01; p.x *= k; p.y = sol + (p.y - sol) * k;
         b.minuteur = 0.32; b.vr *= -1.5;
-        anneau(p); impactBulle = 0.3; sfx('bouclier', 0.45, 1.2); popup('Bouclier !', p, 'chaine');
+        anneau(p); impactBulle = 0.3; sfx('bouclier', 0.45, 1.2); popup('Bouclier !', p, 'chaine'); fxJoue('etincelles', p, { intensite: 0.6, couleurs: BLEU });
       }
     }
     if (p.y < sol + 0.5) {
@@ -863,6 +900,7 @@ function boucle() {
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
       const touche = marcheurs.find(m => Math.abs(m.x - p.x) < 0.75);
+      if (joue) fxEvt('erreur', new THREE.Vector3(p.x, sol + 0.6, 0.8), { grave: !!touche && !calme() });
       if (touche && joue) { if (!calme()) son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; perdreVie(); }
     }
   }
@@ -907,9 +945,9 @@ $('finirPartie').onclick = () => { majPause(false); finPartie(); };
 document.addEventListener('visibilitychange', () => { if (document.hidden && etat === 'jeu') majPause(true); });
 const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; majSon();
 $('rMus').value = S.mus * 100; $('rFx').value = S.fx * 100;
-$('rMus').oninput = e => { S.mus = e.target.value / 100; if (musG) musG.gain.value = S.mus; sauveS(); }; $('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; sauveS(); };
+$('rMus').oninput = e => { S.mus = e.target.value / 100; if (musG) musG.gain.value = S.mus; sauveS(); }; $('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; sauveS(); fxSon(); };
 $('ouvrirSon').onclick = () => $('panSon').classList.add('on'); $('fermerSon').onclick = () => $('panSon').classList.remove('on'); $('ouvrirCredits').onclick = () => $('panCredits').classList.add('on'); $('fermerCredits').onclick = () => $('panCredits').classList.remove('on');
-$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('bv2_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); };
+$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('bv2_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majSon(); fxSon(); };
 $('bBouclier').onclick = activerBouclier; $('bRalenti').onclick = activerRalenti; $('bOnde').onclick = activerOnde;
 $('jouer').onclick = () => demarrer('classique');
 $('jouerZen').onclick = () => demarrer('zen');
@@ -922,13 +960,14 @@ function majMenu() { const d = defiDuJour(); $('defiMenu').textContent = (d.fait
 $('ouvrirAtelier').onclick = () => { majAtelier(); $('atelier').classList.add('on'); }; $('fermerAtelier').onclick = () => $('atelier').classList.remove('on');
 $('ouvrirCarnet').onclick = () => { majCarnet(); $('carnet').classList.add('on'); }; $('fermerCarnet').onclick = () => $('carnet').classList.remove('on');
 majMenu();
+document.querySelectorAll('.btn, .bbtn').forEach(b => b.addEventListener('click', () => { if (fx && !b.classList.contains('vide')) { const r = b.getBoundingClientRect(); fx.evenement('clic', { x: r.left + r.width / 2, y: r.top + r.height / 2 }); } }));
 $('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
 addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, egarer, poserOlivine, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; } };
+if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, egarer, poserOlivine, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
 </script>
 </body>
 </html>
