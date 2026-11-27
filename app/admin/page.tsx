@@ -8,7 +8,7 @@ import EtablissementsAdmin from "@/components/EtablissementsAdmin";
 import RessourcesAdmin from "@/components/RessourcesAdmin";
 import { formatDe } from "@/lib/formats";
 import BasculeAdmin from "@/components/BasculeAdmin";
-import EditionLivre from "@/components/EditionLivre";
+import ListeLivresAdmin from "@/components/ListeLivresAdmin";
 import { sessionAdmin } from "@/lib/admin";
 import { tous } from "@/lib/cf";
 import { UNIVERS } from "@/lib/config";
@@ -29,52 +29,38 @@ export default async function Admin() {
       <main className="page">
         <header className="entete"><h1>Espace éditeur</h1></header>
 
-        <section className="panneau">
-          <h2>📚 Importer toute la bibliothèque</h2>
+        <nav className="sommaire-admin" aria-label="Sommaire">
+          <a href="#mes-livres">📚 Mes livres</a><a href="#importer">📥 Importer</a><a href="#etabs">🏫 Établissements</a><a href="#ressources">🗂️ Ressources</a><a href="#codes">🔑 Codes</a>
+        </nav>
+
+        <section className="panneau" id="mes-livres">
+          <h2>Mes livres ({livres.filter((l) => l.publie).length} en ligne)</h2>
+          <p className="texte-doux" style={{ marginTop: 0 }}>Choisis un format. Clique sur un titre pour modifier le titre, le résumé, l&apos;univers ou la fiche boutique.</p>
+          <ListeLivresAdmin livres={livres.map((l) => ({ id: l.id, slug: l.slug, titre: l.titre, resume: l.resume, univers: l.univers, shopify_product_id: l.shopify_product_id, url_boutique: l.url_boutique, publie: !!l.publie, inclus_abonnement: !!l.inclus_abonnement, mystere_du_mois: !!l.mystere_du_mois, gratuit: !!l.gratuit, format: formatDe(l) === "pdf" ? "pdf" : formatDe(l) === "interactif" ? "interactif" : l.type === "epub_interactif" ? "anime" : "epub", cree_le: l.cree_le }))} />
+        </section>
+
+        <details className="panneau replie" id="importer">
+          <summary><h2>📥 Importer toute la bibliothèque</h2></summary>
           <ImportLot dejaImportes={livres.map((l) => `${formatDe(l)}|${l.titre}`)} produitsImportes={livres.map((l) => `${formatDe(l)}|${l.shopify_product_id || ""}`)} />
-        </section>
+        </details>
 
-        <section className="panneau">
-          <h2>Ajouter un livre</h2>
+        <details className="panneau replie">
+          <summary><h2>➕ Ajouter un seul livre</h2></summary>
           <ImportLivre />
-        </section>
+        </details>
 
-        <section className="panneau">
-          <h2 id="mes-livres">Mes livres ({livres.length})</h2>
-          <p className="texte-doux" style={{ marginTop: 0 }}>Clique sur un titre pour modifier le titre, le résumé, l&apos;univers ou la fiche boutique.</p>
-          <table className="tableau">
-            <tbody>
-              {livres.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    <EditionLivre livre={{ id: l.id, titre: l.titre, resume: l.resume, univers: l.univers, shopify_product_id: l.shopify_product_id, url_boutique: l.url_boutique }}
-                      sousTitre={`${UNIVERS.find((u) => u.id === l.univers)?.nom || "Sans univers"} · ${formatDe(l) === "pdf" ? "PDF" : formatDe(l) === "interactif" ? "Livre interactif" : l.type === "epub_interactif" ? "EPUB animé" : "EPUB"}${l.publie ? "" : " · non publié"}${l.shopify_product_id ? "" : " · pas de produit Shopify lié"}`} />
-                  </td>
-                  <td style={{ minWidth: 190 }}>
-                    <BasculeAdmin id={l.id} champ="publie" valeur={l.publie} libelle="Publié" />
-                    <BasculeAdmin id={l.id} champ="inclus_abonnement" valeur={l.inclus_abonnement} libelle="Inclus abonnement" />
-                    <BasculeAdmin id={l.id} champ="mystere_du_mois" valeur={l.mystere_du_mois} libelle="Mystère du mois" />
-                    <BasculeAdmin id={l.id} champ="gratuit" valeur={l.gratuit} libelle="Gratuit (découverte)" />
-                  </td>
-                  <td><Link className="lien" href={`/lire/${l.slug}`}>Prévisualiser</Link></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!livres.length && <p className="texte-doux">Aucun livre pour l'instant.</p>}
-        </section>
 
-        <section className="panneau">
+        <section className="panneau" id="etabs">
           <h2>Écoles, médiathèques et collectivités</h2>
           <EtablissementsAdmin etabs={etabs as any} />
         </section>
 
-        <section className="panneau">
+        <section className="panneau" id="ressources">
           <h2>📚 Ressources pédagogiques (fiches et cours pour les enseignants)</h2>
           <RessourcesAdmin liste={ressources as any} />
         </section>
 
-        <section className="panneau">
+        <section className="panneau" id="codes">
           <h2>Accès test pour l'équipe</h2>
           <CodesTest codes={codesTest as any} />
         </section>
