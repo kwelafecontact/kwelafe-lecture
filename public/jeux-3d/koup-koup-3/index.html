@@ -77,10 +77,7 @@
 </head>
 <body>
 <canvas id="fond"></canvas>
-<canvas id="fanions"></canvas>
-<canvas id="taches"></canvas>
 <canvas id="gl"></canvas>
-<canvas id="vitre"></canvas>
 <canvas id="trace"></canvas>
 <div id="flash"></div>
 <div id="dore"></div>
@@ -124,6 +121,7 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
 <button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
+<script src="../commun/pixi.min.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -189,16 +187,44 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.35, 1.05)
 const POSTFX = !new URLSearchParams(location.search).has('simple');
 
 let W = 0, H = 0, viewH = 10, viewW = 10;
-const fond = $('fond'), taches = $('taches'), trace = $('trace'), vitre = $('vitre'), fanions = $('fanions');
-const anctx = fanions.getContext('2d');
-const fctx = fond.getContext('2d'), tctx = taches.getContext('2d'), bctx = trace.getContext('2d'), vctx = vitre.getContext('2d');
-// calques hors écran qui gardent les taches (étal) et les traînées (vitre) d'une image à l'autre
-const couche = document.createElement('canvas'), cctx = couche.getContext('2d');
-const coucheVitre = document.createElement('canvas'), cvctx = coucheVitre.getContext('2d');
+const fond = $('fond'), trace = $('trace');
+// deux scènes PixiJS : « dessous » (décor, fanions, taches de jus qui restent) sous le jeu 3D, « dessus » (gouttes de vitre, traînée du geste) au-dessus
+let texVignette = null, sprVig = null, pd = null, pu = null, rtC = null, rtV = null, sprC, sprV, gFond, gFan, gT, gS, gFadeC, gVS, gFadeV, gGout, gTr, fadeC = 0, fadeV = 0;
+const lentilles = []; let lensSrc = null;
+const hexc = (c, dl = 0) => { const k = dl ? c.clone().offsetHSL(0, 0, dl) : c; return (Math.round(Math.max(0, Math.min(1, k.r)) * 255) << 16) | (Math.round(Math.max(0, Math.min(1, k.g)) * 255) << 8) | Math.round(Math.max(0, Math.min(1, k.b)) * 255); };
+function ell(g, cx, cy, rx, ry, ang, n = 20) { const ca = Math.cos(ang), sa = Math.sin(ang), pts = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832, lx = Math.cos(a) * rx, ly = Math.sin(a) * ry; pts.push(cx + lx * ca - ly * sa, cy + lx * sa + ly * ca); } return g.poly(pts); }
+function initPixi() {
+  const dpr = dprCible(2);
+  const a1 = new PIXI.Application(), a2 = new PIXI.Application();
+  Promise.all([
+    a1.init({ canvas: fond, width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: dpr, autoDensity: true, autoStart: false }),
+    a2.init({ canvas: trace, width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: dpr, autoDensity: true, autoStart: false }),
+  ]).then(() => {
+    gFond = new PIXI.Graphics(); gFan = new PIXI.Graphics(); sprC = new PIXI.Sprite(); sprC.alpha = 0.92; gT = new PIXI.Graphics();
+    a1.stage.addChild(gFond, gFan, sprC, gT);
+    gS = new PIXI.Graphics(); gFadeC = new PIXI.Graphics(); gFadeC.blendMode = 'erase';
+    sprV = new PIXI.Sprite(); gGout = new PIXI.Graphics(); gTr = new PIXI.Graphics();
+    gVS = new PIXI.Graphics(); gFadeV = new PIXI.Graphics(); gFadeV.blendMode = 'erase';
+    a2.stage.addChild(sprV, gGout, gTr);
+    pd = a1; pu = a2; calerPixi();
+  });
+}
+function calerPixi() {
+  if (!pd) return; const dpr = dprCible(2);
+  pd.renderer.resize(W, H, dpr); pu.renderer.resize(W, H, dpr);
+  if (rtC) rtC.destroy(true); if (rtV) rtV.destroy(true);
+  rtC = PIXI.RenderTexture.create({ width: W, height: H, resolution: dpr }); sprC.texture = rtC;
+  rtV = PIXI.RenderTexture.create({ width: W, height: H, resolution: dpr }); sprV.texture = rtV;
+  for (const l of lentilles) l.tx = null; lensSrc = null;
+  peindreFond();
+}
+// ajoute au calque persistant (rt) ce que contient g, puis vide g
+function graver(app, rt, g) { app.renderer.render({ container: g, target: rt, clear: false }); g.clear(); }
+// fait pâlir un calque persistant ; l'effacement est cumulé pour dépasser la précision 8 bits
+function pâlir(app, rt, g, a) { g.clear(); g.rect(0, 0, W, H).fill({ color: 0, alpha: Math.min(1, a) }); app.renderer.render({ container: g, target: rt, clear: false }); g.clear(); }
 function resize() {
   W = innerWidth; H = innerHeight;
   const dpr = dprCible(2); // 1,5 au plus sur iPhone : 7 calques plein écran
-  for (const c of [fond, taches, trace, vitre, couche, coucheVitre, fanions]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
   renderer.setSize(W, H, false); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = MOBILE ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
   camera.aspect = W / H;
   // garder une largeur jouable en portrait
@@ -206,55 +232,49 @@ function resize() {
   camera.updateProjectionMatrix();
   viewH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   viewW = viewH * camera.aspect;
-  peindreFond();
+  calerPixi();
 }
 
 // Décor : étal en bois du marché forain, fanions aux couleurs de La Réunion
 function peindreFond() {
-  const g = fctx;
-  const grd = g.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, '#6b3f1d'); grd.addColorStop(1, '#3d220e');
-  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  if (!gFond) return; const g = gFond; g.clear();
+  g.rect(0, 0, W, H).fill(new PIXI.FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: H }, colorStops: [{ offset: 0, color: '#6b3f1d' }, { offset: 1, color: '#3d220e' }], textureSpace: 'global' }));
   const nb = Math.max(5, Math.round(W / 150)), lw = W / nb;
   for (let i = 0; i < nb; i++) {
     const x = i * lw, teinte = [0, 8, -6, 4, -10, 6][i % 6];
-    const pl = g.createLinearGradient(x, 0, x + lw, 0);
-    pl.addColorStop(0, `hsl(${26 + teinte * .3} 48% ${30 + teinte * .4}%)`);
-    pl.addColorStop(.5, `hsl(${28 + teinte * .3} 50% ${36 + teinte * .4}%)`);
-    pl.addColorStop(1, `hsl(${25 + teinte * .3} 46% ${28 + teinte * .4}%)`);
-    g.fillStyle = pl; g.fillRect(x + 2, 0, lw - 4, H);
-    g.save(); g.globalAlpha = .13; g.strokeStyle = '#1e0e04'; g.lineWidth = 1.2;
+    g.rect(x + 2, 0, lw - 4, H).fill(new PIXI.FillGradient({ type: 'linear', start: { x, y: 0 }, end: { x: x + lw, y: 0 }, textureSpace: 'global', colorStops: [
+      { offset: 0, color: `hsl(${26 + teinte * .3},48%,${30 + teinte * .4}%)` }, { offset: .5, color: `hsl(${28 + teinte * .3},50%,${36 + teinte * .4}%)` }, { offset: 1, color: `hsl(${25 + teinte * .3},46%,${28 + teinte * .4}%)` }] }));
     for (let k = 0; k < 9; k++) {
-      g.beginPath(); const ox = x + 8 + (k / 9) * (lw - 16) + Math.sin(i * 7 + k) * 4;
-      g.moveTo(ox, 0);
+      const ox = x + 8 + (k / 9) * (lw - 16) + Math.sin(i * 7 + k) * 4; g.moveTo(ox, 0);
       for (let y = 0; y <= H; y += 40) g.lineTo(ox + Math.sin(y / 90 + k * 1.7 + i) * 5, y);
-      g.stroke();
     }
-    g.globalAlpha = .35; g.fillStyle = '#1a0c03';
+    g.stroke({ width: 1.2, color: 0x1e0e04, alpha: .13 });
     const nx = x + lw * (0.3 + 0.4 * ((i * 37) % 10) / 10), ny = H * (0.2 + 0.6 * ((i * 53) % 10) / 10);
-    g.beginPath(); g.ellipse(nx, ny, 7, 11, 0, 0, 7); g.fill();
-    g.restore();
-    g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(x, 0, 3, H);
+    g.ellipse(nx, ny, 7, 11).fill({ color: 0x1a0c03, alpha: .35 });
+    g.rect(x, 0, 3, H).fill({ color: 0, alpha: .45 });
   }
-  const v = g.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .75);
-  v.addColorStop(0, 'rgba(255,190,90,.10)'); v.addColorStop(1, 'rgba(10,4,0,.62)');
-  g.fillStyle = v; g.fillRect(0, 0, W, H);
+  if (!texVignette) { const N = 128, d = new Uint8Array(N * N * 4);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const t = Math.max(0, Math.min(1, (Math.hypot(x / N - 0.5, y / N - 0.46) - 0.17) / 0.33)), al = 0.10 + 0.52 * t, o = (y * N + x) * 4;
+      d[o] = (255 + (10 - 255) * t) * al; d[o + 1] = (190 + (4 - 190) * t) * al; d[o + 2] = (90 - 90 * t) * al; d[o + 3] = al * 255; }
+    texVignette = new PIXI.Texture({ source: new PIXI.BufferImageSource({ resource: d, width: N, height: N, alphaMode: 'premultiplied-alpha', scaleMode: 'linear' }) }); }
+  if (!sprVig) { sprVig = new PIXI.Sprite(texVignette); gFond.parent.addChildAt(sprVig, 1); }
+  sprVig.width = W; sprVig.height = H;
 }
 
 // Fanions aux couleurs de La Réunion qui ondulent doucement au vent
 function dessinerFanions(t) {
-  const g = anctx; g.clearRect(0, 0, W, 110);
-  const cols = ['#1f5fbf', '#ffd21e', '#e8322a', '#1f9a4a'];
+  if (!gFan) return; const g = gFan; g.clear();
+  const cols = [0x1f5fbf, 0xffd21e, 0xe8322a, 0x1f9a4a];
   const y0 = Math.max(10, H * 0.015), sag = 26, n = Math.ceil(W / 46) + 1;
   const vent = k => Math.sin(t * 1.6 + k * 0.9) * 0.18 + Math.sin(t * 0.7 + k * 0.33) * 0.1;
-  g.strokeStyle = 'rgba(255,240,210,.6)'; g.lineWidth = 2; g.beginPath();
-  for (let i = 0; i <= 40; i++) { const u = i / 40; g.lineTo(u * W, y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2)); } g.stroke();
+  for (let i = 0; i <= 40; i++) { const u = i / 40, y = y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2); i ? g.lineTo(u * W, y) : g.moveTo(u * W, y); }
+  g.stroke({ width: 2, color: 0xfff0d2, alpha: .6 });
   for (let i = 0; i < n; i++) {
     const u = (i + .5) / n, x = u * W, y = y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2);
     const a = vent(i), bx = x + Math.sin(a) * 30, by = y + Math.cos(a) * 30;
-    g.fillStyle = cols[i % 4]; g.beginPath(); g.moveTo(x - 16, y); g.lineTo(x + 16, y); g.lineTo(bx, by); g.closePath(); g.fill();
-    g.fillStyle = `rgba(255,255,255,${0.14 + a * 0.3})`; g.beginPath(); g.moveTo(x - 16, y); g.lineTo(x, y); g.lineTo(bx, by); g.closePath(); g.fill();
-    g.fillStyle = 'rgba(0,0,0,.15)'; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 16, y); g.lineTo(bx, by); g.closePath(); g.fill();
+    g.poly([x - 16, y, x + 16, y, bx, by]).fill(cols[i % 4]);
+    g.poly([x - 16, y, x, y, bx, by]).fill({ color: 0xffffff, alpha: 0.14 + a * 0.3 });
+    g.poly([x, y, x + 16, y, bx, by]).fill({ color: 0, alpha: .15 });
   }
 }
 
@@ -391,15 +411,16 @@ const enVol = f => objets.some(o => o.vivant && o.fruit === f) || moities.some(m
 
 // ---------------------------------------------------------------- roche du volcan (à ne pas couper)
 function rocheTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
-  g.fillStyle = '#000'; g.fillRect(0, 0, 512, 512);
-  g.strokeStyle = '#ff6a10'; g.lineCap = 'round';
+  const N = 512, d = new Uint8Array(N * N * 4); for (let i = 3; i < d.length; i += 4) d[i] = 255;
+  const stamp = (x, y, r, c, a, hard) => { for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(N - 1, Math.ceil(y + r)); j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(N - 1, Math.ceil(x + r)); i++) {
+    const q = Math.hypot(i + 0.5 - x, j + 0.5 - y) / r; if (q > 1) continue; const f = (hard ? 1 : (1 - q) * (1 - q)) * a, o = (j * N + i) * 4;
+    for (let k = 0; k < 3; k++) d[o + k] = Math.min(255, d[o + k] + c[k] * f); } };
   for (let i = 0; i < 26; i++) {
-    let x = Math.random() * 512, y = Math.random() * 512; g.lineWidth = rnd(1.5, 5);
-    g.shadowColor = '#ffb020'; g.shadowBlur = 12; g.beginPath(); g.moveTo(x, y);
-    for (let k = 0; k < 8; k++) { x += rnd(-40, 40); y += rnd(-40, 40); g.lineTo(x, y); } g.stroke();
+    let x = Math.random() * N, y = Math.random() * N; const lw = rnd(1.5, 5);
+    for (let k = 0; k < 8; k++) { const nx = x + rnd(-40, 40), ny = y + rnd(-40, 40), n = Math.ceil(Math.hypot(nx - x, ny - y) / 2);
+      for (let m = 0; m <= n; m++) { const px = x + (nx - x) * m / n, py = y + (ny - y) * m / n; stamp(px, py, lw * 2.4, [255, 176, 32], 0.10, false); stamp(px, py, lw / 2, [255, 106, 16], 1, true); } x = nx; y = ny; }
   }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true; return t;
 }
 const rocheGeo = (() => {
   const g = new THREE.IcosahedronGeometry(0.62, 4), p = g.attributes.position, v = new THREE.Vector3();
@@ -510,8 +531,8 @@ function impactGoutte(p) {
   const sc = toScreen(tmpP.set(p.x, p.y, p.z));
   if (sc.x < 0 || sc.x > W || sc.y < 0 || sc.y > H) return;
   const c = teinteTache(p.c), r = Math.max(2.5, pxRayon(p.s) * 1.3);
-  blob(cctx, sc.x, sc.y, r, rnd(0, 6), 1.15, c, 0.8);
-  for (let k = 0; k < 6; k++) { const a = rnd(0, 6.283), d = r * rnd(1.4, 2.6); blob(cctx, sc.x + Math.cos(a) * d, sc.y + Math.sin(a) * d, r * rnd(0.12, 0.28), a, 1.8, c, 0.75); }
+  blob(gS, sc.x, sc.y, r, rnd(0, 6), 1.15, c, 0.8);
+  for (let k = 0; k < 6; k++) { const a = rnd(0, 6.283), d = r * rnd(1.4, 2.6); blob(gS, sc.x + Math.cos(a) * d, sc.y + Math.sin(a) * d, r * rnd(0.12, 0.28), a, 1.8, c, 0.75); }
   if (r > 4 && Math.random() < 0.4) nouvelleCoulure(sc.x, sc.y + r * 0.6, r * 0.35, c, rnd(20, 80));
   ploc();
 }
@@ -529,30 +550,19 @@ function teinteTache(c) {
   return t;
 }
 const rgba = (c, a) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
-function blob(ctx, x, y, r, ang, allonge, couleur, alpha, detail = false) {
+function blob(g, x, y, r, ang, allonge, couleur, alpha, detail = false) {
   // contour organique : somme de sinus aux phases aléatoires (bord doux, jamais un rond parfait)
-  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(allonge, 1);
-  const n = detail ? 40 : 18, f1 = rnd(0, 6), f2 = rnd(0, 6), f3 = rnd(0, 6);
-  ctx.beginPath();
-  for (let i = 0; i <= n; i++) {
+  const n = detail ? 40 : 18, f1 = rnd(0, 6), f2 = rnd(0, 6), f3 = rnd(0, 6), ca = Math.cos(ang), sa = Math.sin(ang), pts = [], pin = [];
+  for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     const rr = r * (1 + 0.14 * Math.sin(a * 3 + f1) + 0.08 * Math.sin(a * 5 + f2) + 0.05 * Math.sin(a * 9 + f3));
-    const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
-    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    const lx = Math.cos(a) * rr * allonge, ly = Math.sin(a) * rr;
+    pts.push(x + lx * ca - ly * sa, y + lx * sa + ly * ca);
+    const ix = Math.cos(a) * rr * 0.55 * allonge - r * 0.15, iy = Math.sin(a) * rr * 0.55 - r * 0.15;
+    pin.push(x + ix * ca - iy * sa, y + ix * sa + iy * ca);
   }
-  ctx.closePath();
-  const g = ctx.createRadialGradient(-r * 0.15, -r * 0.15, r * 0.05, 0, 0, r * 1.15);
-  g.addColorStop(0, rgba(couleur.clone().offsetHSL(0, 0.04, 0.05), alpha * 0.85));
-  g.addColorStop(0.7, rgba(couleur, alpha));
-  g.addColorStop(1, rgba(couleur.clone().offsetHSL(0, 0.08, -0.12), alpha));   // bord plus foncé : le jus sèche en anneau
-  ctx.fillStyle = g; ctx.fill();
-  if (detail) {
-    // le jus pénètre le fil du bois : quelques veines plus sombres à l'intérieur de la tache
-    ctx.clip();
-    ctx.strokeStyle = rgba(couleur.clone().offsetHSL(0, 0, -0.22), alpha * 0.25); ctx.lineWidth = 1.2;
-    for (let k = 0; k < 6; k++) { ctx.beginPath(); const ox = rnd(-r, r); ctx.moveTo(ox, -r * 1.3); for (let yy = -r * 1.3; yy <= r * 1.3; yy += r * 0.25) ctx.lineTo(ox + Math.sin(yy * 0.08 + k) * 2.5, yy); ctx.stroke(); }
-  }
-  ctx.restore();
+  g.poly(pts).fill({ color: hexc(couleur), alpha }).stroke({ width: Math.max(1, r * 0.12), color: hexc(couleur, -0.12), alpha: alpha * 0.55, alignment: 1 });
+  g.poly(pin).fill({ color: hexc(couleur, 0.05), alpha: alpha * 0.4 });
 }
 const reflets = []; // reflets humides qui disparaissent en séchant
 function tache(sx, sy, color, taille, dir) {
@@ -560,8 +570,7 @@ function tache(sx, sy, color, taille, dir) {
   // dir : sens du geste à l'écran (y vers le bas)
   const ang = Math.atan2(-dir.y, dir.x);
   const cx = sx + Math.cos(ang) * taille * 0.45, cy = sy + Math.sin(ang) * taille * 0.45;
-  cctx.globalCompositeOperation = 'source-over';
-  blob(cctx, cx, cy, taille * 0.8, ang, 1.35, c, 0.82, true);
+  blob(gS, cx, cy, taille * 0.8, ang, 1.35, c, 0.82, true);
   // éclaboussures projetées dans la direction de la coupe (et quelques-unes en arrière)
   for (let i = 0; i < 26; i++) {
     const arriere = Math.random() < 0.15;
@@ -569,7 +578,7 @@ function tache(sx, sy, color, taille, dir) {
     const d = taille * rnd(0.9, arriere ? 1.8 : 3.6);
     const r = Math.max(1.5, taille * 0.22 * (1 - d / (taille * 4.2)) * rnd(0.4, 1.1));
     const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
-    blob(cctx, x, y, r, a, rnd(1.2, 2.4), c, rnd(0.7, 0.9));
+    blob(gS, x, y, r, a, rnd(1.2, 2.4), c, rnd(0.7, 0.9));
     if (r > taille * 0.11 && Math.random() < 0.35) nouvelleCoulure(x, y + r * 0.6, r * 0.42, c, rnd(30, 120));
   }
   // reflet humide (il s'efface en quelques secondes, comme le jus qui sèche)
@@ -595,11 +604,8 @@ function verserFlaque(x, quantite, c) {
   }
 }
 function majTaches(dt) {
-  // les vieilles taches pâlissent très lentement (environ 40 secondes)
-  cctx.globalCompositeOperation = 'destination-out';
-  cctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.028)})`; cctx.fillRect(0, 0, W, H);
-  cctx.globalCompositeOperation = 'source-over';
-  cctx.lineCap = 'round';
+  if (!pd) return;
+  fadeC += dt * 0.028; if (fadeC >= 0.012) { pâlir(pd, rtC, gFadeC, fadeC); fadeC = 0; }   // les vieilles taches pâlissent très lentement (environ 40 secondes)
   for (let i = coulures.length - 1; i >= 0; i--) {
     const k = coulures[i];
     if (k.attente > 0) { k.attente -= dt; continue; }
@@ -608,33 +614,31 @@ function majTaches(dt) {
     const dy = k.v * dt; k.y += dy; k.reste -= dy;
     k.x = k.x0 + Math.sin(k.y * 0.035 + k.phase) * 1.6;         // léger zigzag naturel
     k.l = Math.max(1.2, k.l - dy * 0.006);
-    cctx.strokeStyle = rgba(k.c, 0.78); cctx.lineWidth = k.l * 1.6;
-    cctx.beginPath(); cctx.moveTo(px, py); cctx.lineTo(k.x, k.y); cctx.stroke();
+    gS.moveTo(px, py).lineTo(k.x, k.y).stroke({ width: k.l * 1.6, color: hexc(k.c), alpha: 0.78, cap: 'round' });
     if (k.y > H - 3 - (flaque.h[Math.floor(k.x / 8)] || 0)) { verserFlaque(k.x, k.l * 1.4, k.c); coulures.splice(i, 1); continue; }
     if (k.reste <= 0) {
       // une petite goutte se forme au bout du filet
-      cctx.fillStyle = rgba(k.c.clone().offsetHSL(0, 0, -0.08), 0.9);
-      cctx.beginPath(); cctx.arc(k.x, k.y + k.l * 0.4, k.l * 1.35, 0, 7); cctx.fill();
+      gS.circle(k.x, k.y + k.l * 0.4, k.l * 1.35).fill({ color: hexc(k.c, -0.08), alpha: 0.9 });
       coulures.splice(i, 1);
     }
   }
+  graver(pd, rtC, gS);
 }
 function dessinerTaches(dt = 0.016) {
-  tctx.clearRect(0, 0, W, H);
-  tctx.globalAlpha = 0.92; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
+  if (!pd) return; const g = gT; g.clear();
   // ombres douces des fruits sur l'étal (le soleil vient d'en haut à droite)
   for (const o of objets) {
     if (!o.vivant) continue;
-    const sc = toScreen(o.obj.position), r = pxRayon(o.rayon);
-    const g = tctx.createRadialGradient(sc.x - r * 0.35, sc.y + r * 0.55, r * 0.1, sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2);
-    g.addColorStop(0, 'rgba(20,8,0,.32)'); g.addColorStop(1, 'rgba(20,8,0,0)');
-    tctx.fillStyle = g; tctx.beginPath(); tctx.ellipse(sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2, r * 0.75, 0, 0, 7); tctx.fill();
+    const sc = toScreen(o.obj.position), r = pxRayon(o.rayon), cx = sc.x - r * 0.35, cy = sc.y + r * 0.55;
+    g.ellipse(cx, cy, r * 1.2, r * 0.75).fill({ color: 0x140800, alpha: 0.10 });
+    g.ellipse(cx, cy, r * 0.85, r * 0.53).fill({ color: 0x140800, alpha: 0.11 });
+    g.ellipse(cx, cy, r * 0.5, r * 0.31).fill({ color: 0x140800, alpha: 0.12 });
   }
   // reflets humides qui sèchent
   for (let i = reflets.length - 1; i >= 0; i--) {
     const f = reflets[i]; f.t += dt; const a = 0.28 * (1 - f.t / 4);
     if (a <= 0) { reflets.splice(i, 1); continue; }
-    tctx.fillStyle = `rgba(255,255,255,${a})`; tctx.beginPath(); tctx.ellipse(f.x, f.y, f.rx, f.ry, f.a, 0, 7); tctx.fill();
+    ell(g, f.x, f.y, f.rx, f.ry, f.a).fill({ color: 0xffffff, alpha: a });
   }
   // flaque du bas : bord arrondi, reflet sur le dessus
   const nb = Math.ceil(W / 8) + 1;
@@ -642,16 +646,17 @@ function dessinerTaches(dt = 0.016) {
     const h = flaque.h[j]; if (!h || h < 0.5) continue;
     flaque.h[j] = Math.max(0, h - dt * 0.35);   // la flaque s'évapore doucement
     const x = j * 8, c = flaque.c[j];
-    tctx.fillStyle = rgba(c, 0.85); tctx.beginPath(); tctx.roundRect(x - 1, H - h, 10, h + 2, [5, 5, 0, 0]); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.22)'; tctx.fillRect(x + 1, H - h + 1.5, 6, 1.5);
+    g.roundRect(x - 1, H - h, 10, h + 2, 5).fill({ color: hexc(c), alpha: 0.85 });
+    g.rect(x + 1, H - h + 1.5, 6, 1.5).fill({ color: 0xffffff, alpha: .22 });
   }
   // tête brillante des filets qui coulent encore
   for (const k of coulures) {
     if (k.attente > 0) continue;
     const r = k.l * 1.25;
-    tctx.fillStyle = rgba(k.c, 0.95); tctx.beginPath(); tctx.arc(k.x, k.y, r, 0, 7); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.55)'; tctx.beginPath(); tctx.arc(k.x - r * 0.35, k.y - r * 0.35, r * 0.35, 0, 7); tctx.fill();
+    g.circle(k.x, k.y, r).fill({ color: hexc(k.c), alpha: 0.95 });
+    g.circle(k.x - r * 0.35, k.y - r * 0.35, r * 0.35).fill({ color: 0xffffff, alpha: .55 });
   }
+  pd.render();
 }
 // ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
 function gouttesEcran(sx, sy, color, dir) {
@@ -667,12 +672,17 @@ function gouttesEcran(sx, sy, color, dir) {
   }
   son.goutte();
 }
+function lentille(i) {
+  let l = lentilles[i];
+  if (!l) { const m = new PIXI.Graphics(), sp = new PIXI.Sprite(); sp.mask = m; pu.stage.addChild(m); pu.stage.addChild(sp); l = lentilles[i] = { m, sp, tx: null }; }
+  return l;
+}
 function majVitre(dt) {
-  cvctx.globalCompositeOperation = 'destination-out';
-  cvctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.45)})`; cvctx.fillRect(0, 0, W, H);   // traînées qui sèchent vite
-  cvctx.globalCompositeOperation = 'source-over'; cvctx.lineCap = 'round';
-  vctx.clearRect(0, 0, W, H);
-  vctx.drawImage(coucheVitre, 0, 0, W, H);
+  if (!pu) return;
+  fadeV += dt * 0.45; if (fadeV >= 0.012) { pâlir(pu, rtV, gFadeV, fadeV); fadeV = 0; }   // traînées qui sèchent vite
+  gGout.clear(); for (const l of lentilles) l.sp.visible = false;
+  const src = glc, sc = src.width / W; let nl = 0;
+  if (QUALITE > 0) { if (!lensSrc || lensSrc.pixelWidth !== src.width || lensSrc.pixelHeight !== src.height) { lensSrc = new PIXI.CanvasSource({ resource: src }); for (const l of lentilles) l.tx = null; } else lensSrc.update(); }
   for (let i = gouttesVitre.length - 1; i >= 0; i--) {
     const g = gouttesVitre[i];
     g.apparition = Math.min(1, g.apparition + dt * 6);
@@ -682,31 +692,27 @@ function majVitre(dt) {
       g.v = Math.min(g.vmax, g.v + 140 * dt); g.y += g.v * dt;
       g.x += Math.sin(g.y * 0.03 + g.phase) * 0.6;
       g.r = Math.max(4, g.r - dt * 1.5);
-      cvctx.strokeStyle = rgba(g.c, 0.32); cvctx.lineWidth = g.r * 0.9;
-      cvctx.beginPath(); cvctx.moveTo(px, py); cvctx.lineTo(g.x, g.y); cvctx.stroke();
+      gVS.moveTo(px, py).lineTo(g.x, g.y).stroke({ width: g.r * 0.9, color: hexc(g.c), alpha: 0.32, cap: 'round' });
     }
     // micro-gouttelettes laissées sur la traînée
-    if (g.attente <= 0 && Math.random() < dt * 6) { cvctx.fillStyle = rgba(g.c, 0.45); cvctx.beginPath(); cvctx.arc(g.x + rnd(-g.r * 0.4, g.r * 0.4), g.y - g.r * rnd(1, 2.5), rnd(1, 2.4), 0, 7); cvctx.fill(); }
-    const r = g.r * (0.4 + 0.6 * g.apparition);
+    if (g.attente <= 0 && Math.random() < dt * 6) gVS.circle(g.x + rnd(-g.r * 0.4, g.r * 0.4), g.y - g.r * rnd(1, 2.5), rnd(1, 2.4)).fill({ color: hexc(g.c), alpha: 0.45 });
+    const r = g.r * (0.4 + 0.6 * g.apparition), ey = g.y + r * 0.12;
     // effet de lentille : la scène derrière la goutte apparaît agrandie
-    if (QUALITE > 0 && r > 5) {
-      const dpr = glc.width / W, sr = r * 0.62;
-      vctx.save(); vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.clip();
-      try { vctx.drawImage(glc, (g.x - sr) * dpr, (g.y - sr) * dpr, sr * 2 * dpr, sr * 2 * dpr, g.x - r, g.y - r, r * 2, r * 2); } catch (e) {}
-      try { vctx.drawImage(taches, (g.x - sr) * dpr, (g.y - sr) * dpr, sr * 2 * dpr, sr * 2 * dpr, g.x - r, g.y - r, r * 2, r * 2); } catch (e) {}
-      vctx.restore();
+    if (QUALITE > 0 && r > 5 && lensSrc) {
+      const sr = r * 0.62, l = lentille(nl++);
+      const fx = Math.max(0, Math.min(src.width - 2, (g.x - sr) * sc)), fy = Math.max(0, Math.min(src.height - 2, (g.y - sr) * sc));
+      const fw = Math.max(2, Math.min(sr * 2 * sc, src.width - fx)), fh = Math.max(2, Math.min(sr * 2 * sc, src.height - fy));
+      if (!l.tx) l.tx = new PIXI.Texture({ source: lensSrc, frame: new PIXI.Rectangle(fx, fy, fw, fh) }); else l.tx.frame = new PIXI.Rectangle(fx, fy, fw, fh);
+      l.sp.texture = l.tx; l.sp.anchor.set(0.5); l.sp.position.set(g.x, g.y); l.sp.width = r * 2; l.sp.height = r * 2; l.sp.visible = true;
+      l.m.clear(); l.m.ellipse(g.x, ey, r * 0.92, r * 1.08).fill(0xffffff);
     }
     // goutte en forme de lentille : bord sombre, cœur clair, reflet
-    const grd = vctx.createRadialGradient(g.x - r * 0.3, g.y - r * 0.3, r * 0.1, g.x, g.y, r);
-    grd.addColorStop(0, rgba(g.c.clone().offsetHSL(0, 0, 0.15), 0.55));
-    grd.addColorStop(0.7, rgba(g.c, 0.62));
-    grd.addColorStop(1, rgba(g.c.clone().offsetHSL(0, 0, -0.25), 0.85));
-    vctx.fillStyle = grd;
-    vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.fill();
-    vctx.fillStyle = 'rgba(255,255,255,.75)';
-    vctx.beginPath(); vctx.ellipse(g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6, 0, 7); vctx.fill();
+    gGout.ellipse(g.x, ey, r * 0.92, r * 1.08).fill({ color: hexc(g.c), alpha: 0.5 }).stroke({ width: Math.max(1.5, r * 0.18), color: hexc(g.c, -0.25), alpha: 0.7, alignment: 1 });
+    gGout.ellipse(g.x - r * 0.15, g.y - r * 0.15, r * 0.5, r * 0.55).fill({ color: hexc(g.c, 0.15), alpha: 0.28 });
+    ell(gGout, g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6).fill({ color: 0xffffff, alpha: 0.75 });
     if (g.y - r > H) gouttesVitre.splice(i, 1);
   }
+  graver(pu, rtV, gVS);
   // deux gouttes qui se touchent fusionnent en une plus grosse
   for (let i = 0; i < gouttesVitre.length; i++) for (let j = i + 1; j < gouttesVitre.length; j++) {
     const a = gouttesVitre[i], b = gouttesVitre[j];
@@ -922,7 +928,7 @@ function finCombo() {
 
 const eclats = []; // petits éclats lumineux à chaque fruit traversé
 function dessinerTrait(dt = 0.016) {
-  bctx.clearRect(0, 0, W, H);
+  if (!pu) return; gTr.clear();
   const now = performance.now();
   while (trait.length && now - trait[0].t > 150) trait.shift();
   if (trait.length >= 2) {
@@ -940,24 +946,22 @@ function dessinerTrait(dt = 0.016) {
       }
     }
     pts.push({ ...trait[trait.length - 1], v: pts.length ? pts[pts.length - 1].v : 1 });
-    bctx.lineCap = 'round'; bctx.lineJoin = 'round';
-    for (const [larg, coul, flou] of [[18, 'rgba(255,140,30,.3)', 22], [8, 'rgba(255,222,130,.9)', 12], [3, '#ffffff', 0]]) {
-      bctx.shadowBlur = flou; bctx.shadowColor = '#ff8a1e'; bctx.strokeStyle = coul;
+    for (const [larg, coul, al] of [[18 + 14, 0xff8a1e, 0.14], [18, 0xff8c1e, 0.3], [8, 0xffde82, 0.9], [3, 0xffffff, 1]]) {
       for (let i = 1; i < pts.length; i++) {
         const k = i / pts.length, vit = Math.min(2.4, 0.5 + pts[i].v * 0.6);   // plus large quand le geste est rapide
-        bctx.lineWidth = larg * k * vit;
-        bctx.beginPath(); bctx.moveTo(pts[i - 1].x, pts[i - 1].y); bctx.lineTo(pts[i].x, pts[i].y); bctx.stroke();
+        gTr.moveTo(pts[i - 1].x, pts[i - 1].y).lineTo(pts[i].x, pts[i].y).stroke({ width: larg * k * vit, color: coul, alpha: al, cap: 'round', join: 'round' });
       }
     }
-    bctx.shadowBlur = 0;
   }
   for (let i = eclats.length - 1; i >= 0; i--) {
     const e = eclats[i]; e.t += dt; const k = e.t / 0.22;
     if (k >= 1) { eclats.splice(i, 1); continue; }
-    const r = 14 + k * 46, g = bctx.createRadialGradient(e.p.x, e.p.y, 0, e.p.x, e.p.y, r);
-    g.addColorStop(0, `rgba(255,255,240,${0.85 * (1 - k)})`); g.addColorStop(0.4, rgba(teinteTache(e.c), 0.5 * (1 - k))); g.addColorStop(1, 'rgba(255,200,120,0)');
-    bctx.fillStyle = g; bctx.beginPath(); bctx.arc(e.p.x, e.p.y, r, 0, 7); bctx.fill();
+    const r = 14 + k * 46, f = 1 - k;
+    gTr.circle(e.p.x, e.p.y, r).fill({ color: hexc(teinteTache(e.c)), alpha: 0.22 * f });
+    gTr.circle(e.p.x, e.p.y, r * 0.6).fill({ color: hexc(teinteTache(e.c)), alpha: 0.3 * f });
+    gTr.circle(e.p.x, e.p.y, r * 0.3).fill({ color: 0xfffff0, alpha: 0.85 * f });
   }
+  pu.render();
 }
 
 // ---------------------------------------------------------------- vagues de lancers
@@ -1086,11 +1090,11 @@ function boucle() {
   if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
 
   if (POSTFX && QUALITE > 0) composer.render(); else renderer.render(scene, camera);
-  majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai); dessinerFanions(performance.now() / 1000);
+  majTaches(vrai); dessinerFanions(performance.now() / 1000); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai);
 }
 
 // ---------------------------------------------------------------- démarrage
-addEventListener('resize', resize); resize(); majVies(); majScore(); majBoutonSon();
+initPixi(); addEventListener('resize', resize); resize(); majVies(); majScore(); majBoutonSon();
 $('btnSon').onclick = () => {
   sonCoupe = !sonCoupe; try { localStorage.setItem('koupkoup3_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
   if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
@@ -1155,7 +1159,8 @@ function liberer() {
   if (rocheMat.emissiveMap) rocheMat.emissiveMap.dispose();
   if (scene.environment) scene.environment.dispose();
   renderer.dispose(); renderer.forceContextLoss();
-  [fond, taches, trace, vitre, couche, coucheVitre, fanions].forEach(libererCanvas);
+  try { pd && pd.destroy(false); pu && pu.destroy(false); } catch (e) {}
+  [fond, trace].forEach(libererCanvas);
   if (actx) { try { actx.close(); } catch (e) {} }
   journal('liberation', 'koup-koup-3');
 }
