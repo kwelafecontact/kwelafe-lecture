@@ -547,7 +547,36 @@ function capuchon(segs, n, repere) {
     if (inverse) { const t = u; u = v; v = t; }
     return [repere.uv[0] + u * (repere.uv[1] - repere.uv[0]), repere.uv[2] + v * (repere.uv[3] - repere.uv[2])];
   };
-  for (const b of boucles) {
+  // fruit creux (noix de coco) : une boucle dans une autre = un trou ; on triangule l'anneau
+  const plat = b0 => b0.map(p => new THREE.Vector2(proj(p, a), proj(p, bb)));
+  const b2 = boucles.map(plat), aire = b2.map(l => THREE.ShapeUtils.area(l));
+  const dedans = (pt, l) => { let c = false; for (let i = 0, j = l.length - 1; i < l.length; j = i++) { if (((l[i].y > pt.y) !== (l[j].y > pt.y)) && (pt.x < (l[j].x - l[i].x) * (pt.y - l[i].y) / (l[j].y - l[i].y) + l[i].x)) c = !c; } return c; };
+  const parent = b2.map((l, i) => { let best = -1; b2.forEach((m, j) => { if (j !== i && Math.abs(aire[j]) > Math.abs(aire[i]) && dedans(l[0], m) && (best < 0 || Math.abs(aire[j]) < Math.abs(aire[best]))) best = j; }); return best; });
+  const fait = new Set();
+  if (parent.some(p => p >= 0)) {
+    b2.forEach((l, i) => {
+      if (parent[i] >= 0 && parent[parent[i]] < 0) return; // trou : traité avec sa boucle extérieure
+      const trous = b2.map((m, j) => j).filter(j => parent[j] === i);
+      // les points 2D et 3D restent appariés ; on retire le point final qui double le premier
+      const net = (p2, p3) => { if (p2.length > 3 && p2[0].distanceTo(p2[p2.length - 1]) < 1e-6) { p2 = p2.slice(0, -1); p3 = p3.slice(0, -1); } return [p2, p3]; };
+      let [ext2, ext3] = net(l.slice(), boucles[i].slice());
+      if (THREE.ShapeUtils.isClockWise(ext2)) { ext2.reverse(); ext3.reverse(); }
+      const tr2 = [], tr3 = [];
+      for (const j of trous) { let [h2, h3] = net(b2[j].slice(), boucles[j].slice()); if (!THREE.ShapeUtils.isClockWise(h2)) { h2.reverse(); h3.reverse(); } tr2.push(h2); tr3.push(h3); }
+      const tous = ext3.concat(...tr3), ordre = tous.map((_, k) => k);
+      let tris; try { tris = THREE.ShapeUtils.triangulateShape(ext2, tr2); } catch (e) { tris = []; }
+      for (const t of tris) {
+        const A = tous[ordre[t[0]]], B = tous[ordre[t[1]]], C = tous[ordre[t[2]]];
+        const e1x = B[0] - A[0], e1y = B[1] - A[1], e1z = B[2] - A[2], e2x = C[0] - A[0], e2y = C[1] - A[1], e2z = C[2] - A[2];
+        const ok = (e1y * e2z - e1z * e2y) * n.x + (e1z * e2x - e1x * e2z) * n.y + (e1x * e2y - e1y * e2x) * n.z < 0;
+        const tri = ok ? [A, B, C] : [A, C, B];
+        for (const p of tri) { P.push(p[0], p[1], p[2]); N.push(-n.x, -n.y, -n.z); const uv = uvMap(p); U.push(uv[0], uv[1]); }
+      }
+      fait.add(i); trous.forEach(j => fait.add(j));
+    });
+  }
+  for (const [ib, b] of boucles.entries()) {
+    if (fait.has(ib)) continue;
     const c = [0, 0, 0]; for (const p of b) { c[0] += p[0]; c[1] += p[1]; c[2] += p[2]; } c[0] /= b.length; c[1] /= b.length; c[2] /= b.length;
     const uc = uvMap(c);
     for (let i = 0; i < b.length; i++) {
@@ -786,9 +815,10 @@ function impactGoutte(p) {
 // lentement vers le bas avant de pâlir doucement.
 const coulures = [];      // filets de jus qui coulent sur l'étal
 const gouttesVitre = [];  // grosses gouttes qui glissent sur l'écran
-function teinteTache(c) {
+function teinteTache(c, clair = false) {
   // les jus très pâles (letchi, coco…) restent visibles : on les teinte légèrement
   const t = c.clone(), hsl = {}; t.getHSL(hsl);
+  if (hsl.l > 0.8 && hsl.h > 0.42 && hsl.h < 0.62) return t.set(clair ? 0xd6e8ee : 0x4a3420); // eau (coco) : trace de bois mouillé, plus sombre
   if (hsl.l > 0.82) t.setHSL(hsl.h, Math.max(hsl.s, 0.38), 0.74);
   return t;
 }
@@ -930,7 +960,7 @@ function dessinerTaches(dt = 0.016) {
 }
 // ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
 function gouttesEcran(sx, sy, color, dir) {
-  const c = teinteTache(color);
+  const c = teinteTache(color, true);
   const n = 1 + Math.floor(Math.random() * 3);
   for (let i = 0; i < n; i++) {
     const r = rnd(7, 16);
@@ -1075,6 +1105,20 @@ function lancer(fruit, opts = {}) {
   return o;
 }
 
+// eau de coco : un filet qui coule de l'ouverture de la moitié, plus fort au début puis qui s'épuise
+const EAU_COCO = new THREE.Color(0xdcecf0), _ouv = new THREE.Vector3(), _src = new THREE.Vector3(), _v = new THREE.Vector3();
+function eauCoco(m, dt) {
+  m.eau -= dt; m.eauT += dt;
+  _ouv.copy(m.ouv).applyQuaternion(m.obj.quaternion);
+  const debit = Math.min(1, m.eau / 1.2) * (_ouv.y < 0.75 ? 1 : 0.25) * qx(); // ouverture vers le haut : l'eau reste dedans
+  const pas = 0.018 / Math.max(0.15, debit);
+  while (m.eauT > pas) {
+    m.eauT -= pas;
+    _src.copy(m.obj.position).addScaledVector(_ouv, m.rayon * 0.3).add(new THREE.Vector3(rnd(-0.06, 0.06), rnd(-0.06, 0.06), 0.15));
+    _v.copy(_ouv).multiplyScalar(rnd(0.8, 2.2)).addScaledVector(m.vel, 0.85); _v.x += rnd(-0.25, 0.25); _v.z += rnd(0, 0.6);
+    goutte(_src, _v, rnd(0.035, 0.07), EAU_COCO, rnd(0.6, 1.1), 1.25, Math.random() < 0.1);
+  }
+}
 function couper(o, dir, precision = 1, decalage = 0) {
   o.vivant = false; scene.remove(o.obj);
   const pos = o.obj.position.clone();
@@ -1104,6 +1148,8 @@ function couper(o, dir, precision = 1, decalage = 0) {
       const sgn = i === 0 ? 1 : -1; scene.add(g);
       moities.push({ fruit: f, jus, obj: g, vel: o.vel.clone().multiplyScalar(o.morceau ? 0.6 : 0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)),
         axe: dir.clone(), vrot: sgn * rnd(2.2, 3.4), vie: 4, gen: (o.gen || 0) + 1, rayon: res.reperes[i].rayon, repere: res.reperes[i], ne: performance.now(), or: o.or, genere: true });
+      // noix de coco : l'eau s'écoule par l'ouverture de chaque moitié
+      if (f.d.id === 'coco' && !o.morceau) { const m = moities[moities.length - 1]; m.eau = 2.2; m.eauT = 0; m.ouv = res.normal.clone().multiplyScalar(i === 0 ? -1 : 1).applyQuaternion(g.quaternion.clone().invert()); m.vrot *= 0.55; }
     });
   } else if (!o.morceau) {
   // (repli) moitiés préparées dans le modèle, si la découpe réelle échoue
@@ -1155,7 +1201,7 @@ function couper(o, dir, precision = 1, decalage = 0) {
       setTimeout(() => popup((ob.nouveau ? 'Nouveau : ' : '') + ob.nom + ' (' + ob.total + '/' + ob.sur + ')', pos.clone().add(new THREE.Vector3(0, -1.2, 0)), 'bonus'), 700);
     }
   }
-  const clair = teinteTache(jus).offsetHSL(0, 0.15, 0.08);
+  const clair = teinteTache(jus, true).offsetHSL(0, 0.15, 0.08);
   popup('+' + pts, pos, 'pts', '#' + clair.getHexString());
   if (!o.vanille && f.d.nom) popup(f.d.nom, pos.clone().add(new THREE.Vector3(0, 1.1, 0)), 'nom');
   if (parfait) setTimeout(() => popup('Pile au centre !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
@@ -1452,6 +1498,7 @@ function boucle() {
   }
   for (let i = moities.length - 1; i >= 0; i--) {
     const m = moities[i]; m.vie -= dt; m.vel.y -= 11 * dt;
+    if (m.eau > 0) eauCoco(m, dt);
     // la face coupée continue de goutter pendant la chute
     if (m.vie > 2.6 && Math.random() < 9 * dt * qx()) goutte(m.obj.position.clone().add(new THREE.Vector3(rnd(-.2, .2), -.15, 0.2)), new THREE.Vector3(rnd(-.3, .3), rnd(-1, 0), 0), rnd(0.03, 0.06), m.jus, rnd(0.5, 0.9), 1.1, Math.random() < 0.3);
     m.obj.position.addScaledVector(m.vel, dt); m.obj.rotateOnWorldAxis(m.axe, m.vrot * dt);
