@@ -149,7 +149,8 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
         )}
       </section>
       {p.coeurs === 0 && <p className="app-alerte">Plus de cœurs pour aujourd'hui : reviens demain, ou relis un livre en attendant 📚</p>}
-      <p className="app-source">Les mots viennent des livres <Link href="/catalogue">OTÉ ! Les zarlor</Link> et Kosa i mank ?</p>
+      <p className="app-enfants-lien">🧒 Pour les plus petits : <Link href="/enfants/creole">Mon premier créole</Link>, avec des dessins et des mots simples.</p>
+      <p className="app-source">Les mots viennent des livres <Link href="/catalogue">OTÉ ! Les zarlor</Link>, Mon abécédaire créole réunionnais et Kosa i mank ?</p>
     </>
   );
 }

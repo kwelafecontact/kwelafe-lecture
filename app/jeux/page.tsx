@@ -17,7 +17,7 @@ export default async function PageJeux() {
   return (
     <>
       <main className="page">
-        <header className="entete">
+        <header className="entete entete-jeux">
           <div>
             <div className="sur-titre">Apprendre en s'amusant</div>
             <h1>Jeux péi</h1>

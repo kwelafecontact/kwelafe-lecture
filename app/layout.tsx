@@ -1,3 +1,4 @@
+import RetourGlobal from "@/components/RetourGlobal";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import EnregistrerSW from "@/components/EnregistrerSW";
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <RetourGlobal />
         {children}
         <EnregistrerSW />
       </body>
