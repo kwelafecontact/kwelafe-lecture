@@ -74,7 +74,7 @@
   .niveau.on { opacity:1; }
   #trace { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
   .fiche h2 { color:#a83a10; }
-  .bandeau { position:fixed; left:50%; top:max(176px, calc(env(safe-area-inset-top) + 160px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
+  .bandeau { position:fixed; left:50%; top:max(204px, calc(env(safe-area-inset-top) + 190px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
     padding:6px 20px; border-radius:14px; background:rgba(60,15,0,.6); color:#ffd27a; text-shadow:0 2px 0 #5a1a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
   .bandeau.on { opacity:1; }
   .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
@@ -115,6 +115,16 @@
   .faitBulle { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(88vw, 480px); box-sizing:border-box; padding:12px 16px; border-radius:16px; background:rgba(40,12,4,.82); font-size:15px; line-height:1.35; font-weight:600; text-align:left; pointer-events:none; opacity:0; transition:opacity .5s; z-index:9; }
   .faitBulle.on { opacity:1; }
   @media (max-height:500px) { #menu .titre { font-size:54px; } #menu .sous { margin-top:4px; font-size:15px; } #menu .consigne, #menu .defi { display:none; } #menu .modes { flex-direction:row !important; margin-top:10px !important; gap:10px !important; } #menu .btn { padding:9px 18px; font-size:16px; } #menu .btn small { display:none; } #menu { padding-top:46px; justify-content:flex-start; } }
+  .hJauge { position:fixed; left:50%; top:max(124px, calc(env(safe-area-inset-top) + 110px)); transform:translateX(-50%); width:min(40vw, 320px); padding:5px 12px 8px; border-radius:16px; background:rgba(8,20,44,.62); border:1.5px solid rgba(158,231,255,.35); text-align:center; pointer-events:none; opacity:0; transition:opacity .3s; z-index:21; box-sizing:border-box; }
+  .hJauge.on { opacity:1; }
+  .hJauge .t { font:800 clamp(11px, 3vw, 14px)/1.2 "Baloo 2", system-ui, sans-serif; color:#dff3ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hJauge .b { position:relative; height:11px; margin-top:5px; border-radius:6px; background:rgba(255,255,255,.16); }
+  .hJauge .r { position:absolute; left:0; top:0; bottom:0; width:0; border-radius:6px; background:linear-gradient(90deg, #2a8aff, #9ee7ff); box-shadow:0 0 10px rgba(90,180,255,.9); }
+  .hJauge .ic { position:absolute; top:50%; left:0; font-size:20px; transform:translate(-50%,-55%) scaleX(-1); filter:drop-shadow(0 1px 2px #000); }
+  .hJauge.ici { border-color:#ffd23f; background:rgba(60,30,0,.7); animation:hPulse .5s infinite alternate; }
+  .hJauge.ici .t { color:#ffe27a; }
+  .hJauge.ici .r { background:linear-gradient(90deg, #ff8c00, #ffd23f); box-shadow:0 0 10px rgba(255,180,40,.9); }
+  @keyframes hPulse { from { box-shadow:0 0 0 rgba(255,210,63,0); } to { box-shadow:0 0 18px rgba(255,210,63,.7); } }
   .alerte { position:fixed; pointer-events:none; transform:translate(-50%,-100%); font-size:30px; filter:drop-shadow(0 2px 4px #000); animation:clignote .5s infinite alternate; z-index:5; }
   @keyframes clignote { from { transform:translate(-50%,-100%) scale(1); } to { transform:translate(-50%,-110%) scale(1.2); } }
 </style>
@@ -126,11 +136,12 @@
 <svg id="trace" xmlns="http://www.w3.org/2000/svg"></svg>
 
 <div class="hud" id="hud">
-  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div><div class="meilleur" id="olivHud">💚 0 olivine</div></div>
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div><div class="meilleur" id="olivHud">💚 0 olivine</div><div class="meilleur" id="sauvesHud">🚁 0 sauvé</div></div>
   <div class="vies" id="vies"></div><div class="niveauHud" id="niveau">Niveau 1</div>
 </div>
 
 <div class="bandeau" id="bandeau">Bouclier activé !</div>
+<div class="hJauge" id="hJauge"><div class="t" id="hTxt">🚁 En approche</div><div class="b"><div class="r" id="hBarre"></div><div class="ic" id="hIc">🚁</div></div></div>
 <div class="bonus" id="bonus">
   <button class="bbtn zone-interactive" id="bBouclier" aria-label="Bouclier"><div class="rempli" id="rBouclier"></div>🛡️</button>
   <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
@@ -143,11 +154,11 @@
   <div class="modes" style="flex-direction:column;align-items:center;margin-top:16px"><button class="btn zone-interactive" id="jouerZen" style="background:linear-gradient(#8fe06a,#3fa83a)">Mi vé zoué trankil<br><small style="font-weight:600;font-size:13px">Sans pression : étoiles, carnet, faits à découvrir</small></button><button class="btn zone-interactive" id="jouer" style="background:linear-gradient(#ff8a4a,#e03a1a)">Mi rode problèm<br><small style="font-weight:600;font-size:13px">Vies, bombe-mère toutes les 5 vagues, records</small></button></div>
   <div class="modes" style="margin-top:12px;gap:10px"><button class="btn mini btn2 zone-interactive" id="ouvrirAtelier">🎒 Équipement</button><button class="btn mini btn2 zone-interactive" id="ouvrirCarnet">📖 Carnet</button><button class="btn mini btn2 zone-interactive" id="ouvrirSon">🎚️ Son</button><button class="btn mini btn2 zone-interactive" id="ouvrirCredits">Crédits</button></div>
   <div class="defi" id="defiMenu"></div>
-  <div class="consigne">Tranche les bombes de lave d'un geste, ramène les randonneurs égarés ⚠, ramasse les olivines vertes.</div>
+  <div class="consigne">Tranche les bombes de lave jusqu'à l'arrivée de l'hélicoptère. Quand il est là, touche les touristes pour les faire monter : sauve-en le plus possible !</div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
-  <div class="sous" style="margin-top:0">Tout le monde est rentré</div>
+  <div class="sous" style="margin-top:0" id="sauvesFin">Tout le monde est rentré</div>
   <div class="gros" id="scoreFin">0</div>
   <div class="etoiles" id="etoilesFin"></div>
   <div class="nouveau" id="nouveauRecord"></div>
@@ -206,20 +217,22 @@ const FAITS = [
   "Le volcan dépasse 2 600 mètres d'altitude : prends de l'eau, un vêtement chaud, et pars tôt le matin.",
   "Le Pas de Bellecombe, à plus de 2 300 mètres, est la porte d'entrée de l'Enclos Fouqué.",
   "Dans ce jeu, les bombes de lave sont imaginaires : en vrai, on ne s'approche jamais d'une éruption hors des zones autorisées.",
+  "À La Réunion, les secours en montagne sont menés par les gendarmes du PGHM, souvent avec l'hélicoptère de la Section aérienne de gendarmerie.",
+  "Quand la préfecture donne l'alerte au volcan, les gendarmes du PGHM ont environ 30 minutes pour évacuer les personnes autour du Pas de Bellecombe.",
 ];
 const CLE = 'bv2_save';
-let save = { oliv: 0, amelio: { bouclier: 0, lame: 0, jumelles: 0, sismo: 0 }, faits: [], defi: null, record: 0, recordZen: 0 };
+let save = { recordSauves: 0, recordSauvesZen: 0, oliv: 0, amelio: { bouclier: 0, lame: 0, jumelles: 0, sismo: 0 }, faits: [], defi: null, record: 0, recordZen: 0 };
 try { const sv = JSON.parse(localStorage.getItem(CLE) || 'null'); if (sv) save = Object.assign(save, sv, { amelio: Object.assign(save.amelio, sv.amelio || {}) }); } catch (e) {}
 const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(save)); } catch (e) {} };
 const AMELIOS = [
   { id: 'bouclier', ic: '🛡️', nom: 'Bouclier renforcé', txt: 'Le bouclier dure une seconde de plus.', prix: [6, 15, 30] },
   { id: 'lame', ic: '🖐️', nom: 'Grand geste', txt: 'Ton geste tranche plus large.', prix: [5, 12, 25] },
-  { id: 'jumelles', ic: '🔭', nom: 'Jumelles', txt: 'Tu as plus de temps pour ramener un randonneur égaré.', prix: [5, 12, 25] },
+  { id: 'jumelles', ic: '🔭', nom: 'Jumelles', txt: 'Tu repères mieux les touristes : ils sont plus faciles à toucher pour l\'hélicoptère.', prix: [5, 12, 25] },
   { id: 'sismo', ic: '📈', nom: 'Sismographe précis', txt: 'L\'alerte est plus facile à donner.', prix: [8, 18] },
 ];
 const DEFIS = [
   { type: 'coupes', cible: 60, txt: n => `Tranche ${n} bombes de lave` },
-  { type: 'rappels', cible: 6, txt: n => `Ramène ${n} randonneurs sur le balisage` },
+  { type: 'sauves', cible: 15, txt: n => `Sauve ${n} touristes avec l'hélicoptère` },
   { type: 'olivines', cible: 6, txt: n => `Ramasse ${n} olivines` },
   { type: 'alertes', cible: 2, txt: n => `Donne ${n} alertes à temps au sismographe` },
   { type: 'fuseaux', cible: 2, txt: n => `Tranche ${n} bombes en fuseau` },
@@ -330,6 +343,10 @@ const LOOKS = [
   { veste: 0x1e5ad8, pantalon: 0x4a4038, sac: 0xe88a1a, peau: 0xe0b08a, cheveux: 0x5a3418, chapeau: 'bob', chapeauC: 0xa88a58, queue: true },
   { veste: 0x18a048, pantalon: 0x22262e, sac: 0x8a1e2a, peau: 0x5a3a26, cheveux: 0x0e0a08, chapeau: 'bonnet', chapeauC: 0xc89810, lunettes: true },
   { veste: 0x8a2ad0, pantalon: 0x30343c, sac: 0x1e6a8a, peau: 0xc8946a, cheveux: 0x2a1a10, chapeau: 'casquette', chapeauC: 0x1e1e1e, queue: true },
+  { veste: 0xc89a10, pantalon: 0x3a3a44, sac: 0x2a3a8a, peau: 0xf0c49a, cheveux: 0xc89a48, chapeau: 'bob', chapeauC: 0xb0a890, queue: true },
+  { veste: 0xff6a1a, pantalon: 0x2a2e3a, sac: 0x1a1a1a, peau: 0x6a4228, cheveux: 0x120c08, chapeau: 'casquette', chapeauC: 0x1e5ad8 },
+  { veste: 0x1ab4c8, pantalon: 0x4a3a30, sac: 0xd81e5a, peau: 0xd8a47a, cheveux: 0x3a2214, chapeau: 'bonnet', chapeauC: 0x2a8a3a, lunettes: true },
+  { veste: 0xe84a8a, pantalon: 0x22262e, sac: 0x5a7a2a, peau: 0xa8724a, cheveux: 0x1a1210, chapeau: 'bob', chapeauC: 0x6a8a9a },
 ];
 const geoCache = {};
 const G = (k, f) => geoCache[k] || (geoCache[k] = f());
@@ -480,7 +497,7 @@ try { sonCoupe = localStorage.getItem('bv2_son') === 'non'; } catch (e) {}
 try { const sv0 = JSON.parse(localStorage.getItem('bv2_s') || 'null'); if (sv0) S = Object.assign(S, sv0); } catch (e) {}
 const sauveS = () => { try { localStorage.setItem('bv2_s', JSON.stringify(S)); } catch (e) {} };
 const SFX = {}; let sfxDemandes = false;
-const NOMS_SFX = ['musique-calme', 'musique-intense', 'tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte', 'appel', 'combo', 'bonus', 'grand', 'annonce'];
+const NOMS_SFX = ['musique-calme', 'musique-intense', 'tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte', 'appel', 'combo', 'bonus', 'grand', 'annonce', 'helico'];
 const NOMS_ROCHE = ['petite', 'moyenne', 'grosse'], sonsRoche = {};
 let musCur = null, musVoulue = 'musique-calme', musNom = null;
 function musique(n) {
@@ -521,7 +538,13 @@ const son = {   // échantillons ElevenLabs uniquement
   bonus: () => sfx('bonus', 0.9),
   grand: () => sfx('grand', 0.95),
   annonce: () => sfx('annonce', 1.0, 1),   // voix ElevenLabs d'ouverture
+  helico: (on) => {   // boucle du rotor : monte à l'arrivée, s'éteint au départ
+    if (!actx) return;
+    if (on) { if (rotorSon) return; const buf = SFX.helico; if (!buf) return; const s2 = actx.createBufferSource(); s2.buffer = buf; s2.loop = true; const g = actx.createGain(); g.gain.value = 0.0001; g.gain.exponentialRampToValueAtTime(0.75, actx.currentTime + 1.2); s2.connect(g).connect(fxG); s2.start(); rotorSon = { s2, g }; }
+    else if (rotorSon) { const r = rotorSon; rotorSon = null; try { r.g.gain.setTargetAtTime(0.0001, actx.currentTime, 0.35); r.s2.stop(actx.currentTime + 1.6); } catch (e) {} }
+  },
 };
+let rotorSon = null;
 
 // ---------------------------------------------------------------- KwFX, le directeur d'effets Kwélafé
 // Mode complément : le jeu garde ses braises 3D, ses taches de lave et ses bruitages ElevenLabs ;
@@ -546,7 +569,7 @@ fxSon();
 
 // ---------------------------------------------------------------- partie
 const DUREE_ZEN = 90, RECHARGE_BOUCLIER = 12; let DUREE_BOUCLIER = 5;
-let phase = 'actif', phaseT = 0, stats = {}, olivPartie = 0, prochainEgare = 9; const olivines = [], balises = [];
+let phase = 'actif', phaseT = 0, stats = {}, olivPartie = 0, sauves = 0; const olivines = [], balises = [];
 const dureePhase = () => calme() ? 30 : Math.min(34, 20 + niveau * 2);
 const calme = () => mode === 'zen';   // « Mi vé zoué trankil » ; 'classique' = « Mi rode problèm »
 const nD = () => calme() ? Math.min(niveau, 3) : niveau;
@@ -576,10 +599,21 @@ function resize() {
   const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
   balises.forEach(b => scene.remove(b)); balises.length = 0;
   for (let x = -viewW / 2; x < viewW / 2; x += 1.1) { const b = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), new THREE.MeshStandardMaterial({ color: 0xf4f4ee, roughness: 0.8 })); b.rotation.x = -Math.PI / 2; b.position.set(x + rnd(-0.1, 0.1), sol + 0.02, 1.2); b.scale.set(1.4, 1, 0.8); scene.add(b); balises.push(b); }
-  marcheurs.forEach(m => { scene.remove(m.obj); m.alerte && m.alerte.remove(); }); marcheurs.length = 0;
-  const n = viewW < 8 ? 2 : 3;
-  const dep = Math.floor(Math.random() * 4);
-  for (let i = 0; i < n; i++) { const o = randonneur(dep + i); const m = { obj: o, voix: (dep + i) % 4, cri: 0, derniere: -1, x: rnd(-viewW * .4, viewW * .4), dir: Math.random() < .5 ? 1 : -1, v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0 }; o.position.set(m.x, sol, 0.8); scene.add(o); marcheurs.push(m); }
+  if (etat !== 'jeu') { viderTouristes(); ajouterTouristes(nbTouristes(), false); }
+  else for (const m of marcheurs) { m.x = Math.max(-viewW * 0.44, Math.min(viewW * 0.44, m.x)); }
+}
+// ---------------------------------------------------------------- touristes
+const nbTouristes = () => viewW < 6 ? 5 : viewW < 9 ? 6 : 8;
+let lookSuivant = Math.floor(Math.random() * 8);
+function viderTouristes() { marcheurs.forEach(m => scene.remove(m.obj)); marcheurs.length = 0; }
+// entree : le touriste arrive à pied depuis un bord de l'écran
+function ajouterTouristes(n, entree) {
+  for (let i = 0; i < n; i++) {
+    const o = randonneur(lookSuivant++), cote = Math.random() < 0.5 ? -1 : 1;
+    const x = entree ? cote * (viewW / 2 + 0.6 + i * 0.7) : rnd(-viewW * .42, viewW * .42);
+    const m = { obj: o, x, dir: entree ? -cote : (Math.random() < .5 ? 1 : -1), v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0, entree, panique: false, pc: 0, vp: 1, monte: null };
+    o.position.set(x, sol, 0.8); scene.add(o); marcheurs.push(m);
+  }
 }
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = calme() ? '' : 'Record : ' + Math.max(record, score);
@@ -593,7 +627,7 @@ function perdreVie() { if (etat !== 'jeu' || calme()) return; vies = Math.max(0,
 function lancerBombe(fuseau = false, cristal = false, boss = false) {
   if (pause) { setTimeout(() => lancerBombe(fuseau, cristal, boss), 300); return; }
   // elle jaillit du cratère, monte hors du cadre, puis retombe à la verticale sur le sentier en visant souvent un randonneur
-  const vise = Math.random() < 0.85 && marcheurs.length ? marcheurs[Math.floor(Math.random() * marcheurs.length)] : null;
+  const cibles = marcheurs.filter(m => !m.monte && !m.entree); const vise = Math.random() < 0.85 && cibles.length ? cibles[Math.floor(Math.random() * cibles.length)] : null;
   const cible = Math.max(-viewW * 0.46, Math.min(viewW * 0.46, vise ? vise.x + rnd(-0.6, 0.6) : rnd(-viewW * .45, viewW * .45)));
   if (vise && etat === 'jeu' && Math.random() < 0.35) setTimeout(() => crier(vise), 400);
   const x0 = cratere.jx + rnd(-0.25, 0.25), y0 = cratere.jy, haut = viewH / 2 + 1.1;
@@ -607,6 +641,106 @@ function lancerBombe(fuseau = false, cristal = false, boss = false) {
   bombes.push({ obj: m, vx: rnd(-0.5, 0.5), vy: 0, g, vr: fuseau ? 0.6 : rnd(-3, 3), rayon: 0.72 * s * (fuseau ? 1.2 : 1), vivant: true, fuseau, cristal, boss, pv, garde: 0, age: 0, base: m.scale.clone(), montee: true, vMont: rnd(10, 14), cible, haut, vyChute, attente: rnd(0.12, 0.45) });
   m.scale.multiplyScalar(0.25); eruption(fuseau || cristal ? 2 : 1);
   son.tir();
+}
+// ---------------------------------------------------------------- hélicoptère de secours (gendarmerie, bleu et blanc)
+function construireHelico() {
+  const g = new THREE.Group(), M = (c, r = 0.4, x = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: 0.25, envMapIntensity: 0.9, ...x });
+  const bleu = M(0x0e3296, 0.5, { metalness: 0.1 }), blanc = M(0xf2f4f8, 0.4), noir = M(0x15181e, 0.5), gris = M(0x8a929c, 0.3, { metalness: 0.7 }), vitre = M(0x3a7aa8, 0.08, { metalness: 0.5, transparent: true, opacity: 0.9 });
+  const corps = new THREE.Mesh(new THREE.SphereGeometry(0.62, 32, 22), bleu); corps.scale.set(1.45, 0.82, 0.78); corps.castShadow = true; g.add(corps);
+  const bande = new THREE.Mesh(new THREE.SphereGeometry(0.625, 32, 6, 0, Math.PI * 2, Math.PI * 0.56, Math.PI * 0.1), blanc); bande.scale.copy(corps.scale); g.add(bande);
+  const verriere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 28, 18, -Math.PI / 2, Math.PI, 0, Math.PI * 0.62), vitre); verriere.scale.set(1.05, 0.95, 1.18); verriere.position.set(0.42, 0.1, 0); verriere.rotation.y = Math.PI / 2; g.add(verriere);
+  const poutre = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.17, 1.65, 16), bleu); poutre.rotation.z = Math.PI / 2; poutre.position.set(-1.45, 0.16, 0); poutre.castShadow = true; g.add(poutre);
+  const derive = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.5, 0.05, 3, 0.02), bleu); derive.position.set(-2.2, 0.42, 0); derive.rotation.z = -0.35; g.add(derive);
+  const stab = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.04, 0.62, 2, 0.015), blanc); stab.position.set(-1.9, 0.18, 0); g.add(stab);
+  const rotorQ = new THREE.Group(); rotorQ.position.set(-2.25, 0.5, 0.06); g.add(rotorQ);
+  for (let k = 0; k < 2; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.46, 0.012), noir); p.rotation.z = k * Math.PI / 2; rotorQ.add(p); }
+  const mat = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.28, 12), gris); mat.position.set(0, 0.68, 0); g.add(mat);
+  const capot = new THREE.Mesh(new RoundedBoxGeometry(0.72, 0.22, 0.46, 3, 0.08), blanc); capot.position.set(-0.15, 0.56, 0); g.add(capot);
+  const rotor = new THREE.Group(); rotor.position.set(0, 0.84, 0); g.add(rotor);
+  for (let k = 0; k < 4; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.025, 0.13), noir); p.position.x = 0.95; const bras = new THREE.Group(); bras.rotation.y = k * Math.PI / 2; bras.add(p); rotor.add(bras); }
+  const disque = new THREE.Mesh(new THREE.CircleGeometry(1.95, 48), new THREE.MeshBasicMaterial({ color: 0x20242c, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide })); disque.rotation.x = -Math.PI / 2; rotor.add(disque);
+  for (const sz of [-1, 1]) {
+    const patin = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 1.5, 4, 10), gris); patin.rotation.z = Math.PI / 2; patin.position.set(0.05, -0.68, 0.36 * sz); g.add(patin);
+    for (const sx of [-0.4, 0.45]) { const j = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8), gris); j.position.set(sx, -0.53, 0.32 * sz); j.rotation.x = 0.25 * sz; g.add(j); }
+  }
+  const porte = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.42, 0.02, 2, 0.03), noir); porte.position.set(-0.05, -0.05, 0.47); g.add(porte);
+  const phare = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2, 1.2, 1.0), toneMapped: false })); phare.position.set(0.7, -0.42, 0); g.add(phare);
+  const feu = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.4, 0.3), toneMapped: false })); feu.position.set(-2.3, 0.72, 0); g.add(feu);
+  // corde de treuil et harnais
+  const corde = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1, 6), M(0xf2c418, 0.6)); corde.geometry.translate(0, -0.5, 0); corde.position.set(-0.05, -0.3, 0.3); g.add(corde);
+  const crochet = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.025, 8, 18), M(0xe8322a, 0.4)); g.add(crochet);
+  const pinceau = new THREE.SpotLight(0xfff2c8, 0, 12, 0.5, 0.6, 1.2); pinceau.position.set(0.7, -0.42, 0); g.add(pinceau); g.add(pinceau.target);
+  g.userData = { rotor, rotorQ, corde, crochet, feu, pinceau, disque };
+  g.visible = false; scene.add(g); return g;
+}
+const helico = { obj: construireHelico(), etat: 'loin', t: 0, x: 0, y: 0, dir: 1, corde: 0, sonT: 0, enChaine: 0 };
+const ARRIVEE = 1.8, STATION = 4, DEPART = 1.6;
+const hauteurHelico = () => sol + Math.min(4.1, viewH * 0.38);
+function echelleHelico() { return Math.min(1.05, Math.max(0.62, viewW / 8.5)); }
+function majJauge(k, txt, ici) {
+  $('hJauge').classList.toggle('ici', !!ici); $('hTxt').textContent = txt;
+  const pc = Math.max(0, Math.min(1, k)) * 100; $('hBarre').style.width = pc + '%'; $('hIc').style.left = pc + '%';
+}
+function lancerHelico() {
+  phase = 'helico'; phaseT = 0; helico.etat = 'arrivee'; helico.t = 0; helico.enChaine = 0;
+  helico.dir = Math.random() < 0.5 ? 1 : -1; helico.obj.visible = true; helico.obj.scale.setScalar(echelleHelico());
+  helico.obj.rotation.y = helico.dir > 0 ? 0 : Math.PI;
+  majJauge(1, '🚁 Il arrive !', true); bandeau('L\'hélicoptère arrive !', 1.6); son.helico(true);
+  if (fx) fx.joue('halo', { intensite: 0.4 });
+}
+function paniquer(on) { for (const m of marcheurs) { m.panique = on && !m.monte; m.pc = 0; } }
+// touriste touché pendant que l'hélicoptère est là : il monte par le treuil
+function faireMonter(m) {
+  if (m.monte || helico.etat !== 'station') return;
+  m.monte = { t: 0, x0: m.x, y0: sol }; m.panique = false; sauves++; helico.enChaine++;
+  const pts = 20 + 5 * Math.min(6, helico.enChaine - 1); score += pts; majScore(); majSauves(); compter('sauves'); son.rappel();
+  const q = m.obj.position.clone().add(new THREE.Vector3(0, 1.3, 0));
+  popup((helico.enChaine > 1 ? 'Sauvé ×' + helico.enChaine + ' ! +' : 'Sauvé ! +') + pts, q, 'chaine');
+  fxEvt('trouve', q); fxJoue('etoiles', q, { intensite: 0.7 }); fxJoue('anneau', q, { intensite: 0.6, couleurs: ['#FFD23F', '#FFFFFF', '#9EE7FF'] });
+  if (helico.enChaine >= 3 && fx) fx.joue('onomatopee', { texte: helico.enChaine >= 5 ? 'OTÉ !' : 'HOP !', x: ecran(q).x, y: ecran(q).y - 50, intensite: 0.5 + helico.enChaine * 0.06 });
+  if (!marcheurs.some(mm => !mm.monte && !mm.entree)) { score += 50; majScore(); bandeau('Tout le monde est à bord ! +50', 2.2); son.bonus(); if (fx) { fx.joue('confettis', { intensite: 0.9 }); fx.joue('halo', { intensite: 0.7 }); } }
+}
+function majSauves() { $('sauvesHud').textContent = `🚁 ${sauves} sauvé${sauves > 1 ? 's' : ''}`; }
+function majHelico(dt) {
+  const u = helico.obj.userData, h = helico, e = echelleHelico();
+  if (h.etat === 'loin') { h.obj.visible = false; return; }
+  u.rotor.rotation.y += dt * 38; u.rotorQ.rotation.z += dt * 55; u.feu.visible = Math.floor(performance.now() / 350) % 2 === 0;
+  const hy = hauteurHelico(), bord = viewW / 2 + 3.2 * e;
+  h.t += dt;
+  if (h.etat === 'arrivee') {
+    const k = Math.min(1, h.t / ARRIVEE), ke = 1 - Math.pow(1 - k, 3);
+    h.x = -h.dir * bord * (1 - ke); h.y = hy + (1 - ke) * 1.6; h.obj.rotation.z = 0.22 * (1 - ke) * Math.sin(k * Math.PI);   // se cabre en freinant
+    h.corde = 0;
+    if (k >= 1) { h.etat = 'station'; h.t = 0; paniquer(true); bandeau('Touche les touristes !', 2.2); if (fx) fx.joue('anneau', { x: ecran(new THREE.Vector3(0, hy, 0)).x, y: ecran(new THREE.Vector3(0, hy, 0)).y, intensite: 0.8, couleurs: ['#9EE7FF', '#FFFFFF'] }); }
+  } else if (h.etat === 'station') {
+    h.x = Math.sin(h.t * 1.3) * 0.12; h.y = hy + Math.sin(h.t * 2.1) * 0.06; h.obj.rotation.z = Math.sin(h.t * 1.7) * 0.03;
+    h.corde = Math.min(1, h.corde + dt * 2.5);
+    const reste = STATION - h.t; majJauge(reste / STATION, '🚁 Touche-les ! ' + Math.ceil(Math.max(0, reste)), true);
+    if (!calme() && niveau >= 2) { h.bombe = (h.bombe || 0) - dt; if (h.bombe <= 0) { h.bombe = Math.max(0.9, 1.6 - niveau * 0.05); lancerBombe(); } }
+    if (h.t >= STATION) { h.etat = 'depart'; h.t = 0; paniquer(false); const n = helico.enChaine; bandeau(n ? n + (n > 1 ? ' touristes sauvés !' : ' touriste sauvé !') : 'L\'hélicoptère repart…', 2); }
+  } else if (h.etat === 'depart') {
+    const k = Math.min(1, h.t / DEPART), ke = k * k;
+    h.x = h.dir * bord * ke; h.y = hy + ke * 1.8; h.obj.rotation.z = -0.3 * Math.min(1, k * 2);   // pique du nez pour repartir
+    h.corde = Math.max(0, h.corde - dt * 3);
+    majJauge(0, '🚁 À bientôt !', false);
+    if (k >= 1) { h.etat = 'loin'; h.obj.visible = false; son.helico(false); apresHelico(); }
+  }
+  h.obj.position.set(h.x, h.y, -0.2); h.obj.scale.setScalar(e);
+  // corde du treuil jusqu'au-dessus des têtes
+  const long = Math.max(0.01, (h.y - (sol + 1.9)) / e - 0.3) * h.corde;
+  u.corde.scale.y = long; u.crochet.position.set(-0.05, -0.3 - long, 0.3); u.corde.visible = u.crochet.visible = h.corde > 0.02;
+  u.pinceau.intensity = h.etat === 'station' ? 5 : 2; u.pinceau.target.position.set(0.4, -6, 0);
+  // vent du rotor : poussière et fumée qui s'écartent au sol
+  if (h.etat === 'station' && Math.random() < 0.6) for (const s2 of [-1, 1]) braise(h.x + s2 * rnd(0.2, 1.2), sol + 0.15, 0.6, s2 * rnd(2, 4), rnd(0.2, 0.8), [0.75, 0.68, 0.6], rnd(0.4, 0.8), rnd(30, 60), 0);
+}
+// après le départ : la suite du niveau, et de nouveaux touristes arrivent à pied
+function apresHelico() {
+  if (etat !== 'jeu') return;
+  marcheurs.filter(m => m.monte).forEach(m => scene.remove(m.obj));
+  for (let i = marcheurs.length - 1; i >= 0; i--) if (marcheurs[i].monte) marcheurs.splice(i, 1);
+  const manque = nbTouristes() - marcheurs.length;
+  if (manque > 0) { ajouterTouristes(manque, true); setTimeout(() => etat === 'jeu' && bandeau(manque > 1 ? manque + ' nouveaux touristes arrivent' : 'Un nouveau touriste arrive', 1.8), 2300); }
+  finDeNiveau();
 }
 // ---------------------------------------------------------------- arrière-plan : le volcan projette des roches qui éclatent au loin
 const rochesFond = []; let fondT = 0.4; const ZF = -25;
@@ -653,7 +787,7 @@ function montrerFait() {
 }
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 3.6; (() => { let n = 0; const t = setInterval(() => { if (son.annonce() || ++n > 8 || etat !== 'jeu') clearInterval(t); }, 250); })(); coupees = 0; niveau = 1; etoilesC = 0; $('faitBulle').classList.remove('on'); ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
-  phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; prochainEgare = 9; majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); marcheurs.forEach(mm => { mm.egare = 0; mm.alerte && mm.alerte.remove(); mm.alerte = null; });
+  phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; sauves = 0; majSauves(); helico.etat = 'loin'; helico.obj.visible = false; son.helico(false); majJauge(0, '🚁 En approche', false); $('hJauge').classList.add('on'); viderTouristes(); ajouterTouristes(nbTouristes(), false); majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); 
   record = calme() ? 0 : save.record; ambiancer(); musique(calme() ? 'musique-calme' : 'musique-intense'); vitesseMusique();
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
@@ -663,7 +797,9 @@ function demarrer(m) {
 function finPartie() {
   if (etat !== 'jeu') return;
   etat = 'fin'; musique('musique-calme'); $('faitBulle').classList.remove('on'); $('btnPause').classList.remove('on'); $('bonus').classList.remove('on'); $('bandeau').classList.remove('on'); $('jauge').classList.remove('on'); sismo = null;
-  marcheurs.forEach(mm => { mm.alerte && mm.alerte.remove(); mm.alerte = null; mm.egare = 0; });
+  $('hJauge').classList.remove('on'); son.helico(false); if (helico.etat !== 'loin') { helico.etat = 'depart'; helico.t = 0; } paniquer(false);
+  const cleS = calme() ? 'recordSauvesZen' : 'recordSauves', nouveauS = sauves > (save[cleS] || 0); if (nouveauS) save[cleS] = sauves;
+  $('sauvesFin').textContent = sauves ? `🚁 ${sauves} touriste${sauves > 1 ? 's' : ''} sauvé${sauves > 1 ? 's' : ''} par l'hélicoptère` + (nouveauS ? ' · nouveau record !' : ` (record : ${save[cleS]})`) : 'Aucun touriste sauvé cette fois : essaie de les toucher quand l\'hélicoptère est là';
   const nouveau = !calme() && score > record && score > 0;
   if (nouveau) { record = score; save.record = score; }
   save.oliv += olivPartie;
@@ -715,9 +851,6 @@ function dessinerSismo(dt) {
   $('sL1').setAttribute('y1', y1); $('sL1').setAttribute('y2', y1); $('sL2').setAttribute('y1', y2); $('sL2').setAttribute('y2', y2);
   $('sTr').setAttribute('points', sismo.trace.map((v, i) => (i * 2) + ',' + (h / 2 + v * h * 0.45).toFixed(1)).join(' '));
 }
-// randonneur qui quitte le balisage
-function egarer() { const libres = marcheurs.filter(m => !m.egare && m.choc <= 0); if (!libres.length) return; const m = libres[Math.floor(Math.random() * libres.length)]; m.egare = (calme() ? 8 : 4) + save.amelio.jumelles; const e = document.createElement('div'); e.className = 'alerte'; e.textContent = '⚠️'; document.body.appendChild(e); m.alerte = e; son.appel(); }
-function rappeler(m) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; score += 12; majScore(); compter('rappels'); son.rappel(); popup('Reste sur le balisage ! +12', m.obj.position.clone().add(new THREE.Vector3(0, 2.4, 0)), 'chaine'); const q = m.obj.position.clone().add(new THREE.Vector3(0, 1.2, 0)); fxEvt('trouve', q); fxJoue('etoiles', q, { intensite: 0.6 }); fxJoue('anneau', q, { intensite: 0.5, couleurs: ['#FFD23F', '#FFFFFF'] }); }
 // olivine tombée d'une grosse bombe
 function poserOlivine(x) {
   const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0), new THREE.MeshStandardMaterial({ color: 0x7ad030, emissive: 0x3a8a10, emissiveIntensity: 1.2, roughness: 0.2, metalness: 0.1 }));
@@ -725,7 +858,7 @@ function poserOlivine(x) {
 }
 function tapper(px, py) {
   for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); son.olivine(); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); fxJoue('eclat', o.obj.position, { intensite: 0.55, couleurs: VERT }); fxJoue('poussiereOr', o.obj.position, { intensite: 0.5, couleurs: VERT }); return true; } }
-  for (const m of marcheurs) { if (!m.egare) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 1, 0))); if (Math.hypot(sc.x - px, sc.y - py) < 70) { rappeler(m); return true; } }
+  if (helico.etat === 'station') { let best = null, bd = 1e9; const r = 62 + save.amelio.jumelles * 14; for (const m of marcheurs) { if (m.monte || m.entree) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 0.75, 0))); const d = Math.hypot(sc.x - px, sc.y - py); if (d < r && d < bd) { bd = d; best = m; } } if (best) { faireMonter(best); return true; } }
   return false;
 }
 function majBonus() {
@@ -838,10 +971,12 @@ function boucle() {
   const joue = etat === 'jeu' && !pause, fige = etat === 'fiche' || pause;
   if (joue) {
     temps += dt; phaseT += dt;
-    if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); prochainEgare -= dt; if (prochainEgare <= 0) { egarer(); prochainEgare = (calme() ? 14 : Math.max(5, 12 - niveau)) + rnd(0, calme() ? 6 : 4); } }
+    if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); majJauge(phaseT / dureePhase(), '🚁 En approche', false); if (phaseT > dureePhase()) lancerHelico(); }
+    else if (phase === 'helico') { /* géré par majHelico */ }
     else if (phase === 'accalmie' && phaseT > 4.6) { phase = 'actif'; phaseT = 0; prochain = 0.3; niveau++; son.niveau(); majNiveau(); vitesseMusique(); bandeau('Niveau ' + niveau + ' : le volcan repart', 1.8); fxEvt('niveau', new THREE.Vector3(cratere.jx, cratere.jy, 0), { niveau }); if (calme()) montrerFait(); }
   }
   dessinerSismo(dt);
+  if (!fige) majHelico(dt);
   for (let i = olivines.length - 1; i >= 0; i--) { const o = olivines[i]; o.t += dt; o.obj.rotation.y += dt * 2; o.obj.position.y = sol + 0.3 + Math.sin(o.t * 4) * 0.06; o.obj.material.emissiveIntensity = 1 + Math.sin(o.t * 8) * 0.4; if (o.prise || o.t > 6) { scene.remove(o.obj); olivines.splice(i, 1); } else if (o.t > 4.5) o.obj.visible = Math.floor(o.t * 10) % 2 === 0; }
   if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; lancerBombe(); } }
   if (joue) { if (bouclier > 0) { bouclier -= dt; if (bouclier <= 0) $('bandeau').classList.remove('on'); } else charge = Math.min(RECHARGE_BOUCLIER, charge + dt); if (ralenti > 0) { ralenti -= dt; if (ralenti <= 0 && bouclier <= 0) $('bandeau').classList.remove('on'); } majBonus(); }
@@ -851,13 +986,21 @@ function boucle() {
   if (Math.random() < 0.35) fumee(rnd(viewW / 2 - 1.2, viewW / 2), sol + rnd(0, 0.5), -0.5, 160);
   // randonneurs qui marchent sur le sentier balisé
   for (const m of marcheurs) {
-    if (!fige) { m.t += dt; if (m.choc > 0) { m.choc -= dt; m.x += m.dir * dt * 2.2; } else m.x += m.dir * m.v * dt; }
-    // randonneur égaré : il s'éloigne du sentier (vers le fond), il faut le toucher avant la fin du compte à rebours
-    const zc = m.egare ? -1.2 : 0.8; m.obj.position.z += (zc - m.obj.position.z) * Math.min(1, dt * 0.8);
-    if (m.egare && joue) { m.egare -= dt; if (m.alerte) { const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 2.1, 0))); m.alerte.style.left = sc.x + 'px'; m.alerte.style.top = sc.y + 'px'; } if (m.egare <= 0) { m.egare = 0; m.alerte && m.alerte.remove(); m.alerte = null; if (!calme()) son.touche(); bandeau(calme() ? 'Le randonneur est revenu sur le sentier' : 'Un randonneur a quitté le balisage…', 2); m.obj.position.z = 0.8; if (!calme()) fxEvt('erreur', m.obj.position); perdreVie(); } }
-    if (Math.abs(m.x) > viewW * 0.44) { m.dir *= -1; m.x = Math.sign(m.x) * viewW * 0.44; }
-    m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * 8);
-    animer(m.obj, m.t, m.choc > 0);
+    if (m.monte) {   // montée au treuil vers l'hélicoptère
+      if (!fige) m.monte.t += dt; const k = Math.min(1, m.monte.t / 0.85), ke = k * k * (3 - 2 * k), ht = helico.y - 0.6;
+      m.obj.position.set(m.monte.x0 + (helico.x - 0.05 - m.monte.x0) * ke, m.monte.y0 + (ht - m.monte.y0) * ke + Math.sin(k * Math.PI) * 0.5, 0.8 - ke * 1.0);
+      m.obj.scale.setScalar(0.88 * (1 - ke * 0.55)); m.obj.rotation.y += dt * 6; m.obj.visible = k < 0.98; m.t += dt * 2; animer(m.obj, m.t, true); continue;
+    }
+    if (!fige) {
+      m.t += dt;
+      if (m.entree) { m.x += m.dir * 1.3 * dt; if (Math.abs(m.x) < viewW * 0.4) m.entree = false; }
+      else if (m.panique) { m.pc -= dt; if (m.pc <= 0) { m.pc = rnd(0.25, 0.8); m.dir = Math.random() < 0.5 ? -1 : 1; m.vp = rnd(1.5, 2.8) * (calme() ? 0.75 : 1); } m.x += m.dir * m.vp * dt; }
+      else if (m.choc > 0) { m.choc -= dt; m.x += m.dir * dt * 2.2; } else m.x += m.dir * m.v * dt;
+    }
+    m.obj.position.z += (0.8 - m.obj.position.z) * Math.min(1, dt * 0.8);
+    if (!m.entree && Math.abs(m.x) > viewW * 0.44) { m.dir *= -1; m.x = Math.sign(m.x) * viewW * 0.44; }
+    m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * (m.panique ? 14 : 8));
+    animer(m.obj, m.t * (m.panique ? 1.25 : 1), m.choc > 0 || m.panique);
   }
   bulle.visible = bouclier > 0; if (bouclier > 0) { bulle.position.set(0, sol, 0.5); bulle.scale.set(viewW * 0.5, 2.2, 1.6); bulle.material.opacity = 0.18 + Math.sin(performance.now() / 150) * 0.05 + impactBulle * 0.4; bulle.material.emissiveIntensity = 0.4 + impactBulle * 3; } impactBulle = Math.max(0, impactBulle - dt);
   for (let i = bombes.length - 1; i >= 0; i--) {
@@ -899,7 +1042,7 @@ function boucle() {
       tache(p.x);
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
-      const touche = marcheurs.find(m => Math.abs(m.x - p.x) < 0.75);
+      const touche = marcheurs.find(m => !m.monte && !m.entree && Math.abs(m.x - p.x) < 0.75);
       if (joue) fxEvt('erreur', new THREE.Vector3(p.x, sol + 0.6, 0.8), { grave: !!touche && !calme() });
       if (touche && joue) { if (!calme()) son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; perdreVie(); }
     }
@@ -952,7 +1095,7 @@ $('bBouclier').onclick = activerBouclier; $('bRalenti').onclick = activerRalenti
 $('jouer').onclick = () => demarrer('classique');
 $('jouerZen').onclick = () => demarrer('zen');
 $('rejouer').onclick = () => demarrer(mode);
-$('menuFin').onclick = () => { musique('musique-calme'); etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); majMenu(); };
+$('menuFin').onclick = () => { musique('musique-calme'); etat = 'menu'; viderTouristes(); ajouterTouristes(nbTouristes(), false); $('fin').classList.add('cache'); $('menu').classList.remove('cache'); majMenu(); };
 $('jauge').onclick = arreterSismo;
 function majAtelier() { $('stock').innerHTML = `<b>Réserve : ${save.oliv} olivine${save.oliv > 1 ? 's' : ''} 💚</b>`; $('amelios').innerHTML = AMELIOS.map(a => { const n = save.amelio[a.id], max = a.prix.length, prix = a.prix[n]; return `<div class="amelio"><div class="ic">${a.ic}</div><div class="tx"><b>${a.nom}</b> · niveau ${n}/${max}<br>${a.txt}</div>${n < max ? `<button class="zone-interactive" data-a="${a.id}" ${save.oliv < prix ? 'disabled' : ''}>${prix} 💚</button>` : '<span>✔</span>'}</div>`; }).join(''); $('amelios').querySelectorAll('button').forEach(b => b.onclick = () => { const a = AMELIOS.find(x => x.id === b.dataset.a), n = save.amelio[a.id]; if (save.oliv >= a.prix[n]) { save.oliv -= a.prix[n]; save.amelio[a.id]++; sauver(); son.niveau(); majAtelier(); } }); }
 function majCarnet() { $('faits').innerHTML = `<p><b>${save.faits.length}/${FAITS.length}</b> pages découvertes. Une nouvelle page à chaque partie !</p>` + FAITS.map((f, i) => save.faits.includes(i) ? `<div class="fait">🌋 ${f}</div>` : `<div class="fait cache">🔒 Page à découvrir</div>`).join(''); }
@@ -967,7 +1110,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, egarer, poserOlivine, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
+if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
 </script>
 </body>
 </html>
