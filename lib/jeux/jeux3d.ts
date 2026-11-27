@@ -7,6 +7,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "koup-koup-3-v2", titre: "Koup Koup 3 v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🍍", fond: "linear-gradient(135deg,#5fc84a,#ffcf3a 50%,#ff5a2a)" },
   { id: "koup-rougail", titre: "Koup Rougail", accroche: "Tranche les bons ingrédients du rougail et du cari.", emoji: "🍲", fond: "linear-gradient(135deg,#e8452c,#f6a31b 55%,#3f7a2a)" },
   { id: "pete-petard", titre: "Pété Pétard", accroche: "Fais éclater les fusées de la nuit du 31 au Barachois.", emoji: "🎆", fond: "linear-gradient(135deg,#0b1450,#6a2a9a 55%,#ff9a1f)" },
+  { id: "pete-petard-v2", titre: "Pété Pétard v2", accroche: "La nuit du 31 au Barachois : en douceur ou en grand bouquet.", emoji: "🎆", fond: "linear-gradient(135deg,#0b1450,#6a2a9a 55%,#ff9a1f)" },
   { id: "mariaz-la-vanille", titre: "Mariaz la vanille", accroche: "Marie les fleurs de vanille comme Edmond Albius en 1841.", emoji: "🌼", fond: "linear-gradient(135deg,#2e5a1e,#8ab43a 55%,#e8c84a)" },
   { id: "koup-kann", titre: "Koup Kann", accroche: "Coupe la canne au ras du sol pendant la campagne sucrière.", emoji: "🌾", fond: "linear-gradient(135deg,#6a8a2a,#c8a040 55%,#a83a1a)" },
   { id: "tap-tap-moustik", titre: "Tap Tap Moustik", accroche: "Chasse les moustiques du jardin et vide les gîtes.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
