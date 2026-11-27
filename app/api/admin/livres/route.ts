@@ -39,3 +39,14 @@ export async function PATCH(req: NextRequest) {
   await executer(`UPDATE livres SET ${champ} = ? WHERE id = ?`, valeur ? 1 : 0, id);
   return NextResponse.json({ ok: true });
 }
+
+// Modifier les informations d'un livre (titre, résumé, univers, fiches Shopify, lien boutique). L'adresse du livre ne change pas.
+export async function PUT(req: NextRequest) {
+  if (!(await sessionAdmin())) return NextResponse.json({}, { status: 403 });
+  const b = await req.json();
+  const titre = String(b.titre || "").trim().slice(0, 200);
+  if (!b.id || !titre) return NextResponse.json({ erreur: "Le titre est obligatoire." }, { status: 400 });
+  await executer("UPDATE livres SET titre = ?, resume = ?, univers = ?, shopify_product_id = ?, url_boutique = ? WHERE id = ?",
+    titre, String(b.resume || "").slice(0, 2000) || null, String(b.univers || "creole"), produitShopify(b.produit), String(b.url_boutique || "").slice(0, 400) || null, b.id);
+  return NextResponse.json({ ok: true });
+}

@@ -8,6 +8,7 @@ import EtablissementsAdmin from "@/components/EtablissementsAdmin";
 import RessourcesAdmin from "@/components/RessourcesAdmin";
 import { formatDe } from "@/lib/formats";
 import BasculeAdmin from "@/components/BasculeAdmin";
+import EditionLivre from "@/components/EditionLivre";
 import { sessionAdmin } from "@/lib/admin";
 import { tous } from "@/lib/cf";
 import { UNIVERS } from "@/lib/config";
@@ -39,17 +40,15 @@ export default async function Admin() {
         </section>
 
         <section className="panneau">
-          <h2>Mes livres ({livres.length})</h2>
+          <h2 id="mes-livres">Mes livres ({livres.length})</h2>
+          <p className="texte-doux" style={{ marginTop: 0 }}>Clique sur un titre pour modifier le titre, le résumé, l&apos;univers ou la fiche boutique.</p>
           <table className="tableau">
             <tbody>
               {livres.map((l) => (
                 <tr key={l.id}>
                   <td>
-                    <b>{l.titre}</b>
-                    <div className="texte-doux" style={{ fontSize: 13 }}>
-                      {UNIVERS.find((u) => u.id === l.univers)?.nom} · {formatDe(l) === "pdf" ? "PDF" : formatDe(l) === "interactif" ? "Livre interactif" : l.type === "epub_interactif" ? "EPUB animé" : "EPUB"}
-                      {!l.shopify_product_id && " · pas de produit Shopify lié"}
-                    </div>
+                    <EditionLivre livre={{ id: l.id, titre: l.titre, resume: l.resume, univers: l.univers, shopify_product_id: l.shopify_product_id, url_boutique: l.url_boutique }}
+                      sousTitre={`${UNIVERS.find((u) => u.id === l.univers)?.nom || "Sans univers"} · ${formatDe(l) === "pdf" ? "PDF" : formatDe(l) === "interactif" ? "Livre interactif" : l.type === "epub_interactif" ? "EPUB animé" : "EPUB"}${l.publie ? "" : " · non publié"}${l.shopify_product_id ? "" : " · pas de produit Shopify lié"}`} />
                   </td>
                   <td style={{ minWidth: 190 }}>
                     <BasculeAdmin id={l.id} champ="publie" valeur={l.publie} libelle="Publié" />

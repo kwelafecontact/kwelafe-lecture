@@ -43,7 +43,6 @@ export default async function Accueil() {
     if (l && !top.includes(l)) top.push(l);
     if (top.length === 10) break;
   }
-  const fondUne = une ? urlCouverture(une.couverture) : null;
 
   return (
     <>
@@ -80,6 +79,19 @@ export default async function Accueil() {
           <Link href="/compte" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>⭐</span>Mes progrès</Link>
         </nav>
 
+        <section className="section univers-accueil" aria-label="Choisis ton univers">
+          <h2>Choisis ton univers</h2>
+          <div className="univers">
+            {UNIVERS.map((u) => (
+              <Link key={u.id} href={`/catalogue?univers=${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
+                <span className="emoji" aria-hidden>{u.emoji}</span>
+                <b>{u.nom}</b>
+                <small>{livres.filter((l) => l.univers === u.id).length ? `${sansDoublon(livres.filter((l) => l.univers === u.id)).length} livres` : "Bientôt"}</small>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {premier ? (
           <section aria-label="Continuer ma lecture">
             <div className="continuer">
@@ -103,47 +115,9 @@ export default async function Accueil() {
           </section>
         )}
 
-        {une && (
-          <section className="une" aria-label="À la une">
-            {fondUne && <div className="une-fond" style={{ backgroundImage: `url(${fondUne})` }} aria-hidden />}
-            <Couverture livre={une} />
-            <div>
-              <div className="sur-titre">{mystere ? "Le livre mystère du mois" : "À la une"}</div>
-              <h2>{une.titre}</h2>
-              {une.resume && <p>{une.resume}</p>}
-              <div className="actions-une">
-                {acces.get(une.id) && <Link className="btn clair" href={`/lire/${une.slug}`}>▶ Lire</Link>}
-                <Link className="btn transp" href={`/livre/${une.slug}`}>ⓘ Plus d'infos</Link>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {enCours.length > 1 && (
-          <section className="section">
-            <h2>Mes lectures en cours</h2>
-            <div className="rangee">
-              {enCours.slice(1).map(({ l, p }) => (
-                <CarteLivre key={l.id} livre={leger(l)} acces pourcentage={p.pourcentage} favori={favoris.has(l.id)} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {mesFavoris.length > 0 && (
-          <section className="section">
-            <h2>❤ Mes favoris</h2>
-            <div className="rangee">
-              {mesFavoris.map((l) => (
-                <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori />
-              ))}
-            </div>
-          </section>
-        )}
-
         {top.length >= 3 && (
           <section className="section">
-            <h2>🏆 Le top 10 Kwélafé</h2>
+            <h2>❤️ Les livres les plus aimés</h2>
             <div className="top10">
               {top.map((l, k) => (
                 <Link key={l.id} href={`/livre/${l.slug}`} aria-label={`Numéro ${k + 1} : ${l.titre}`}>
@@ -154,49 +128,6 @@ export default async function Accueil() {
             </div>
           </section>
         )}
-
-        {nouveautes.length > 0 && (
-          <section className="section">
-            <h2>✨ Nouveautés</h2>
-            <div className="rangee">
-              {nouveautes.map((l) => (
-                <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori={favoris.has(l.id)} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {FORMATS.map((f) => {
-          const liste = sansDoublon(livres.filter((l) => formatDe(l) === f.id), acces).slice(0, 12);
-          if (!liste.length) return null;
-          return (
-            <section key={f.id} className="section rayon" style={{ ["--c" as any]: f.couleur, ["--cc" as any]: f.clair }}>
-              <div className="entete-rayon">
-                <span className="pastille-rayon">{f.emoji}</span>
-                <div><h2>{f.nom}</h2><p>{f.texte}</p></div>
-                <Link href={`/catalogue?format=${f.id}`} className="voir-tout">Voir tout ›</Link>
-              </div>
-              <div className="rangee">
-                {liste.map((l) => (
-                  <CarteLivre key={l.id} livre={leger(l)} acces={!!acces.get(l.id)} pourcentage={prog.get(l.id)?.pourcentage} favori={favoris.has(l.id)} montrerFormat={false} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-
-        <section className="section">
-          <h2>Les univers</h2>
-          <div className="univers">
-            {UNIVERS.map((u) => (
-              <Link key={u.id} href={`/catalogue?univers=${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
-                <span className="emoji" aria-hidden>{u.emoji}</span>
-                <b>{u.nom}</b>
-                <small>{livres.filter((l) => l.univers === u.id).length ? `${sansDoublon(livres.filter((l) => l.univers === u.id)).length} livres` : "Bientôt"}</small>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {!abonne && (
           <section className="section panneau panneau-couleur" style={{ textAlign: "center" }}>

@@ -1,3 +1,4 @@
+import EspaceCreateur from "@/components/EspaceCreateur";
 import Link from "next/link";
 import { groupeDeSession } from "@/lib/etablissements";
 import Avatar from "@/components/Avatar";
@@ -27,6 +28,7 @@ export default async function Compte() {
             <Avatar taille={64} cle="kw-avatar-eleve" />
             <div><div className="sur-titre">Espace élève</div><h1>{session.prenom || "Moi"}</h1></div>
           </header>
+        {session.admin && <EspaceCreateur />}
           <section className="panneau">
             <h2>🎒 Ma classe</h2>
             <p>{info ? <><b>{info.groupe.nom}</b> · {info.etab.nom}</> : "Classe introuvable"}</p>
@@ -145,12 +147,6 @@ export default async function Compte() {
           <a className="btn secondaire" href="mailto:kwelafe.contact@gmail.com">Contacter Kwélafé</a>
         </section>
 
-        {session.admin && (
-          <section className="panneau">
-            <h2>Espace éditeur</h2>
-            <a className="btn sauge" href="/admin">Gérer les livres</a>
-          </section>
-        )}
 
         <p style={{ textAlign: "center", marginTop: 26 }}>
           <a className="lien" href="/auth/logout">Me déconnecter</a>
