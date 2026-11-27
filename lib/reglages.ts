@@ -2,6 +2,7 @@
 export type Reglages = {
   taille: "normal" | "grand" | "tres-grand";
   theme: "clair" | "sepia" | "nuit";
+  couleur: "lave" | "lagon" | "cirques" | "flamboyant" | "vanille"; // couleur principale, aux couleurs de l'île
   animations: boolean;
   sons: boolean;
   format: "epub" | "pdf";
@@ -11,14 +12,14 @@ export type Reglages = {
   profilAuto: boolean; // demander « qui joue ? » à chaque ouverture
   apprendreSansCoeurs: boolean;
 };
-export const DEFAUT: Reglages = { taille: "normal", theme: "clair", animations: true, sons: true, format: "epub", objectif: 15, sansHorreur: false, limiteEnfants: 0, profilAuto: true, apprendreSansCoeurs: false };
+export const DEFAUT: Reglages = { taille: "normal", theme: "clair", couleur: "lave", animations: true, sons: true, format: "epub", objectif: 15, sansHorreur: false, limiteEnfants: 0, profilAuto: true, apprendreSansCoeurs: false };
 const CLE = "kw-reglages";
 export function lireReglages(): Reglages {
   try { return { ...DEFAUT, ...JSON.parse(localStorage.getItem(CLE) || "{}") }; } catch { return DEFAUT; }
 }
 export function appliquerReglages(r: Reglages) {
   const h = document.documentElement;
-  h.dataset.taille = r.taille; h.dataset.theme = r.theme; h.dataset.animations = r.animations ? "oui" : "non";
+  h.dataset.taille = r.taille; h.dataset.theme = r.theme; h.dataset.couleur = r.couleur || "lave"; h.dataset.animations = r.animations ? "oui" : "non";
   const an = "; path=/; max-age=31536000; samesite=lax";
   document.cookie = `kw_sans_horreur=${r.sansHorreur ? 1 : 0}${an}`;
   document.cookie = `kw_format=${r.format}${an}`;
