@@ -1,3 +1,4 @@
+import { sessionAdmin } from "@/lib/admin";
 import EspaceCreateur from "@/components/EspaceCreateur";
 import Link from "next/link";
 import { groupeDeSession } from "@/lib/etablissements";
@@ -19,6 +20,7 @@ const dateFr = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "nu
 
 export default async function Compte() {
   const { session, client, abonne, progs, favoris } = await contexte();
+  const editeur = !!(await sessionAdmin());
   if (session.eleve) {
     const info = await groupeDeSession(session);
     return (
@@ -28,7 +30,7 @@ export default async function Compte() {
             <Avatar taille={64} cle="kw-avatar-eleve" />
             <div><div className="sur-titre">Espace élève</div><h1>{session.prenom || "Moi"}</h1></div>
           </header>
-        {session.admin && <EspaceCreateur />}
+        {editeur && <EspaceCreateur />}
           <section className="panneau">
             <h2>🎒 Ma classe</h2>
             <p>{info ? <><b>{info.groupe.nom}</b> · {info.etab.nom}</> : "Classe introuvable"}</p>
