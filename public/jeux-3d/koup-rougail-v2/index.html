@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Koup Rougail v2 · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="./lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --nuit:#1b0f06; --or:#ffcf4a; --feu:#ff7a1a; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; background:#3a2414; font-family:"Baloo 2", "Avenir Next", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #gl { touch-action:none; }
+  #trace { pointer-events:none; }
+  .hud { position:fixed; top:max(78px, calc(env(safe-area-inset-top) + 64px)); left:max(30px, env(safe-area-inset-left)); right:max(30px, env(safe-area-inset-right)); display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; opacity:0; transition:opacity .4s; }
+  .hud.on { opacity:1; }
+  .score { font-size:clamp(34px, 7vw, 54px); font-weight:800; line-height:1; color:var(--or); text-shadow:0 3px 0 #7a3a08, 0 6px 18px rgba(0,0,0,.45); }
+  .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:4px; text-shadow:0 2px 6px rgba(0,0,0,.6); }
+  .vies { display:flex; gap:8px; margin-top:6px; }
+  .vies svg { width:30px; height:30px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.5)); transition:transform .3s, opacity .3s; }
+  .vies svg.perdue { opacity:.35; transform:scale(.8); }
+  .vies svg.perdue .x { opacity:1; }
+  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:max(9vh, 60px); text-align:center; pointer-events:none; transition:opacity .45s; }
+  .ecran.cache { opacity:0; } .ecran.cache * { pointer-events:none !important; }
+  .titre { font-size:clamp(58px, 14vw, 120px); font-weight:800; line-height:.9; color:var(--or); letter-spacing:.01em; text-shadow:0 5px 0 #a8460a, 0 10px 0 #5a2406, 0 18px 30px rgba(0,0,0,.5); transform:rotate(-3deg); }
+  .sous { margin-top:18px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.7); }
+  .consigne { position:fixed; left:0; right:0; padding:0 32px; bottom:calc(150px + env(safe-area-inset-bottom)); font-size:clamp(17px, 3.8vw, 22px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform:scale(1.06); } }
+  .btn { pointer-events:auto; margin-top:22px; border:0; border-radius:999px; padding:14px 34px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.4); cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .gros { font-size:clamp(64px, 16vw, 110px); font-weight:800; color:var(--or); line-height:1; text-shadow:0 5px 0 #a8460a, 0 14px 26px rgba(0,0,0,.5); margin-top:8px; }
+  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; }
+  .lien.discret { pointer-events:none; opacity:.4; font-size:13px; padding:6px 16px; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+  .pop { position:fixed; pointer-events:none; font-weight:800; transform:translate(-50%,-50%); text-shadow:0 3px 0 rgba(0,0,0,.35), 0 0 14px rgba(0,0,0,.4); animation:monte .9s ease-out forwards; white-space:nowrap; }
+  .pop.combo { color:var(--or); font-size:clamp(30px, 7vw, 48px); animation-duration:1.3s; }
+  .pop.pts { color:#fff; font-size:clamp(34px, 8vw, 52px); -webkit-text-stroke:2px rgba(40,14,0,.55); text-shadow:0 4px 0 rgba(0,0,0,.35), 0 0 22px currentColor; }
+  .pop.bonus { color:#ffe27a; font-size:clamp(24px, 5.6vw, 34px); -webkit-text-stroke:1.5px rgba(60,20,0,.6); }
+  @font-face { font-family:"Bangers"; src:url("./lib/bangers.woff2") format("woff2"); font-display:swap; }
+  .pop.nom { font-family:"Bangers", "Baloo 2", sans-serif; font-weight:400; font-size:clamp(17px, 3.6vw, 24px); letter-spacing:.07em;
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4, #ff3b3b); background-size:200% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; text-shadow:none;
+    filter:drop-shadow(0 1.5px 0 #2a1000) drop-shadow(1px 0 0 #2a1000) drop-shadow(-1px 0 0 #2a1000) drop-shadow(0 0 4px rgba(0,0,0,.5));
+    animation:monte 1.4s ease-out forwards, arcenciel 1.4s linear forwards; }
+  @keyframes arcenciel { from { background-position:0 0; } to { background-position:-100% 0; } }
+  .pop.or { color:#ffd84a; font-size:clamp(34px, 8vw, 56px); text-shadow:0 4px 0 #8a5a00, 0 0 30px #ffcf4a; }
+  #dore { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .35s; background:radial-gradient(ellipse at center, rgba(255,215,90,0) 45%, rgba(255,190,40,.38) 100%); box-shadow:inset 0 0 60px 10px rgba(255,200,60,.5); }
+  #barreOr { position:fixed; left:50%; transform:translateX(-50%); top:max(26px, calc(env(safe-area-inset-top) + 10px)); width:min(46vw, 260px); height:10px; border-radius:9px; background:rgba(0,0,0,.35); overflow:hidden; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #barreOr div { height:100%; width:100%; background:linear-gradient(90deg, #fff1a8, #ffc21e); box-shadow:0 0 12px #ffcf4a; }
+  #vitre, #fanions { pointer-events:none; }
+  #fond, #fanions { transition:filter .5s; }
+  body.ralenti-or #fond, body.ralenti-or #fanions { filter:saturate(.3) brightness(.8); }
+  .btn-son { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); right:max(26px, env(safe-area-inset-right)); width:44px; height:44px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(20,10,2,.6); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .hud { top:max(84px, calc(env(safe-area-inset-top) + 70px)) !important; }
+  .pop.aie { color:#ff5a3a; font-size:clamp(26px, 6vw, 40px); }
+  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 30% { transform:translate(-50%,-55%) scale(1); } 100% { opacity:0; transform:translate(-50%,-140%) scale(1); } }
+  #flash { position:fixed; inset:0; background:#fff3d0; opacity:0; pointer-events:none; }
+  #charge { position:fixed; left:0; right:0; bottom:calc(96px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; font-size:15px; opacity:.85; text-shadow:0 2px 6px rgba(0,0,0,.7); pointer-events:none; }
+  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
+  .bonus.on { display:flex; }
+  .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
+  .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
+  .bbtn.vide { opacity:.38; }
+  .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
+  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
+  .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
+  .niveauHud.saute { animation:sauteN .5s; } @keyframes sauteN { 40% { transform:scale(1.35); } }
+  .bandeau { position:fixed; left:50%; transform:translateX(-50%); top:max(150px, calc(env(safe-area-inset-top) + 136px)); padding:6px 20px; border-radius:14px; background:rgba(40,20,0,.6); color:#ffe27a; font-weight:800; font-size:clamp(16px,3.8vw,22px); text-shadow:0 2px 0 #5a2a00; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; z-index:6; }
+  .bandeau.on { opacity:1; }
+  .ardoise { position:fixed; left:50%; transform:translateX(-50%); top:max(84px, calc(env(safe-area-inset-top) + 70px)); width:max-content; max-width:min(94vw, 560px); box-sizing:border-box; padding:6px 14px 8px; border-radius:16px;
+    background:linear-gradient(#2f3a33, #1f2823); border:4px solid #8a5a2b; box-shadow:0 6px 18px rgba(0,0,0,.45), inset 0 0 18px rgba(0,0,0,.5); text-align:center; pointer-events:none; opacity:0; transition:opacity .3s; z-index:5; }
+  .ardoise.on { opacity:1; }
+  @media (max-width:640px) { .ardoise { top:max(150px, calc(env(safe-area-inset-top) + 134px)); } }
+  .niveauHud { display:none; }
+  .ardoise .rt { font-family:"Bangers", "Baloo 2", sans-serif; letter-spacing:.06em; font-size:clamp(20px, 4.6vw, 28px); color:#ffe27a; }
+  .ardoise .ri { display:flex; flex-wrap:wrap; gap:2px 10px; justify-content:center; margin-top:2px; font-size:clamp(13px, 3.4vw, 17px); font-weight:700; color:#f4efe2; }
+  .ardoise .ri span.ok { color:#7be36b; text-decoration:line-through; text-decoration-thickness:2px; }
+  .ardoise .ri span.saute { animation:saute .35s ease-out; display:inline-block; }
+  @keyframes saute { 40% { transform:scale(1.35); } }
+  .plat { position:fixed; left:50%; top:46%; transform:translate(-50%,-50%) scale(.4); opacity:0; pointer-events:none; text-align:center; transition:all .45s cubic-bezier(.2,1.6,.4,1); z-index:6; width:min(88vw, 520px); }
+  .plat.on { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .plat-bol { font-size:clamp(70px, 18vw, 120px); filter:drop-shadow(0 8px 14px rgba(0,0,0,.5)); }
+  .plat-nom { font-family:"Bangers", "Baloo 2", sans-serif; letter-spacing:.06em; font-size:clamp(28px, 7vw, 46px); background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 #2a1000) drop-shadow(0 0 6px rgba(0,0,0,.6)); }
+  .plat-fait { margin:8px auto 0; padding:8px 14px; border-radius:14px; background:rgba(30,10,0,.78); font-size:clamp(14px, 3.4vw, 17px); font-weight:600; line-height:1.35; }
+  .plat-fait:empty { display:none; }
+  .pop.brule { color:#ff6a3a; font-size:clamp(26px, 6vw, 38px); -webkit-text-stroke:1.5px rgba(40,10,0,.7); }
+  .bandeau { top:max(190px, calc(env(safe-area-inset-top) + 176px)); }
+  @media (max-width:640px) { .bandeau { top:max(262px, calc(env(safe-area-inset-top) + 248px)); } }
+  .logo { width:min(46vw, 230px); margin-top:14px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+  .btn.mode { display:block; width:min(320px,80vw); margin-top:14px; padding:12px 22px; border-radius:26px; }
+  .btn.mode b { display:block; font-size:21px; } .btn.mode small { display:block; margin-top:4px; font-size:14px; font-weight:600; opacity:.85; }
+  .btn.mode.calme { background:linear-gradient(#c9f5b0,#5fc84a); box-shadow:0 5px 0 #2d7a22,0 10px 22px rgba(0,0,0,.45); color:#0f3a0a; }
+  .btn.mode.defi { background:linear-gradient(#ffb08a,#ff5a2a); box-shadow:0 5px 0 #a02a08,0 10px 22px rgba(0,0,0,.45); color:#3a0a00; }
+  .petits { display:flex; gap:10px; margin-top:6px; } .btn.mini { padding:10px 20px; font-size:16px; margin-top:12px; background:linear-gradient(#b8f0ff,#3fb4e6); box-shadow:0 4px 0 #1f6f94; color:#0b2a3a; }
+  .voile { pointer-events:auto; padding:18px 22px 22px; border-radius:26px; background:rgba(30,10,0,.96); max-width:min(520px,88vw); max-height:80vh; overflow:auto; margin-top:-4vh; touch-action:pan-y; }
+  .titre2 { font-size:48px; font-weight:800; color:var(--or); line-height:1; text-shadow:0 4px 0 #a8460a; } .petit { font-size:15px; font-weight:600; margin-top:6px; }
+  .alb { display:grid; grid-template-columns:repeat(2,1fr); gap:6px 12px; text-align:left; font-size:14px; font-weight:600; margin-top:10px; } .alb .vide { opacity:.55; }
+  .curs { display:flex; align-items:center; gap:10px; margin:12px 0; font-weight:700; text-align:left; } .curs span { width:78px; } .curs input { flex:1; accent-color:#ffb21e; height:30px; }
+  .cred { font-size:13px; font-weight:600; text-align:left; line-height:1.35; } .cred p { margin:7px 0; } .cred b { color:var(--or); }
+</style>
+</head>
+<body>
+<canvas id="fond"></canvas>
+<canvas id="gl"></canvas>
+<canvas id="trace"></canvas>
+<div id="flash"></div>
+<div id="dore"></div>
+<div id="barreOr"><div></div></div>
+
+<div class="hud" id="hud">
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div><div class="vies" id="vies"></div><div class="niveauHud" id="niveauHud">Niveau 1</div></div>
+</div>
+
+<div class="ecran" id="menu">
+  <div class="titre">Koup Rougail</div>
+  <div class="sous">Tranche les bons ingrédients de la recette</div>
+  <div class="consigne">Coupe la tomate d'un coup de doigt pour jouer</div>
+  <button class="btn mode calme zone-interactive" id="bCalme"><b>Mi vé zoué trankil</b><small>Sans pression : étoiles et carnet des recettes</small></button>
+  <button class="btn mode defi zone-interactive" id="jouer"><b>Mi rode problèm</b><small>Minuteur, vies, grand repas du dimanche, records</small></button>
+  <div class="petits"><button class="btn mini zone-interactive" id="bAlbum">Carnet</button><button class="btn mini zone-interactive" id="bSonOpt">Son</button><button class="btn mini zone-interactive" id="bCredits">Crédits</button></div>
+</div>
+
+<div class="ecran cache" id="fin">
+  <div class="sous" style="margin-top:0">Partie terminée</div>
+  <div class="gros" id="scoreFin">0</div>
+  <div class="sous" id="recordFin">Record : 0</div>
+  <div class="consigne">Coupe la tomate pour rejouer</div>
+  <button class="btn zone-interactive" id="rejouer">Rejouer</button>
+  <button class="btn mini zone-interactive" id="menuFin">Menu</button>
+</div>
+
+<div class="ecran cache" id="panAlbum"><div class="voile"><div class="titre2">CARNET</div><div class="petit" id="albCompte"></div><div id="albListe" class="alb"></div><button class="btn mini" id="bAlbFerme">Retour</button></div></div>
+<div class="ecran cache" id="panSon"><div class="voile"><div class="titre2">SON</div>
+  <div class="curs"><span>Musique</span><input type="range" id="rMus" min="0" max="100"></div>
+  <div class="curs"><span>Effets</span><input type="range" id="rFx" min="0" max="100"></div><button class="btn mini" id="bSonFerme">Retour</button></div></div>
+<div class="ecran cache" id="panCredits"><div class="voile"><div class="titre2">CRÉDITS</div><div class="cred">
+  <p><b>Jeu</b> : Kwélafé Production. Code, interface, recettes et textes écrits pour Kwélafé.</p>
+  <p><b>Ingrédients</b> : 15 modèles 3D modélisés par programme dans Blender pour Kwélafé.</p>
+  <p><b>Décor</b> : cuisine créée pour Kwélafé (image générée, usage commercial autorisé par l'abonnement).</p>
+  <p><b>Sons et musiques</b> : générés avec ElevenLabs pour Kwélafé, dans l'esprit du maloya et du séga. Aucune voix de synthèse.</p>
+  <p><b>Recettes</b> : repères tirés de reunion.fr, france.fr et ileauxepices.com, reformulés.</p>
+  <p><b>Moteurs</b> : Three.js et PixiJS (licence MIT).</p>
+  <p><b>Police</b> : Bangers, Baloo 2 (SIL Open Font License 1.1).</p></div><button class="btn mini" id="bCrFerme">Retour</button></div></div>
+<button class="btn mini zone-interactive" id="bTerminer" style="display:none;position:fixed;z-index:20;left:50%;transform:translateX(-50%);top:max(22px,env(safe-area-inset-top))">Terminer</button>
+<div class="bandeau" id="bandeau"></div>
+<div id="recette" class="ardoise"><div class="rt"><span id="recetteNom"></span><span id="recetteTemps"></span></div><div class="ri" id="recetteIng"></div></div>
+<div id="plat" class="plat"><div class="plat-bol">🍲</div><div class="plat-nom" id="platNom"></div><div class="plat-fait" id="platFait"></div></div>
+<div class="bonus" id="bonus">
+  <button class="bbtn zone-interactive" id="bCoup" aria-label="Grand coup de lame">🔪</button>
+  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
+  <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
+</div>
+<div id="charge">On prépare la cuisine…</div>
+<button class="retour-jeux zone-interactive" id="retourJeux" aria-label="Retour aux jeux">‹ Jeux</button>
+<style>.retour-jeux{position:fixed;z-index:20;top:max(22px,env(safe-area-inset-top));left:max(26px,env(safe-area-inset-left));min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);background:rgba(20,10,2,.6);color:#fff;font:800 16px "Baloo 2",system-ui,sans-serif;cursor:pointer}</style>
+<script>
+document.getElementById('retourJeux').addEventListener('pointerup', function () {
+  try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {}
+  location.href = '/jeux';
+});
+</script>
+<button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
+<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script src="../commun/pixi.min.js"></script>
+<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { GestionnairePerf, dprCible, appareil, afficherSecours, reveillerAudio, endormirAudio, journal, libererCanvas } from '../commun/performances.js';
+
+{
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const TEST = new URLSearchParams(location.search).has('test');
+// Qualité : 2 = haute, 1 = moyenne, 0 = basse. Baisse toute seule si le jeu ralentit.
+let QUALITE = (() => {
+  const f = new URLSearchParams(location.search).get('qualite'); if (f !== null) return Math.max(0, Math.min(2, +f));
+  const c = navigator.hardwareConcurrency || 4; const q = c >= 6 ? 2 : c >= 4 ? 1 : 0;
+  return appareil.iphone ? Math.min(q, 1) : q; // iPhone : on démarre en qualité moyenne
+})();
+// Mémoire : les 32 modèles d'origine (textures 1024 px) demandaient plus de 1 Go de mémoire graphique
+// une fois tous chargés, ce qui faisait planter Safari sur iPhone (écran noir puis rechargement).
+// Sur téléphone et tablette : modèles aux textures 512 px et nombre de fruits chargés limité,
+// renouvelés pendant la partie pour garder toute la variété.
+const MOBILE = appareil.ios || appareil.tactile;
+const PARAMS = new URLSearchParams(location.search);
+const DOSSIER_MODELES = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? '../koup-koup-3/models/mobile/' : '../koup-koup-3/models/';
+const DOSSIER_PROPRES = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? '../koup-rougail/models/mobile/' : '../koup-rougail/models/'; // oignon, ail, gingembre, curcuma, mangue verte
+const MAX_CHARGES = +PARAMS.get('max') || 15; // les 15 ingrédients du jeu restent en mémoire
+const PROTEGES = new Set(['tomate']); // le menu
+const ratioRendu = () => Math.min(dprCible(2), [1, 1.4, 1.75][QUALITE]);
+const qx = () => [0.45, 0.75, 1][QUALITE];
+
+// ---------------------------------------------------------------- rendu
+const glc = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: TEST });
+renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(ratioRendu());
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+function construireEnvironnement() {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const ancien = scene.environment;
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  if (ancien) ancien.dispose();
+  pmrem.dispose();
+}
+construireEnvironnement();
+scene.environmentIntensity = 0.8;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+camera.position.set(0, 0, 14);
+const sun = new THREE.DirectionalLight(0xfff0d0, 2.8); sun.position.set(3, 6, 8); scene.add(sun);
+const rim = new THREE.DirectionalLight(0xbfdcff, 1.6); rim.position.set(-6, 3, -4); scene.add(rim);
+scene.add(new THREE.HemisphereLight(0xfff4dc, 0x6a4020, 0.4));
+// post-traitement : halo lumineux léger (seuls les éclats très clairs brillent) et contours lissés
+const cible = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, format: THREE.RGBAFormat });
+const composer = new EffectComposer(renderer, cible); const passeRendu = new RenderPass(scene, camera); passeRendu.clearAlpha = 0; composer.addPass(passeRendu);
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.35, 1.05); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(new SMAAPass());
+const POSTFX = !new URLSearchParams(location.search).has('simple');
+
+let W = 0, H = 0, viewH = 10, viewW = 10;
+const fond = $('fond'), trace = $('trace');
+// deux scènes PixiJS : « dessous » (décor, fanions, taches de jus qui restent) sous le jeu 3D, « dessus » (gouttes de vitre, traînée du geste) au-dessus
+let texCuisine = null, sprCuis = null, gVeil = null, texVignette = null, sprVig = null, pd = null, pu = null, rtC = null, rtV = null, sprC, sprV, gFond, gFan, gT, gS, gFadeC, gVS, gFadeV, gGout, gTr, fadeC = 0, fadeV = 0;
+const lentilles = []; let lensSrc = null;
+const hexc = (c, dl = 0) => { const k = dl ? c.clone().offsetHSL(0, 0, dl) : c; return (Math.round(Math.max(0, Math.min(1, k.r)) * 255) << 16) | (Math.round(Math.max(0, Math.min(1, k.g)) * 255) << 8) | Math.round(Math.max(0, Math.min(1, k.b)) * 255); };
+function ell(g, cx, cy, rx, ry, ang, n = 20) { const ca = Math.cos(ang), sa = Math.sin(ang), pts = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832, lx = Math.cos(a) * rx, ly = Math.sin(a) * ry; pts.push(cx + lx * ca - ly * sa, cy + lx * sa + ly * ca); } return g.poly(pts); }
+function initPixi() {
+  const dpr = dprCible(2);
+  const a1 = new PIXI.Application(), a2 = new PIXI.Application();
+  Promise.all([
+    a1.init({ canvas: fond, width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: dpr, autoDensity: true, autoStart: false }),
+    a2.init({ canvas: trace, width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: dpr, autoDensity: true, autoStart: false }),
+  ]).then(() => {
+    gFond = new PIXI.Graphics(); gFan = new PIXI.Graphics(); sprC = new PIXI.Sprite(); sprC.alpha = 0.92; gT = new PIXI.Graphics();
+    a1.stage.addChild(gFond, gFan, sprC, gT); sprCuis = new PIXI.Sprite(); gVeil = new PIXI.Graphics(); a1.stage.addChildAt(sprCuis, 1); a1.stage.addChildAt(gVeil, 2);
+    gS = new PIXI.Graphics(); gFadeC = new PIXI.Graphics(); gFadeC.blendMode = 'erase';
+    new PIXI.Container().addChild(gFadeC);   // le mode « erase » ne s'applique qu'à un enfant : chaque pinceau d'effacement a donc son conteneur
+    sprV = new PIXI.Sprite(); gGout = new PIXI.Graphics(); gTr = new PIXI.Graphics();
+    gVS = new PIXI.Graphics(); gFadeV = new PIXI.Graphics(); gFadeV.blendMode = 'erase'; new PIXI.Container().addChild(gFadeV);
+    a2.stage.addChild(sprV, gGout, gTr);
+    // aucun besoin du système d'événements de Pixi : il écoutait les doigts pour rien et pouvait gêner le jeu
+    for (const ap of [a1, a2]) { try { ap.renderer.events.autoPreventDefault = false; ap.renderer.events.destroy(); } catch (e) {} ap.canvas.style.touchAction = ''; ap.canvas.style.pointerEvents = 'none'; }
+    pd = a1; pu = a2; calerPixi(); PIXI.Assets.load('./fond-cuisine.webp').then(t => { texCuisine = t; peindreFond(); }).catch(() => {});
+  });
+}
+function calerPixi() {
+  if (!pd) return; const dpr = dprCible(2);
+  pd.renderer.resize(W, H, dpr); pu.renderer.resize(W, H, dpr);
+  if (rtC) rtC.destroy(true); if (rtV) rtV.destroy(true);
+  rtC = PIXI.RenderTexture.create({ width: W, height: H, resolution: dpr }); sprC.texture = rtC;
+  rtV = PIXI.RenderTexture.create({ width: W, height: H, resolution: dpr }); sprV.texture = rtV;
+  // les deux calques persistants doivent démarrer transparents (sinon ils recouvrent le décor de noir)
+  pd.renderer.render({ container: new PIXI.Container(), target: rtC, clear: true, clearColor: [0, 0, 0, 0] });
+  pu.renderer.render({ container: new PIXI.Container(), target: rtV, clear: true, clearColor: [0, 0, 0, 0] });
+  for (const l of lentilles) l.tx = null; lensSrc = null;
+  peindreFond();
+}
+// ajoute au calque persistant (rt) ce que contient g, puis vide g
+function graver(app, rt, g) { app.renderer.render({ container: g, target: rt, clear: false }); g.clear(); }
+// fait pâlir un calque persistant ; l'effacement est cumulé pour dépasser la précision 8 bits
+function pâlir(app, rt, g, a) { g.clear(); g.rect(0, 0, W, H).fill({ color: 0, alpha: Math.min(1, a) }); app.renderer.render({ container: g.parent, target: rt, clear: false }); g.clear(); }
+function resize() {
+  W = innerWidth; H = innerHeight;
+  const dpr = dprCible(2); // 1,5 au plus sur iPhone : 7 calques plein écran
+  renderer.setSize(W, H, false); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = MOBILE ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
+  camera.aspect = W / H;
+  // garder une largeur jouable en portrait
+  camera.fov = W < H ? Math.min(62, 40 * Math.max(1, 0.75 / camera.aspect)) : 40;
+  camera.updateProjectionMatrix();
+  viewH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  viewW = viewH * camera.aspect;
+  calerPixi();
+}
+
+// Décor : étal en bois du marché forain, fanions aux couleurs de La Réunion
+function peindreFond() {
+  if (!gFond) return; const g = gFond; g.clear();
+  g.rect(0, 0, W, H).fill(0x3d220e);
+  if (texCuisine && sprCuis) { sprCuis.texture = texCuisine; const k = Math.max(W / texCuisine.width, H / texCuisine.height); sprCuis.scale.set(k); sprCuis.x = (W - texCuisine.width * k) * 0.42; sprCuis.y = (H - texCuisine.height * k) / 2; sprCuis.visible = true; } else if (sprCuis) sprCuis.visible = false;
+  if (gVeil) { gVeil.clear(); gVeil.rect(0, 0, W, H).fill({ color: 0x1e0e04, alpha: 0.18 }); }
+  if (!texVignette) { const N = 128, d = new Uint8Array(N * N * 4);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const t = Math.max(0, Math.min(1, (Math.hypot(x / N - 0.5, y / N - 0.46) - 0.17) / 0.33)), al = 0.06 + 0.52 * t, o = (y * N + x) * 4;
+      d[o] = (255 + (10 - 255) * t) * al; d[o + 1] = (200 + (4 - 200) * t) * al; d[o + 2] = (110 - 110 * t) * al; d[o + 3] = al * 255; }
+    texVignette = new PIXI.Texture({ source: new PIXI.BufferImageSource({ resource: d, width: N, height: N, alphaMode: 'premultiplied-alpha', scaleMode: 'linear' }) }); }
+  if (!sprVig) { sprVig = new PIXI.Sprite(texVignette); gFond.parent.addChildAt(sprVig, 3); }
+  sprVig.width = W; sprVig.height = H;
+}
+
+// Fanions aux couleurs de La Réunion qui ondulent doucement au vent
+function dessinerFanions(t) { return;
+  if (!gFan) return; const g = gFan; g.clear();
+  const cols = [0x1f5fbf, 0xffd21e, 0xe8322a, 0x1f9a4a];
+  const y0 = Math.max(10, H * 0.015), sag = 26, n = Math.ceil(W / 46) + 1;
+  const vent = k => Math.sin(t * 1.6 + k * 0.9) * 0.18 + Math.sin(t * 0.7 + k * 0.33) * 0.1;
+  for (let i = 0; i <= 40; i++) { const u = i / 40, y = y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2); i ? g.lineTo(u * W, y) : g.moveTo(u * W, y); }
+  g.stroke({ width: 2, color: 0xfff0d2, alpha: .6 });
+  for (let i = 0; i < n; i++) {
+    const u = (i + .5) / n, x = u * W, y = y0 + Math.sin(u * Math.PI) * (sag + Math.sin(t * 0.8) * 2);
+    const a = vent(i), bx = x + Math.sin(a) * 30, by = y + Math.cos(a) * 30;
+    g.poly([x - 16, y, x + 16, y, bx, by]).fill(cols[i % 4]);
+    g.poly([x - 16, y, x, y, bx, by]).fill({ color: 0xffffff, alpha: 0.14 + a * 0.3 });
+    g.poly([x, y, x + 16, y, bx, by]).fill({ color: 0, alpha: .15 });
+  }
+}
+
+// ---------------------------------------------------------------- sons (synthétisés, sans voix)
+let S = { recordD: 0, etoiles: 0, carnet: {}, mus: 0.6, fx: 0.9 };
+try { S = Object.assign(S, JSON.parse(localStorage.getItem('kr2_s') || '{}')); } catch (e) {}
+const SV = { get mus() { return S.mus; }, get fx() { return S.fx; } };
+const sauveS = () => { try { localStorage.setItem('kr2_s', JSON.stringify(S)); } catch (e) {} };
+let modeJeu = 'defi', etoilesC = 0, coupesC = 0;
+let actx = null, maitre = null, fxG = null, musG = null, bruit = null, filtreRalenti = null, sonCoupe = false;
+try { sonCoupe = localStorage.getItem('kr2_son') === 'non'; } catch (e) {}
+function audio() {
+  if (actx) { reveillerAudio(actx); return; } // iOS : « suspended » ou « interrupted »
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    // chaîne : sons -> maître -> filtre (ralenti) -> compresseur -> haut-parleurs
+    maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7;
+    filtreRalenti = actx.createBiquadFilter(); filtreRalenti.type = 'lowpass'; filtreRalenti.frequency.value = 20000;
+    const comp = actx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+    fxG = actx.createGain(); musG = actx.createGain(); fxG.gain.value = SV.fx; musG.gain.value = SV.mus; fxG.connect(maitre); musG.connect(maitre);
+    maitre.connect(filtreRalenti); filtreRalenti.connect(comp); comp.connect(actx.destination);
+    bruit = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
+    const d = bruit.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    setTimeout(chargerSons, 0); musVoulue = musVoulue || 'musique-calme';
+  } catch (e) { actx = null; }
+}
+const hauteur = () => 2 ** (rnd(-2.5, 2.5) / 12); // petite variation à chaque son
+function sNoise(dur, f0, f1, q, vol, type = 'bandpass', when = 0) {
+  if (!actx) return; const t = actx.currentTime + when;
+  const s = actx.createBufferSource(); s.buffer = bruit;
+  const f = actx.createBiquadFilter(); f.type = type; f.Q.value = q;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(f); f.connect(g); g.connect(fxG); s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.02);
+}
+function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
+  if (!actx) return; const t = actx.currentTime + when;
+  const o = actx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+  o.frequency.exponentialRampToValueAtTime(freq * glide, t + dur);
+  const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(fxG); o.start(t); o.stop(t + dur + 0.02);
+}
+// Familles de fruits pour le son de la découpe
+const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
+const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
+const son = {
+  // le « whoosh » suit la vitesse du doigt
+  swoosh: (v = 1) => { const k = Math.min(2.2, Math.max(0.6, v)); sNoise(0.14 + 0.06 / k, 700 * k, 3400 * k, 1.1, 0.07 + 0.06 * Math.min(k, 1.6)); },
+  coupe: id => {
+    const h = hauteur();
+    if (CROQUANTS.has(id)) {          // croquant : petits craquements secs
+      for (let i = 0; i < 3; i++) sNoise(0.035, 4200 * h, 2600 * h, 4, 0.32 - i * 0.07, 'bandpass', i * 0.022);
+      sTone(380 * h, 0.06, 0.12, 'triangle', 0, 0.6);
+    } else if (SOURDS.has(id)) {      // sourd : chair dense et épaisse
+      sTone(95 * h, 0.22, 0.45, 'sine', 0, 0.55); sNoise(0.18, 900 * h, 200, 0.8, 0.4, 'lowpass');
+    } else {                          // juteux : chair qui s'ouvre et jus qui gicle
+      sNoise(0.2, 2400 * h, 500, 1.4, 0.38, 'bandpass'); sNoise(0.12, 6000, 2500, 2, 0.12);
+      sTone(170 * h, 0.1, 0.25, 'sine', 0, 0.5);
+      for (let i = 0; i < 2; i++) sTone(rnd(500, 900) * h, 0.05, 0.05, 'sine', 0.04 + i * 0.03, 1.8); // petites bulles
+    }
+  },
+  note: n => sTone(523 * 2 ** ([0, 4, 7, 12, 16, 19, 24][Math.min(6, n - 1)] / 12), 0.2, 0.15, 'triangle'),
+  combo: n => { [0, 4, 7, 12, 16].slice(0, Math.min(5, n)).forEach((st, i) => sTone(523 * 2 ** (st / 12), 0.22, 0.2, 'triangle', i * 0.06)); },
+  rate: () => sTone(220, 0.35, 0.22, 'sawtooth', 0, 0.5),
+  roche: () => { sNoise(0.9, 900, 60, 0.7, 0.9, 'lowpass'); sTone(70, 0.6, 0.6, 'sine', 0, 0.4); sNoise(0.5, 3000, 800, 1, 0.2, 'bandpass', 0.05); },
+  lance: () => sNoise(0.12, 300, 900, 0.8, 0.05),
+  or: () => { [0, 4, 7, 12, 16, 19, 24].forEach((st, i) => sTone(1046 * 2 ** (st / 12), 0.5, 0.11, 'sine', i * 0.045)); sTone(110, 1.2, 0.22, 'sine', 0, 0.5); },
+  bonus: () => { sTone(988, 0.08, 0.12, 'square'); sTone(1318, 0.18, 0.12, 'square', 0.07); },
+  goutte: () => sTone(rnd(700, 1100), 0.09, 0.05, 'sine', 0, 0.55),
+  ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
+};
+const sons = {}; let sonsDemandes = false;
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'musique-calme', 'musique-intense', 'swoosh', 'lance', 'rate', 'combo', 'bonus', 'goutte', 'plat', 'brule', 'gong', 'tic']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === musVoulue) musique(n); if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(fxG); s.start(); } }).catch(() => {}); }
+function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(fxG); s.start(); return true; }
+son.coupe = (id, rayon = 0.6) => { const v = Math.max(0.75, Math.min(1.25, 1.35 - rayon * 0.6)); const n = CROQUANTS.has(id) ? 'croquant-' + (1 + (Math.random() * 2 | 0)) : SOURDS.has(id) ? 'sourd' : 'juteux-' + (1 + (Math.random() * 2 | 0)); jouer(n, 0.95, v); };
+son.roche = () => { jouer('roche', 1); };
+son.or = () => { jouer('or', 0.9); };
+son.swoosh = (v = 1) => { jouer('swoosh', Math.min(0.7, 0.25 + 0.2 * v), Math.min(1.3, 0.8 + v * 0.25)); };
+son.lance = () => { jouer('lance', 0.45); };
+son.rate = () => { jouer('rate', 0.7); };
+son.combo = () => { jouer('combo', 0.8); };
+son.note = n => { jouer('combo', 0.35, 0.8 * 2 ** ([0, 4, 7, 12, 16, 19, 24][Math.min(6, n - 1)] / 12)); };
+son.bonus = () => { jouer('bonus', 0.8); };
+son.goutte = () => { jouer('goutte', 0.25, rnd(0.9, 1.2)); };
+son.ploc = () => { jouer('goutte', 0.12, rnd(0.9, 1.3)); };
+son.plat = () => { jouer('plat', 0.95); };
+son.brule = () => { jouer('brule', 0.9); };
+son.gong = () => { jouer('gong', 0.95); };
+son.tic = () => { jouer('tic', 0.55); };
+let musCur = null, musVoulue = 'musique-calme';
+function musique(n) {
+  musVoulue = n; if (!actx || !musG) return; if (musCur && musCur.n === n) return;
+  const t = actx.currentTime;
+  if (musCur) { try { musCur.g.gain.setValueAtTime(musCur.g.gain.value, t); musCur.g.gain.linearRampToValueAtTime(0, t + 0.9); musCur.s.stop(t + 1); } catch (e) {} musCur = null; }
+  if (!n || !sons[n]) return;
+  const src = actx.createBufferSource(), g = actx.createGain(); src.buffer = sons[n]; src.loop = true; g.gain.value = 0; g.gain.linearRampToValueAtTime(1, t + 1.2); src.connect(g); g.connect(musG); src.start(); musCur = { n, s: src, g };
+}
+let dernierPloc = 0;
+function ploc() { const t = performance.now(); if (t - dernierPloc > 70) { dernierPloc = t; son.ploc(); } }
+// Ambiance très légère de marché forain : brouhaha lointain sans paroles et quelques oiseaux
+function ambianceMarche() {
+  const s = actx.createBufferSource(); s.buffer = bruit; s.loop = true;
+  const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 520; f.Q.value = 0.6;
+  const g = actx.createGain(); g.gain.value = 0.035;
+  const lfo = actx.createOscillator(), lg = actx.createGain(); lfo.frequency.value = 0.13; lg.gain.value = 0.012;
+  lfo.connect(lg); lg.connect(g.gain); lfo.start();
+  s.connect(f); f.connect(g); g.connect(fxG); s.start();
+  const oiseau = () => { if (Math.random() < 0.6) { const b = rnd(2400, 3600); sTone(b, 0.07, 0.025, 'sine', 0, 1.35); sTone(b * 1.1, 0.06, 0.02, 'sine', 0.1, 0.8); } setTimeout(oiseau, rnd(2500, 7000)); };
+  setTimeout(oiseau, 3000);
+}
+function majBoutonSon() {
+  $('btnSon').innerHTML = sonCoupe
+    ? '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="m16 9 6 6m0-6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+    : '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+}
+
+// ---------------------------------------------------------------- chargement des fruits
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+let catalogue = [];           // tous les fruits du fichier
+const prets = [];             // fruits chargés et prêts à lancer
+const cache = {};
+function preparer(d, g) {
+  g.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const m = o.material, p = new THREE.MeshPhysicalMaterial();
+    THREE.MeshStandardMaterial.prototype.copy.call(p, m);
+    if (m.name.endsWith('_peau')) { p.clearcoat = d.clearcoat; p.clearcoatRoughness = 0.22; if (d.sheen > 0) { p.sheen = d.sheen; p.sheenRoughness = 0.6; p.sheenColor = new THREE.Color(0xffffff); } }
+    else if (m.name.endsWith('_chair')) { p.clearcoat = 0.9; p.clearcoatRoughness = 0.1; }
+    o.material = p; o.frustumCulled = false;
+  });
+  const entier = g.scene.getObjectByName('entier');
+  const box = new THREE.Box3().setFromObject(entier);
+  const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+  const maxd = Math.max(size.x, size.y, size.z);
+  const taille = 1.3 * (1 + 0.18 * THREE.MathUtils.clamp(Math.log2(d.taille_reelle_m / 0.07), -1.2, 2.5));
+  const k = taille / maxd;
+  const make = name => { const o = g.scene.getObjectByName(name).clone(); o.position.sub(center); const w = new THREE.Group(); const s = new THREE.Group(); s.scale.setScalar(k); s.add(o); w.add(s); return w; };
+  const rayon = Math.max(0.5 * taille * 0.9, 0.5);
+  return { d, gltf: g.scene, entier: make('entier'), A: make('moitie_A'), B: make('moitie_B'), rayon, jus: new THREE.Color(d.couleur_jus), charge: performance.now() };
+}
+async function charger(d) {
+  if (cache[d.id]) return cache[d.id];
+  const g = await loader.loadAsync((d.source ? DOSSIER_MODELES : DOSSIER_PROPRES) + (d.fichier_web || d.fichier));
+  return (cache[d.id] = preparer(d, g));
+}
+/** Libère un fruit chargé (géométries, matières, textures) quand on fait de la place. */
+function oublier(f) {
+  delete cache[f.d.id];
+  const i = prets.indexOf(f); if (i >= 0) prets.splice(i, 1);
+  const textures = new Set();
+  const vider = racine => racine.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) { for (const v of Object.values(o.material)) if (v && v.isTexture) textures.add(v); o.material.dispose(); }
+  });
+  [f.gltf, f.entier, f.A, f.B].forEach(vider);
+  textures.forEach(t => { t.dispose(); if (t.image && t.image.close) t.image.close(); });
+}
+const enVol = f => objets.some(o => o.vivant && o.fruit === f) || moities.some(m => m.fruit === f);
+
+// ---------------------------------------------------------------- roche du volcan (à ne pas couper)
+function rocheTexture() {
+  const N = 512, d = new Uint8Array(N * N * 4); for (let i = 3; i < d.length; i += 4) d[i] = 255;
+  const stamp = (x, y, r, c, a, hard) => { for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(N - 1, Math.ceil(y + r)); j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(N - 1, Math.ceil(x + r)); i++) {
+    const q = Math.hypot(i + 0.5 - x, j + 0.5 - y) / r; if (q > 1) continue; const f = (hard ? 1 : (1 - q) * (1 - q)) * a, o = (j * N + i) * 4;
+    for (let k = 0; k < 3; k++) d[o + k] = Math.min(255, d[o + k] + c[k] * f); } };
+  for (let i = 0; i < 26; i++) {
+    let x = Math.random() * N, y = Math.random() * N; const lw = rnd(1.5, 5);
+    for (let k = 0; k < 8; k++) { const nx = x + rnd(-40, 40), ny = y + rnd(-40, 40), n = Math.ceil(Math.hypot(nx - x, ny - y) / 2);
+      for (let m = 0; m <= n; m++) { const px = x + (nx - x) * m / n, py = y + (ny - y) * m / n; stamp(px, py, lw * 2.4, [255, 176, 32], 0.10, false); stamp(px, py, lw / 2, [255, 106, 16], 1, true); } x = nx; y = ny; }
+  }
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true; return t;
+}
+const rocheGeo = (() => {
+  const g = new THREE.IcosahedronGeometry(0.62, 4), p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i); const n = v.clone().normalize();
+    const f = 1 + 0.13 * Math.sin(n.x * 5.1 + n.y * 3.3) * Math.cos(n.z * 4.7) + 0.06 * Math.sin(n.x * 17 + n.z * 13) + 0.04 * Math.sin(n.y * 23);
+    v.copy(n).multiplyScalar(0.62 * f); p.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals(); return g;
+})();
+const rocheMat = new THREE.MeshStandardMaterial({ color: 0x2a2624, roughness: 0.92, metalness: 0.05, emissive: 0xffffff, emissiveMap: rocheTexture(), emissiveIntensity: 1.6, flatShading: true });
+
+// ---------------------------------------------------------------- particules de jus (une seule pièce instanciée)
+// Les gouttes sont étirées dans le sens de leur vitesse, translucides et brillantes.
+// Trois tailles : fine bruine, gouttes moyennes, grosses gouttes lourdes.
+// Une grosse goutte qui retombe laisse une petite tache en couronne sur l'étal.
+const MAXP = 900;
+const pGeo = (() => { const g = new THREE.SphereGeometry(1, 10, 8); g.scale(1, 1, 0.8); return g; })();
+const pMat = new THREE.MeshPhysicalMaterial({ roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, transparent: true, opacity: 0.88, specularIntensity: 1, ior: 1.33, sheen: 0.4, sheenColor: 0xffffff });
+const parts = new THREE.InstancedMesh(pGeo, pMat, MAXP);
+parts.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+parts.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXP * 3), 3);
+parts.frustumCulled = false; scene.add(parts);
+const P = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.1, g: 1, impact: false, c: new THREE.Color() }));
+let pIdx = 0;
+// pulpe et pépins : petits morceaux plats qui tournent
+const MAXQ = 260;
+const qGeo = new THREE.TetrahedronGeometry(1, 0);
+const qMat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0 });
+const pulpe = new THREE.InstancedMesh(qGeo, qMat, MAXQ);
+pulpe.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+pulpe.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXQ * 3), 3);
+pulpe.frustumCulled = false; scene.add(pulpe);
+const Q = Array.from({ length: MAXQ }, () => ({ vie: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.05, rx: 0, ry: 0, vr: 0, plat: 0.4 }));
+let qIdx = 0;
+const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'jambos-rouge': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
+const tmpM = new THREE.Matrix4(), tmpC = new THREE.Color(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3(), tmpE = new THREE.Euler();
+function goutte(pos, vel, s, color, vie, grav = 1, impact = false) {
+  const i = pIdx, p = P[i]; pIdx = (pIdx + 1) % MAXP;
+  Object.assign(p, { vie, max: vie, x: pos.x, y: pos.y, z: pos.z, vx: vel.x, vy: vel.y, vz: vel.z, s, g: grav, impact });
+  p.c.copy(color);
+  parts.setColorAt(i, color); parts.instanceColor.needsUpdate = true;
+}
+function morceau(pos, vel, s, couleur, vie, plat = 0.4) {
+  const i = qIdx, q = Q[i]; qIdx = (qIdx + 1) % MAXQ;
+  Object.assign(q, { vie, x: pos.x, y: pos.y, z: pos.z, vx: vel.x, vy: vel.y, vz: vel.z, s, rx: rnd(0, 6), ry: rnd(0, 6), vr: rnd(-12, 12), plat });
+  pulpe.setColorAt(i, couleur); pulpe.instanceColor.needsUpdate = true;
+}
+function giclee(pos, dir, color, n = 34, id = '') {
+  const perp = new THREE.Vector3(-dir.y, dir.x, 0);
+  const k = qx();
+  // fine bruine
+  for (let i = 0; i < Math.round(n * 0.9 * k); i++) {
+    const a = rnd(0, Math.PI * 2), sp = rnd(3, 10);
+    const v = new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp + 1.5, rnd(-1, 3)).addScaledVector(dir, rnd(1, 5)).addScaledVector(perp, rnd(-2, 2));
+    tmpC.copy(color).offsetHSL(rnd(-0.01, 0.01), 0, rnd(-0.06, 0.12));
+    goutte(pos, v, rnd(0.012, 0.03), tmpC, rnd(0.3, 0.7), 0.6);
+  }
+  // gouttes moyennes, projetées surtout dans le sens du geste
+  for (let i = 0; i < Math.round(n * k); i++) {
+    const a = rnd(0, Math.PI * 2), sp = rnd(1.5, 7);
+    const v = new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp + 2, rnd(-1, 3));
+    v.addScaledVector(perp, rnd(-3, 3)).addScaledVector(dir, rnd(0, 4.5));
+    tmpC.copy(color).offsetHSL(rnd(-0.015, 0.015), rnd(-0.05, 0.05), rnd(-0.08, 0.1));
+    goutte(pos, v, rnd(0.03, 0.07), tmpC, rnd(0.6, 1.2), 1, Math.random() < 0.18);
+  }
+  // grosses gouttes lourdes
+  for (let i = 0; i < Math.round(7 * k) + 1; i++) {
+    const v = new THREE.Vector3(rnd(-2, 2), rnd(0, 3.5), rnd(0, 2)).addScaledVector(dir, rnd(0.5, 3));
+    goutte(pos, v, rnd(0.08, 0.15), color, rnd(0.45, 0.9), 1.5, true);
+  }
+  // pulpe (chair du fruit) et pépins selon le fruit
+  const chair = color.clone().offsetHSL(0, -0.05, 0.1);
+  for (let i = 0; i < Math.round(10 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4, 4), rnd(0, 6), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.03, 0.07), chair, rnd(0.7, 1.3), 0.35);
+  if (PEPINS[id]) { const pc = new THREE.Color(PEPINS[id]); for (let i = 0; i < Math.round(12 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4.5, 4.5), rnd(0, 6.5), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.025, 0.05), pc, rnd(0.8, 1.4), 0.6); }
+}
+function etincelles(pos, n = 40, couleur = 0xffcf4a) {
+  const c = new THREE.Color(couleur);
+  for (let i = 0; i < Math.round(n * qx()); i++) { const a = rnd(0, 6.283), sp = rnd(3, 10); goutte(pos, new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp, rnd(-2, 2)), rnd(0.03, 0.08), c.clone().offsetHSL(0, 0, rnd(-0.1, 0.15)), rnd(0.4, 0.9), 0.5); }
+}
+function majParticules(dt) {
+  for (let i = 0; i < MAXP; i++) {
+    const p = P[i];
+    if (p.vie <= 0) { tmpM.makeScale(0, 0, 0); parts.setMatrixAt(i, tmpM); continue; }
+    p.vie -= dt; p.vy -= 13 * p.g * dt; p.vx *= 1 - 0.9 * dt; p.vz *= 1 - 0.9 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+    if (p.vie <= 0 && p.impact) impactGoutte(p);
+    const k = Math.max(0, p.vie / p.max), s = p.s * (0.45 + 0.55 * k);
+    const sp = Math.hypot(p.vx, p.vy);
+    tmpQ.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.atan2(p.vy, p.vx));
+    tmpS.set(s * (1 + Math.min(sp * 0.09, 1.6)), s * (1 - Math.min(sp * 0.012, 0.25)), s);
+    tmpM.compose(tmpP.set(p.x, p.y, p.z), tmpQ, tmpS); parts.setMatrixAt(i, tmpM);
+  }
+  parts.instanceMatrix.needsUpdate = true;
+  for (let i = 0; i < MAXQ; i++) {
+    const q = Q[i];
+    if (q.vie <= 0) { tmpM.makeScale(0, 0, 0); pulpe.setMatrixAt(i, tmpM); continue; }
+    q.vie -= dt; q.vy -= 12 * dt; q.vx *= 1 - 0.6 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
+    q.rx += q.vr * dt; q.ry += q.vr * 0.7 * dt;
+    const s = q.s * Math.min(1, q.vie * 3);
+    tmpQ.setFromEuler(tmpE.set(q.rx, q.ry, 0)); tmpS.set(s, s * q.plat, s);
+    tmpM.compose(tmpP.set(q.x, q.y, q.z), tmpQ, tmpS); pulpe.setMatrixAt(i, tmpM);
+  }
+  pulpe.instanceMatrix.needsUpdate = true;
+}
+// une grosse goutte touche l'étal : petite tache en couronne
+function impactGoutte(p) {
+  const sc = toScreen(tmpP.set(p.x, p.y, p.z));
+  if (sc.x < 0 || sc.x > W || sc.y < 0 || sc.y > H) return;
+  const c = teinteTache(p.c), r = Math.max(2.5, pxRayon(p.s) * 1.3);
+  blob(gS, sc.x, sc.y, r, rnd(0, 6), 1.15, c, 0.8);
+  for (let k = 0; k < 6; k++) { const a = rnd(0, 6.283), d = r * rnd(1.4, 2.6); blob(gS, sc.x + Math.cos(a) * d, sc.y + Math.sin(a) * d, r * rnd(0.12, 0.28), a, 1.8, c, 0.75); }
+  if (r > 4 && Math.random() < 0.4) nouvelleCoulure(sc.x, sc.y + r * 0.6, r * 0.35, c, rnd(20, 80));
+  ploc();
+}
+
+// ---------------------------------------------------------------- taches de jus sur l'étal
+// Chaque fruit coupé projette son jus dans le sens du geste. Les taches restent,
+// s'accumulent (les couleurs se superposent), puis des coulures descendent
+// lentement vers le bas avant de pâlir doucement.
+const coulures = [];      // filets de jus qui coulent sur l'étal
+const gouttesVitre = [];  // grosses gouttes qui glissent sur l'écran
+function teinteTache(c) {
+  // les jus très pâles (letchi, coco…) restent visibles : on les teinte légèrement
+  const t = c.clone(), hsl = {}; t.getHSL(hsl);
+  if (hsl.l > 0.82) t.setHSL(hsl.h, Math.max(hsl.s, 0.38), 0.74);
+  return t;
+}
+const rgba = (c, a) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+function blob(g, x, y, r, ang, allonge, couleur, alpha, detail = false) {
+  // contour organique : somme de sinus aux phases aléatoires (bord doux, jamais un rond parfait)
+  const n = detail ? 40 : 18, f1 = rnd(0, 6), f2 = rnd(0, 6), f3 = rnd(0, 6), ca = Math.cos(ang), sa = Math.sin(ang), pts = [], pin = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const rr = r * (1 + 0.14 * Math.sin(a * 3 + f1) + 0.08 * Math.sin(a * 5 + f2) + 0.05 * Math.sin(a * 9 + f3));
+    const lx = Math.cos(a) * rr * allonge, ly = Math.sin(a) * rr;
+    pts.push(x + lx * ca - ly * sa, y + lx * sa + ly * ca);
+    const ix = Math.cos(a) * rr * 0.55 * allonge - r * 0.15, iy = Math.sin(a) * rr * 0.55 - r * 0.15;
+    pin.push(x + ix * ca - iy * sa, y + ix * sa + iy * ca);
+  }
+  g.poly(pts).fill({ color: hexc(couleur), alpha }).stroke({ width: Math.max(1, r * 0.12), color: hexc(couleur, -0.12), alpha: alpha * 0.55, alignment: 1 });
+  g.poly(pin).fill({ color: hexc(couleur, 0.05), alpha: alpha * 0.4 });
+}
+const reflets = []; // reflets humides qui disparaissent en séchant
+function tache(sx, sy, color, taille, dir) {
+  const c = teinteTache(color);
+  // dir : sens du geste à l'écran (y vers le bas)
+  const ang = Math.atan2(-dir.y, dir.x);
+  const cx = sx + Math.cos(ang) * taille * 0.45, cy = sy + Math.sin(ang) * taille * 0.45;
+  blob(gS, cx, cy, taille * 0.8, ang, 1.35, c, 0.82, true);
+  // éclaboussures projetées dans la direction de la coupe (et quelques-unes en arrière)
+  for (let i = 0; i < 26; i++) {
+    const arriere = Math.random() < 0.15;
+    const a = ang + (arriere ? Math.PI : 0) + rnd(-0.45, 0.45);
+    const d = taille * rnd(0.9, arriere ? 1.8 : 3.6);
+    const r = Math.max(1.5, taille * 0.22 * (1 - d / (taille * 4.2)) * rnd(0.4, 1.1));
+    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+    blob(gS, x, y, r, a, rnd(1.2, 2.4), c, rnd(0.7, 0.9));
+    if (r > taille * 0.11 && Math.random() < 0.35) nouvelleCoulure(x, y + r * 0.6, r * 0.42, c, rnd(30, 120));
+  }
+  // reflet humide (il s'efface en quelques secondes, comme le jus qui sèche)
+  reflets.push({ x: cx - taille * 0.25, y: cy - taille * 0.3, rx: taille * 0.3, ry: taille * 0.11, a: ang - 0.4, t: 0 });
+  // les coulures partent du bas de la flaque
+  const nb = 3 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < nb; i++) nouvelleCoulure(cx + rnd(-0.75, 0.75) * taille, cy + taille * rnd(0.35, 0.6), rnd(1.8, Math.max(2.6, taille * 0.13)), c, rnd(70, 300));
+}
+function nouvelleCoulure(x, y, largeur, c, longueur) {
+  if (coulures.length > 160 * qx()) coulures.shift();
+  const quantite = Math.min(2.2, largeur / 3);     // les gros filets coulent plus vite et plus loin
+  coulures.push({ x, y, x0: x, l: largeur, c, reste: longueur * (0.6 + quantite * 0.6), v: rnd(14, 30) * (0.7 + quantite * 0.5), attente: rnd(0.05, 0.6), phase: rnd(0, 6) });
+}
+// flaque qui s'accumule en bas de l'écran (une colonne tous les 8 px)
+const flaque = { h: [], c: [] };
+function verserFlaque(x, quantite, c) {
+  const i = Math.max(0, Math.min(Math.floor(x / 8), Math.ceil(W / 8)));
+  for (let k = -3; k <= 3; k++) {
+    const j = i + k; if (j < 0) continue;
+    const part = quantite * Math.exp(-k * k / 4);
+    flaque.h[j] = Math.min(40, (flaque.h[j] || 0) + part);
+    flaque.c[j] = flaque.c[j] ? flaque.c[j].clone().lerp(c, part / (flaque.h[j] + 0.01)) : c.clone();
+  }
+}
+function majTaches(dt) {
+  if (!pd) return;
+  fadeC += dt * 0.028; if (fadeC >= 0.012) { pâlir(pd, rtC, gFadeC, fadeC); fadeC = 0; }   // les vieilles taches pâlissent très lentement (environ 40 secondes)
+  for (let i = coulures.length - 1; i >= 0; i--) {
+    const k = coulures[i];
+    if (k.attente > 0) { k.attente -= dt; continue; }
+    const py = k.y, px = k.x;
+    k.v = Math.max(4, k.v * (1 - 0.22 * dt));                     // le jus ralentit en s'étalant
+    const dy = k.v * dt; k.y += dy; k.reste -= dy;
+    k.x = k.x0 + Math.sin(k.y * 0.035 + k.phase) * 1.6;         // léger zigzag naturel
+    k.l = Math.max(1.2, k.l - dy * 0.006);
+    gS.moveTo(px, py).lineTo(k.x, k.y).stroke({ width: k.l * 1.6, color: hexc(k.c), alpha: 0.78, cap: 'round' });
+    if (k.y > H - 3 - (flaque.h[Math.floor(k.x / 8)] || 0)) { verserFlaque(k.x, k.l * 1.4, k.c); coulures.splice(i, 1); continue; }
+    if (k.reste <= 0) {
+      // une petite goutte se forme au bout du filet
+      gS.circle(k.x, k.y + k.l * 0.4, k.l * 1.35).fill({ color: hexc(k.c, -0.08), alpha: 0.9 });
+      coulures.splice(i, 1);
+    }
+  }
+  graver(pd, rtC, gS);
+}
+function dessinerTaches(dt = 0.016) {
+  if (!pd) return; const g = gT; g.clear();
+  // ombres douces des fruits sur l'étal (le soleil vient d'en haut à droite)
+  for (const o of objets) {
+    if (!o.vivant) continue;
+    const sc = toScreen(o.obj.position), r = pxRayon(o.rayon), cx = sc.x - r * 0.35, cy = sc.y + r * 0.55;
+    g.ellipse(cx, cy, r * 1.2, r * 0.75).fill({ color: 0x140800, alpha: 0.10 });
+    g.ellipse(cx, cy, r * 0.85, r * 0.53).fill({ color: 0x140800, alpha: 0.11 });
+    g.ellipse(cx, cy, r * 0.5, r * 0.31).fill({ color: 0x140800, alpha: 0.12 });
+  }
+  // reflets humides qui sèchent
+  for (let i = reflets.length - 1; i >= 0; i--) {
+    const f = reflets[i]; f.t += dt; const a = 0.28 * (1 - f.t / 4);
+    if (a <= 0) { reflets.splice(i, 1); continue; }
+    ell(g, f.x, f.y, f.rx, f.ry, f.a).fill({ color: 0xffffff, alpha: a });
+  }
+  // flaque du bas : bord arrondi, reflet sur le dessus
+  const nb = Math.ceil(W / 8) + 1;
+  for (let j = 0; j < nb; j++) {
+    const h = flaque.h[j]; if (!h || h < 0.5) continue;
+    flaque.h[j] = Math.max(0, h - dt * 0.35);   // la flaque s'évapore doucement
+    const x = j * 8, c = flaque.c[j];
+    g.roundRect(x - 1, H - h, 10, h + 2, 5).fill({ color: hexc(c), alpha: 0.85 });
+    g.rect(x + 1, H - h + 1.5, 6, 1.5).fill({ color: 0xffffff, alpha: .22 });
+  }
+  // tête brillante des filets qui coulent encore
+  for (const k of coulures) {
+    if (k.attente > 0) continue;
+    const r = k.l * 1.25;
+    g.circle(k.x, k.y, r).fill({ color: hexc(k.c), alpha: 0.95 });
+    g.circle(k.x - r * 0.35, k.y - r * 0.35, r * 0.35).fill({ color: 0xffffff, alpha: .55 });
+  }
+  pd.render();
+}
+// ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
+function gouttesEcran(sx, sy, color, dir) {
+  const c = teinteTache(color);
+  const n = 1 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < n; i++) {
+    const r = rnd(7, 16);
+    gouttesVitre.push({
+      x: Math.min(W - 30, Math.max(30, sx + dir.x * rnd(30, 140) + rnd(-40, 40))),
+      y: Math.min(H - 80, Math.max(60, sy - dir.y * rnd(30, 140) + rnd(-40, 40))),
+      r, c, apparition: 0, attente: rnd(0.35, 1.2), v: 0, vmax: rnd(50, 130), phase: rnd(0, 6),
+    });
+  }
+  son.goutte();
+}
+function lentille(i) {
+  let l = lentilles[i];
+  if (!l) { const m = new PIXI.Graphics(), sp = new PIXI.Sprite(); sp.mask = m; pu.stage.addChild(m); pu.stage.addChild(sp); l = lentilles[i] = { m, sp, tx: null }; }
+  return l;
+}
+function majVitre(dt) {
+  if (!pu) return;
+  fadeV += dt * 0.45; if (fadeV >= 0.012) { pâlir(pu, rtV, gFadeV, fadeV); fadeV = 0; }   // traînées qui sèchent vite
+  gGout.clear(); for (const l of lentilles) l.sp.visible = false;
+  const src = glc, sc = src.width / W; let nl = 0;
+  const veutLentille = QUALITE > 0 && gouttesVitre.some(g => g.r * (0.4 + 0.6 * g.apparition) > 5);   // on ne recopie l'image 3D que si une goutte en a besoin
+  if (veutLentille) { if (!lensSrc || lensSrc.pixelWidth !== src.width || lensSrc.pixelHeight !== src.height) { lensSrc = new PIXI.CanvasSource({ resource: src }); for (const l of lentilles) l.tx = null; } else lensSrc.update(); }
+  for (let i = gouttesVitre.length - 1; i >= 0; i--) {
+    const g = gouttesVitre[i];
+    g.apparition = Math.min(1, g.apparition + dt * 6);
+    if (g.attente > 0) g.attente -= dt;
+    else {
+      const py = g.y, px = g.x;
+      g.v = Math.min(g.vmax, g.v + 140 * dt); g.y += g.v * dt;
+      g.x += Math.sin(g.y * 0.03 + g.phase) * 0.6;
+      g.r = Math.max(4, g.r - dt * 1.5);
+      gVS.moveTo(px, py).lineTo(g.x, g.y).stroke({ width: g.r * 0.9, color: hexc(g.c), alpha: 0.32, cap: 'round' });
+    }
+    // micro-gouttelettes laissées sur la traînée
+    if (g.attente <= 0 && Math.random() < dt * 6) gVS.circle(g.x + rnd(-g.r * 0.4, g.r * 0.4), g.y - g.r * rnd(1, 2.5), rnd(1, 2.4)).fill({ color: hexc(g.c), alpha: 0.45 });
+    const r = g.r * (0.4 + 0.6 * g.apparition), ey = g.y + r * 0.12;
+    // effet de lentille : la scène derrière la goutte apparaît agrandie
+    if (veutLentille && r > 5 && lensSrc) {
+      const sr = r * 0.62, l = lentille(nl++);
+      const fx = Math.max(0, Math.min(src.width - 2, (g.x - sr) * sc)), fy = Math.max(0, Math.min(src.height - 2, (g.y - sr) * sc));
+      const fw = Math.max(2, Math.min(sr * 2 * sc, src.width - fx)), fh = Math.max(2, Math.min(sr * 2 * sc, src.height - fy));
+      if (!l.tx) l.tx = new PIXI.Texture({ source: lensSrc, frame: new PIXI.Rectangle(fx, fy, fw, fh) }); else l.tx.frame = new PIXI.Rectangle(fx, fy, fw, fh);
+      l.sp.texture = l.tx; l.sp.anchor.set(0.5); l.sp.position.set(g.x, g.y); l.sp.width = r * 2; l.sp.height = r * 2; l.sp.visible = true;
+      l.m.clear(); l.m.ellipse(g.x, ey, r * 0.92, r * 1.08).fill(0xffffff);
+    }
+    // goutte en forme de lentille : bord sombre, cœur clair, reflet
+    gGout.ellipse(g.x, ey, r * 0.92, r * 1.08).fill({ color: hexc(g.c), alpha: 0.5 }).stroke({ width: Math.max(1.5, r * 0.18), color: hexc(g.c, -0.25), alpha: 0.7, alignment: 1 });
+    gGout.ellipse(g.x - r * 0.15, g.y - r * 0.15, r * 0.5, r * 0.55).fill({ color: hexc(g.c, 0.15), alpha: 0.28 });
+    ell(gGout, g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6).fill({ color: 0xffffff, alpha: 0.75 });
+    if (g.y - r > H) gouttesVitre.splice(i, 1);
+  }
+  graver(pu, rtV, gVS);
+  // deux gouttes qui se touchent fusionnent en une plus grosse
+  for (let i = 0; i < gouttesVitre.length; i++) for (let j = i + 1; j < gouttesVitre.length; j++) {
+    const a = gouttesVitre[i], b = gouttesVitre[j];
+    if (Math.hypot(a.x - b.x, a.y - b.y) < (a.r + b.r) * 0.75) {
+      a.r = Math.min(24, Math.sqrt(a.r * a.r + b.r * b.r)); a.c.lerp(b.c, 0.5); a.v = Math.max(a.v, b.v) + 20; a.attente = 0;
+      gouttesVitre.splice(j, 1); j--;
+    }
+  }
+}
+
+// ---------------------------------------------------------------- objets du jeu
+const objets = [];   // fruits et roches en vol
+const moities = [];  // moitiés coupées
+let etat = 'menu', score = 0, vies = 3, record = 0, temps = 0, niveau = 0;
+let arret = 0, ralenti = 0, ralentiOr = 0, tremble = 0, zoom = 0, prochainLancer = 1, mangueMenu = null;
+let coupeSwipe = 0;
+let niv = 1, charge = 0, serie = 0, ralentis = 0, frenesies = 0, frenesie = 0, ralentiBonus = 0;
+const RECHARGE = 12;
+// Recettes vérifiées (reunion.fr, france.fr, ileauxepices.com) : rougail saucisse sans curcuma, cari au curcuma non pimenté, rougail tomate au gingembre ou au combava, variantes mangue verte et zavocat.
+const RECETTES = [
+  { nom: 'Rougail saucisse', ing: { tomate: 3, oignon: 2, ail: 2, piment: 1 }, fait: "Le rougail saucisse est considéré comme l'emblème culinaire de La Réunion : saucisses boucanées, tomates, piment, servi avec du riz." },
+  { nom: 'Rougail tomate', ing: { tomate: 3, oignon: 1, gingembre: 1, piment: 1 }, fait: "Le rougail tomate est une vraie institution à La Réunion, mais aussi à Madagascar et à Maurice." },
+  { nom: 'Cari poulet', ing: { oignon: 2, ail: 2, tomate: 2, curcuma: 1 }, fait: "Le cari est inspiré du curry indien. Dès le XIXe siècle, il devient un plat traditionnel de l'île." },
+  { nom: 'Rougail mangue', ing: { 'mangue-verte': 3, piment: 1 }, fait: "Le rougail ne se fait pas qu'à la tomate : on le prépare aussi avec des mangues vertes." },
+  { nom: 'Rougail tomate au combava', ing: { tomate: 3, oignon: 1, piment: 1, combava: 1 }, fait: "Le zeste de combava, un agrume péi très parfumé, relève aussi les caris de poisson." },
+  { nom: 'Rougail zavocat', ing: { avocat: 2, oignon: 1, piment: 1 }, fait: "Dans le rougail zavocat, l'avocat prend la place de la tomate." },
+  { nom: 'Cari poulet gingembre', ing: { oignon: 2, ail: 2, gingembre: 2, curcuma: 1, tomate: 1 }, fait: "À La Réunion, le curcuma s'appelle « safran péi » : il parfume et colore le cari." },
+];
+let recette = null, faits = {}, nbRecettes = 0, pauseRecette = 0, ordreRecettes = [], tempsRecette = Infinity, dernierTic = 0;
+const nomDe = id => (cache[id] ? cache[id].d.nom : id);
+const besoins = () => recette ? Object.keys(recette.ing).filter(k => faits[k] < recette.ing[k]) : [];
+function nouvelleRecette() {
+  if (!ordreRecettes.length) ordreRecettes = RECETTES.map((r, i) => i).sort(() => Math.random() - .5);
+  const idx = ordreRecettes.shift(), base = RECETTES[idx];
+  const calme = modeJeu === 'calme', grand = !calme && (nbRecettes + 1) % 5 === 0;
+  const x = (1 + Math.floor(nbRecettes / RECETTES.length) * 0.5) * (grand ? 2 : 1);
+  recette = { idx, nom: grand ? base.nom + ' du dimanche' : base.nom, fait: base.fait, grand, ing: Object.fromEntries(Object.entries(base.ing).map(([k, n]) => [k, Math.ceil(n * x)])) };
+  faits = Object.fromEntries(Object.keys(recette.ing).map(k => [k, 0]));
+  tempsRecette = calme ? Infinity : Math.max(22, 42 - nbRecettes * 1.5) * (grand ? 1.8 : 1); dernierTic = 99;
+  afficherRecette(); majNiveauHud();
+  if (grand) { bandeau('GRAND REPAS DU DIMANCHE ! Quantités doublées', 3); son.gong(); }
+}
+function afficherRecette(saute) {
+  if (!recette) return;
+  $('recetteNom').textContent = recette.nom;
+  $('recetteIng').innerHTML = Object.entries(recette.ing).map(([k, n]) => `<span class="${faits[k] >= n ? 'ok' : ''} ${k === saute ? 'saute' : ''}">${nomDe(k)} ${Math.min(faits[k], n)}/${n}</span>`).join('');
+}
+function videEnVol() { for (const o of objets) if (o.vivant && !o.menu) { o.vivant = false; scene.remove(o.obj); } }
+function recetteFinie() {
+  const r = recette, calme = modeJeu === 'calme'; nbRecettes++;
+  const bonus = (10 + 5 * Object.values(r.ing).reduce((a, b) => a + b, 0)) * (r.grand ? 2 : 1);
+  score += bonus; if (calme) etoilesC++; majScore(); son.plat();
+  const neuve = !S.carnet[r.idx]; S.carnet[r.idx] = (S.carnet[r.idx] || 0) + 1; sauveS();
+  etincelles(new THREE.Vector3(0, 0.5, 1), 90, 0xffd84a);
+  $('platNom').textContent = r.nom + ' prêt !' + (calme ? '' : ' +' + bonus);
+  $('platFait').textContent = (calme || neuve) ? r.fait : '';
+  pauseRecette = (calme || neuve) ? 4.4 : 2.2; $('plat').classList.add('on');
+  setTimeout(() => $('plat').classList.remove('on'), pauseRecette * 1000 - 300);
+  recette = null; tempsRecette = Infinity; videEnVol(); majNiveauHud();
+}
+function recetteBrulee() {
+  popup('Le plat a brûlé !', new THREE.Vector3(0, 0.5, 1), 'brule'); son.brule(); tremble = 0.4; serie = 0;
+  recette = null; tempsRecette = Infinity; videEnVol(); pauseRecette = 1.6; $('recetteIng').innerHTML = '';
+  perdreVie();
+}
+function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
+function majNiveauHud() { const e = $('niveauHud'); e.textContent = 'Plat ' + (nbRecettes + (recette ? 1 : 0) || 1); const t = $('recetteTemps'); t.textContent = recette && isFinite(tempsRecette) ? ' · ' + Math.max(0, Math.ceil(tempsRecette)) + ' s' : ''; t.style.color = recette && tempsRecette <= 8 ? '#ff7a4a' : ''; }
+function majBonus() {
+  const k = Math.min(1, charge / RECHARGE), pc = (k * 100).toFixed(1);
+  $('bCoup').style.background = `linear-gradient(to top, rgba(255,170,40,.75) ${pc}%, rgba(40,20,0,.55) ${pc}%)`; $('bCoup').classList.toggle('pret', k >= 1); $('bCoup').classList.toggle('vide', k < 1);
+  $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', !ralentis); $('bRalenti').classList.toggle('pret', ralentis > 0);
+  $('nFrenesie').textContent = frenesies; $('bFrenesie').classList.toggle('vide', !frenesies); $('bFrenesie').classList.toggle('pret', frenesies > 0);
+}
+function activerCoup() { if (etat !== 'jeu' || charge < RECHARGE || !recette) return; charge = 0; let n = 0; for (const o of [...objets]) if (o.vivant && !o.roche && !o.menu && besoins().includes(o.fruit.d.id)) { couper(o, new THREE.Vector3(Math.random() - .5, 1, 0).normalize(), 0.5); n++; } bandeau('Grand coup de lame ! ' + n + ' ingrédient' + (n > 1 ? 's' : '')); tremble = 0.35; zoom = 1; majBonus(); }
+function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralentiBonus = 5; ralenti = Math.max(ralenti, 5); bandeau('Ralenti !', 5); majBonus(); }
+function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
+const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
+function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
+try { record = +(localStorage.getItem('kr2_record') || 0); } catch (e) {}
+
+function lancer(fruit, opts = {}) {
+  const roche = !fruit;
+  const grp = roche ? new THREE.Mesh(rocheGeo, rocheMat) : fruit.entier.clone();
+  if (opts.or) { dorer(grp); grp.scale.multiplyScalar(1.15); }
+  const vanille = !roche && !opts.menu && fruit.d.id === 'vanille';
+  const x0 = opts.x ?? rnd(-viewW * 0.38, viewW * 0.38);
+  const y0 = -viewH / 2 - 1.2;
+  const sommet = rnd(viewH * 0.08, viewH * 0.38);
+  const g = 11;
+  const vy = Math.sqrt(2 * g * (sommet - y0));
+  const tVol = 2 * vy / g;
+  const vx = (-x0 * rnd(0.5, 1.1) + rnd(-1.2, 1.2)) / tVol;
+  grp.position.set(x0, y0, rnd(-0.6, 0.6));
+  grp.rotation.set(rnd(0, 6), rnd(0, 6), rnd(0, 6));
+  scene.add(grp);
+  const o = { roche, fruit, obj: grp, vel: new THREE.Vector3(vx, vy, 0), axe: new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(), vrot: rnd(1.5, 4.5), rayon: roche ? 0.62 : fruit.rayon * (opts.or ? 1.25 : 1), g, vivant: true, menu: !!opts.menu, or: !!opts.or, vanille };
+  if (vanille) {
+    // la gousse de vanille tombe toujours depuis le haut de l'écran, en virevoltant
+    grp.position.set(rnd(-viewW * 0.36, viewW * 0.36), viewH / 2 + 1.2, rnd(-0.3, 0.3));
+    o.vel.set(rnd(-0.7, 0.7), -rnd(0.6, 1.6), 0); o.g = 3.2; o.vrot = rnd(1, 2.2); o.rayon = Math.max(o.rayon, 0.75);
+  }
+  if (opts.menu) { o.vel.set(0, 0, 0); grp.position.set(0, opts.y ?? 0.3, 0); o.vrot = 0.9; o.axe.set(0.2, 1, 0.1).normalize(); }
+  objets.push(o);
+  if (!opts.menu) son.lance();
+  return o;
+}
+
+function couper(o, dir, precision = 1) {
+  o.vivant = false; scene.remove(o.obj);
+  const pos = o.obj.position.clone();
+  if (o.roche) {
+    son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
+    const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
+    popup('Aïe ! Une roche du volcan !', pos, 'aie'); serie = 0;
+    perdreVie(); perdreVie();
+    return;
+  }
+  const f = o.fruit;
+  son.coupe(f.d.id, f.rayon);
+  arret = 0.04;                                   // très courte pause d'impact
+  tremble = Math.max(tremble, 0.05 + f.rayon * 0.06);
+  eclats.push({ p: toScreen(pos), t: 0, c: f.jus });
+  // plan de coupe : contient la direction du geste et l'axe de vue
+  const n = new THREE.Vector3(-dir.y, dir.x, 0).normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+  const yApres = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+  const ang = Math.atan2(new THREE.Vector3().crossVectors(yApres, dir).dot(n), yApres.dot(dir));
+  q.premultiply(new THREE.Quaternion().setFromAxisAngle(n, ang + rnd(-0.3, 0.3)));
+  for (const [nom, sgn] of [['A', 1], ['B', -1]]) {
+    const m = f[nom].clone(); m.position.copy(pos); m.quaternion.copy(q); scene.add(m);
+    if (o.or) dorer(m);
+    const cap = n.clone().multiplyScalar(-sgn);
+    const axe = dir.clone(); const sens = Math.sign(new THREE.Vector3().crossVectors(axe, cap).z) || 1;
+    moities.push({ fruit: f, jus: o.or ? new THREE.Color(0xffd23a) : f.jus, obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4 });
+  }
+  const jus = o.or ? new THREE.Color(0xffd23a) : f.jus;
+  giclee(pos, dir, jus, o.or ? 60 : 34, f.d.id);
+  const s = toScreen(pos);
+  tache(s.x, s.y, jus, pxRayon(f.rayon) * 0.9, dir);
+  if (Math.random() < (o.or ? 1 : 0.3)) gouttesEcran(s.x, s.y, jus, dir);
+  try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
+  if (o.menu) { demarrer(); return; }
+  if (etat !== 'jeu' || !recette) return;
+  const id = f.d.id, calme = modeJeu === 'calme', parfait = precision < 0.28;
+  popup(f.d.nom, pos.clone().add(new THREE.Vector3(0, 1.1, 0)), 'nom');
+  if (besoins().includes(id)) {
+    serie++; if (!calme && serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } son.bonus(); majBonus(); }
+    let pts = parfait ? 3 : 2; if (frenesie > 0) pts *= 2;
+    faits[id]++; score += pts; coupeSwipe += pts; majScore(); afficherRecette(id);
+    if (!calme) popup('+' + pts, pos, 'pts', '#' + teinteTache(f.jus).offsetHSL(0, 0.15, 0.08).getHexString());
+    if (parfait) setTimeout(() => popup('Pile au centre !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
+    if (!besoins().length) recetteFinie();
+  } else if (recette.ing[id]) {
+    popup('Déjà prêt', pos.clone().add(new THREE.Vector3(0, -0.6, 0)), 'bonus');
+  } else if (calme) {
+    popup('Pas pour ce plat', pos.clone().add(new THREE.Vector3(0, -0.6, 0)), 'bonus');
+  } else {
+    son.brule(); tremble = Math.max(tremble, 0.25); serie = 0;
+    for (let i = 0; i < 26; i++) goutte(pos.clone().add(new THREE.Vector3(rnd(-.4, .4), rnd(-.2, .4), .3)), new THREE.Vector3(rnd(-.6, .6), rnd(1, 2.6), 0), rnd(0.08, 0.16), new THREE.Color(0x5a5550), rnd(0.8, 1.4), -0.1);
+    popup('Ça brûle !', pos.clone().add(new THREE.Vector3(0, -0.8, 0)), 'brule');
+    perdreVie();
+  }
+}
+
+function perdreVie() {
+  if (etat !== 'jeu' || modeJeu === 'calme') return;
+  vies = Math.max(0, vies - 1); majVies();
+  if (vies === 0) finPartie();
+}
+
+// ---------------------------------------------------------------- écran, HUD
+const SVG_VIE = c => `<svg viewBox="0 0 32 32"><path d="M16 9c-5-6-13-3-13 4 0 8 13 15 13 15s13-7 13-15c0-7-8-10-13-4z" fill="${c}" stroke="#4a1a04" stroke-width="1.5"/><path d="M15 9c0-3 2-5 5-6" stroke="#2f7a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/><g class="x" opacity="0"><path d="M8 8l16 16M24 8L8 24" stroke="#e8322a" stroke-width="4" stroke-linecap="round"/></g></svg>`;
+function majVies() { $('vies').innerHTML = [0, 1, 2].map(i => SVG_VIE('#ffb21e').replace('<svg', `<svg class="${i >= vies ? 'perdue' : ''}"`)).join(''); }
+function majScore() {
+  if (modeJeu === 'calme') { $('score').textContent = '★ ' + etoilesC; $('meilleurHud').textContent = 'Recettes du carnet : ' + Object.keys(S.carnet).length + ' / ' + RECETTES.length; }
+  else { $('score').textContent = score; $('meilleurHud').textContent = 'Record : ' + Math.max(record, score); }
+}
+function popup(txt, pos, cls, couleur) {
+  const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt;
+  if (couleur) e.style.color = couleur;
+  e.style.left = Math.min(Math.max(s.x, 120), W - 120) + 'px'; e.style.top = Math.min(Math.max(s.y, 120), H - 160) + 'px';
+  document.body.appendChild(e); setTimeout(() => e.remove(), 1400);
+}
+function toScreen(v) { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; }
+function pxRayon(r) { return r * H / viewH; }
+
+function menuMangue() {
+  if (mangueMenu && mangueMenu.vivant) return;
+  const m = cache['tomate'] || prets[0]; if (!m) return;
+  mangueMenu = lancer(m, { menu: true, y: W < H ? -0.9 : -0.9 });
+  mangueMenu.obj.scale.setScalar(1.8); mangueMenu.rayon *= 1.8;
+}
+function demarrer(reprise) {
+  if (etat === 'jeu') return;
+  audio();
+  etat = 'jeu'; score = 0; vies = 3; temps = 0; niveau = 0; prochainLancer = 1.0;
+  niv = 1; charge = 0; serie = 0; ralentis = 0; frenesies = 0; frenesie = 0; ralentiBonus = 0; nbRecettes = 0; pauseRecette = 0; ordreRecettes = []; recette = null;
+  if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; nbRecettes = Math.max(0, (reprise.niv | 0) - 1); }
+  etoilesC = 0; coupesC = 0;
+  nouvelleRecette(); $('recette').classList.add('on'); majBonus(); $('bonus').classList.toggle('on', modeJeu !== 'calme');
+  $('vies').style.display = modeJeu === 'calme' ? 'none' : ''; $('bTerminer').style.display = modeJeu === 'calme' ? 'block' : 'none';
+  musique(modeJeu === 'calme' ? 'musique-calme' : 'musique-intense');
+  masquerReprise();
+  majScore(); majVies();
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
+  $('lien').classList.add('discret');
+  for (const o of objets) if (o.menu && o.vivant) { o.vivant = false; scene.remove(o.obj); }
+}
+function terminerCalme() {
+  if (etat !== 'jeu' || modeJeu !== 'calme') return;
+  etat = 'fin'; $('bonus').classList.remove('on'); $('bTerminer').style.display = 'none'; $('recette').classList.remove('on'); $('plat').classList.remove('on'); recette = null; videEnVol();
+  S.etoiles += etoilesC; sauveS();
+  $('scoreFin').textContent = '★ ' + etoilesC; $('recordFin').textContent = nbRecettes + (nbRecettes > 1 ? ' plats réussis' : ' plat réussi') + ' · carnet : ' + Object.keys(S.carnet).length + ' / ' + RECETTES.length;
+  $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue();
+}
+function finPartie() {
+  etat = 'fin'; ralentiOr = 0; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on'); $('recette').classList.remove('on'); $('plat').classList.remove('on'); recette = null; videEnVol();
+  try { localStorage.removeItem('kr2_partie'); } catch (e) {}
+  $('bTerminer').style.display = 'none'; musique('musique-calme');
+  if (score > record) { record = score; try { localStorage.setItem('kr2_record', record); } catch (e) {} }
+  S.recordD = record; sauveS();
+  $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record + ' · ' + nbRecettes + (nbRecettes > 1 ? ' plats' : ' plat');
+  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue(); }, 1200);
+}
+
+// ---------------------------------------------------------------- geste de découpe
+const trait = []; let appui = false, dernier = null, comboN = 0, comboT = 0, comboPos = null, swooshT = 0;
+function pointer(e) { return { x: e.clientX, y: e.clientY, t: performance.now() }; }
+glc.addEventListener('pointerdown', e => { audio(); appui = true; dernier = pointer(e); trait.length = 0; trait.push(dernier); comboN = 0; coupeSwipe = 0; });
+addEventListener('pointermove', e => {
+  if (!appui) return;
+  const p = pointer(e);
+  if (dernier) testerCoupe(dernier, p);
+  trait.push(p); dernier = p;
+});
+const finAppui = () => { appui = false; dernier = null; finCombo(); };
+addEventListener('pointerup', finAppui); addEventListener('pointercancel', finAppui);
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+function testerCoupe(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy);
+  const vit = L / Math.max(b.t - a.t, 1);
+  if (L < 4 || vit < 0.1) return;
+  if (performance.now() - swooshT > 150 && vit > 0.8) { son.swoosh(vit); swooshT = performance.now(); }
+  for (const o of objets) {
+    if (!o.vivant) continue;
+    const c = toScreen(o.obj.position), r = pxRayon(o.rayon);
+    const t = Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / (L * L)));
+    const d = Math.hypot(a.x + dx * t - c.x, a.y + dy * t - c.y);
+    if (d < r) {
+      const dir = new THREE.Vector3(dx, -dy, 0).normalize();
+      couper(o, dir, d / r);
+      if (!o.roche && !o.menu) { comboN++; comboT = performance.now(); comboPos = o.obj.position.clone(); if (comboN >= 2) son.note(comboN); }
+    }
+  }
+}
+function finCombo() {
+  // plusieurs fruits d'un seul geste : les points du geste sont multipliés
+  if (comboN >= 2 && etat === 'jeu') {
+    const bonus = coupeSwipe * (comboN - 1);
+    score += bonus; majScore(); son.combo(comboN);
+    popup(`Multi ×${comboN} ! +${bonus}`, comboPos, 'combo');
+    etincelles(comboPos, 30 + comboN * 12);
+    if (comboN >= 3) { ralenti = Math.max(ralenti, 0.35); zoom = 1; }
+  }
+  comboN = 0; coupeSwipe = 0;
+}
+
+const eclats = []; // petits éclats lumineux à chaque fruit traversé
+function dessinerTrait(dt = 0.016) {
+  if (!pu) return; gTr.clear();
+  const now = performance.now();
+  while (trait.length && now - trait[0].t > 150) trait.shift();
+  if (trait.length >= 2) {
+    // points lissés (Catmull-Rom) pour une traînée sans saccade
+    const pts = [];
+    for (let i = 0; i < trait.length - 1; i++) {
+      const p0 = trait[Math.max(0, i - 1)], p1 = trait[i], p2 = trait[i + 1], p3 = trait[Math.min(trait.length - 1, i + 2)];
+      for (let k = 0; k < 4; k++) {
+        const t = k / 4, t2 = t * t, t3 = t2 * t;
+        pts.push({
+          x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+          y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+          v: Math.hypot(p2.x - p1.x, p2.y - p1.y) / Math.max(1, p2.t - p1.t),
+        });
+      }
+    }
+    pts.push({ ...trait[trait.length - 1], v: pts.length ? pts[pts.length - 1].v : 1 });
+    for (const [larg, coul, al] of [[18 + 14, 0xff8a1e, 0.14], [18, 0xff8c1e, 0.3], [8, 0xffde82, 0.9], [3, 0xffffff, 1]]) {
+      for (let i = 1; i < pts.length; i++) {
+        const k = i / pts.length, vit = Math.min(2.4, 0.5 + pts[i].v * 0.6);   // plus large quand le geste est rapide
+        gTr.moveTo(pts[i - 1].x, pts[i - 1].y).lineTo(pts[i].x, pts[i].y).stroke({ width: larg * k * vit, color: coul, alpha: al, cap: 'round', join: 'round' });
+      }
+    }
+  }
+  for (let i = eclats.length - 1; i >= 0; i--) {
+    const e = eclats[i]; e.t += dt; const k = e.t / 0.22;
+    if (k >= 1) { eclats.splice(i, 1); continue; }
+    const r = 14 + k * 46, f = 1 - k;
+    gTr.circle(e.p.x, e.p.y, r).fill({ color: hexc(teinteTache(e.c)), alpha: 0.22 * f });
+    gTr.circle(e.p.x, e.p.y, r * 0.6).fill({ color: hexc(teinteTache(e.c)), alpha: 0.3 * f });
+    gTr.circle(e.p.x, e.p.y, r * 0.3).fill({ color: 0xfffff0, alpha: 0.85 * f });
+  }
+  pu.render();
+}
+
+// ---------------------------------------------------------------- vagues de lancers
+function vague() {
+  if (!recette || pauseRecette > 0) { prochainLancer = 0.4; return; }
+  const calme = modeJeu === 'calme';
+  niveau = Math.min(calme ? 3 : 12, nbRecettes + Math.floor(temps / 30));
+  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.5, calme ? 2.5 : 4));
+  const utiles = besoins().filter(k => cache[k]);
+  const intrus = prets.filter(f => !recette.ing[f.d.id]);
+  const pUtile = calme ? 0.8 : Math.max(0.45, 0.72 - niveau * 0.025);
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      if (etat !== 'jeu' || !recette) return;
+      if (utiles.length && Math.random() < pUtile) lancer(cache[utiles[Math.floor(Math.random() * utiles.length)]]);
+      else if (intrus.length) lancer(intrus[Math.floor(Math.random() * intrus.length)]);
+    }, i * rnd(140, 320));
+  }
+  prochainLancer = calme ? 2.6 + rnd(0, 0.9) : (Math.max(0.85, 2.3 - niveau * 0.12) + rnd(0, 0.5)) * (recette.grand ? 0.7 : 1);
+}
+
+// ---------------------------------------------------------------- gestionnaire de performances commun
+// Qualité par paliers puis mode 30 i/s, arrêt complet en arrière-plan, perte de contexte WebGL,
+// sauvegarde de la partie en cours (score, vies, temps) pour la reprendre après une interruption.
+let contextePerdu = false, pauseAuto = false;
+function sauverPartie() {
+  if (etat !== 'jeu' || modeJeu === 'calme') return;
+  try { localStorage.setItem('kr2_partie', JSON.stringify({ score, vies, temps, niv: nbRecettes + 1, t: Date.now() })); } catch (e) {}
+}
+const perf = new GestionnairePerf({
+  nom: 'koup-rougail-v2',
+  niveauInitial: QUALITE,
+  surPause: () => {
+    endormirAudio(actx);
+    if (etat === 'jeu') { pauseAuto = true; sauverPartie(); }
+  },
+  surReprise: () => {
+    horloge.getDelta(); // le temps passé en arrière-plan ne compte pas
+    resize();
+    if (pauseAuto) afficherPause();
+  },
+  surSauvegarde: sauverPartie,
+  surQualite: (niveau) => { if (niveau < QUALITE) { QUALITE = niveau; renderer.setPixelRatio(ratioRendu()); resize(); } },
+});
+perf.surveillerContexte(glc, {
+  perdu: () => { contextePerdu = true; if (etat === 'jeu') { pauseAuto = true; sauverPartie(); } },
+  restaure: () => {
+    contextePerdu = false;
+    construireEnvironnement();
+    if (rocheMat.emissiveMap) rocheMat.emissiveMap.needsUpdate = true;
+    resize();
+    if (pauseAuto) afficherPause();
+  },
+  secours: () => afficherSecours({
+    texte: "L'iPhone a libéré la mémoire graphique pendant la pause. Ton score est enregistré : tu pourras reprendre ta partie.",
+    action: () => location.reload(), // seul le jeu est relancé, à la demande du joueur
+  }),
+});
+// Pause au retour d'arrière-plan : la partie ne repart que quand le joueur touche l'écran
+function afficherPause() {
+  if ($('pauseAuto')) return;
+  const v = document.createElement('div'); v.id = 'pauseAuto';
+  v.style.cssText = 'position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(20,10,2,.55);text-align:center;touch-action:none';
+  v.innerHTML = '<div class="titre" style="font-size:clamp(44px,11vw,80px)">Pause</div><div class="sous">Touche l\'écran pour reprendre</div>';
+  v.addEventListener('pointerup', e => { e.stopPropagation(); pauseAuto = false; horloge.getDelta(); v.remove(); audio(); });
+  document.body.appendChild(v);
+}
+// Reprise d'une partie interrompue (rechargement, arrêt de l'onglet par iOS)
+let partieSauvee = null;
+try { const p = JSON.parse(localStorage.getItem('kr2_partie') || 'null'); if (p && Date.now() - p.t < 48 * 3600e3 && p.vies > 0) partieSauvee = p; } catch (e) {}
+function masquerReprise() { const b = $('reprendre'); if (b) b.remove(); partieSauvee = null; }
+if (partieSauvee) {
+  const b = document.createElement('button'); b.id = 'reprendre'; b.className = 'btn zone-interactive';
+  b.textContent = `Reprendre ma partie (${partieSauvee.score} pts)`;
+  b.onclick = () => { const p = partieSauvee; masquerReprise(); demarrer(p); };
+  $('jouer').after(b);
+}
+
+// ---------------------------------------------------------------- boucle
+const horloge = new THREE.Clock();
+const fumee = new THREE.Color(0xff8a1e);
+function boucle() {
+  if (contextePerdu) return;
+  const vrai = pauseAuto ? (horloge.getDelta(), 0) : Math.min(horloge.getDelta(), 0.05);
+  if (musCur && modeJeu === 'defi' && etat === 'jeu') musCur.s.playbackRate.value = 1 + Math.min(0.25, nbRecettes * 0.025);
+  if (ralenti > 0) ralenti -= vrai;
+  if (ralentiOr > 0) ralentiOr -= vrai;
+  let dt = vrai * (ralenti > 0 ? (ralentiOr > 0 ? 0.35 : 0.3) : 1);
+  if (arret > 0) { arret -= vrai; dt = 0; }        // pause d'impact
+  document.body.classList.toggle('ralenti-or', ralentiOr > 0);
+  if (filtreRalenti) filtreRalenti.frequency.setTargetAtTime(ralentiOr > 0 ? 900 : 20000, actx.currentTime, 0.15);
+  $('dore').style.opacity = ralentiOr > 0 ? Math.min(1, ralentiOr * 2) : 0;
+  $('barreOr').style.opacity = ralentiOr > 0 ? 1 : 0;
+  if (ralentiOr > 0) $('barreOr').firstElementChild.style.width = (ralentiOr / 4 * 100) + '%';
+  if (ralentiBonus > 0) { ralentiBonus -= vrai; if (ralenti < 0.05 && ralentiBonus > 0) ralenti = ralentiBonus; }
+  if (etat === 'jeu') {
+    temps += dt; charge = Math.min(RECHARGE, charge + vrai); if (frenesie > 0) frenesie -= vrai; majBonus();
+    if (pauseRecette > 0) { pauseRecette -= dt; if (pauseRecette <= 0) nouvelleRecette(); }
+    else if (recette) {
+      prochainLancer -= dt; if (prochainLancer <= 0) vague();
+      if (isFinite(tempsRecette)) {
+        tempsRecette -= dt; const t = Math.ceil(tempsRecette);
+        if (t !== dernierTic) { dernierTic = t; majNiveauHud(); if (t > 0 && t <= 5) son.tic(); }
+        if (tempsRecette <= 0) recetteBrulee();
+      }
+    }
+  }
+  if (comboN > 0 && performance.now() - comboT > 260) finCombo();
+
+  for (let i = objets.length - 1; i >= 0; i--) {
+    const o = objets[i];
+    if (!o.vivant) { objets.splice(i, 1); continue; }
+    if (o.menu) { o.obj.position.y += Math.sin(performance.now() / 600) * 0.004; o.obj.rotateOnWorldAxis(o.axe, o.vrot * dt); continue; }
+    o.vel.y -= o.g * dt; o.obj.position.addScaledVector(o.vel, dt);
+    o.obj.rotateOnWorldAxis(o.axe, o.vrot * dt);
+    if (o.or) o.obj.traverse(m => { if (m.isMesh && m.material === matOr) matOr.emissiveIntensity = 0.45 + Math.sin(performance.now() / 120) * 0.25; });
+    if (o.roche && Math.random() < 0.35 * qx()) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .3, 0)), new THREE.Vector3(rnd(-.4, .4), rnd(0.6, 1.4), 0), rnd(0.06, 0.12), new THREE.Color(0x3a3430), 1.1, -0.05);
+    if (o.or && Math.random() < 0.7) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.4, .4), rnd(-.4, .4), 0.3)), new THREE.Vector3(rnd(-.6, .6), rnd(-.2, .8), 0), rnd(0.03, 0.06), new THREE.Color(0xffe27a).multiplyScalar(1.4), 0.6, 0.1);
+    if (o.roche && Math.random() < 0.5) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .5, 0)), new THREE.Vector3(rnd(-.5, .5), rnd(1, 2.5), 0), rnd(0.03, 0.06), fumee, 0.5, 0.15);
+    if (o.vel.y < 0 && o.obj.position.y < -viewH / 2 - 1.5) {
+      o.vivant = false; scene.remove(o.obj);
+    }
+  }
+  for (let i = moities.length - 1; i >= 0; i--) {
+    const m = moities[i]; m.vie -= dt; m.vel.y -= 11 * dt;
+    // la face coupée continue de goutter pendant la chute
+    if (m.vie > 2.6 && Math.random() < 9 * dt * qx()) goutte(m.obj.position.clone().add(new THREE.Vector3(rnd(-.2, .2), -.15, 0.2)), new THREE.Vector3(rnd(-.3, .3), rnd(-1, 0), 0), rnd(0.03, 0.06), m.jus, rnd(0.5, 0.9), 1.1, Math.random() < 0.3);
+    m.obj.position.addScaledVector(m.vel, dt); m.obj.rotateOnWorldAxis(m.axe, m.vrot * dt);
+    if (m.vie <= 0 || m.obj.position.y < -viewH / 2 - 3) { scene.remove(m.obj); moities.splice(i, 1); }
+  }
+  majParticules(dt);
+
+  if (zoom > 0) zoom = Math.max(0, zoom - vrai * 2.2);
+  camera.position.z = 14 - 1.4 * Math.sin(zoom * Math.PI);
+  if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
+
+  if (POSTFX && QUALITE > 0) composer.render(); else renderer.render(scene, camera);
+  majTaches(vrai); dessinerFanions(performance.now() / 1000); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai);
+}
+
+// ---------------------------------------------------------------- démarrage
+initPixi(); addEventListener('resize', resize); resize(); majVies(); majScore(); majBoutonSon();
+$('btnSon').onclick = () => {
+  sonCoupe = !sonCoupe; try { localStorage.setItem('kr2_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
+  if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
+};
+$('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
+$('bCalme').onclick = () => { modeJeu = 'calme'; audio(); masquerReprise(); demarrer(); };
+$('bTerminer').onclick = terminerCalme;
+$('bAlbum').onclick = () => {
+  const L = $('albListe'); L.innerHTML = ''; L.style.gridTemplateColumns = '1fr';
+  $('albCompte').textContent = Object.keys(S.carnet).length + ' / ' + RECETTES.length + ' recettes réussies · ' + S.etoiles + ' étoiles';
+  RECETTES.forEach((r, i) => { const d = document.createElement('div'); if (S.carnet[i]) d.innerHTML = '<b>' + r.nom + '</b> (×' + S.carnet[i] + ')<br><span style="font-weight:500;opacity:.9">' + r.fait + '</span>'; else { d.className = 'vide'; d.textContent = '??? Prépare cette recette pour la découvrir'; } L.appendChild(d); });
+  $('panAlbum').classList.remove('cache');
+};
+$('bAlbFerme').onclick = () => $('panAlbum').classList.add('cache');
+$('bSonOpt').onclick = () => { $('rMus').value = Math.round(S.mus * 100); $('rFx').value = Math.round(S.fx * 100); $('panSon').classList.remove('cache'); };
+$('bSonFerme').onclick = () => { $('panSon').classList.add('cache'); sauveS(); };
+$('rMus').oninput = e => { S.mus = e.target.value / 100; if (musG) musG.gain.value = S.mus; };
+$('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; };
+$('bCredits').onclick = () => $('panCredits').classList.remove('cache');
+$('bCrFerme').onclick = () => $('panCredits').classList.add('cache');
+$('jouer').onclick = () => { modeJeu = 'defi'; audio(); masquerReprise(); try { localStorage.removeItem('kr2_partie'); } catch (e) {} demarrer(); };
+$('rejouer').onclick = () => { audio(); demarrer(); };
+$('menuFin').onclick = () => { modeJeu = 'defi'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); etat = 'menu'; menuMangue(); };
+// touchers : ne pas laisser passer aux couches inférieures
+document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function(event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
+
+(async () => {
+  const info = await (await fetch('../koup-rougail/models/fruits.json')).json();
+  catalogue = info.fruits.slice();
+  const premiers = ['tomate', 'oignon', 'ail', 'piment'];
+  catalogue.sort((a, b) => (premiers.indexOf(b.id) >= 0) - (premiers.indexOf(a.id) >= 0) || Math.random() - 0.5);
+  let fait = 0;
+  const majCharge = () => { $('charge').textContent = fait < catalogue.length ? `On prépare la cuisine… ${fait}/${catalogue.length}` : ''; };
+  // Seuls MAX_CHARGES fruits sont en mémoire ; les autres attendent leur tour (réserve)
+  const file = catalogue.slice(0, MAX_CHARGES);
+  reserve = catalogue.slice(MAX_CHARGES);
+  const total = file.length;
+  const majCharge2 = () => { $('charge').textContent = fait < total ? `On prépare la cuisine… ${fait}/${total}` : ''; };
+  async function ouvrier() {
+    while (file.length) {
+      const d = file.shift();
+      try { prets.push(await charger(d)); } catch (e) { console.warn('fruit non chargé', d.id, e); }
+      fait++; majCharge2();
+      if (d.id === 'tomate' && etat === 'menu') menuMangue();
+    }
+  }
+  majCharge2();
+  await Promise.all([ouvrier(), ouvrier(), ouvrier()]);
+  window.PRET = true;
+  journal('kouprougail2', `modèles ${DOSSIER_MODELES} · ${prets.length} chargés · ${reserve.length} en réserve`);
+  // Renouvellement : toutes les 20 s, un fruit de la réserve remplace le plus ancien
+  perf.intervalle(renouveler, 4000);
+})();
+let reserve = [], tempsRenouvellement = 0, renouvellementEnCours = false;
+async function renouveler() {
+  if (renouvellementEnCours || !reserve.length || !perf.actif || contextePerdu) return;
+  const maintenant = performance.now() / 1000; // (l'intervalle ne tourne pas en arrière-plan : perf.actif)
+  if (maintenant - tempsRenouvellement < 20) return;
+  tempsRenouvellement = maintenant;
+  if (!prets.some(f => !PROTEGES.has(f.d.id) && !enVol(f))) return;
+  renouvellementEnCours = true;
+  const d = reserve.shift();
+  try {
+    const nouveau = await charger(d);
+    const ancien = prets.filter(f => !PROTEGES.has(f.d.id) && !enVol(f)).sort((a, b) => a.charge - b.charge)[0];
+    if (ancien) { oublier(ancien); reserve.push(ancien.d); }
+    prets.push(nouveau);
+  } catch (e) { console.warn('fruit non chargé', d.id, e); reserve.push(d); }
+  renouvellementEnCours = false;
+}
+// Libération complète (appelée par le site avant de quitter le jeu, et à la fermeture de la page)
+let libere = false;
+function liberer() {
+  if (libere) return; libere = true;
+  perf.detruire();
+  [...prets].forEach(oublier);
+  scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+  if (rocheMat.emissiveMap) rocheMat.emissiveMap.dispose();
+  if (scene.environment) scene.environment.dispose();
+  renderer.dispose(); renderer.forceContextLoss();
+  try { pd && pd.destroy(false); pu && pu.destroy(false); } catch (e) {}
+  [fond, trace].forEach(libererCanvas);
+  if (actx) { try { actx.close(); } catch (e) {} }
+  journal('liberation', 'koup-rougail-v2');
+}
+window.kwelafeLiberer = liberer;
+window.kwelafeInfo = () => ({ ...renderer.info.memory, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
+addEventListener('pagehide', e => { if (!e.persisted) liberer(); });
+perf.boucle(boucle);
+
+// mode test : simuler une partie pour les captures
+if (TEST) {
+  window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
+  window.jeu = { set mode(m) { modeJeu = m; }, get S() { return S; }, terminerCalme, demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, couper, get recette() { return recette; }, get faits() { return faits; }, get score() { return score; }, get vies() { return vies; }, get nbRecettes() { return nbRecettes; }, get etoilesC() { return etoilesC; }, get tempsRecette() { return tempsRecette; }, set tempsRecette(v) { tempsRecette = v; }, set nbRecettes(v) { nbRecettes = v; }, besoins, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+}
+}
+</script>
+</body>
+</html>
