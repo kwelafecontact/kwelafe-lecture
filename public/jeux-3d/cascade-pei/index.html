@@ -93,6 +93,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1f4a1a;font-family:"B
 </div>
 
 <script src="../commun/pixi.min.js"></script>
+<script src="../commun/pixi-filters.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -367,7 +368,7 @@ function melange(auto){
 function gagne(){
   G.state="win";G.timer=1.4;
   const bonus=G.coups*40;G.score+=bonus;
-  G.gros={txt:"BRAVO !",t:1.6};sfx("niveau");vib([20,40,20]);
+  G.gros={txt:"BRAVO !",t:1.6};feuArtifice();sfx("niveau");vib([20,40,20]);
   if(bonus)pop("+"+bonus+" coups restants",W/2,H*.5,"#ffd24a",30);
   G.lvlOk++;
 }
@@ -412,9 +413,13 @@ function tapRythme(){
 let last=0;
 function frame(ts){
   const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
-  if(mode==="play")maj(dt);
+  let d=dt;if(G&&G.slow>0){G.slow-=dt;d=dt*.3;}if(G){G.zoom=Math.max(0,(G.zoom||0)-dt*2.4);if(G.onde){G.onde.t+=dt;if(G.onde.t>1.1)G.onde=null;}
+    if(G.fw>0){G.fw-=dt;if(Math.random()<dt*7)fwBurst();}}
+  if(mode==="play")maj(d);
   dessine();requestAnimationFrame(frame);
 }
+function fwBurst(){const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=["#ffe25a","#ff5a5a","#5ae0ff","#8aff5a","#ff8ae8"],c=cols[Math.floor(rnd(0,5))];
+  for(let i=0;i<28;i++){const a=i/28*6.28,v=rnd(160,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:260,t:0,life:rnd(.8,1.3),r:rnd(2.5,5),col:c});}}
 function stable(){
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(!k)return false;if(Math.abs(k.vx-c)>.02||Math.abs(k.vy-r)>.02||k.sc<.98)return false;}
   return true;
@@ -454,7 +459,12 @@ function animCells(dt){
   }
 }
 function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(60,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:600,t:0,life:rnd(.3,.65),r:rnd(3,7),col});}}
-function fxRing(c,r,col,R){G.fx.push({k:"ring",x:OX+(c+.5)*CELL,y:OY+(r+.5)*CELL,col,R:R*CELL,t:0,life:.55});}
+function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;G.fx.push({k:"ring",x,y,col,R:R*CELL,t:0,life:.55});if(R>=2.4)grandMoment(x,y,col);}
+function grandMoment(x,y,col){ // ralenti, zoom, onde de choc et gerbe d'étincelles dorées
+  G.slow=Math.max(G.slow||0,.32);G.zoom=1;G.onde={x,y,t:0};
+  for(let i=0;i<46;i++){const a=rnd(0,6.28),v=rnd(120,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-160,g:520,t:0,life:rnd(.5,1.1),r:rnd(2,6),col:i%3?"#ffe25a":col});}
+}
+function feuArtifice(){G.fw=1.8;}
 function fxBeam(horiz,c,r,col){G.fx.push({k:"beam",horiz,x:OX+(c+.5)*CELL,y:OY+(r+.5)*CELL,col,t:0,life:.45});}
 function secoue(v){G.shake=Math.max(G.shake,v);}
 function pop(txt,x,y,col="#fff",s=26){G.pops.push({txt,x,y,t:0,col,s});}
@@ -489,7 +499,7 @@ addEventListener("pointerup",up);addEventListener("pointercancel",up);
 
 /* ---------- Dessin (PixiJS) ---------- */
 const hx=c=>parseInt(c.slice(1),16);
-let world,gBoard,cellsC,gUnder,sprC,gOver,gFx,gHud,sprH,txtA,gDim,txtB,cellMask;
+let gAdd,bloomF,shockF,world,gBoard,cellsC,gUnder,sprC,gOver,gFx,gHud,sprH,txtA,gDim,txtB,cellMask;
 const fruitTex=[];
 const POOL={cell:[],hud:[],ta:[],tb:[]},USED={cell:0,hud:0,ta:0,tb:0};
 function initPixi(){
@@ -504,6 +514,11 @@ function initPixi(){
     gOver=new PIXI.Graphics();cellsC.addChild(gOver);
     cellMask=new PIXI.Graphics();world.addChild(cellMask);cellsC.mask=cellMask;
     gFx=new PIXI.Graphics();world.addChild(gFx);
+    gAdd=new PIXI.Graphics();gAdd.blendMode="add";world.addChild(gAdd);
+    try{ // lueur sur les effets (anneaux, rayons, étincelles) et onde de choc sur les grands moments ; sans pixi-filters le jeu reste jouable
+      bloomF=new PIXI.filters.AdvancedBloomFilter({threshold:.55,bloomScale:.7,brightness:1,blur:4,quality:3});gFx.filters=[bloomF];
+      shockF=new PIXI.filters.ShockwaveFilter({center:{x:0,y:0},speed:600,amplitude:26,wavelength:150,brightness:1.15,radius:-1});
+    }catch(e){bloomF=shockF=null;}
     gHud=new PIXI.Graphics();st.addChild(gHud);
     sprH=new PIXI.Container();st.addChild(sprH);
     txtA=new PIXI.Container();st.addChild(txtA);
@@ -573,20 +588,23 @@ function dessine(){
   if(!G||mode==="menu"){app.stage.visible=false;app.render();return;}
   app.stage.visible=true;
   const bw=CELL*NB,bh=CELL*NR;
-  world.position.set(G.shake>0?rnd(-1,1)*G.shake:0,G.shake>0?rnd(-1,1)*G.shake:0);
+  {const zs=1+(G.zoom||0)*.035,cx=OX+bw/2,cy=OY+bh/2;world.pivot.set(cx,cy);world.scale.set(zs);
+   world.position.set(cx+(G.shake>0?rnd(-1,1)*G.shake:0),cy+(G.shake>0?rnd(-1,1)*G.shake:0));
+   if(shockF&&G.onde){shockF.center={x:G.onde.x*DPR,y:G.onde.y*DPR};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}
+  gAdd.clear();
   gBoard.roundRect(OX-8,OY-8,bw+16,bh+16,22).fill({color:0x3c220a,alpha:.55}).stroke({width:4,color:0xffe28c,alpha:.85});
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++)if((c+r)%2===0)gBoard.rect(OX+c*CELL,OY+r*CELL,CELL,CELL).fill({color:0xfff0c8,alpha:.1});
   if(G.sel)gBoard.rect(OX+G.sel[0]*CELL+3,OY+G.sel[1]*CELL+3,CELL-6,CELL-6).stroke({width:4,color:0xffffff});
   if(G.hint){const a=.5+.5*Math.sin(G.t*8);for(const [c,r] of G.hint)gBoard.rect(OX+c*CELL+3,OY+r*CELL+3,CELL-6,CELL-6).stroke({width:4,color:0xffe25a,alpha:.4+a*.6});}
   cellMask.rect(OX-4,OY,bw+8,bh).fill(0xffffff);
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(k)dessineCell(k,c,r);}
-  for(const q of G.parts)gFx.circle(q.x,q.y,q.r).fill({color:hx(q.col.length===7?q.col:"#ffffff"),alpha:Math.max(0,1-q.t/q.life)});
+  for(const q of G.parts){const al=Math.max(0,1-q.t/q.life),c=hx(q.col.length===7?q.col:"#ffffff");gAdd.circle(q.x,q.y,q.r*2.2).fill({color:c,alpha:al*.25});gAdd.circle(q.x,q.y,q.r).fill({color:c,alpha:al});gAdd.circle(q.x,q.y,q.r*.45).fill({color:0xffffff,alpha:al});}
   for(const f of G.fx){const p=f.t/f.life,al=Math.max(0,1-p),col=f.col.length===7?hx(f.col):0xffffff;
     if(f.k==="ring"){const R=f.R*p+8;gFx.circle(f.x,f.y,R).stroke({width:26*(1-p)+4,color:col,alpha:al*.3});gFx.circle(f.x,f.y,R).stroke({width:10*(1-p)+2,color:col,alpha:al});}
     else{const th=CELL*.5*(1-p)+4;
       if(f.horiz){gFx.rect(OX-4,f.y-th,CELL*NB+8,th*2).fill({color:col,alpha:al*.3});gFx.rect(OX-4,f.y-th/2,CELL*NB+8,th).fill({color:col,alpha:al});}
       else{gFx.rect(f.x-th,OY,th*2,CELL*NR).fill({color:col,alpha:al*.3});gFx.rect(f.x-th/2,OY,th,CELL*NR).fill({color:col,alpha:al});}}}
-  if(G.flash>0)gFx.rect(OX-8,OY-8,CELL*NB+16,CELL*NR+16).fill({color:0xffffff,alpha:Math.min(.7,G.flash)});
+  if(G.flash>0)gAdd.rect(OX-8,OY-8,CELL*NB+16,CELL*NR+16).fill({color:0xffe9b0,alpha:Math.min(.28,G.flash*.5)});
   // HUD
   const sx=Math.max(24,W*.06);
   T("ta",G.score+"",sx,CT+10,Math.max(36,Math.min(54,W*.1)),"#ffd24a","#7a4a08","left");
