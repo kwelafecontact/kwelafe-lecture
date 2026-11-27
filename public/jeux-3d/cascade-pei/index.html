@@ -109,6 +109,13 @@ const FRUITS=[
  {n:"passion",nom:"Fruit de la passion",fiche:[834,354,277],c:"#c88a1a"},
  {n:"banane",nom:"Banane",fiche:[1196,330,312],c:"#ffe36a"},
  {n:"citron",nom:"Citron galet",fiche:[1534,352,248],c:"#8fd04a"}];
+const FXN=["etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
+for(const n of FXN){const im=new Image();im.src="../commun/fx/"+n+".webp"+V;FXT[n]={im};}
+function fxTex(n){const o=FXT[n];if(!o||!o.im.complete||!o.im.naturalWidth)return null;return o.t||(o.t=PIXI.Texture.from(o.im));}
+function fxSpr(n,x,y,w,rot,al,tint,add){const t=fxTex(n);if(!t)return;const L=add?"a":"n",P=FXP[L],i=FXU[L]++;let s=P[i];
+  if(!s){s=new PIXI.Sprite();s.anchor.set(.5);(add?fxA:fxN).addChild(s);P[i]=s;}
+  s.texture=t;s.position.set(x,y);s.width=w;s.height=w*t.height/t.width;s.rotation=rot;s.alpha=al;s.tint=tint||0xffffff;s.visible=true;}
+function fxSp(o){(G.sp||(G.sp=[])).push(Object.assign({t:0,rot:rnd(0,6.28),vr:rnd(-4,4),vx:0,vy:0,g:0,grow:0,al:1,tint:0xffffff},o));}
 const IMG={fruits:new Image()};IMG.fruits.src="../marche-des-jus/fruits.webp"+V;
 
 const FAITS=[
@@ -418,7 +425,8 @@ function frame(ts){
   if(mode==="play")maj(d);
   dessine();requestAnimationFrame(frame);
 }
-function fwBurst(){const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=["#ffe25a","#ff5a5a","#5ae0ff","#8aff5a","#ff8ae8"],c=cols[Math.floor(rnd(0,5))];
+function petales(){for(let i=0;i<3;i++)fxSp({k:i%2?"petale":"feuille",x:rnd(OX,OX+CELL*NB),y:OY-CELL*.5,w:rnd(.4,.7)*CELL,vx:rnd(-40,40),vy:rnd(60,140),g:30,life:rnd(2.2,3.2),vr:rnd(-3,3)});}
+function fwBurst(){fxSp({k:"paillettes",add:1,x:rnd(OX,OX+CELL*NB),y:rnd(OY,OY+CELL*NR*.5),w:CELL*2.2,grow:CELL*2,life:.9,vr:0,rot:0});petales();const x=rnd(OX,OX+CELL*NB),y=rnd(OY,OY+CELL*NR*.6),cols=["#ffe25a","#ff5a5a","#5ae0ff","#8aff5a","#ff8ae8"],c=cols[Math.floor(rnd(0,5))];
   for(let i=0;i<28;i++){const a=i/28*6.28,v=rnd(160,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:260,t:0,life:rnd(.8,1.3),r:rnd(2.5,5),col:c});}}
 function stable(){
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(!k)return false;if(Math.abs(k.vx-c)>.02||Math.abs(k.vy-r)>.02||k.sc<.98)return false;}
@@ -445,6 +453,7 @@ function maj(dt){
   if((G.state==="win"||G.state==="lose")&&G.timer<=0)suite();
   for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
   G.parts=G.parts.filter(q=>q.t<q.life);
+  if(G.sp){for(const q of G.sp){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;q.rot+=q.vr*dt;q.w+=q.grow*dt/q.life;}G.sp=G.sp.filter(q=>q.t<q.life);}
   for(const p of G.pops)p.t+=dt;G.pops=G.pops.filter(p=>p.t<1.4);
   if(G.gros.t>0)G.gros.t-=dt;
 }
@@ -463,6 +472,11 @@ function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;G.fx.push({k:
 function grandMoment(x,y,col){ // ralenti, zoom, onde de choc et gerbe d'étincelles dorées
   G.slow=Math.max(G.slow||0,.32);G.zoom=1;G.onde={x,y,t:0};
   for(let i=0;i<46;i++){const a=rnd(0,6.28),v=rnd(120,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-160,g:520,t:0,life:rnd(.5,1.1),r:rnd(2,6),col:i%3?"#ffe25a":col});}
+  fxSp({k:"flare",add:1,x,y,w:CELL*.9,grow:CELL*3.2,life:.5,al:.4});
+  fxSp({k:"anneau",add:1,x,y,w:CELL*.8,grow:CELL*6,life:.7,vr:0,rot:0});
+  fxSp({k:"jus",x,y,w:CELL*1.1,grow:CELL*2.2,life:.7,vr:0,rot:0,tint:hx(col.length===7?col:"#ffa020")});
+  for(let i=0;i<10;i++){const a=rnd(0,6.28),v=rnd(140,420);fxSp({k:"etoile",add:1,x,y,w:rnd(.35,.8)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:360,life:rnd(.6,1.1)});}
+  for(let i=0;i<6;i++){const a=rnd(0,6.28),v=rnd(80,300);fxSp({k:"goutte",x,y,w:rnd(.25,.45)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:900,life:rnd(.7,1.1)});}
 }
 function feuArtifice(){G.fw=1.8;}
 function fxBeam(horiz,c,r,col){G.fx.push({k:"beam",horiz,x:OX+(c+.5)*CELL,y:OY+(r+.5)*CELL,col,t:0,life:.45});}
@@ -499,7 +513,7 @@ addEventListener("pointerup",up);addEventListener("pointercancel",up);
 
 /* ---------- Dessin (PixiJS) ---------- */
 const hx=c=>parseInt(c.slice(1),16);
-let gAdd,bloomF,shockF,world,gBoard,cellsC,gUnder,sprC,gOver,gFx,gHud,sprH,txtA,gDim,txtB,cellMask;
+let fxA,fxN,gAdd,bloomF,shockF,world,gBoard,cellsC,gUnder,sprC,gOver,gFx,gHud,sprH,txtA,gDim,txtB,cellMask;
 const fruitTex=[];
 const POOL={cell:[],hud:[],ta:[],tb:[]},USED={cell:0,hud:0,ta:0,tb:0};
 function initPixi(){
@@ -515,8 +529,9 @@ function initPixi(){
     cellMask=new PIXI.Graphics();world.addChild(cellMask);cellsC.mask=cellMask;
     gFx=new PIXI.Graphics();world.addChild(gFx);
     gAdd=new PIXI.Graphics();gAdd.blendMode="add";world.addChild(gAdd);
+    fxN=new PIXI.Container();world.addChild(fxN);fxA=new PIXI.Container();fxA.blendMode="add";world.addChild(fxA);
     try{ // lueur sur les effets (anneaux, rayons, étincelles) et onde de choc sur les grands moments ; sans pixi-filters le jeu reste jouable
-      bloomF=new PIXI.filters.AdvancedBloomFilter({threshold:.55,bloomScale:.7,brightness:1,blur:4,quality:3});gFx.filters=[bloomF];
+      bloomF=new PIXI.filters.AdvancedBloomFilter({threshold:.55,bloomScale:.7,brightness:1,blur:4,quality:3});gFx.filters=[bloomF];fxA.filters=[bloomF];
       shockF=new PIXI.filters.ShockwaveFilter({center:{x:0,y:0},speed:600,amplitude:26,wavelength:150,brightness:1.15,radius:-1});
     }catch(e){bloomF=shockF=null;}
     gHud=new PIXI.Graphics();st.addChild(gHud);
@@ -592,6 +607,8 @@ function dessine(){
    world.position.set(cx+(G.shake>0?rnd(-1,1)*G.shake:0),cy+(G.shake>0?rnd(-1,1)*G.shake:0));
    if(shockF&&G.onde){shockF.center={x:G.onde.x*DPR,y:G.onde.y*DPR};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}
   gAdd.clear();
+  for(const L of ["n","a"]){const P=FXP[L];for(let i=0;i<FXU[L]&&i<P.length;i++)P[i].visible=false;FXU[L]=0;}
+  if(G.sp)for(const q of G.sp){const k=q.t/q.life;fxSpr(q.k,q.x,q.y,q.w,q.rot,Math.min(1,(1-k)*2)*q.al,q.tint,q.add);}
   gBoard.roundRect(OX-8,OY-8,bw+16,bh+16,22).fill({color:0x3c220a,alpha:.55}).stroke({width:4,color:0xffe28c,alpha:.85});
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++)if((c+r)%2===0)gBoard.rect(OX+c*CELL,OY+r*CELL,CELL,CELL).fill({color:0xfff0c8,alpha:.1});
   if(G.sel)gBoard.rect(OX+G.sel[0]*CELL+3,OY+G.sel[1]*CELL+3,CELL-6,CELL-6).stroke({width:4,color:0xffffff});
