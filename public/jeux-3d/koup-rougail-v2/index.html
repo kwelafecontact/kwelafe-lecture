@@ -67,6 +67,8 @@
   .bbtn.vide { opacity:.38; }
   .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
   @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  /* téléphone à la verticale : les bonus passent en ligne en bas de l'écran, sous la carte du plat prêt, pour ne plus la cacher */
+  @media (orientation:portrait) and (max-width:640px) { .bonus { flex-direction:row; top:auto; right:auto; left:50%; transform:translateX(-50%); bottom:calc(86px + env(safe-area-inset-bottom)); gap:18px; } }
   @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
   .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
   .niveauHud.saute { animation:sauteN .5s; } @keyframes sauteN { 40% { transform:scale(1.35); } }
