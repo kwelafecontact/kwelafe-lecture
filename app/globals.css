@@ -837,3 +837,8 @@ body { background: var(--ivoire); }
 .carte-livre-admin { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.03); }
 .cla-bascules { display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: 360px; font-size: 13px; }
 @media (max-width: 720px) { .carte-livre-admin { grid-template-columns: 1fr; } }
+.bouton-suppr{background:none;border:1px solid #c0392b;color:#c0392b;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.85rem}
+.bouton-suppr.fort{background:#c0392b;color:#fff}
+.confirm-suppr{background:#fdecea;border:1px solid #f5b7b1;border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.confirm-suppr p{margin:0;flex-basis:100%;font-size:.88rem}
+.texte-erreur{color:#c0392b}

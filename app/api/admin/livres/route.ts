@@ -50,3 +50,15 @@ export async function PUT(req: NextRequest) {
     titre, String(b.resume || "").slice(0, 2000) || null, String(b.univers || "creole"), produitShopify(b.produit), String(b.url_boutique || "").slice(0, 400) || null, b.id);
   return NextResponse.json({ ok: true });
 }
+
+// Supprimer définitivement un brouillon (uniquement un livre non publié).
+export async function DELETE(req: NextRequest) {
+  if (!(await sessionAdmin())) return NextResponse.json({}, { status: 403 });
+  const { id } = await req.json();
+  const l = await tous<{ publie: number }>("SELECT publie FROM livres WHERE id = ?", id);
+  if (!l.length) return NextResponse.json({ erreur: "Livre introuvable." }, { status: 404 });
+  if (l[0].publie) return NextResponse.json({ erreur: "Seuls les brouillons peuvent être supprimés. Dépublie d'abord le livre." }, { status: 400 });
+  for (const t of ["progression", "favoris", "marques"]) await executer(`DELETE FROM ${t} WHERE livre_id = ?`, id);
+  await executer("DELETE FROM livres WHERE id = ? AND publie = 0", id);
+  return NextResponse.json({ ok: true });
+}

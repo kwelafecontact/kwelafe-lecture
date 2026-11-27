@@ -5,6 +5,7 @@ import Link from "next/link";
 import { UNIVERS } from "@/lib/config";
 import EditionLivre from "./EditionLivre";
 import BasculeAdmin from "./BasculeAdmin";
+import SupprimerBrouillon from "./SupprimerBrouillon";
 
 export type LigneAdmin = {
   id: string; slug: string; titre: string; resume: string | null; univers: string | null; shopify_product_id: string | null; url_boutique: string | null;
@@ -69,6 +70,7 @@ export default function ListeLivresAdmin({ livres }: { livres: LigneAdmin[] }) {
                   <BasculeAdmin id={l.id} champ="mystere_du_mois" valeur={l.mystere_du_mois} libelle="Mystère du mois" />
                 </div>
                 <Link className="lien cla-voir" href={`/lire/${l.slug}`}>Prévisualiser ›</Link>
+                {!l.publie && <SupprimerBrouillon id={l.id} titre={l.titre} />}
               </div>
             );
           })}
