@@ -478,7 +478,7 @@ try { sonCoupe = localStorage.getItem('bv2_son') === 'non'; } catch (e) {}
 try { const sv0 = JSON.parse(localStorage.getItem('bv2_s') || 'null'); if (sv0) S = Object.assign(S, sv0); } catch (e) {}
 const sauveS = () => { try { localStorage.setItem('bv2_s', JSON.stringify(S)); } catch (e) {} };
 const SFX = {}; let sfxDemandes = false;
-const NOMS_SFX = ['musique-calme', 'musique-intense', 'tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte', 'appel', 'combo', 'bonus', 'grand'];
+const NOMS_SFX = ['musique-calme', 'musique-intense', 'tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte', 'appel', 'combo', 'bonus', 'grand', 'annonce'];
 const NOMS_ROCHE = ['petite', 'moyenne', 'grosse'], sonsRoche = {};
 let musCur = null, musVoulue = 'musique-calme', musNom = null;
 function musique(n) {
@@ -518,6 +518,7 @@ const son = {   // échantillons ElevenLabs uniquement
   combo: () => sfx('combo', 0.85),
   bonus: () => sfx('bonus', 0.9),
   grand: () => sfx('grand', 0.95),
+  annonce: () => sfx('annonce', 1.0, 1),   // voix ElevenLabs d'ouverture
 };
 
 // ---------------------------------------------------------------- partie
@@ -628,7 +629,7 @@ function montrerFait() {
   const e = $('faitBulle'); e.innerHTML = '<b>Le saviez-vous ?</b> ' + FAITS[idx]; e.classList.add('on'); clearTimeout(montrerFait.t); montrerFait.t = setTimeout(() => e.classList.remove('on'), 8000);
 }
 function demarrer(m) {
-  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; coupees = 0; niveau = 1; etoilesC = 0; $('faitBulle').classList.remove('on'); ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 3.6; (() => { let n = 0; const t = setInterval(() => { if (son.annonce() || ++n > 8 || etat !== 'jeu') clearInterval(t); }, 250); })(); coupees = 0; niveau = 1; etoilesC = 0; $('faitBulle').classList.remove('on'); ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
   phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; prochainEgare = 9; majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); marcheurs.forEach(mm => { mm.egare = 0; mm.alerte && mm.alerte.remove(); mm.alerte = null; });
   record = calme() ? 0 : save.record; ambiancer(); musique(calme() ? 'musique-calme' : 'musique-intense'); vitesseMusique();
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
