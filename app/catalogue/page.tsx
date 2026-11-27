@@ -11,7 +11,7 @@ import { leger } from "@/lib/leger";
 import type { Format } from "@/lib/formats";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Catalogue · Kwélafé" };
+export const metadata = { title: "Ma bibliothèque · Kwélafé" };
 
 export default async function Catalogue({ searchParams }: { searchParams: Promise<{ univers?: string; format?: string; public?: string; vue?: string }> }) {
   const { univers, format, public: pourQui, vue } = await searchParams;
@@ -28,7 +28,7 @@ export default async function Catalogue({ searchParams }: { searchParams: Promis
         <header className="entete bandeau bandeau-catalogue">
           <div>
             <div className="sur-titre">Toute la bibliothèque Kwélafé</div>
-            <h1>Catalogue</h1>
+            <h1>Ma bibliothèque</h1>
           </div>
         </header>
         <nav className="puces-age">

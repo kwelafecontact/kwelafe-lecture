@@ -73,8 +73,8 @@ export default async function Accueil() {
         {session.visiteur && <BandeauVisiteur />}
 
         <nav className="raccourcis" aria-label="Accès rapides">
-          <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📚</span>Mes livres</Link>
-          <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>🔎</span>Catalogue</Link>
+          <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📖</span>Mes lectures</Link>
+          <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>📚</span>Ma bibliothèque</Link>
           <Link href="/jeux" style={{ ["--c" as any]: "#e8a200" }}><span aria-hidden>🎮</span>Jeux</Link>
           <Link href="/compte" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>⭐</span>Mes progrès</Link>
         </nav>
