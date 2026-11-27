@@ -165,10 +165,17 @@ export async function preparerPdf(fichier: File, id: string, etape: (t: string) 
       blob = await new Promise<Blob>((ok) => canvas.toBlob((b) => ok(b!), "image/jpeg", 0.85));
     }
     if (n === 1) couverture = { chemin: `${id}.${ext}`, blob, type: blob.type };
-    envois.push({ chemin: `${id}/pdf/${n}.${ext}`, blob, type: blob.type });
+    // Chaque page part tout de suite puis est libérée : un gros PDF ne sature plus la mémoire du navigateur
+    const env = { chemin: `${id}/pdf/${n}.${ext}`, blob, type: blob.type };
+    let essai = 0;
+    while (true) {
+      try { await televerser([env], false, () => {}); break; }
+      catch (e) { if (++essai >= 3) throw new Error(`Page ${n} : envoi impossible après 3 essais`); await new Promise((r) => setTimeout(r, 1500 * essai)); }
+    }
+    canvas.width = 0; canvas.height = 0;
+    page.cleanup();
   }
-  // Si une page a été encodée en WebP avant la bascule, on harmonise l'extension
-  envois.forEach((e) => (e.chemin = e.chemin.replace(/\.(webp|jpg)$/, `.${ext}`)));
+  try { await (doc as any).destroy?.(); } catch {}
   return { titre: fichier.name.replace(/\.pdf$/i, ""), manifeste: { type: "pdf" as const, pages: doc.numPages, ratio, ext }, envois, couverture, typeLivre: "pdf" };
 }
 
