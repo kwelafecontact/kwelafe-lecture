@@ -18,7 +18,6 @@
   #flash { position:fixed; inset:0; pointer-events:none; background:radial-gradient(circle at 50% 80%, rgba(255,140,40,.45), rgba(255,60,0,0) 60%); opacity:0; }
   #lueur { position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:0; }
   #gl { position:fixed; inset:0; width:100%; height:100%; }
-  #c3 { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
   .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
   .hud.on { opacity:1; }
   .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
@@ -123,7 +122,6 @@
 <body>
 <div id="fond"></div>
 <canvas id="gl"></canvas>
-<canvas id="c3"></canvas>
 <div id="vignette"></div><div id="flash"></div>
 <svg id="trace" xmlns="http://www.w3.org/2000/svg"></svg>
 
@@ -174,8 +172,6 @@
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
-<script src="../commun/fx-ia.js"></script>
-<script type="module" src="../commun/fx3d.js"></script>
 <script type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from '../koup-koup/lib/RoomEnvironment.js';
@@ -276,10 +272,6 @@ const lumLave = [0, 1, 2].map(() => { const l = new THREE.PointLight(0xff6a1a, 0
 const contre = new THREE.DirectionalLight(0xff5a20, 1.4); contre.position.set(-4, 3, -6); scene.add(contre);
 scene.add(new THREE.HemisphereLight(0xffc8a0, 0x201010, 0.7));
 let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3;
-// effets 3D naturels (gouttes de lave, étincelles, ondes) pilotés par FXIA, calque transparent au-dessus de la scène
-const EV = (t, o) => { if (window.FXIA) FXIA.evenement(t, o); };
-const FXU = () => H / viewH * 0.8;                       // unité d'effet en pixels
-const EVW = (t, pos, o) => { const s = toScreen(pos); EV(t, Object.assign({ x: s.x, y: s.y, u: FXU() }, o)); };
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
 const trace = $('trace'), NSV = 'http://www.w3.org/2000/svg', segsT = [], segsT2 = [];
 for (let i = 0; i < 40; i++) { for (const [arr, dash] of [[segsT, false], [segsT2, true]]) { const l = document.createElementNS(NSV, 'line'); l.setAttribute('stroke-linecap', 'round'); l.style.display = 'none'; if (dash) { l.setAttribute('stroke-dasharray', '4 7'); l.setAttribute('stroke-width', '2'); } trace.appendChild(l); arr.push(l); } }
@@ -558,8 +550,6 @@ function resize() {
   const cu = large ? 0.525 : 0.51, cv = large ? 0.205 : 0.168, wx = (cu - 0.5) * pw, wy = planFond.position.y + (0.5 - cv) * ph;
   cratere.x = wx * 0.985; cratere.y = wy * 0.985; const kk = (camera.position.z - 0.6) / (camera.position.z - planFond.position.z); cratere.jx = wx * kk; cratere.jy = wy * kk;
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H);
-  if (window.FX3D && FX3D.ready) FX3D.resize(W, H, Math.min(devicePixelRatio || 1, 2));
-  if (window.FXIA) { const h = $('score').getBoundingClientRect(); FXIA.cible(h.left + h.width / 2, h.top + h.height / 2); }
   const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
   balises.forEach(b => scene.remove(b)); balises.length = 0;
   for (let x = -viewW / 2; x < viewW / 2; x += 1.1) { const b = new THREE.Mesh(new THREE.CircleGeometry(0.12, 12), new THREE.MeshStandardMaterial({ color: 0xf4f4ee, roughness: 0.8 })); b.rotation.x = -Math.PI / 2; b.position.set(x + rnd(-0.1, 0.1), sol + 0.02, 1.2); b.scale.set(1.4, 1, 0.8); scene.add(b); balises.push(b); }
@@ -618,7 +608,6 @@ function majRochesFond(dt) {
 }
 // éruption au moment où une bombe quitte le cratère : gerbe, lueur et roches lancées au loin
 function eruption(force = 1) {
-  EVW('bombe', new THREE.Vector3(cratere.jx, cratere.jy, 0.6), { c: 0xff7a20, R: 1.6 + force * 0.6 });
   for (let k = 0; k < 22 * force; k++) braise(cratere.x + rnd(-.5, .5), cratere.y, ZF, rnd(-5, 5), rnd(6, 16), [1, rnd(0.5, 0.9), 0.2], rnd(0.7, 1.5), rnd(60, 110), 7);
   for (let k = 0; k < 4; k++) fumee(cratere.x + rnd(-.6, .6), cratere.y + rnd(0, .5), ZF, 380);
   for (let k = 0; k < 1 + force; k++) setTimeout(() => lancerRocheFond(force > 1), k * 120);
@@ -669,12 +658,10 @@ function finPartie() {
 // fin de niveau : fontaine de lave (avec une bombe en fuseau), puis accalmie et sismographe
 function finDeNiveau() {
   if (!calme() && niveau % 5 === 0) {   // éruption majeure : la bombe-mère, lente et énorme, à briser en plusieurs coupes
-    EVW('grand', new THREE.Vector3(cratere.jx, cratere.jy, 0.6), { c: 0xff7a20 });
     phase = 'speciales'; phaseT = 0; bandeau('ÉRUPTION MAJEURE ! Brise la bombe-mère', 3); secousse = 0.6; son.grand(); lancerBombe(false, true, true);
     for (let i = 0; i < 4; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 1800 + i * 1100);
     setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; lancerSismo(); }, 11500); return;
   }
-  EVW('cascade', new THREE.Vector3(cratere.jx, cratere.jy, 0.6), { niveau: 3 });
   phase = 'speciales'; phaseT = 0; bandeau('Fontaine de lave !', 2.2); secousse = 0.4;
   const n = 5 + Math.min(6, niveau);
   for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 150 + i * 200);
@@ -721,7 +708,7 @@ function majBonus() {
 }
 function activerBouclier() { if (etat !== 'jeu' || pause || bouclier > 0 || charge < RECHARGE_BOUCLIER) return; bouclier = DUREE_BOUCLIER; charge = 0; $('bandeau').textContent = 'Bouclier activé !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
 function activerRalenti() { if (etat !== 'jeu' || pause || ralentis <= 0) return; ralentis--; ralenti = 5; $('bandeau').textContent = 'Ralenti !'; $('bandeau').classList.add('on'); son.bouclier(); majBonus(); }
-function activerOnde() { if (etat !== 'jeu' || pause || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau && !b.montee) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); EVW('grand', new THREE.Vector3(0, 1, 0), { c: 0xffd060 }); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
+function activerOnde() { if (etat !== 'jeu' || pause || ondes <= 0) return; ondes--; let n = 0; for (const b of bombes) if (b.vivant && !b.morceau && !b.montee) { eclater(b, new THREE.Vector3(0, 1, 0)); n++; } score += n * 2; coupees += n; majScore(); secousse = 0.5; son.impact(1.1); popup('Onde de choc ! ' + n + ' bombes', new THREE.Vector3(0, 1, 0), 'chaine'); majBonus(); }
 function lancerOiseau() {
   const dir = Math.random() < 0.5 ? 1 : -1, obj = pailleEnQueue();
   obj.rotation.order = 'YXZ'; obj.rotation.y = dir > 0 ? -0.3 : Math.PI + 0.3; obj.rotation.x = 0.55;
@@ -739,8 +726,7 @@ function toucheOiseau(o, b) {
 function eclater(b, dir) {
   b.vivant = false; scene.remove(b.obj);
   const p = b.obj.position; anneau(p);
-  EVW('coup', p, { c: 0xff6a1a, n: 10 }); EVW('bombe', p, { c: 0xffa040, R: 1.8 });
-  const nb = (PETIT ? 130 : 190) * (window.FXIA ? 0.6 : 1) | 0;
+  const nb = PETIT ? 130 : 190;
   for (let i = 0; i < nb; i++) { const a = Math.random() * Math.PI * 2, v = Math.pow(Math.random(), 0.6) * rnd(4, 11); const c = Math.random(); braise(p.x, p.y, p.z + 0.4, Math.cos(a) * v + dir.x * 1.5, Math.sin(a) * v + dir.y * 1.5 + 1, c < .35 ? [1, 0.45, 0.06] : c < .75 ? [1, 0.72, 0.2] : [1, 0.95, 0.65], rnd(0.5, 1.4), rnd(18, 60), 5); }
   for (let i = 0; i < 18; i++) { const a = Math.random() * Math.PI * 2, v = rnd(2, 6); braise(p.x, p.y, p.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 2, [1, 0.5, 0.1], rnd(0.9, 1.6), rnd(70, 110), 7); }
   for (let i = 0; i < 6; i++) fumee(p.x + rnd(-.3, .3), p.y, p.z, 120);
@@ -769,7 +755,6 @@ function trancher(a, b) {
         // pierre à cristaux : chaque coupe l'entaille, elle ne se brise qu'à la dernière
         bo.pv--; bo.garde = 0.2; bo.vy += bo.boss ? 0.6 : 2.2; bo.vx += dir.x * 1.6; bo.vr *= -1.4; { const kr = bo.boss ? 0.96 : 0.9; bo.obj.scale.multiplyScalar(kr); bo.base && bo.base.multiplyScalar(kr); bo.rayon *= bo.boss ? 0.97 : 0.92; }
         son.coupe(bo.obj.scale.x); anneau(bo.obj.position); score += 1; majScore(); serie++; chaine++;
-        EVW('coup', bo.obj.position, { c: 0x40ff80, n: 8 });
         const q = bo.obj.position; for (let i = 0; i < 46; i++) { const a = Math.random() * 6.283, v = rnd(2, 8); braise(q.x, q.y, q.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 1, i % 3 ? [0.35, 1, 0.5] : [0.8, 1, 0.8], rnd(0.4, 1), rnd(22, 55), 5); }
         popup(bo.pv > 1 ? 'Encore ' + bo.pv + ' coupes !' : 'Encore 1 coupe !', q, 'chaine'); continue;
       }
@@ -869,12 +854,12 @@ function boucle() {
         if (vn < 0) { b.vx = (b.vx - 2 * vn * n.x) * 0.6; b.vy = (b.vy - 2 * vn * n.y) * 0.6 + 1.5; }
         const k = 1 / Math.sqrt(q) * 1.01; p.x *= k; p.y = sol + (p.y - sol) * k;
         b.minuteur = 0.32; b.vr *= -1.5;
-        anneau(p); EVW('coup', p, { c: 0x6ad8ff, n: 6 }); impactBulle = 0.3; sfx('bouclier', 0.45, 1.2); popup('Bouclier !', p, 'chaine');
+        anneau(p); impactBulle = 0.3; sfx('bouclier', 0.45, 1.2); popup('Bouclier !', p, 'chaine');
       }
     }
     if (p.y < sol + 0.5) {
       serie = 0; b.vivant = false; scene.remove(b.obj); son.impact(b.obj.scale.x); secousse = 0.35; $('flash').style.transition = 'none'; $('flash').style.opacity = 1; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .6s'; $('flash').style.opacity = 0; });
-      tache(p.x); EVW('bombe', new THREE.Vector3(p.x, sol + 0.3, 0.8), { c: 0xff5a1a, R: 2.2 });
+      tache(p.x);
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
       const touche = marcheurs.find(m => Math.abs(m.x - p.x) < 0.75);
@@ -908,10 +893,7 @@ function boucle() {
   matFond.uniforms.t.value = tps;
   if (!fige) { fondT -= dt; if (fondT <= 0) { fondT = rnd(0.3, 0.8); lancerRocheFond(); } majRochesFond(dt); }
   majParticules(dt);
-  if (window.FX3D && !FX3D.tried) { FX3D.tried = 1; FX3D.init($('c3')); FX3D.resize(W, H, Math.min(devicePixelRatio || 1, 2)); }
-  if (window.FX3D && FX3D.ready) FX3D.update(fige ? 0 : dt);
-  if (window.FXIA) FXIA.tick(fige ? 0 : dt, { jouant: joue, calme: calme(), ambiance: 'volcan', u: FXU(), W, H, zone: { x0: 0, x1: W, y0: H * 0.25, y1: H * 0.92 } });
-  composer.render(); if (window.FX3D && FX3D.ready) FX3D.render();
+  composer.render();
   dessinerTrait();
   requestAnimationFrame(boucle);
 }

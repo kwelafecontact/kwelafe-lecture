@@ -134,11 +134,6 @@
       if (this.ambianceT > 0) return;
       // l'ambiance suit l'humeur : lucioles et pétales au calme, braises quand ça s'enflamme, brume de jus entre deux
       this.ambianceT = (e.calme ? 0.9 : 0.6) * (1.5 - this.budget * 0.5);
-      if (e.ambiance === "volcan") { // volcan : braises montantes et vapeur, ni lucioles ni pétales
-        f.braises(z.x0, z.x1, z.y1, this.n(this.excitation > 0.5 ? 5 : 2), u, 0xff8a2a);
-        if (Math.random() < 0.35) f.vapeur(rnd(z.x0, z.x1), z.y1, 1, u * 1.2);
-        return;
-      }
       if (this.excitation < 0.25) {
         f.lucioles(z.x0, z.x1, z.y0, z.y1, this.n(e.calme ? 2 : 1), u);
         if (Math.random() < 0.5) f.petales(z.x0, z.x1, z.y0 - u * 0.5, 1, u);
