@@ -1,5 +1,6 @@
 // Parcours « Apprendre le créole » : mots tirés des livres Kwélafé (OTÉ ! Les zarlor, Kosa i mank ?).
 import { BANQUE, PAIRES } from "./quiz/banque";
+import { PHRASES_LIVRES } from "./apprendre-livres";
 
 export type Mot = { kr: string; fr: string; source: string };
 export type Unite = { id: number; titre: string; emoji: string; couleur: string; mots: Mot[] };
@@ -41,15 +42,24 @@ export function mots(): Mot[] {
   }
   for (const [kr, fr] of ABECEDAIRE) ajouter(kr, fr, "Mon abécédaire créole réunionnais");
   for (const [kr, fr, source] of PAIRES) ajouter(kr, fr, source);
+  // Mots courts des livres de créole d'abord, puis les phrases (progression du simple au plus long)
+  const livres = [...PHRASES_LIVRES].sort((a, b) => a[0].split(" ").length - b[0].split(" ").length);
+  for (const [kr, fr, source] of livres) ajouter(kr, fr, source);
   return res;
 }
+
+const PHRASES_NOMS: [string, string][] = [["Petites phrases", "💬"], ["Au quotidien", "☀️"], ["En ville", "🚌"], ["Au marché", "🧺"], ["Parler de soi", "🙋"], ["La famille", "👨‍👩‍👧"], ["Le temps qu'il fait", "🌦️"], ["Demander de l'aide", "🆘"], ["Discuter", "🗣️"], ["Expressions péi", "🌺"]];
+const COULEURS = ["#2e9d4f", "#1f6fb2", "#e8a200", "#d6332a", "#7a2e8f", "#e0457b"];
 
 export function unites(): Unite[] {
   const tous = mots();
   const res: Unite[] = [];
-  for (let i = 0; i < tous.length && res.length < NOMS.length; i += 8) {
-    const [titre, emoji, couleur] = NOMS[res.length];
-    res.push({ id: res.length + 1, titre, emoji, couleur, mots: tous.slice(i, i + 8) });
+  for (let i = 0; i < tous.length; i += 10) {
+    const k = res.length;
+    const [titre, emoji, couleur] = k < NOMS.length ? NOMS[k] : (() => { const j = k - NOMS.length; const [t, e] = PHRASES_NOMS[j % PHRASES_NOMS.length]; return [j >= PHRASES_NOMS.length ? `${t} ${Math.floor(j / PHRASES_NOMS.length) + 1}` : t, e, COULEURS[j % COULEURS.length]]; })();
+    const lot = tous.slice(i, i + 10);
+    if (lot.length < 4) { res[res.length - 1]?.mots.push(...lot); break; }
+    res.push({ id: k + 1, titre, emoji, couleur, mots: lot });
   }
   return res;
 }

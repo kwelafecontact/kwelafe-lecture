@@ -1054,3 +1054,23 @@ body { background: var(--ivoire); }
 .quiz-reponses button.terne{opacity:.35}
 .quiz-question{font-family:var(--titre);font-size:24px;background:#fff;border-radius:22px;padding:20px;box-shadow:var(--ombre);text-align:center}
 .app-enfants-lien{text-align:center;background:#fdf2d6;border-radius:14px;padding:10px;font-weight:700}.app-enfants-lien a{color:var(--lave)}
+/* Profils Apprendre */
+.app-profils{text-align:center;padding:10px 0 30px}
+.app-profils h1{font-family:var(--titre);color:#24402f}
+.app-profils-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin:18px 0}
+.app-profil-case{display:flex;flex-direction:column;gap:6px}
+.app-profil{display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 8px;border-radius:22px;border:3px solid #e5e0d8;border-bottom-width:6px;background:#fff;cursor:pointer;width:100%}
+.app-profil span{font-size:44px}.app-profil b{font-size:17px}.app-profil small{color:var(--doux);font-size:12px}
+.app-profil:hover{border-color:#58cc02}
+.app-profil.ajout{border-style:dashed}
+.app-lien{background:none;border:none;color:var(--lave);font-weight:800;cursor:pointer;margin-top:8px}
+.app-ajout{display:grid;gap:12px;max-width:360px;margin:16px auto}
+.app-ajout label{display:grid;gap:6px;text-align:left;font-weight:800}
+.app-ajout input{padding:12px;border-radius:14px;border:2px solid #e5e0d8;font-size:17px}
+.app-avatars{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.app-avatars button{font-size:30px;width:54px;height:54px;border-radius:16px;border:2px solid #e5e0d8;background:#fff;cursor:pointer}
+.app-avatars button.sel{border-color:#58cc02;background:#d7ffb8}
+.app-ajout .app-btn{margin:0 auto}
+.app-suppr{border:none;background:#fde6e3;color:#a52a14;border-radius:10px;padding:5px;font-size:12px;cursor:pointer}
+.app-suppr-q{font-size:12px;background:#fde6e3;border-radius:10px;padding:6px}.app-suppr-q button{margin:4px 2px 0;border:none;border-radius:8px;padding:3px 8px;cursor:pointer}
+.app-qui{margin-right:auto;border:none;background:#fff;border-radius:999px;padding:6px 12px;font-weight:800;box-shadow:var(--ombre);cursor:pointer;font-size:14px}

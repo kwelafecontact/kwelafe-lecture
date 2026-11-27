@@ -25,22 +25,45 @@ async function classement(cid?: string) {
   return rows.map((r, i) => ({ rang: i + 1, prenom: r.prenom || "Lecteur", xp: r.xp_semaine, moi: r.client_id === cid }));
 }
 
-export async function GET() {
+type Profil = { id: string; nom: string; avatar: string | null };
+const cleProfil = (cid: string, profil?: string | null) => (profil && /^[a-z0-9-]{4,40}$/.test(profil) ? `${cid}#${profil}` : cid);
+const profilsDe = (cid: string) => tous<Profil>("SELECT id, nom, avatar FROM apprendre_profils WHERE client_id = ? ORDER BY cree_le", cid);
+
+export async function GET(req: NextRequest) {
   const s = await lireSession();
   const connecte = !!s && !s.visiteur;
-  const l = connecte ? await premier<Ligne>("SELECT * FROM apprendre_progres WHERE client_id = ?", s!.cid) : null;
-  return NextResponse.json({ connecte, progres: versClient(l), classement: await classement(s?.cid), semaine: lundi() });
+  const profil = req.nextUrl.searchParams.get("profil");
+  const cle = connecte ? cleProfil(s!.cid, profil) : "";
+  const l = connecte ? await premier<Ligne>("SELECT * FROM apprendre_progres WHERE client_id = ?", cle) : null;
+  return NextResponse.json({ connecte, prenom: s?.prenom || "", profils: connecte ? await profilsDe(s!.cid) : [], progres: versClient(l), classement: await classement(cle), semaine: lundi() });
 }
 
 export async function POST(req: NextRequest) {
   const s = await lireSession();
   if (!s || s.visiteur) return NextResponse.json({ erreur: "Connecte-toi pour garder tes progrès." }, { status: 401 });
   const b = await req.json();
+  if (b.action === "profil-ajouter") {
+    const nom = String(b.nom || "").trim().slice(0, 24);
+    if (!nom) return NextResponse.json({ erreur: "Donne un prénom." }, { status: 400 });
+    const n = (await profilsDe(s.cid)).length;
+    if (n >= 6) return NextResponse.json({ erreur: "6 profils maximum." }, { status: 400 });
+    const id = crypto.randomUUID().slice(0, 12);
+    await executer("INSERT INTO apprendre_profils (client_id, id, nom, avatar, cree_le) VALUES (?,?,?,?,?)", s.cid, id, nom, String(b.avatar || "🐢").slice(0, 8), new Date().toISOString());
+    return NextResponse.json({ profils: await profilsDe(s.cid), id });
+  }
+  if (b.action === "profil-suppr") {
+    const id = String(b.id || "");
+    await executer("DELETE FROM apprendre_profils WHERE client_id = ? AND id = ?", s.cid, id);
+    await executer("DELETE FROM apprendre_progres WHERE client_id = ?", `${s.cid}#${id}`);
+    return NextResponse.json({ profils: await profilsDe(s.cid) });
+  }
+  const cle = cleProfil(s.cid, b.profil);
+  const nomProfil = b.profil ? (await premier<{ nom: string }>("SELECT nom FROM apprendre_profils WHERE client_id = ? AND id = ?", s.cid, b.profil))?.nom : null;
   const auj = jourReunion();
   const hier = jourReunion(new Date(Date.now() - 86400000));
   const sem = lundi();
-  const l = (await premier<Ligne>("SELECT * FROM apprendre_progres WHERE client_id = ?", s.cid)) || {
-    client_id: s.cid, prenom: s.prenom || null, xp: 0, serie: 0, jour: null, finies: "{}", coeurs: 5, jour_coeurs: auj, semaine: sem, xp_semaine: 0,
+  const l = (await premier<Ligne>("SELECT * FROM apprendre_progres WHERE client_id = ?", cle)) || {
+    client_id: cle, prenom: nomProfil || s.prenom || null, xp: 0, serie: 0, jour: null, finies: "{}", coeurs: 5, jour_coeurs: auj, semaine: sem, xp_semaine: 0,
   };
   if (l.jour_coeurs !== auj) { l.coeurs = 5; l.jour_coeurs = auj; }
   if (l.semaine !== sem) { l.semaine = sem; l.xp_semaine = 0; }
@@ -68,6 +91,6 @@ export async function POST(req: NextRequest) {
   await executer(
     `INSERT INTO apprendre_progres (client_id, prenom, xp, serie, jour, finies, coeurs, jour_coeurs, semaine, xp_semaine, maj) VALUES (?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(client_id) DO UPDATE SET prenom=excluded.prenom, xp=excluded.xp, serie=excluded.serie, jour=excluded.jour, finies=excluded.finies, coeurs=excluded.coeurs, jour_coeurs=excluded.jour_coeurs, semaine=excluded.semaine, xp_semaine=excluded.xp_semaine, maj=excluded.maj`,
-    s.cid, s.prenom || l.prenom, l.xp, l.serie, l.jour, l.finies, l.coeurs, l.jour_coeurs, l.semaine, l.xp_semaine, new Date().toISOString());
-  return NextResponse.json({ progres: versClient(l), classement: await classement(s.cid) });
+    cle, nomProfil || s.prenom || l.prenom, l.xp, l.serie, l.jour, l.finies, l.coeurs, l.jour_coeurs, l.semaine, l.xp_semaine, new Date().toISOString());
+  return NextResponse.json({ progres: versClient(l), classement: await classement(cle) });
 }

@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS apprendre_progres (
   maj TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_apprendre_semaine ON apprendre_progres (semaine, xp_semaine DESC);
+-- Profils (chaque membre de la famille a sa propre progression)
+CREATE TABLE IF NOT EXISTS apprendre_profils (client_id TEXT NOT NULL, id TEXT NOT NULL, nom TEXT NOT NULL, avatar TEXT, cree_le TEXT NOT NULL, PRIMARY KEY (client_id, id));

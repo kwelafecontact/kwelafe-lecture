@@ -1,4 +1,5 @@
 // Mots simples pour les enfants, tirés de « Mon abécédaire créole réunionnais » et « OTÉ ! Les zarlor » (graphie de l'Académie).
+import { PHRASES_LIVRES } from "./apprendre-livres";
 export type MotEnfant = { kr: string; fr: string; emoji: string; theme: string };
 export const THEMES_ENFANTS = [
   { id: "bonjour", nom: "Dire bonjour", emoji: "👋", couleur: "#2e9d4f" },
@@ -6,6 +7,7 @@ export const THEMES_ENFANTS = [
   { id: "manger", nom: "À manger", emoji: "🍛", couleur: "#f08a24" },
   { id: "nature", nom: "La nature", emoji: "🌺", couleur: "#1f6fb2" },
   { id: "bouger", nom: "Je bouge", emoji: "🏃", couleur: "#7a2e8f" },
+  { id: "phrases", nom: "Petites phrases", emoji: "💬", couleur: "#d6332a" },
 ];
 export const MOTS_ENFANTS: MotEnfant[] = [
   { kr: "Oté !", fr: "Salut !", emoji: "👋", theme: "bonjour" },
@@ -46,3 +48,11 @@ export const MOTS_ENFANTS: MotEnfant[] = [
   { kr: "Ékol", fr: "École", emoji: "🏫", theme: "bouger" },
   { kr: "Kanèt", fr: "Billes", emoji: "🔵", theme: "bouger" },
 ];
+
+// Petites phrases simples (4 mots maximum) tirées du Tome 1 « Le créole réunionnais »
+const EMO: [RegExp, string][] = [[/bonzour|bonsoir/i, "👋"], [/mersi/i, "🙏"], [/manz|kari|dolo/i, "🍛"], [/koné pa|konpran pa/i, "🤷"], [/konpran/i, "💡"], [/lékol/i, "🏫"], [/sava/i, "🚶"], [/lé la|lé bien/i, "🙂"], [/vé/i, "🙋"]];
+for (const [kr, fr, source] of PHRASES_LIVRES) {
+  if (!source.includes("Tome 1") || !/[.!?]$/.test(kr) || kr.split(" ").length > 4 || fr.includes("/")) continue;
+  if (MOTS_ENFANTS.filter((m) => m.theme === "phrases").length >= 14) break;
+  MOTS_ENFANTS.push({ kr, fr, emoji: EMO.find(([r]) => r.test(kr))?.[1] || "💬", theme: "phrases" });
+}

@@ -14,15 +14,17 @@ const hier = () => new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 const melange = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
 const MAX_COEURS = 5;
 
-function lire(): Progres {
+function lire(cle = CLE): Progres {
   const vide = { xp: 0, serie: 0, jour: "", finies: {}, coeurs: MAX_COEURS, jourCoeurs: auj() };
   try {
-    const p = { ...vide, ...JSON.parse(localStorage.getItem(CLE) || "{}") } as Progres;
+    const p = { ...vide, ...JSON.parse(localStorage.getItem(cle) || "{}") } as Progres;
     if (p.jourCoeurs !== auj()) { p.coeurs = MAX_COEURS; p.jourCoeurs = auj(); }
     return p;
   } catch { return vide; }
 }
-function ecrire(p: Progres) { try { localStorage.setItem(CLE, JSON.stringify(p)); } catch {} }
+function ecrire(p: Progres, cle = CLE) { try { localStorage.setItem(cle, JSON.stringify(p)); } catch {} }
+type ProfilApp = { id: string; nom: string; avatar: string | null };
+const AVATARS = ["🐢", "🦎", "🐦", "🐬", "🌺", "🍍", "🦋", "🐠"];
 
 function preparer(u: Unite, toutes: Unite[]): Exo[] {
   const pool = toutes.flatMap((x) => x.mots);
@@ -46,25 +48,87 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
   const [fin, setFin] = useState<{ xp: number; etoiles: number; u: Unite } | null>(null);
   const [connecte, setConnecte] = useState(false);
   const [classement, setClassement] = useState<Rang[]>([]);
-  useEffect(() => {
-    const local = lire();
+  const [profils, setProfils] = useState<ProfilApp[]>([]);
+  const [prenom, setPrenom] = useState("");
+  const [profil, setProfil] = useState<string | null>(null); // null = pas encore choisi, "" = titulaire du compte
+  const [ajout, setAjout] = useState(false);
+  const [gerer, setGerer] = useState(false);
+  const [nouveau, setNouveau] = useState({ nom: "", avatar: AVATARS[0] });
+  const cleLocale = (pr: string | null) => (pr ? `${CLE}-${pr}` : CLE);
+
+  async function charger(pr: string) {
+    setProfil(pr);
+    try { sessionStorage.setItem("kw-app-profil", pr); } catch {}
+    const local = lire(cleLocale(pr));
     setP(local);
-    fetch("/api/apprendre").then((r) => r.json()).then(async (d) => {
+    const d = await fetch(`/api/apprendre${pr ? `?profil=${pr}` : ""}`).then((r) => r.json()).catch(() => null);
+    if (!d) return;
+    setClassement(d.classement || []);
+    if (!d.connecte) return;
+    let srv = d.progres;
+    if ((!srv || srv.xp === 0) && local.xp > 0) {
+      const j = await fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "importer", local, profil: pr || undefined }) }).then((r) => r.json());
+      srv = j.progres; setClassement(j.classement || []);
+    }
+    if (srv) { setP(srv); ecrire(srv, cleLocale(pr)); }
+  }
+
+  useEffect(() => {
+    fetch("/api/apprendre").then((r) => r.json()).then((d) => {
       setClassement(d.classement || []);
-      if (!d.connecte) return;
-      setConnecte(true);
-      let srv = d.progres;
-      if ((!srv || srv.xp === 0) && local.xp > 0) {
-        const r = await fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "importer", local }) });
-        const j = await r.json(); srv = j.progres; setClassement(j.classement || []);
-      }
-      if (srv) { setP(srv); ecrire(srv); }
-    }).catch(() => {});
+      if (!d.connecte) { setProfil(""); setP(lire()); return; }
+      setConnecte(true); setPrenom(d.prenom || ""); setProfils(d.profils || []);
+      let deja: string | null = null;
+      try { deja = sessionStorage.getItem("kw-app-profil"); } catch {}
+      if ((d.profils || []).length === 0) charger("");
+      else if (deja !== null && (deja === "" || d.profils.some((x: ProfilApp) => x.id === deja))) charger(deja);
+    }).catch(() => { setProfil(""); setP(lire()); });
   }, []);
+
+  async function ajouterProfil() {
+    const j = await fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "profil-ajouter", ...nouveau }) }).then((r) => r.json());
+    if (j.profils) { setProfils(j.profils); setAjout(false); setNouveau({ nom: "", avatar: AVATARS[0] }); }
+  }
+  async function supprimerProfil(id: string) {
+    const j = await fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "profil-suppr", id }) }).then((r) => r.json());
+    if (j.profils) setProfils(j.profils);
+  }
+
+  // Écran « Qui apprend aujourd'hui ? »
+  if (connecte && (profil === null || ajout)) return (
+    <div className="app-profils">
+      <div className="app-mascotte grand" aria-hidden><img src="/apprendre/mascotte.webp" alt="" /></div>
+      <h1>Qui apprend aujourd'hui ?</h1>
+      <p className="texte-doux">Chaque membre de la famille a son propre parcours, sa série et ses étoiles.</p>
+      {!ajout ? (
+        <>
+          <div className="app-profils-grille">
+            <button className="app-profil" onClick={() => charger("")}><span>⭐</span><b>{prenom || "Moi"}</b><small>titulaire du compte</small></button>
+            {profils.map((x) => (
+              <div key={x.id} className="app-profil-case">
+                <button className="app-profil" onClick={() => !gerer && charger(x.id)}><span>{x.avatar || "🐢"}</span><b>{x.nom}</b></button>
+                {gerer && <ConfirmerSuppr nom={x.nom} onOui={() => supprimerProfil(x.id)} />}
+              </div>
+            ))}
+            {profils.length < 6 && <button className="app-profil ajout" onClick={() => setAjout(true)}><span>＋</span><b>Ajouter</b><small>un enfant, un parent…</small></button>}
+          </div>
+          {profils.length > 0 && <button className="app-lien" onClick={() => setGerer(!gerer)}>{gerer ? "Terminé" : "Gérer les profils"}</button>}
+        </>
+      ) : (
+        <div className="app-ajout">
+          <label>Prénom<input value={nouveau.nom} maxLength={24} onChange={(e) => setNouveau({ ...nouveau, nom: e.target.value })} placeholder="ex. Lina" autoFocus /></label>
+          <div className="app-avatars">{AVATARS.map((a) => <button key={a} className={nouveau.avatar === a ? "sel" : ""} onClick={() => setNouveau({ ...nouveau, avatar: a })}>{a}</button>)}</div>
+          <button className="app-btn" disabled={!nouveau.nom.trim()} onClick={ajouterProfil}>Créer le profil</button>
+          <button className="app-lien" onClick={() => setAjout(false)}>Annuler</button>
+        </div>
+      )}
+    </div>
+  );
   if (!p) return null;
 
-  const maj = (n: Progres) => { setP(n); ecrire(n); };
-  const envoyer = (corps: object) => fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corps) })
+  const profilCourant = profil ? profils.find((x) => x.id === profil) : null;
+  const maj = (n: Progres) => { setP(n); ecrire(n, cleLocale(profil)); };
+  const envoyer = (corps: object) => fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...corps, profil: profil || undefined }) })
     .then((r) => r.json()).then((j) => { if (j.progres) maj(j.progres); if (j.classement) setClassement(j.classement); }).catch(() => {});
   const debloquee = (id: number) => id === 1 || p.finies[id - 1] !== undefined;
 
@@ -97,6 +161,7 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
     <>
       <header className="app-entete">
         <div className="app-stats">
+          {connecte && <button className="app-qui" onClick={() => { setProfil(null); try { sessionStorage.removeItem("kw-app-profil"); } catch {} }}>{profilCourant ? `${profilCourant.avatar || "🐢"} ${profilCourant.nom}` : `⭐ ${prenom || "Moi"}`} · changer</button>}
           <span title="Série de jours">🔥 {p.serie}</span>
           <span title="Points d'expérience">⭐ {p.xp} XP</span>
           <span title="Cœurs (reviennent chaque jour)">❤️ {p.coeurs}</span>
@@ -223,4 +288,11 @@ function Lecon({ lecon, coeurs, onErreur, onSuivant, onQuitter }: {
       </div>
     </div>
   );
+}
+
+function ConfirmerSuppr({ nom, onOui }: { nom: string; onOui: () => void }) {
+  const [q, setQ] = useState(false);
+  return q ? (
+    <div className="app-suppr-q">Supprimer {nom} et ses progrès ? <button onClick={onOui}>Oui</button><button onClick={() => setQ(false)}>Non</button></div>
+  ) : <button className="app-suppr" onClick={() => setQ(true)}>🗑️ Supprimer</button>;
 }
