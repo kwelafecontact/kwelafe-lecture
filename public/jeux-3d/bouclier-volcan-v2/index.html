@@ -523,8 +523,8 @@ function audio() {
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination); musG = actx.createGain(); musG.gain.value = S.mus; musG.connect(maitre); fxG = actx.createGain(); fxG.gain.value = S.fx; fxG.connect(maitre); } catch (e) {}
 }
 const bruit = () => {}, ton = () => {};   // plus aucun son synthétisé
-// voix des touristes : 4 voix d'origine (p0 à p3, 15 cris chacune) et 4 voix rigolotes (n0 à n3, 8 phrases chacune)
-const VOIX = [['p0', 15], ['p1', 15], ['p2', 15], ['p3', 15], ['n0', 8], ['n1', 8], ['n2', 8], ['n3', 8]], voixBuf = {}; let voixDemandees = false, criGlobal = 0, voixG = null;
+// voix des touristes : 4 voix d'origine (p0 à p3, 15 cris chacune) et 4 voix rigolotes (n0 à n3, 10 à 11 phrases chacune, français et créole)
+const VOIX = [['p0', 15], ['p1', 15], ['p2', 15], ['p3', 15], ['n0', 11], ['n1', 10], ['n2', 11], ['n3', 10]], voixBuf = {}; let voixDemandees = false, criGlobal = 0, voixG = null;
 function chargerVoix() {
   if (voixDemandees || !actx) return; voixDemandees = true;
   voixG = actx.createGain(); voixG.gain.value = 0.9; voixG.connect(maitre);
@@ -718,7 +718,7 @@ function lancerHelico() {
   majJauge(1, '🚁 Il arrive !', true); bandeau('L\'hélicoptère arrive !', 1.6); son.helico(true);
   if (fx) fx.joue('halo', { intensite: 0.4 });
 }
-// panique constante : les touristes courent toujours dans tous les sens ; à l'arrivée de l'hélicoptère, ils redoublent
+// panique : les touristes marchent tranquillement, et ne s'affolent que pendant que l'hélicoptère est là
 let affole = false;
 function paniquer(on) { affole = on; for (const m of marcheurs) { m.pc = 0; if (on && Math.random() < 0.7) setTimeout(() => crier(m, true), rnd(0, 900)); } }
 // touriste touché pendant que l'hélicoptère est là : il monte par le treuil
@@ -1028,13 +1028,13 @@ function boucle() {
     if (!fige) {
       m.t += dt;
       if (m.entree) { m.x += m.dir * 1.3 * dt; if (Math.abs(m.x) < viewW * 0.4) m.entree = false; }
-      else if (m.panique && etat === 'jeu') { m.pc -= dt; if (m.pc <= 0) { m.pc = rnd(0.25, 0.8); m.dir = Math.random() < 0.5 ? -1 : 1; m.vp = (affole ? rnd(1.6, 2.9) : rnd(1.1, 2.2)) * (calme() ? 0.8 : 1); } m.x += m.dir * m.vp * dt; }
+      else if (affole && etat === 'jeu') { m.pc -= dt; if (m.pc <= 0) { m.pc = rnd(0.25, 0.8); m.dir = Math.random() < 0.5 ? -1 : 1; m.vp = rnd(1.6, 2.9) * (calme() ? 0.8 : 1); } m.x += m.dir * m.vp * dt; }
       else if (m.choc > 0) { m.choc -= dt; m.x += m.dir * dt * 2.2; } else m.x += m.dir * m.v * dt;
     }
     m.obj.position.z += (0.8 - m.obj.position.z) * Math.min(1, dt * 0.8);
     if (!m.entree && Math.abs(m.x) > viewW * 0.44) { m.dir *= -1; m.x = Math.sign(m.x) * viewW * 0.44; }
-    m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * (m.panique && etat === 'jeu' ? 14 : 8));
-    const fou = m.panique && etat === 'jeu'; animer(m.obj, m.t * (fou ? 1.25 : 1), m.choc > 0 || fou);
+    m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * (affole && etat === 'jeu' ? 14 : 8));
+    const fou = affole && etat === 'jeu'; animer(m.obj, m.t * (fou ? 1.25 : 1), m.choc > 0 || fou);
   }
   bulle.visible = bouclier > 0; if (bouclier > 0) { bulle.position.set(0, sol, 0.5); bulle.scale.set(viewW * 0.5, 2.2, 1.6); bulle.material.opacity = 0.18 + Math.sin(performance.now() / 150) * 0.05 + impactBulle * 0.4; bulle.material.emissiveIntensity = 0.4 + impactBulle * 3; } impactBulle = Math.max(0, impactBulle - dt);
   for (let i = bombes.length - 1; i >= 0; i--) {
@@ -1090,7 +1090,7 @@ function boucle() {
   for (let i = taches.length - 1; i >= 0; i--) { const t = taches[i]; if (!fige) t.vie -= dt; const k = Math.max(0, t.vie / 3); t.m.material.color.setRGB(3 * k, 2.4 * k * k, 2 * k * k * k); if (t.vie <= 0) { scene.remove(t.m); t.m.geometry.dispose(); t.m.material.dispose(); taches.splice(i, 1); } }
   for (let i = anneaux.length - 1; i >= 0; i--) { const a = anneaux[i]; a.vie -= dt; const k = 1 - a.vie / 0.45; a.m.scale.setScalar(1 + k * 2.6); a.m.material.opacity = (1 - k) * (1 - k); if (a.vie <= 0) { scene.remove(a.m); a.m.geometry.dispose(); a.m.material.dispose(); anneaux.splice(i, 1); } }
   if (joue && bouclier <= 0) for (const b of bombes) { if (!b.vivant || b.morceau || b.montee || b.vy > 0 || b.obj.position.y > sol + 4.5) continue; const m = marcheurs.find(mm => Math.abs(mm.x - b.obj.position.x) < 1.8); if (m && Math.random() < dt * 2.5) crier(m); }
-  if (joue && marcheurs.length && Math.random() < dt * (helico.etat === 'station' ? 1.6 : 0.7)) crier(marcheurs[Math.floor(Math.random() * marcheurs.length)]);
+  if (joue && marcheurs.length && Math.random() < dt * (helico.etat === 'station' ? 1.6 : 0.2)) crier(marcheurs[Math.floor(Math.random() * marcheurs.length)]);
   if (joue) { prochainOiseau -= dt; if (prochainOiseau <= 0) { prochainOiseau = Math.max(4, 11 - niveau * 0.6) + rnd(0, 4); lancerOiseau(); } }
   for (let i = oiseaux.length - 1; i >= 0; i--) {
     const o = oiseaux[i], u = o.obj.userData; if (fige) continue;
