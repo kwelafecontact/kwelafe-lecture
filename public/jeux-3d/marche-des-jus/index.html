@@ -133,7 +133,7 @@ try{const r=JSON.parse(localStorage.getItem("mdj")||"null");if(r)S=Object.assign
 const sauve=()=>{try{localStorage.setItem("mdj",JSON.stringify(S));}catch(e){}};
 
 /* ---------- Sons (ElevenLabs v2 + repli synthétique) ---------- */
-const SONS={mixeur:.9,panier:.8,prise:.7,presse:.9,caisse:.9,faux:.8,guepe:.6,swat:.9,verse:.7,fache:.7,dore:.9,niveau:.9,glacons:.9};
+const SONS={mixeur:.9,panier:.8,prise:.7,presse:.9,caisse:.9,faux:.8,guepe:.6,swat:.9,verse:.7,fache:.7,dore:.9,niveau:.9,glacons:.9,impact:.9,eclat:.7,montee:.6,petales:.6};
 const buf={};let ac=null;
 function debloque(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(ac&&ac.state==="suspended")ac.resume();}
 function bip(f,d,t="sine",v=.15){if(!ac)return;const o=ac.createOscillator(),gn=ac.createGain();o.type=t;o.frequency.value=f;gn.gain.value=v;gn.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(gn);gn.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}
@@ -241,6 +241,7 @@ function maj(dt){
   if(G.tr>0)G.tr-=dt;
   for(const q of G.parts){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;}
   G.parts=G.parts.filter(q=>q.t<q.life);
+  if(G.sp){for(const q of G.sp){q.t+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=q.g*dt;q.rot+=q.vr*dt;q.w+=q.grow*dt/q.life;}G.sp=G.sp.filter(q=>q.t<q.life);}
   for(const p of G.pops){p.t+=dt;}G.pops=G.pops.filter(p=>p.t<1.6);
   if(G.gros.t>0)G.gros.t-=dt;
 }
@@ -303,13 +304,18 @@ function servir(){
   sfx("caisse");pop("+"+gain+" €",verrePos().x,CY-ux()*.4,"#ffd24a",44);burst(verrePos().x,CY-ux()*.15,"#ffd24a",18,.9);vib([20,40,20]);
   G.verre=null;
   if(gain>=60||o.or)grandMoment(verrePos().x,CY-ux()*.15,"#ffd24a");
-  if(G.serv%3===0){G.niv++;G.gros={txt:"NIVEAU "+G.niv,t:1.8};sfx("niveau");G.fw=1.6;grandMoment(W/2,H*.38,"#ffd24a");}
+  if(G.serv%3===0){G.niv++;G.gros={txt:"NIVEAU "+G.niv,t:1.8};sfx("niveau");G.fw=1.6;sfx("petales",.7);sfx("montee",.5,.9);grandMoment(W/2,H*.38,"#ffd24a");}
   ordre();
 }
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
-function grandMoment(x,y,col){G.slow=Math.max(G.slow||0,.3);G.zoom=1;G.onde={x,y,t:0};
+function grandMoment(x,y,col){G.slow=Math.max(G.slow||0,.3);G.zoom=1;G.onde={x,y,t:0};sfx("impact",.9);sfx("eclat",.6,1.05);
+  const U=ux();fxSp({k:"flare",add:1,x,y,w:U*.18,grow:U*.45,life:.45,al:.28});fxSp({k:"anneau",add:1,x,y,w:U*.2,grow:U*1.4,life:.7,vr:0,rot:0});
+  fxSp({k:"jus",x,y,w:U*.25,grow:U*.5,life:.7,vr:0,rot:0,tint:hx(col.length===7?col:"#ffa020")});
+  for(let i=0;i<10;i++){const a=rnd(0,6.28),v=rnd(140,420);fxSp({k:"etoile",add:1,x,y,w:rnd(.08,.18)*U,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:360,life:rnd(.6,1.1)});}
+  for(let i=0;i<6;i++){const a=rnd(0,6.28),v=rnd(80,300);fxSp({k:"goutte",x,y,w:rnd(.06,.11)*U,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:900,life:rnd(.7,1.1)});}
   for(let i=0;i<40;i++){const a=rnd(0,6.28),v=rnd(150,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:420,t:0,life:rnd(.5,1.1),r:rnd(2.5,6),col:i%2?"#ffd24a":col,add:1});}}
-function fwBurst(){const x=rnd(W*.15,W*.85),y=rnd(H*.12,H*.4),cs=["#ffd24a","#ff5a3a","#7be04a","#4ac8ff","#ff7ad2"],c=cs[Math.floor(Math.random()*cs.length)];
+function petales(){for(let i=0;i<3;i++)fxSp({k:i%2?"petale":"feuille",x:rnd(0,W),y:-20,w:rnd(.09,.16)*ux(),vx:rnd(-40,40),vy:rnd(60,140),g:30,life:rnd(2.2,3.2),vr:rnd(-3,3)});}
+function fwBurst(){fxSp({k:"paillettes",add:1,x:rnd(W*.15,W*.85),y:rnd(H*.12,H*.4),w:ux()*.5,grow:ux()*.5,life:.9,vr:0,rot:0});petales();const x=rnd(W*.15,W*.85),y=rnd(H*.12,H*.4),cs=["#ffd24a","#ff5a3a","#7be04a","#4ac8ff","#ff7ad2"],c=cs[Math.floor(Math.random()*cs.length)];
   for(let i=0;i<26;i++){const a=i/26*6.28,v=rnd(120,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:260,t:0,life:rnd(.7,1.2),r:rnd(2.5,5),col:c,add:1});}}
 function burst(x,y,col,n,sz){for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(80,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,t:0,life:rnd(.35,.7),r:rnd(3,8)*(sz+.4),col});}}
 function pause(v){if(v){ambiance(false);mode="pause";$("pause").classList.remove("cache");}else{ambiance(true);mode="play";$("pause").classList.add("cache");}}
@@ -318,7 +324,14 @@ function btnIce(){return {x:W*.5,y:CY+ux()*.2,r:Math.max(26,ux()*.075)};}
 /* ---------- Dessin (PixiJS) ---------- */
 const hx=c=>{if(!c)return 0xffffff;if(c[0]==="#")return parseInt(c.slice(1,7),16);const m=c.match(/[\d.]+/g);return m?(+m[0]<<16)|(+m[1]<<8)|+m[2]:0xffffff;};
 const ha=c=>{if(c&&c[0]==="r"){const m=c.match(/[\d.]+/g);return m[3]===undefined?1:+m[3];}return 1;};
-let gBack,gJus,sprC,gFront,sprH,txtA,txtB,jusM,world,gAdd,bloomF,shockF;
+let gBack,gJus,sprC,gFront,sprH,txtA,txtB,jusM,world,gAdd,bloomF,shockF,fxA,fxN;
+const FXN=["etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
+for(const n of FXN){const im=new Image();im.src="../commun/fx/"+n+".webp"+V;FXT[n]={im};}
+function fxTex(n){const o=FXT[n];if(!o||!o.im.complete||!o.im.naturalWidth)return null;return o.t||(o.t=PIXI.Texture.from(o.im));}
+function fxSpr(n,x,y,w,rot,al,tint,add){const t=fxTex(n);if(!t)return;const L=add?"a":"n",P=FXP[L],i=FXU[L]++;let s=P[i];
+  if(!s){s=new PIXI.Sprite();s.anchor.set(.5);(add?fxA:fxN).addChild(s);P[i]=s;}
+  s.texture=t;s.position.set(x,y);s.width=w;s.height=w*t.height/t.width;s.rotation=rot;s.alpha=al;s.tint=tint||0xffffff;s.visible=true;}
+function fxSp(o){(G.sp||(G.sp=[])).push(Object.assign({t:0,rot:rnd(0,6.28),vr:rnd(-4,4),vx:0,vy:0,g:0,grow:0,al:1,tint:0xffffff},o));}
 const texs={},POOL={a:[],h:[],ta:[]},USED={a:0,h:0,ta:0};
 function initPixi(){
   app=new PIXI.Application();
@@ -330,8 +343,9 @@ function initPixi(){
     gFront=new PIXI.Graphics();st.addChild(gFront);
     sprH=new PIXI.Container();st.addChild(sprH);
     gAdd=new PIXI.Graphics();gAdd.blendMode="add";st.addChild(gAdd);
-    try{bloomF=new PIXI.filters.AdvancedBloomFilter({threshold:.55,bloomScale:.7,brightness:1,blur:4,quality:3});gAdd.filters=[bloomF];
-      shockF=new PIXI.filters.ShockwaveFilter({center:{x:0,y:0},speed:600,amplitude:26,wavelength:150,brightness:1.1,radius:-1});}catch(e){bloomF=shockF=null;}
+    fxN=new PIXI.Container();st.addChild(fxN);fxA=new PIXI.Container();fxA.blendMode="add";st.addChild(fxA);
+    try{bloomF=new PIXI.filters.AdvancedBloomFilter({threshold:.55,bloomScale:.7,brightness:1,blur:4,quality:3});gAdd.filters=[bloomF];fxA.filters=[bloomF];
+      shockF=new PIXI.filters.ShockwaveFilter({center:{x:0,y:0},speed:600,amplitude:16,wavelength:150,brightness:1.1,radius:-1});}catch(e){bloomF=shockF=null;}
     txtA=new PIXI.Container();st.addChild(txtA);
     resize();
   });
@@ -376,7 +390,7 @@ function dessine(){
   if(!G||mode==="menu"){app.stage.visible=false;app.render();return;}
   app.stage.visible=true;
   {const z=1+(G.zoom||0)*.03;world.pivot.set(W/2,H/2);world.scale.set(z);world.position.set(W/2,H/2);
-   if(shockF){if(G.onde){shockF.center={x:G.onde.x,y:G.onde.y};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}}
+   if(shockF){if(G.onde){shockF.center={x:G.onde.x*DPR,y:G.onde.y*DPR};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}}
   const u=ux(),o=G.o;
   const c=cible(),bl=bld(),bw=bl.h*341/664,ch=u*.13,cw=ch*497/286;
   const tn=Math.sin(Math.min(1,Math.max(0,G.press/.25))*Math.PI)*5;
@@ -449,6 +463,8 @@ function dessine(){
    const ht=T(h,W/2,hy+1,17,"#fff",null,"center",1,1,"b");
    const tw2=ht.width+28;gFront.roundRect(W/2-tw2/2,hy-15,tw2,30,15).fill({color:0x1e0a00,alpha:.6});
    if(G.streak>=3){const ss=1+Math.sin(G.t*10)*.05;T("🔥 COMBO ×"+G.streak,W/2,hy+38,26,"#ffb21e","#7a2a00","center",1,ss);}}
+  for(const L of ["n","a"]){const P=FXP[L];for(let i=0;i<FXU[L]&&i<P.length;i++)P[i].visible=false;FXU[L]=0;}
+  if(G.sp)for(const q of G.sp){const k=q.t/q.life;fxSpr(q.k,q.x,q.y,q.w,q.rot,Math.min(1,(1-k)*2)*q.al,q.tint,q.add);}
   for(const q of G.parts){const al=Math.max(0,1-q.t/q.life);
     if(q.add){gAdd.circle(q.x,q.y,q.r*2.2).fill({color:hx(q.col),alpha:al*.25});gAdd.circle(q.x,q.y,q.r).fill({color:hx(q.col),alpha:al});gAdd.circle(q.x,q.y,q.r*.45).fill({color:0xffffff,alpha:al});}
     else gFront.circle(q.x,q.y,q.r).fill({color:hx(q.col),alpha:al});}
