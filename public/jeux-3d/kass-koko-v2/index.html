@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Kass Koko v2 · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="../koup-koup/lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family:"Bangers"; src:url("../koup-koup/lib/bangers.woff2") format("woff2"); font-display:swap; }
+  :root { --or:#ffd24a; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#0d2410; font-family:"Baloo 2", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  #fond { position:fixed; inset:0; background:#7ac8e8; }
+  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
+  .bonus.on { display:flex; }
+  .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
+  .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
+  .bbtn.vide { opacity:.38; }
+  .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
+  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
+
+  #fond::after { content:none; }
+  #lueur { position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:0; }
+  #gl { position:fixed; inset:0; width:100%; height:100%; }
+  .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .hud.on { opacity:1; }
+  .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
+  .score.saute { animation:saute .3s ease-out; }
+  @keyframes saute { 40% { transform:scale(1.25); } }
+  .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:2px; }
+  .vies { font-size:30px; letter-spacing:4px; text-align:right; }
+  .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .temps { font-family:"Bangers", sans-serif; font-size:clamp(32px, 6.5vw, 46px); color:#b8f0ff; text-shadow:0 3px 0 #1f4f94; letter-spacing:.05em; }
+  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 32px; pointer-events:none; transition:opacity .35s; }
+  .ecran.cache { opacity:0; }
+  .ecran.cache * { pointer-events:none !important; }
+  .titre { font-family:"Bangers", sans-serif; font-size:clamp(62px, 15vw, 124px); line-height:.95; letter-spacing:.04em; transform:rotate(-3deg);
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.45)); }
+  .sous { margin-top:14px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  .modes { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
+  .btn { pointer-events:auto; border:0; border-radius:999px; padding:14px 30px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.45); cursor:pointer; }
+  .btn.mini { padding:10px 16px; font-size:16px; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .btn2 { background:linear-gradient(#b8f0ff, #3fb4e6); box-shadow:0 5px 0 #1f6f94, 0 10px 22px rgba(0,0,0,.45); color:#0b2a3a; }
+  .consigne { margin-top:22px; font-size:clamp(16px, 3.6vw, 20px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.9); max-width:520px; }
+  .voile { padding:22px 26px 26px; border-radius:26px; background:rgba(6,6,24,.62); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+  .gros { font-family:"Bangers", sans-serif; font-size:clamp(70px, 17vw, 120px); color:var(--or); line-height:1; text-shadow:0 5px 0 #8a4a08, 0 0 30px rgba(255,190,60,.5); }
+  .etoiles { font-size:clamp(42px, 10vw, 64px); letter-spacing:.12em; color:#ffd24a; text-shadow:0 3px 0 #8a5a00, 0 0 18px rgba(255,200,60,.6); }
+  .etoiles .vide { color:rgba(255,255,255,.22); text-shadow:none; }
+  .nouveau { font-family:"Bangers", sans-serif; font-size:clamp(26px, 6vw, 38px); letter-spacing:.06em; color:#7bf0ff; text-shadow:0 0 16px #2fb4ff; }
+  .pop { position:fixed; pointer-events:none; font-family:"Bangers", sans-serif; letter-spacing:.05em; transform:translate(-50%,-50%); white-space:nowrap; animation:monte 1s ease-out forwards; }
+  .pop.pts { font-size:clamp(28px, 6vw, 40px); color:#fff; text-shadow:0 0 12px currentColor, 0 3px 0 rgba(0,0,0,.5); }
+  .pop.chaine { font-size:clamp(30px, 7vw, 48px); background:linear-gradient(90deg, #ffe23a, #ff9a1f, #ff4fb4, #2fb4ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 #1a0830); animation-duration:1.3s; }
+  .pop.aie { font-size:clamp(26px, 6vw, 38px); color:#c8c8d0; text-shadow:0 3px 0 rgba(0,0,0,.6); }
+  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 100% { opacity:0; transform:translate(-50%,-150%) scale(1); } }
+  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; transition:opacity .3s; }
+  .lien.discret { opacity:0; pointer-events:none; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+  .coin { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); min-height:44px; padding:0 18px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(10,8,30,.6); color:#fff; font:800 16px "Baloo 2", system-ui, sans-serif; cursor:pointer; }
+  #btnFin { left:max(130px, calc(env(safe-area-inset-left) + 130px)); }
+  .faitBulle { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(88vw, 480px); box-sizing:border-box; padding:12px 16px; border-radius:16px; background:rgba(0,40,60,.82); font-size:15px; line-height:1.35; font-weight:600; text-align:left; pointer-events:none; opacity:0; transition:opacity .5s; z-index:9; }
+  .faitBulle.on { opacity:1; }
+  @media (max-height:500px) { #menu .titre { font-size:54px; } #menu .sous { margin-top:4px; font-size:15px; } #menu .consigne { display:none; } #menu .modes { flex-direction:row !important; margin-top:10px !important; gap:10px !important; } #menu .btn { padding:9px 18px; font-size:16px; } #menu .btn small { display:none; } #menu { padding-top:46px; justify-content:flex-start; } }
+  #retour { left:max(26px, env(safe-area-inset-left)); }
+  #btnSon { right:max(26px, env(safe-area-inset-right)); width:48px; padding:0; }
+  #charge { position:fixed; left:0; right:0; bottom:calc(100px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; opacity:.85; }
+
+  .fiche { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9); width:min(86vw, 460px); padding:22px 24px 20px; border-radius:22px; text-align:center;
+    background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .35s cubic-bezier(.2,1.5,.4,1); z-index:15; }
+  .fiche:not(.on) * { pointer-events:none !important; } .panneau:not(.on) * { pointer-events:none !important; }
+  .fiche.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  .fiche h2 { margin:0 0 4px; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:clamp(24px, 6vw, 32px); color:#7a3a10; }
+  .fiche .num { font-weight:800; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#8a6a3a; }
+  .fiche p { font-size:clamp(16px, 4vw, 19px); line-height:1.35; margin:10px 0 16px; font-weight:600; }
+  .fiche .btn { font-size:18px; padding:12px 26px; }
+  .pop.pts { color:#fff7c8; }
+  .niveau { position:fixed; left:50%; top:max(140px, calc(env(safe-area-inset-top) + 124px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#f6ecd2; text-shadow:0 2px 0 #1a3010, 0 0 10px rgba(0,0,0,.5); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .niveau.on { opacity:1; }
+  #trace { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+  .fiche h2 { color:#1a5a8a; }
+  .bandeau { position:fixed; left:50%; top:max(176px, calc(env(safe-area-inset-top) + 160px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(22px, 5vw, 32px);
+    padding:6px 20px; border-radius:14px; background:rgba(0,30,60,.55); color:#9ff0ff; text-shadow:0 2px 0 #003a5a; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .bandeau.on { opacity:1; }
+
+
+  #trace, #eclab { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+  .pop.nom { font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(16px, 3.4vw, 22px); background:linear-gradient(90deg,#ff4f6a,#ffb02a,#ffe23a,#4fe07a,#2fb4ff,#b45cff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 rgba(0,0,0,.6)); }
+  .niveauHud { text-align:right; margin-top:4px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
+  .niveauHud.saute { animation:saute .5s; }
+  .savoir { margin:14px auto 4px; max-width:420px; padding:12px 16px; border-radius:16px; background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35); font-size:clamp(14px, 3.4vw, 17px); line-height:1.35; text-align:left; }
+  .savoir b { display:block; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:20px; color:#ffe23a; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div id="fond"></div>
+<canvas id="gl"></canvas>
+<svg id="trace" xmlns="http://www.w3.org/2000/svg"></svg>
+<svg id="eclab" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<div class="hud" id="hud">
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div><div class="vies" id="vies"></div><div class="niveauHud" id="niveauHud">Niveau 1</div></div>
+</div>
+<div class="bandeau" id="bandeau"></div>
+<div class="bonus" id="bonus">
+  <button class="bbtn zone-interactive" id="bSabre" aria-label="Sabre">🔪</button>
+  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
+  <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
+</div>
+
+<div class="ecran" id="menu">
+  <div class="titre">Kass Koko</div>
+  <div class="sous">Sur une plage de l'Ouest, à l'ombre des cocotiers</div>
+  <div class="modes" style="flex-direction:column;align-items:center;margin-top:16px"><button class="btn zone-interactive" id="jouerZen" style="background:linear-gradient(#8fe06a,#3fa83a)">Mi vé zoué trankil<br><small style="font-weight:600;font-size:13px">Sans pression : étoiles, faits sur les cocotiers</small></button><button class="btn zone-interactive" id="jouer" style="background:linear-gradient(#ff8a4a,#e03a1a)">Mi rode problèm<br><small style="font-weight:600;font-size:13px">3 vies, séries, coco géant, records</small></button></div>
+  <div class="modes" style="margin-top:12px;gap:10px"><button class="btn mini btn2 zone-interactive" id="ouvrirSon">🎚️ Son</button><button class="btn mini btn2 zone-interactive" id="ouvrirCredits">Crédits</button></div>
+  <div class="consigne">Tranche les cocos d'un geste avant qu'ils ne tombent ! Attention aux cocos pourris.</div>
+</div>
+
+<div class="fiche panneau" id="panSon"><h2>Son</h2><p style="margin:6px 0">Musique<br><input type="range" id="rMus" min="0" max="100" style="width:100%"></p><p style="margin:6px 0">Effets et ambiance<br><input type="range" id="rFx" min="0" max="100" style="width:100%"></p><button class="btn zone-interactive" id="fermerSon">Fermer</button></div>
+<div class="fiche panneau" id="panCredits"><h2>Crédits</h2><p style="font-size:14px;line-height:1.45;text-align:left">Jeu et code : Kwélafé Production.<br>Moteur : Three.js (MIT). Police : Bangers (SIL OFL), Baloo 2 (SIL OFL).<br>Fond de plage : image créée pour Kwélafé.<br>Sons et musiques : générés avec ElevenLabs pour Kwélafé (usage commercial autorisé par l'abonnement). Aucune voix.<br>Faits : Réserve naturelle marine, IRT, CIRAD, CGIAR.<br>Aucun personnage, logo ou son d'un autre jeu. Détail : credits.md.</p><button class="btn zone-interactive" id="fermerCredits">Fermer</button></div>
+<div class="faitBulle" id="faitBulle"></div>
+<div class="ecran cache" id="fin"><div class="voile">
+  <div class="sous" style="margin-top:0">Fin de la récolte</div>
+  <div class="gros" id="scoreFin">0</div>
+  <div class="etoiles" id="etoilesFin"></div>
+  <div class="nouveau" id="nouveauRecord"></div>
+  <div class="sous" id="cocoFin"></div>
+  <div class="sous" id="recordFin">Record : 0</div>
+  <div class="savoir"><b>Le saviez-vous ?</b><span id="savoirTexte"></span></div>
+  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn btn2 zone-interactive" id="menuFin">Menu</button></div>
+</div></div>
+
+<button class="coin zone-interactive" id="btnFin" style="display:none" aria-label="Terminer la partie">Finir 🏁</button>
+<div id="charge">Les cocotiers se balancent…</div>
+<button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
+<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
+const PETIT = Math.min(innerWidth, innerHeight) < 500 || /iPhone/.test(navigator.userAgent);
+
+// Faits vérifiés (Réserve naturelle marine, IRT, CIRAD, banques de gènes du CGIAR) : affichés seulement en fin de partie
+const FICHES = [
+  "Il existe deux grands types de cocotiers : les Grands, qui peuvent atteindre 30 mètres, et les Nains, plus petits, qui donnent surtout des noix à boire.",
+  "Les cocotiers nains ont des noix de couleurs variées : jaunes, orange, vertes ou brunes selon la variété.",
+  "Le cocotier donne des fruits toute l'année.",
+  "L'eau de coco est la réserve d'eau de la noix : elle lui permet de germer même sur une plage de sable.",
+  "À La Réunion, on trouve beaucoup de noix de coco sur les marchés, surtout à Saint-Paul, où les cocotiers poussent très bien.",
+  "Dans une noix de coco jeune, il y a surtout de l'eau. En mûrissant, la chair blanche s'épaissit à l'intérieur.",
+  "La plage de l'Ermitage, à Saint-Paul, s'étend sur plusieurs kilomètres. Ses filaos donnent de l'ombre aux familles.",
+  "La Réserve naturelle marine de La Réunion a été créée en 2007. Elle protège la plupart des lagons de l'Ouest.",
+  "Les coraux sont des animaux vivants : on ne marche jamais dessus, on regarde sans toucher.",
+  "Sur la plage, on évite de poser sa serviette juste sous un cocotier chargé de noix : une noix peut tomber !",
+];
+
+// ---------------------------------------------------------------- rendu
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: TEST });
+renderer.setPixelRatio(Math.min(devicePixelRatio, PETIT ? 1.75 : 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
+const soleil = new THREE.DirectionalLight(0xfff2d0, 2.8); soleil.position.set(5, 12, 9); soleil.castShadow = true;
+soleil.shadow.mapSize.set(PETIT ? 1024 : 2048, PETIT ? 1024 : 2048); soleil.shadow.radius = 5; soleil.shadow.bias = -0.0008; soleil.shadow.normalBias = 0.02;
+Object.assign(soleil.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 50 }); scene.add(soleil);
+scene.add(new THREE.HemisphereLight(0xbfe8ff, 0xf0d8a0, 0.9));
+const capteur = new THREE.Mesh(new THREE.PlaneGeometry(60, 14), new THREE.ShadowMaterial({ opacity: 0.3, color: 0x3a2a10 })); capteur.rotation.x = -Math.PI / 2; capteur.receiveShadow = true; scene.add(capteur);
+const texPlanche = (() => {   // planches de bois calculées par le code (aucun Canvas 2D)
+  const WW = 1024, HH = 256, d = new Uint8Array(WW * HH * 4), n = 7, bases = [[176, 122, 68], [160, 106, 56], [192, 138, 80], [154, 100, 52]];
+  const ph = Array.from({ length: n }, () => ({ f: rnd(0.006, 0.02), a: rnd(0, 6), k: [rnd(40, 980), rnd(40, 980), rnd(40, 980)], j: [rnd(150, 300), rnd(600, 800)] }));
+  for (let y = 0; y < HH; y++) { const i = Math.min(n - 1, Math.floor(y * n / HH)), h = HH / n, y0 = i * h, B = bases[i % 4], P = ph[i], v = y - y0;
+    for (let x = 0; x < WW; x++) {
+      let g = Math.sin(x * P.f + Math.sin(v * 0.9 + P.a) * 1.6 + v * 0.35) * 0.5 + 0.5; g = 0.78 + g * 0.3 + Math.sin(v * 2.7 + x * 0.003) * 0.04;
+      for (const kx of P.k) { const q = ((x - kx) / 9) ** 2 + ((v - h / 2) / 4) ** 2; if (q < 1) g *= 0.65 + 0.35 * q; }
+      if (v >= h - 2) g *= 0.25; for (const jx of P.j) { if (x >= jx && x < jx + 2) g *= 0.3; for (const dy of [h * 0.3, h * 0.7]) for (const sx of [jx + 8, jx - 8]) if ((x - sx) ** 2 + (v - dy) ** 2 < 7) { d[(y * WW + x) * 4] = 90; d[(y * WW + x) * 4 + 1] = 90; d[(y * WW + x) * 4 + 2] = 90; g = -1; } }
+      if (g < 0) { d[(y * WW + x) * 4 + 3] = 255; continue; }
+      const o = (y * WW + x) * 4; d[o] = Math.min(255, B[0] * g); d[o + 1] = Math.min(255, B[1] * g); d[o + 2] = Math.min(255, B[2] * g); d[o + 3] = 255;
+    } }
+  const t = new THREE.DataTexture(d, WW, HH, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.needsUpdate = true; return t; })();
+// dégradés radiaux calculés par le code
+const blobTex = (stops) => {
+  const st = stops.map(([o, c]) => { const m = c.match(/[\d.]+/g).map(Number); return [o, m[0], m[1], m[2], m[3]]; }), N = 128, d = new Uint8Array(N * N * 4);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const t = Math.max(0, Math.min(1, (Math.hypot(x + 0.5 - 64, y + 0.5 - 64) - 4) / 58)); let i = 0; while (i < st.length - 2 && t > st[i + 1][0]) i++;
+    const a = st[i], b = st[i + 1], f = b[0] === a[0] ? 0 : Math.max(0, Math.min(1, (t - a[0]) / (b[0] - a[0]))), k = (y * N + x) * 4;
+    d[k] = a[1] + (b[1] - a[1]) * f; d[k + 1] = a[2] + (b[2] - a[2]) * f; d[k + 2] = a[3] + (b[3] - a[3]) * f; d[k + 3] = 255 * (a[4] + (b[4] - a[4]) * f);
+  }
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); t.needsUpdate = true; t.magFilter = t.minFilter = THREE.LinearFilter; return t;
+};
+const planches = new THREE.Mesh(new THREE.BoxGeometry(1, 0.5, 3), [0, 1, 2, 3, 4, 5].map(i => new THREE.MeshStandardMaterial({ map: i === 2 || i === 4 ? texPlanche : null, color: i === 2 || i === 4 ? 0xffffff : 0x6a4422, roughness: 0.8 })));
+planches.receiveShadow = true; planches.castShadow = true; scene.add(planches);
+const texFond = new THREE.TextureLoader().load('./fond-plage.webp', () => { resize(); $('charge').textContent = ''; window.PRET = true; }); texFond.colorSpace = THREE.SRGBColorSpace;
+const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false }));
+planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.4, 0.4, 1.15); composer.addPass(bloom);
+let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3, secousse = 0;
+const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
+const trace = $('trace'), eclab = $('eclab'), NSV = 'http://www.w3.org/2000/svg', segsT = [], segsT2 = [];
+for (let i = 0; i < 40; i++) for (const [arr, dash] of [[segsT, false], [segsT2, true]]) { const l = document.createElementNS(NSV, 'line'); l.setAttribute('stroke-linecap', 'round'); l.style.display = 'none'; if (dash) { l.setAttribute('stroke-dasharray', '4 7'); l.setAttribute('stroke-width', '2'); } trace.appendChild(l); arr.push(l); }
+function resize() {
+  W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
+  for (const c of [trace, eclab]) c.setAttribute('viewBox', `0 0 ${W} ${H}`); redimVitre();
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
+  sol = -viewH * 0.36; capteur.position.set(0, sol + 0.005, -2);
+  planches.scale.x = viewW + 6; planches.position.set(0, sol + 0.05, 0.2);
+  const d2 = camera.position.z - planFond.position.z, hF = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * d2, wF = hF * camera.aspect;
+  let pw = wF, ph = wF / (16 / 9); if (ph < hF) { ph = hF; pw = hF * 16 / 9; }
+  planFond.scale.set(pw * 1.08, ph * 1.08, 1); planFond.position.y = (ph - hF) / 2;
+  composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); const fb = PETIT ? 0.5 : 1; bloom.resolution.set(W * fb, H * fb);
+}
+
+// ---------------------------------------------------------------- les cocos de La Réunion
+// vert = jeune coco à boire ; sec = coco mûr à bourre brune ; nain jaune et nain orange = petites noix des cocotiers nains ; gros = coco de cocotier Grand ; pourri = à éviter ; doré = bonus
+const TYPES = {
+  vert:   { nom: 'Coco vert', bourre: '#2e8a1a', fibre: '#1a5a0e', taille: 1.0, eau: 1.0, chair: 0.06, pts: 3, son: 'vert' },
+  sec:    { nom: 'Coco sec', bourre: '#7a4420', fibre: '#4a2610', taille: 1.0, eau: 0.25, chair: 0.16, pts: 3, son: 'sec' },
+  jaune:  { nom: 'Coco nain jaune', bourre: '#e0b000', fibre: '#a87800', taille: 0.78, eau: 0.8, chair: 0.07, pts: 4, son: 'vert' },
+  orange: { nom: 'Coco nain orange', bourre: '#e05a08', fibre: '#a03a04', taille: 0.78, eau: 0.8, chair: 0.07, pts: 4, son: 'vert' },
+  gros:   { nom: 'Gros coco', bourre: '#3a7a1a', fibre: '#1e4a0c', taille: 1.38, eau: 1.3, chair: 0.1, pts: 5, son: 'gros' },
+  pourri: { nom: 'Coco pourri !', bourre: '#2e2418', fibre: '#120e08', taille: 0.95, eau: 0, chair: 0, pts: 0, son: 'pourri' },
+  dore:   { nom: 'Coco doré !', bourre: '#ffc83a', fibre: '#c88a10', taille: 1.1, eau: 1.2, chair: 0.08, pts: 15, son: 'dore' },
+};
+// profil d'une noix avec sa bourre : ovoïde, pointe en bas, calice en haut
+const PROFIL = (() => { const p = []; for (let i = 0; i <= 24; i++) { const t = i / 24, a = t * Math.PI; const r = Math.sin(a) * (0.58 + 0.06 * Math.cos(a)) * (1 - 0.25 * Math.pow(1 - t, 3)); p.push(new THREE.Vector2(Math.max(0.001, r), -0.72 * Math.cos(a) + 0.04)); } return p; })();
+function geoNoix(phi0 = 0, phiL = Math.PI * 2) {
+  const g = new THREE.LatheGeometry(PROFIL, 40, phi0, phiL), p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const a = Math.atan2(v.x, v.z), k = 1 + 0.1 * Math.cos(3 * a); p.setX(i, v.x * k); p.setZ(i, v.z * k); } // trois arêtes du coco
+  g.computeVertexNormals(); return g;
+}
+const GEO_ENTIER = geoNoix(), GEO_A = geoNoix(0, Math.PI), GEO_B = geoNoix(Math.PI, Math.PI);
+const texCache = {};
+function texBourre(t) {   // bourre de coco : fibres et dégradé calculés par le code
+  if (texCache[t]) return texCache[t]; const T = TYPES[t], N = 256, d = new Uint8Array(N * N * 4), hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)], F = hx(T.fibre), Bc = hx(T.bourre);
+  for (let y = 0; y < N; y++) { const k = y / N, m = k < 0.12 ? k / 0.12 : k > 0.85 ? (1 - k) / 0.15 : 1, w = Math.max(0, Math.min(1, m)); for (let x = 0; x < N; x++) { const o = (y * N + x) * 4; for (let c = 0; c < 3; c++) d[o + c] = F[c] + (Bc[c] - F[c]) * w; d[o + 3] = 255; } }
+  const mix = (x, y, c, a) => { if (x < 0 || y < 0 || x >= N || y >= N) return; const o = (y * N + x) * 4; for (let q = 0; q < 3; q++) d[o + q] += (c[q] - d[o + q]) * a; };
+  for (let i = 0; i < 260; i++) { const c = Math.random() < .5 ? F : [255, 255, 255], a = Math.random() < .5 ? rnd(0.15, 0.5) : rnd(0.05, 0.18), x0 = Math.random() * 256, y0 = rnd(0, 40), y1 = rnd(180, 256), dx = rnd(-6, 6);
+    for (let y = Math.floor(y0); y < y1; y++) mix(Math.round(x0 + dx * (y - y0) / (y1 - y0)), y, c, a); }
+  if (t === 'pourri') for (let i = 0; i < 40; i++) { const cx = Math.random() * 256, cy = Math.random() * 256, r = rnd(3, 14), c = Math.random() < .5 ? [170, 190, 150] : [90, 110, 60], a = Math.random() < .5 ? 0.8 : 0.75;
+    for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) if ((x - cx) ** 2 + (y - cy) ** 2 < r * r) mix(x, y, c, a); }
+  const tx = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.generateMipmaps = true; tx.magFilter = THREE.LinearFilter; tx.minFilter = THREE.LinearMipmapLinearFilter; tx.needsUpdate = true; return texCache[t] = tx;
+}
+const matCache = {};
+function matBourre(t) {
+  if (matCache[t]) return matCache[t];
+  return matCache[t] = t === 'dore' ? new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 0.95, roughness: 0.22, clearcoat: 1, emissive: 0x6a4200, emissiveIntensity: 0.5 })
+    : new THREE.MeshPhysicalMaterial({ map: texBourre(t), roughness: t === 'sec' ? 0.92 : t === 'pourri' ? 0.95 : 0.5, clearcoat: t === 'sec' || t === 'pourri' ? 0 : 0.25, clearcoatRoughness: 0.4, envMapIntensity: 0.55 });
+}
+const matCalice = new THREE.MeshStandardMaterial({ color: 0x6a4a28, roughness: 0.8 });
+const geoCalice = (() => { const g = new THREE.CylinderGeometry(0.06, 0.2, 0.12, 9); g.translate(0, 0.78, 0); return g; })();
+function noix(t) {
+  const g = new THREE.Group(), m = new THREE.Mesh(GEO_ENTIER, matBourre(t)); m.castShadow = true; g.add(m);
+  const c = new THREE.Mesh(geoCalice, matCalice); g.add(c);
+  g.scale.setScalar(TYPES[t].taille); return g;
+}
+// demi-noix : coque + tranche (bourre, coque brune, chair blanche, eau)
+function forme2D(k) { const s = new THREE.Shape(); PROFIL.forEach((p, i) => i ? s.lineTo(p.x * k, p.y * k) : s.moveTo(p.x * k, p.y * k)); for (let i = PROFIL.length - 1; i >= 0; i--) s.lineTo(-PROFIL[i].x * k, PROFIL[i].y * k); return s; }
+const GEO_TRANCHES = [1, 0.78, 0.72, 0.6, 0.46].map(k => { const g = new THREE.ShapeGeometry(forme2D(k), 24); g.rotateY(-Math.PI / 2); return g; }); // dans le plan YZ (plan de coupe)
+const matCoque = new THREE.MeshStandardMaterial({ color: 0x4a2a14, roughness: 0.6, side: THREE.DoubleSide });
+const matChair = new THREE.MeshStandardMaterial({ color: 0xb8b09e, roughness: 0.85, side: THREE.DoubleSide, envMapIntensity: 0.25 });
+const matEau = new THREE.MeshStandardMaterial({ color: 0x9cc4dc, roughness: 0.4, metalness: 0, transparent: true, opacity: 0.85, side: THREE.DoubleSide, envMapIntensity: 0.35 });
+const matPourriDedans = new THREE.MeshStandardMaterial({ color: 0x3a3a1a, roughness: 1, side: THREE.DoubleSide });
+function demiNoix(t, cote) {
+  const T = TYPES[t], g = new THREE.Group(), coque = new THREE.Mesh(cote > 0 ? GEO_A : GEO_B, matBourre(t)); coque.material.side = THREE.DoubleSide; coque.castShadow = true; g.add(coque);
+  const couches = t === 'pourri' ? [matBourre(t), matPourriDedans, matPourriDedans, matPourriDedans, matPourriDedans]
+    : [matBourre(t), matCoque, matChair, T.eau > 0.5 ? matEau : matChair, T.eau > 0.5 ? matEau : matChair];
+  const reste = 0.6 - T.chair; // la chair est plus épaisse dans le coco sec
+  [1, 0.78, 0.72, Math.max(0.3, reste), Math.max(0.2, reste - 0.12)].forEach((k, i) => { const m = new THREE.Mesh(GEO_TRANCHES[Math.min(i, 4)], couches[i]); m.scale.setScalar(i >= 3 ? k / [1, 0.78, 0.72, 0.6, 0.46][i] : 1); m.position.x = -0.002 * (i + 1) * cote; g.add(m); });
+  g.scale.setScalar(T.taille); return g;
+}
+
+// ---------------------------------------------------------------- particules : gouttes (normales) et éclats lumineux (additifs)
+function systeme(max, additif) {
+  const pos = new Float32Array(max * 3), alp = new Float32Array(max), tai = new Float32Array(max), col = new Float32Array(max * 3);
+  const P = Array.from({ length: max }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, t0: 1, g: 9 }));
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('alpha', new THREE.BufferAttribute(alp, 1)); geo.setAttribute('taille', new THREE.BufferAttribute(tai, 1)); geo.setAttribute('couleur', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: additif ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: { echelle: { value: 1 } },
+    vertexShader: `attribute float alpha; attribute float taille; attribute vec3 couleur; varying float vA; varying vec3 vC; uniform float echelle; void main() { vA = alpha; vC = couleur; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: additif ? `varying float vA; varying vec3 vC; void main() { float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; float c = exp(-r * r * 50.0), h = exp(-r * r * 12.0); gl_FragColor = vec4(vC * (h * .6 + c * 1.6), vA * (h * .7 + c)); }`
+      : `varying float vA; varying vec3 vC; void main() { vec2 d = gl_PointCoord - 0.5; float r = length(d); if (r > 0.5) discard; float spec = smoothstep(0.22, 0.0, length(d + vec2(0.14, 0.14))); float bord = smoothstep(0.5, 0.4, r); gl_FragColor = vec4(vC * (0.85 + 0.25 * (0.5 - r)) + spec * 0.7, vA * bord * 0.92); }` });
+  const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; scene.add(pts);
+  let i0 = 0;
+  return {
+    mat,
+    ajoute(x, y, z, vx, vy, c, vie, t, g = 9) { const q = P[i0], k = i0; i0 = (i0 + 1) % max; q.vie = q.max = vie; q.vx = vx; q.vy = vy; q.t0 = t; q.g = g; pos[k * 3] = x; pos[k * 3 + 1] = y; pos[k * 3 + 2] = z; col[k * 3] = c[0]; col[k * 3 + 1] = c[1]; col[k * 3 + 2] = c[2]; },
+    maj(dt) { for (let i = 0; i < max; i++) { const q = P[i]; if (q.vie <= 0) { alp[i] = 0; continue; } q.vie -= dt; q.vy -= q.g * dt; q.vx *= 0.995; pos[i * 3] += q.vx * dt; pos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; alp[i] = Math.min(1, k * 2); tai[i] = q.t0 * (0.55 + 0.45 * k); } for (const n of ['position', 'alpha', 'taille', 'couleur']) geo.attributes[n].needsUpdate = true; },
+  };
+}
+const gouttes = systeme(PETIT ? 2500 : 4000, false), eclats = systeme(PETIT ? 2500 : 4000, true);
+const hsl = (h, s, l) => { const c = new THREE.Color().setHSL(h, s, l); return [c.r, c.g, c.b]; };
+
+// ---------------------------------------------------------------- éclaboussures sur l'écran (gouttes qui glissent sur la vitre)
+const tachesEcran = [];
+function eclabousser(sx, sy, force, t) {
+  if (t === 'pourri') {
+    // le jus noir couvre une grande partie de l'écran pendant environ 5 secondes
+    const n = calme() ? 10 : 24; for (let i = 0; i < n; i++) { const big = i < 7; tachesEcran.push({ x: sx + rnd(-W * 0.45, W * 0.45) * (big ? 0.8 : 1), y: sy + rnd(-H * 0.35, H * 0.35), r: big ? rnd(Math.min(W, H) * 0.12, Math.min(W, H) * 0.22) : rnd(18, 50), vie: calme() ? rnd(2.2, 3) : rnd(4.5, 6), max: calme() ? 3 : 6, vy: rnd(2, 8), coul: 'pourri', traine: [], forme: Array.from({ length: 12 }, () => rnd(0.8, 1.15)) }); creerJus(tachesEcran[tachesEcran.length - 1]); }
+    return;
+  }
+  // impact : quelques grosses gouttes au centre, une couronne de gouttelettes projetées autour
+  const k = Math.min(W, H) / 400, or = t === 'dore';
+  const grosses = Math.round(1 + force * 2.5), petites = Math.round(14 + force * 26);
+  for (let i = 0; i < grosses; i++) ajouterGoutte(sx + rnd(-30, 30) * k, sy + rnd(-25, 25) * k, rnd(9, 16) * k * (0.8 + force * 0.4), or);
+  for (let i = 0; i < petites; i++) { const a = Math.random() * Math.PI * 2, d = Math.pow(Math.random(), 0.7) * (50 + force * 130) * k; ajouterGoutte(sx + Math.cos(a) * d, sy + Math.sin(a) * d * 0.85, rnd(1.8, 6) * k, or); }
+}
+// gouttes d'eau sur la vitre : lentilles qui inversent l'image derrière elles, plus claires que la vitre,
+// les grosses glissent par à-coups en zigzag, s'étirent, laissent un chapelet de gouttelettes, fusionnent
+const vitre = [], MAX_VITRE = 170;
+function ajouterGoutte(x, y, r, or = false, statique = false) {
+  if (vitre.length >= MAX_VITRE) vitre.shift();
+  vitre.push({ x, y, r, or, vy: 0, pause: rnd(0.15, 0.6), bouge: false, derive: rnd(-1, 1), seche: statique ? rnd(5, 9) : rnd(7, 12), age: 0, dernierDepot: y, etire: 1 });
+}
+function majVitre(dt) {
+  const k = Math.min(W, H) / 400, critique = 7.5 * k;
+  for (let i = vitre.length - 1; i >= 0; i--) {
+    const g = vitre[i]; g.age += dt; g.seche -= dt;
+    if (g.seche <= 0) { g.r -= dt * 3 * k; if (g.r < 0.8) { vitre.splice(i, 1); continue; } }
+    if (g.r > critique) {
+      // à-coups : la goutte s'arrête, repart, accélère un peu, change légèrement de direction
+      if (g.pause > 0) { g.pause -= dt; g.vy *= 0.7; g.etire += (1 - g.etire) * dt * 6; }
+      else { g.vy = Math.min(g.vy + dt * (40 + g.r * 6) * k, (60 + g.r * 7) * k); if (Math.random() < dt * 2.2) { g.pause = rnd(0.05, 0.45); g.derive = rnd(-1, 1); } }
+      const dy = g.vy * dt; g.y += dy; g.x += g.derive * dy * 0.25; g.etire += (Math.min(1.45, 1 + g.vy / (160 * k)) - g.etire) * dt * 6;
+      // chapelet de gouttelettes laissé derrière ; la goutte perd un peu d'eau
+      if (g.y - g.dernierDepot > g.r * 0.9) { g.dernierDepot = g.y; ajouterGoutte(g.x + rnd(-0.25, 0.25) * g.r, g.y - g.r * rnd(1, 1.6), g.r * rnd(0.18, 0.32), g.or, true); g.r *= 0.985; }
+      if (g.y - g.r > H + 20) { vitre.splice(i, 1); continue; }
+    }
+  }
+  // fusion : deux gouttes qui se touchent n'en font plus qu'une (le volume s'additionne)
+  for (let i = 0; i < vitre.length; i++) for (let j = i + 1; j < vitre.length; j++) {
+    const a = vitre[i], b = vitre[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d < (a.r + b.r) * 0.75) { const [g, p] = a.r >= b.r ? [a, b] : [b, a]; g.r = Math.cbrt(g.r ** 3 + p.r ** 3); g.seche = Math.max(g.seche, p.seche); g.pause = Math.min(g.pause, 0.05); vitre.splice(vitre.indexOf(p), 1); j--; if (p === a) break; }
+  }
+}
+// rendu GPU des gouttes : un petit rendu (RT flottant) stocke le décalage de la lentille, une passe du compositeur l'applique à l'image
+const rtD = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, depthBuffer: false });
+const camD = new THREE.Camera(), sceneD = new THREE.Scene(), geoD = new THREE.InstancedBufferGeometry();
+geoD.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0]), 3));
+const iD = new Float32Array(MAX_VITRE * 4), attrD = new THREE.InstancedBufferAttribute(iD, 4); attrD.setUsage(THREE.DynamicDrawUsage); geoD.setAttribute('goutte', attrD); geoD.instanceCount = 0;
+const matD = new THREE.ShaderMaterial({ uniforms: { uRes: { value: new THREE.Vector2(1, 1) } }, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
+  vertexShader: `attribute vec4 goutte; uniform vec2 uRes; varying vec2 vL; varying vec3 vG; void main() { float r = goutte.z, e = goutte.w; vec2 c = goutte.xy; float haut = r * (1.15 + e * 1.1), bas = r * 1.15, lar = r * 1.15; vec2 q = position.xy; vec2 p = vec2(c.x + q.x * lar, c.y + (q.y > 0.0 ? -q.y * haut : -q.y * bas)); vL = vec2(q.x * lar, q.y > 0.0 ? q.y * haut : q.y * bas); vG = vec3(r, e, 0.0); gl_Position = vec4(p.x / uRes.x * 2.0 - 1.0, 1.0 - p.y / uRes.y * 2.0, 0.0, 1.0); }`,
+  fragmentShader: `varying vec2 vL; varying vec3 vG; void main() { float r = vG.x, e = vG.y; float dy = r * e * 0.55; vec2 d = vec2(vL.x, vL.y - dy); vec2 ax = vec2(r, r * (1.0 + e * 0.55)); vec2 q = d / ax; float r2 = length(q); float m = smoothstep(1.0, 0.9, r2); if (m < 0.01) discard;
+    float lent = step(2.2, r); vec2 off = -d * 3.2 * lent; float edge = smoothstep(0.62, 1.0, r2); float hl = smoothstep(0.35, 0.0, length(q - vec2(-0.34, 0.4))) * 0.7 + smoothstep(0.2, 0.0, length(q - vec2(0.05, -0.62))) * 0.12;
+    float sh = -0.34 * edge * min(1.0, r / 2.0) + hl * min(1.0, r / 2.0) + 0.035; gl_FragColor = vec4(off, sh, m); }` });
+const meshD = new THREE.Mesh(geoD, matD); meshD.frustumCulled = false; sceneD.add(meshD);
+const passVitre = new ShaderPass({ uniforms: { tDiffuse: { value: null }, tD: { value: null }, uPx: { value: new THREE.Vector2(1, 1) } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform sampler2D tDiffuse, tD; uniform vec2 uPx; varying vec2 vUv; void main() { vec4 m = texture2D(tD, vUv); vec2 o = m.rg * uPx; vec3 c = texture2D(tDiffuse, vUv + o).rgb; c = c * (1.0 + m.b * 0.6) + vec3(max(m.b, 0.0)) * 0.35 * m.a + vec3(0.04, 0.05, 0.03) * m.a; gl_FragColor = vec4(c, 1.0); }` });
+passVitre.uniforms.tD.value = rtD.texture; passVitre.enabled = false; composer.addPass(passVitre); composer.addPass(new OutputPass()); composer.addPass(new SMAAPass());
+function redimVitre() { const pr = renderer.getPixelRatio(); rtD.setSize(Math.round(W * pr), Math.round(H * pr)); matD.uniforms.uRes.value.set(W, H); passVitre.uniforms.uPx.value.set(1 / W, 1 / H); }
+function dessinerVitre() {
+  const n = vitre.length; passVitre.enabled = n > 0; if (!n) return;
+  for (let i = 0; i < n; i++) { const g = vitre[i]; iD[i * 4] = g.x; iD[i * 4 + 1] = g.y; iD[i * 4 + 2] = g.r; iD[i * 4 + 3] = Math.max(0, g.etire - 1); }
+  attrD.needsUpdate = true; geoD.instanceCount = n;
+  const cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha(), ac = renderer.autoClear;
+  renderer.setRenderTarget(rtD); renderer.setClearColor(0x000000, 0); renderer.autoClear = true; renderer.clear(); renderer.render(sceneD, camD); renderer.setRenderTarget(null); renderer.setClearColor(cc, ca); renderer.autoClear = ac;
+}
+
+// jus noir d'un coco pourri : des taches en SVG (aucun Canvas 2D), qui coulent puis s'estompent
+function creerJus(g) {
+  const e = document.createElementNS(NSV, 'g'), pa = document.createElementNS(NSV, 'path'), h = document.createElementNS(NSV, 'ellipse');
+  pa.setAttribute('fill', 'rgb(14,11,6)'); h.setAttribute('fill', 'rgba(90,80,50,.35)'); e.appendChild(pa);
+  g.coul2 = []; for (let k = 0; k < 2; k++) { const l = document.createElementNS(NSV, 'line'); l.setAttribute('stroke', 'rgb(14,11,6)'); l.setAttribute('stroke-linecap', 'round'); e.appendChild(l); g.coul2.push(l); }
+  e.appendChild(h); eclab.appendChild(e); g.el = e; g.pa = pa; g.hl = h;
+}
+function majJus(dt) {
+  for (let i = tachesEcran.length - 1; i >= 0; i--) {
+    const g = tachesEcran[i]; g.vie -= dt; if (g.vie <= 0) { g.el.remove(); tachesEcran.splice(i, 1); continue; }
+    g.vy += dt * 3; g.y += g.vy * dt; const ap = Math.min(1, g.vie / 1.5);
+    const F = g.forme, N = F.length, pt = j => { const an = j / N * Math.PI * 2, k = F[(j + N) % N]; return [g.x + Math.cos(an) * g.r * k, g.y + Math.sin(an) * g.r * k * 1.05]; };
+    let dd = ''; for (let j = 0; j <= N; j++) { const [x1, y1] = pt(j), [x2, y2] = pt(j + 1), mx = (x1 + x2) / 2, my = (y1 + y2) / 2; dd += j === 0 ? `M${mx.toFixed(1)},${my.toFixed(1)}` : `Q${x1.toFixed(1)},${y1.toFixed(1)} ${mx.toFixed(1)},${my.toFixed(1)}`; }
+    g.pa.setAttribute('d', dd + 'Z'); g.el.setAttribute('opacity', (0.94 * ap).toFixed(2));
+    for (let k = 0; k < 2; k++) { const cx = g.x + (k ? 0.35 : -0.2) * g.r, long = g.r * (0.5 + k * 0.3 + (g.max - g.vie) * 0.18), w = g.r * (k ? 0.09 : 0.13), l = g.coul2[k]; l.setAttribute('x1', cx); l.setAttribute('x2', cx); l.setAttribute('y1', g.y + g.r * 0.5); l.setAttribute('y2', g.y + g.r * 0.5 + long); l.setAttribute('stroke-width', w * 2); }
+    g.hl.setAttribute('cx', g.x - g.r * 0.35); g.hl.setAttribute('cy', g.y - g.r * 0.4); g.hl.setAttribute('rx', g.r * 0.18); g.hl.setAttribute('ry', g.r * 0.1); g.hl.setAttribute('transform', `rotate(-34 ${g.x - g.r * 0.35} ${g.y - g.r * 0.4})`);
+  }
+}
+function dessinerEcran(dt) { majVitre(dt); dessinerVitre(); majJus(dt); }
+
+// ---------------------------------------------------------------- sons
+let actx = null, maitre = null, musG = null, fxG = null, sonCoupe = false;
+let S = { mus: 0.55, fx: 0.9 };
+try { sonCoupe = localStorage.getItem('kk2_son') === 'non'; } catch (e) {}
+try { const sv0 = JSON.parse(localStorage.getItem('kk2_s') || 'null'); if (sv0) S = Object.assign(S, sv0); } catch (e) {}
+const sauveS = () => { try { localStorage.setItem('kk2_s', JSON.stringify(S)); } catch (e) {} };
+const sons = {}; let sonsDemandes = false, musCur = null, musVoulue = 'musique-calme', musNom = null;
+function musique(n) {
+  musVoulue = n; if (!actx || !sons[n] || musNom === n) return;
+  if (musCur) { const o = musCur; o.g.gain.cancelScheduledValues(actx.currentTime); o.g.gain.setTargetAtTime(0, actx.currentTime, 0.4); setTimeout(() => { try { o.s.stop(); } catch (e) {} }, 1800); musCur = null; musNom = null; }
+  if (!n) return;
+  const sr = actx.createBufferSource(); sr.buffer = sons[n]; sr.loop = true; const g = actx.createGain(); g.gain.value = 0; sr.connect(g).connect(musG); sr.start();
+  g.gain.setTargetAtTime(1, actx.currentTime, 0.6); musCur = { s: sr, g }; musNom = n;
+}
+function vitesseMusique() { if (musCur && musNom === 'musique-intense') musCur.s.playbackRate.setTargetAtTime(1 + Math.min(0.25, (niveau - 1) * 0.025), actx.currentTime, 0.5); }
+function chargerSons() {
+  if (sonsDemandes || !actx) return; sonsDemandes = true;
+  for (const n of ['vert-1', 'vert-2', 'sec-1', 'sec-2', 'gros-1', 'gros-2', 'pourri-1', 'pourri-2', 'swish-1', 'swish-2', 'dore', 'sable-1', 'sable-2', 'plage', 'musique-calme', 'musique-intense', 'combo', 'bonus', 'niveau', 'grand'])
+    fetch('./sons/' + n + '.mp3?v=1').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => {
+      sons[n] = d; if (n === musVoulue) musique(n);
+      if (n === 'plage') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.28; s.connect(g).connect(fxG); s.start(); } }).catch(() => {});
+}
+function audio() { setTimeout(chargerSons, 0); if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.8; maitre.connect(actx.destination); musG = actx.createGain(); musG.gain.value = S.mus; musG.connect(maitre); fxG = actx.createGain(); fxG.gain.value = S.fx; fxG.connect(maitre); } catch (e) {} }
+function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * rnd(0.95, 1.05); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(fxG); s.start(); return true; }
+const ton = () => {};   // plus aucun son synthétisé
+const deux = n => n + (Math.random() < .5 ? '-1' : '-2');
+const son = {
+  // la vitesse de lecture suit la grosseur : petit coco plus aigu, gros coco plus grave
+  coupe: (t, taille) => { const T = TYPES[t], vit = THREE.MathUtils.clamp(1.18 - (taille - 0.78) * 0.55, 0.82, 1.2); if (t === 'dore') { jouer('dore', 1); jouer(deux('vert'), 0.7, 1); return; } jouer(deux(T.son), t === 'gros' ? 1 : 0.9, vit); },
+  swish: () => jouer(deux('swish'), 0.35, rnd(0.95, 1.15)),
+  sable: () => jouer(deux('sable'), 0.8),
+  combo: n => jouer('combo', 0.8, Math.min(1.25, 0.9 + n * 0.03)),
+  niveau: () => jouer('niveau', 0.8),
+  bonus: () => jouer('bonus', 0.9),
+  grand: () => jouer('grand', 0.95),
+};
+
+// ---------------------------------------------------------------- partie
+const RECHARGE = 12, calme = () => mode === 'zen';   // « Mi vé zoué trankil » ; 'classique' = « Mi rode problèm »
+let etoilesC = 0;
+let etat = 'menu', mode = 'classique', score = 0, vies = 3, temps = 0, prochain = 1, record = 0, coupes = 0, niveau = 1, phase = 'actif', phaseT = 0;
+let charge = 0, serie = 0, ralentis = 0, frenesies = 0, ralenti = 0, frenesie = 0, arret = 0;
+const cocos = [], morceaux = [], flashes = [], debris = [];
+const DESSUS = () => sol + 0.3;
+const texTache = blobTex([[0, 'rgba(255,255,255,.9)'], [0.7, 'rgba(255,255,255,.5)'], [1, 'rgba(255,255,255,0)']]);
+const dureePhase = () => calme() ? 30 : Math.min(34, 20 + niveau * 2);
+const intensite = () => calme() ? Math.min(0.8 + (niveau - 1) * 0.35, 2.4) : (niveau - 1) * 1.5 + phaseT / 14;
+function lancer(t, x) {
+  const T = TYPES[t], obj = noix(t);
+  x = x ?? rnd(-viewW * 0.4, viewW * 0.4);
+  obj.position.set(x, viewH / 2 + 1, 0.5); obj.rotation.set(rnd(-.5, .5), rnd(0, 6), rnd(-.6, .6)); scene.add(obj);
+  const I = intensite();
+  cocos.push({ t, obj, vx: rnd(-0.5, 0.5) - x * 0.04, vy: -(0.6 + I * 0.12), g: (3.2 + I * 0.22) * (calme() ? 0.8 : 1), vr: [rnd(-2, 2), rnd(-2, 2)], rayon: 0.68 * T.taille, vivant: true, mouches: t === 'pourri' ? 0 : -1 });
+}
+function choisirType() {
+  const I = intensite(), pPourri = calme() ? 0.05 : Math.min(0.26, 0.07 + I * 0.018), r = Math.random();
+  if (r < pPourri) return 'pourri';
+  const r2 = Math.random(); return r2 < 0.32 ? 'vert' : r2 < 0.52 ? 'sec' : r2 < 0.68 ? 'jaune' : r2 < 0.84 ? 'orange' : 'gros';
+}
+function vague() {
+  const I = intensite(), n = 1 + Math.floor(Math.random() * Math.min(1.4 + I * 0.45, calme() ? 3 : 6));
+  for (let i = 0; i < n; i++) setTimeout(() => { if (etat === 'jeu' && phase === 'actif') lancer(choisirType()); }, i * rnd(120, 300));
+  prochain = calme() ? 1.9 + rnd(0, 0.6) : Math.max(0.55, 1.8 - I * 0.11) + rnd(0, 0.4);
+}
+// fin de niveau : pluie de cocos spéciaux (doré + gros), puis 4 secondes d'accalmie
+function finDeNiveau() {
+  if (!calme() && niveau % 5 === 0) {   // coco géant : lent, énorme, plusieurs coupes
+    phase = 'speciales'; phaseT = 0; bandeau('COCO GÉANT ! Tranche-le plusieurs fois', 3); secousse = 0.6; son.grand(); lancer('gros', 0);
+    const b = cocos[cocos.length - 1]; b.boss = true; b.pv = 5 + Math.floor(niveau / 5); b.vy = -0.2; b.g = 0.9; b.rayon *= 2; b.obj.scale.multiplyScalar(2); b.garde = 0;
+    for (let i = 0; i < 4; i++) setTimeout(() => { if (etat === 'jeu') lancer(choisirType()); }, 2500 + i * 1500);
+    setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niveau++; majNiveauHud(); son.niveau(); vitesseMusique(); bandeau('Accalmie… Niveau ' + niveau, 3.2); }, 11000); return;
+  }
+  phase = 'speciales'; phaseT = 0;
+  bandeau('Pluie de cocos !', 1.6);
+  lancer('dore', 0);
+  for (let i = 0; i < 2 + Math.min(4, niveau); i++) setTimeout(() => { if (etat === 'jeu') lancer(i % 2 ? 'gros' : ['jaune', 'orange', 'vert'][i % 3], (i - 2) * viewW * 0.16); }, 250 + i * 220);
+  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niveau++; majNiveauHud(); son.niveau(); vitesseMusique(); bandeau('Accalmie… Niveau ' + niveau, 3.2); if (calme()) montrerFait(); }, 3200);
+}
+function majNiveauHud() { const e = $('niveauHud'); e.textContent = 'Niveau ' + niveau; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
+function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 200) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
+function montrerFait() {
+  const e = $('faitBulle'); e.innerHTML = '<b>Le saviez-vous ?</b> ' + FICHES[Math.floor(Math.random() * FICHES.length)]; e.classList.add('on'); clearTimeout(montrerFait.t); montrerFait.t = setTimeout(() => e.classList.remove('on'), 8000);
+}
+function ambiancer() { renderer.toneMappingExposure = calme() ? 1.05 : 0.95; bloom.strength = calme() ? 0.32 : 0.4; }
+function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
+function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = calme() ? '' : 'Record : ' + Math.max(record, score);
+  if (calme()) { const et = Math.floor(coupes / 15); if (et > etoilesC) { etoilesC = et; bandeau('★ Une étoile de plus !', 1.6); son.bonus(); majVies(); } } }
+function majVies() { if (calme()) { $('vies').innerHTML = `<div class="temps" style="color:#ffd24a;text-shadow:0 3px 0 #8a5a00">★ ${etoilesC}</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🥥</span>`).join(''); }
+function perdreVie() { if (etat !== 'jeu' || calme()) return; vies = Math.max(0, vies - 1); majVies(); secousse = 0.4; if (vies === 0) finPartie(); }
+function majBonus() {
+  const k = Math.min(1, charge / RECHARGE), pc = (k * 100).toFixed(1);
+  $('bSabre').style.background = `linear-gradient(to top, rgba(90,200,120,.7) ${pc}%, rgba(0,40,60,.55) ${pc}%)`; $('bSabre').classList.toggle('pret', k >= 1); $('bSabre').classList.toggle('vide', k < 1);
+  $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', !ralentis); $('bRalenti').classList.toggle('pret', ralentis > 0);
+  $('nFrenesie').textContent = frenesies; $('bFrenesie').classList.toggle('vide', !frenesies); $('bFrenesie').classList.toggle('pret', frenesies > 0);
+}
+function activerSabre() { if (etat !== 'jeu' || charge < RECHARGE) return; charge = 0; let n = 0; for (const c of cocos) if (c.vivant && c.t !== 'pourri') { couper(c, new THREE.Vector3(1, 0.2, 0).normalize(), true); n++; } bandeau('Coup de sabre ! ' + n + ' cocos'); secousse = 0.4; majBonus(); }
+function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralenti = 5; bandeau('Ralenti !', 5); majBonus(); }
+function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
+function demarrer(m) {
+  audio(); mode = m; etat = 'jeu'; etoilesC = 0; $('faitBulle').classList.remove('on'); $('btnFin').style.display = calme() ? '' : 'none'; ambiancer(); musique(calme() ? 'musique-calme' : 'musique-intense'); vitesseMusique(); score = 0; vies = 3; temps = 0; prochain = 0.6; coupes = 0; niveau = 1; phase = 'actif'; phaseT = 0;
+  charge = 0; serie = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0;
+  record = 0; if (!calme()) try { record = +localStorage.getItem('kasskoko2_record') || 0; } catch (e) {}
+  cocos.forEach(c => scene.remove(c.obj)); cocos.length = 0; tachesEcran.splice(0).forEach(g => g.el && g.el.remove()); vitre.length = 0; nettoyerDebris();
+  majScore(); majVies(); majNiveauHud(); majBonus();
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('bonus').classList.add('on'); $('lien').classList.add('discret');
+}
+function finPartie() {
+  etat = 'fin'; musique('musique-calme'); $('btnFin').style.display = 'none'; $('faitBulle').classList.remove('on'); setTimeout(nettoyerDebris, 900); $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
+  const nouveau = !calme() && score > record && score > 0;
+  if (nouveau) { record = score; try { localStorage.setItem('kasskoko2_record', record); } catch (e) {} }
+  $('scoreFin').textContent = score; $('recordFin').textContent = calme() ? (etoilesC ? '★ ' + etoilesC + (etoilesC > 1 ? ' étoiles' : ' étoile') : 'Pas de record, juste le plaisir') : 'Record : ' + record;
+  $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
+  $('cocoFin').textContent = coupes + (coupes > 1 ? ' cocos coupés' : ' coco coupé') + ' · niveau ' + niveau;
+  const et = calme() ? (coupes >= 40 ? 3 : coupes >= 20 ? 2 : coupes >= 8 ? 1 : 0) : (score >= 450 ? 3 : score >= 180 ? 2 : score >= 50 ? 1 : 0);
+  $('etoilesFin').innerHTML = [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
+  $('savoirTexte').textContent = FICHES[Math.floor(Math.random() * FICHES.length)];
+  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
+}
+
+// ---------------------------------------------------------------- la coupe : effets lumineux, eau qui gicle et qui coule, éclaboussures sur l'écran
+function nettoyerDebris() { for (const d of debris) { scene.remove(d); d.traverse(o => { if (o.isMesh && o.userData.jetable) { o.geometry.dispose(); o.material.dispose(); } }); } debris.length = 0; }
+// un coco qui tombe s'éclate sur les planches et y reste
+function eclater(c) {
+  const T = TYPES[c.t], p = c.obj.position, y0 = DESSUS();
+  // tache d'eau (ou de jus pourri) sur le bois
+  const tache = new THREE.Mesh(new THREE.PlaneGeometry(1.8 * T.taille, 1.8 * T.taille), new THREE.MeshBasicMaterial({ map: texTache, transparent: true, depthWrite: false, color: c.t === 'pourri' ? 0x1a1208 : c.t === 'dore' ? 0xc8902a : 0x5a3a1a, opacity: c.t === 'pourri' ? 0.85 : 0.45 }));
+  tache.userData.jetable = true; tache.rotation.x = -Math.PI / 2; tache.rotation.z = Math.random() * 6; tache.position.set(p.x, y0 + 0.006 + debris.length * 0.0004, rnd(0.4, 1.1)); scene.add(tache); debris.push(tache);
+  // les deux moitiés éclatées, posées sur le bois
+  for (const cote of [1, -1]) {
+    const m = demiNoix(c.t, cote); m.rotation.set(rnd(-0.6, 0.2), cote * rnd(0.6, 1.3), rnd(-0.4, 0.4) + (cote > 0 ? 0.3 : -0.3));
+    m.position.set(p.x + cote * rnd(0.35, 0.7) * T.taille, y0 + 0.3 * T.taille, tache.position.z + rnd(-0.2, 0.2)); scene.add(m); debris.push(m);
+  }
+  // petits éclats de coque et de bourre
+  for (let i = 0; i < 4; i++) { const e = new THREE.Mesh(new THREE.TetrahedronGeometry(rnd(0.07, 0.15) * T.taille), matBourre(c.t)); e.position.set(p.x + rnd(-1.1, 1.1), y0 + 0.06, tache.position.z + rnd(-0.4, 0.4)); e.rotation.set(rnd(0, 6), rnd(0, 6), rnd(0, 6)); e.castShadow = true; scene.add(e); debris.push(e); }
+  // gerbe d'eau à l'impact
+  const n = Math.round(30 + T.eau * 60);
+  for (let k = 0; k < n; k++) { const a = rnd(0.15, Math.PI - 0.15), v = rnd(1.5, 5) * (0.5 + T.eau * 0.5); gouttes.ajoute(p.x, y0 + 0.3, 0.9, Math.cos(a) * v, Math.sin(a) * v, c.t === 'pourri' ? [0.12, 0.1, 0.06] : c.t === 'dore' ? [1, 0.85, 0.35] : [0.6, 0.82, 1], rnd(0.5, 1), rnd(22, 46)); }
+  for (let k = 0; k < 14; k++) gouttes.ajoute(p.x, y0 + 0.3, 0.9, rnd(-2, 2), rnd(0.5, 2.5), [0.75, 0.5, 0.28], rnd(0.4, 0.7), rnd(14, 24));
+  // au-delà de 140 morceaux, les plus anciens s'en vont pour garder le jeu fluide
+  while (debris.length > 140) { const d = debris.shift(); scene.remove(d); }
+}
+function couper(c, dir, auto = false) {
+  if (c.boss) {
+    if (c.garde > 0) return; c.pv--;
+    if (c.pv > 0) { c.garde = 0.3; secousse = 0.35; son.coupe('gros', 1.4); const q = c.obj.position; for (let i = 0; i < 40; i++) { const a = Math.random() * 6.28, v = rnd(1.5, 5); gouttes.ajoute(q.x, q.y, q.z + 0.7, Math.cos(a) * v, Math.sin(a) * v, [0.55, 0.8, 1], rnd(0.5, 0.9), rnd(24, 44), 4); }
+      score += 5; majScore(); popup('Encore ' + c.pv + ' !', q.clone().add(new THREE.Vector3(0, 1.8, 0)), 'chaine'); c.vy += 1.4; c.obj.scale.multiplyScalar(0.94); c.rayon *= 0.95; return; }
+    score += 100; majScore(); son.bonus(); bandeau('Coco géant brisé ! +100', 2.4);
+    for (let i = 0; i < 120; i++) { const a = Math.random() * 6.28, v = rnd(2, 8); eclats.ajoute(c.obj.position.x, c.obj.position.y, 1, Math.cos(a) * v, Math.sin(a) * v, [1, 0.85, 0.3], rnd(0.8, 1.5), rnd(24, 46), 1.5); }
+  }
+  c.vivant = false; scene.remove(c.obj);
+  const T = TYPES[c.t], p = c.obj.position.clone(), s = toScreen(p);
+  son.coupe(c.t, T.taille);
+  if (c.t === 'pourri') {
+    for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, v = rnd(1, 5); gouttes.ajoute(p.x, p.y, p.z + 0.6, Math.cos(a) * v, Math.sin(a) * v + 1.5, [0.28, 0.22, 0.1], rnd(0.6, 1.2), rnd(30, 60)); }
+    for (let i = 0; i < 16; i++) gouttes.ajoute(p.x, p.y, p.z + 0.8, rnd(-2, 2), rnd(0, 3), [0.05, 0.05, 0.05], rnd(1, 2), rnd(10, 16), -0.5); // mouches qui s'envolent
+    eclabousser(s.x, s.y, 1.2, 'pourri'); popup('Beurk ! Coco pourri', p, 'aie'); serie = 0; secousse = 0.5;
+    perdreVie();
+  } else {
+    coupes++; serie++;
+    const mult = frenesie > 0 ? 2 : 1, pts = T.pts * mult; score += pts; majScore();
+    popup(T.nom, p.clone().add(new THREE.Vector3(0, 1.1 * T.taille, 0)), 'nom');
+    if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } majBonus(); }
+    // 1) éclair blanc le long de la coupe
+    const flash = new THREE.Mesh(new THREE.PlaneGeometry(2.6 * T.taille, 0.04), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.8, 1.8, 1.7), transparent: true, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }));
+    flash.position.copy(p); flash.position.z += 0.9; flash.rotation.z = Math.atan2(dir.y, dir.x); scene.add(flash); flashes.push({ m: flash, vie: 0.25, max: 0.25, type: 'trait' });
+    // 2) deux anneaux qui s'ouvrent, l'un d'eau, l'autre d'arc-en-ciel
+    const nAn = PETIT ? 36 : 54, rot = Math.random() * Math.PI;
+    for (let i = 0; i < nAn; i++) { const a = rot + i / nAn * Math.PI * 2; gouttes.ajoute(p.x, p.y, p.z + 0.7, Math.cos(a) * 4.2, Math.sin(a) * 4.2, [0.7, 0.88, 1], 0.7, 34, 0.6); eclats.ajoute(p.x, p.y, p.z + 0.8, Math.cos(a + 0.05) * 2.6, Math.sin(a + 0.05) * 2.6, hsl(i / nAn, 0.9, 0.6), 0.9, 30, 0); }
+    // 3) gerbe d'eau de coco dans le sens de la coupe, plus forte pour les cocos très juteux
+    const nEau = Math.round((PETIT ? 70 : 110) * (0.3 + T.eau));
+    for (let i = 0; i < nEau; i++) { const a = Math.atan2(-dir.x, dir.y) + (Math.random() < .5 ? 0 : Math.PI) + rnd(-0.7, 0.7), v = rnd(1.5, 6.5) * (0.6 + T.eau * 0.4); gouttes.ajoute(p.x, p.y, p.z + 0.6, Math.cos(a) * v, Math.sin(a) * v + 2, c.t === 'dore' ? [1, 0.85, 0.35] : [0.55, 0.8, 1], rnd(0.6, 1.3), rnd(26, 62)); }
+    // 4) étincelles de lumière (chair blanche qui brille au soleil)
+    for (let i = 0; i < (PETIT ? 30 : 50); i++) { const a = Math.random() * Math.PI * 2, v = rnd(1, 5); eclats.ajoute(p.x, p.y, p.z + 0.8, Math.cos(a) * v, Math.sin(a) * v + 1, c.t === 'dore' ? [1, 0.8, 0.3] : [1, 1, 0.95], rnd(0.3, 0.8), rnd(14, 30), 2); }
+    if (c.t === 'dore') { for (let i = 0; i < 160; i++) { const a = Math.random() * Math.PI * 2, v = rnd(2, 9); eclats.ajoute(p.x, p.y, p.z + 0.8, Math.cos(a) * v, Math.sin(a) * v, i % 3 ? [1, 0.8, 0.2] : [1, 1, 0.8], rnd(0.8, 1.6), rnd(24, 50), 1.5); } secousse = 0.5; ralenti = Math.max(ralenti, 1.2); }
+    // 5) les deux moitiés montrent la chair et l'eau coule encore
+    const ang = Math.atan2(dir.y, dir.x), nrm = new THREE.Vector3(-dir.y, dir.x, 0);
+    for (const cote of [1, -1]) {
+      const m = demiNoix(c.t, cote); m.position.copy(p); m.rotation.set(0, 0, ang - Math.PI / 2); scene.add(m);
+      morceaux.push({ obj: m, vx: nrm.x * cote * rnd(1.5, 2.6) + c.vx * 0.3, vy: nrm.y * cote * rnd(1.5, 2.6) + 2.2, vr: cote * rnd(1.5, 3.5), ouvre: 0, cote, eau: T.eau, t: c.t });
+    }
+    eclabousser(s.x, s.y, 0.4 + T.eau * 0.8, c.t);
+    arret = auto ? 0 : 0.06; // micro-arrêt sur image : la coupe « claque »
+  }
+}
+
+// ---------------------------------------------------------------- geste
+let appui = false, dernier = null, chaine = 0; const trait = [];
+const pointeur = e => ({ x: e.clientX, y: e.clientY, t: performance.now() });
+addEventListener('pointerdown', e => { if (e.target.closest('.zone-interactive')) return; audio(); appui = true; dernier = pointeur(e); trait.length = 0; trait.push(dernier); chaine = 0; });
+addEventListener('pointermove', e => { if (!appui) return; const p = pointeur(e); trait.push(p); if (trait.length > 16) trait.shift(); const d = Math.hypot(p.x - dernier.x, p.y - dernier.y); if (d > 40 && etat === 'jeu' && Math.random() < 0.25) son.swish(); trancher(dernier, p); dernier = p; });
+addEventListener('pointerup', () => { appui = false; finChaine(); }); addEventListener('pointercancel', () => { appui = false; });
+function finChaine() { if (chaine >= 3 && etat === 'jeu') { const bonus = chaine * 4 * (frenesie > 0 ? 2 : 1); score += bonus; majScore(); popup('Combo ×' + chaine + ' ! +' + bonus, new THREE.Vector3(0, 1, 0), 'chaine'); son.combo(chaine); for (let i = 0; i < 90; i++) { const a = i / 90 * Math.PI * 2; eclats.ajoute(0, 1, 1, Math.cos(a) * 5, Math.sin(a) * 5, hsl(i / 90, 1, 0.6), 1, 36, 0); } } chaine = 0; }
+function trancher(a, b) {
+  if (etat !== 'jeu') return;
+  const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy; if (L < 16) return;
+  for (const c of cocos) {
+    if (!c.vivant) continue;
+    const s = toScreen(c.obj.position), r = c.rayon * H / viewH + 14;
+    const t = Math.max(0, Math.min(1, ((s.x - a.x) * dx + (s.y - a.y) * dy) / L));
+    if ((a.x + t * dx - s.x) ** 2 + (a.y + t * dy - s.y) ** 2 < r * r) { couper(c, new THREE.Vector3(dx, -dy, 0).normalize()); if (c.t !== 'pourri') chaine++; }
+  }
+}
+function dessinerTrait() {
+  const now = performance.now(); while (trait.length && now - trait[0].t > 170) trait.shift();
+  const n = Math.min(trait.length, 41), dep = trait.length - n;
+  for (let i = 0; i < 40; i++) if (trait.length < 2 || i + 1 >= n) segsT[i].style.display = segsT2[i].style.display = 'none';
+  if (trait.length < 2) return;
+  for (let i = 1; i < n; i++) {
+    const A = trait[dep + i - 1], B = trait[dep + i], k = (dep + i) / trait.length, l = segsT[i - 1], l2 = segsT2[i - 1];
+    l.style.display = l2.style.display = '';
+    for (const e of [l, l2]) { e.setAttribute('x1', A.x); e.setAttribute('y1', A.y); e.setAttribute('x2', B.x); e.setAttribute('y2', B.y); }
+    l.setAttribute('stroke', `rgba(255,255,255,${k})`); l.setAttribute('stroke-width', 2 + k * 10); l2.setAttribute('stroke', `rgba(120,220,255,${k * 0.8})`);
+  }
+}
+
+// ---------------------------------------------------------------- boucle
+const horloge = new THREE.Clock(); let ambiance = 0;
+function boucle() {
+  let dt = Math.min(horloge.getDelta(), 0.05);
+  if (arret > 0) { arret -= dt; dt *= 0.1; }
+  const echelle = H * renderer.getPixelRatio() / viewH * 0.03; gouttes.mat.uniforms.echelle.value = eclats.mat.uniforms.echelle.value = echelle;
+  const joue = etat === 'jeu';
+  if (joue) {
+    temps += dt; phaseT += dt; charge = Math.min(RECHARGE, charge + dt); if (ralenti > 0) ralenti -= dt; if (frenesie > 0) frenesie -= dt; majBonus();
+    if (phase === 'actif') { prochain -= dt; if (prochain <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
+    else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochain = 0.2; bandeau('Niveau ' + niveau + ' ! Ça repart', 1.6); }
+  } else if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; lancer(choisirType()); } }
+  const dc = ralenti > 0 ? dt * 0.4 : dt;
+  for (let i = cocos.length - 1; i >= 0; i--) {
+    const c = cocos[i]; if (!c.vivant) { cocos.splice(i, 1); continue; }
+    if (c.garde > 0) c.garde -= dc;
+    c.vy -= c.g * dc; c.obj.position.x += c.vx * dc; c.obj.position.y += c.vy * dc; c.obj.rotation.x += c.vr[0] * dc; c.obj.rotation.z += c.vr[1] * dc;
+    if (c.t === 'pourri' && Math.random() < 0.3) { const a = performance.now() / 200 + Math.random() * 6; gouttes.ajoute(c.obj.position.x + Math.cos(a) * 0.8, c.obj.position.y + Math.sin(a) * 0.6 + 0.3, 1, rnd(-.5, .5), rnd(-.3, .3), [0.04, 0.04, 0.04], 0.4, 10, 0); } // mouches
+    if (c.t === 'dore' && Math.random() < 0.5) eclats.ajoute(c.obj.position.x + rnd(-.6, .6), c.obj.position.y + rnd(-.6, .6), 1, 0, 0.3, [1, 0.85, 0.3], 0.6, 22, 0);
+    if (c.obj.position.y < DESSUS() + 0.6 * TYPES[c.t].taille) {
+      c.vivant = false; scene.remove(c.obj); son.coupe(c.t, TYPES[c.t].taille); son.sable(); eclater(c); secousse = Math.max(secousse, 0.15);
+      const p = c.obj.position;
+      if (joue && c.t !== 'pourri') { serie = 0; popup('Écrasé sur les planches', new THREE.Vector3(p.x, sol + 1.8, 0), 'aie'); perdreVie(); }
+    }
+  }
+  for (let i = morceaux.length - 1; i >= 0; i--) {
+    const m = morceaux[i]; m.vy -= 7 * dt; m.obj.position.x += m.vx * dt; m.obj.position.y += m.vy * dt; m.obj.rotation.z += m.vr * dt * 0.5;
+    m.ouvre = Math.min(1, m.ouvre + dt * 3); m.obj.rotation.y = -m.cote * m.ouvre * 1.1; // les moitiés pivotent pour montrer la chair
+    if (m.eau > 0.2 && m.ouvre < 1.6 && Math.random() < m.eau * 0.9) { const p = m.obj.position; gouttes.ajoute(p.x + rnd(-.2, .2), p.y, p.z + 0.5, rnd(-.4, .4) + m.vx * 0.3, rnd(-1, 0.5), m.t === 'dore' ? [1, 0.85, 0.35] : [0.6, 0.82, 1], rnd(0.5, 0.9), rnd(18, 32), 6); } // l'eau de coco coule
+    m.ouvre += dt * 0.25;
+    if (m.obj.position.y < -viewH / 2 - 2) { scene.remove(m.obj); morceaux.splice(i, 1); }
+  }
+  for (let i = flashes.length - 1; i >= 0; i--) { const f = flashes[i]; f.vie -= dt; const k = f.vie / f.max; f.m.material.opacity = k; f.m.scale.y = 1 + (1 - k) * 3; f.m.scale.x = 1 + (1 - k) * 0.4; if (f.vie <= 0) { scene.remove(f.m); f.m.geometry.dispose(); f.m.material.dispose(); flashes.splice(i, 1); } }
+  gouttes.maj(dt); eclats.maj(dt);
+  const tps = performance.now() / 1000; secousse = Math.max(0, secousse - dt);
+  camera.position.x = Math.sin(tps * 0.2) * 0.3 + (Math.random() - .5) * secousse * 0.5; camera.position.y = Math.sin(tps * 0.14) * 0.14 + (Math.random() - .5) * secousse * 0.5; camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
+  dessinerEcran(dt); composer.render(); dessinerTrait();
+  requestAnimationFrame(boucle);
+}
+
+// ---------------------------------------------------------------- boutons
+const majSon = () => { $('btnSon').textContent = sonCoupe ? '🔇' : '🔊'; }; majSon();
+$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('kk2_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.8; majSon(); };
+$('rMus').value = S.mus * 100; $('rFx').value = S.fx * 100;
+$('rMus').oninput = e => { S.mus = e.target.value / 100; if (musG) musG.gain.value = S.mus; sauveS(); }; $('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; sauveS(); };
+$('ouvrirSon').onclick = () => $('panSon').classList.add('on'); $('fermerSon').onclick = () => $('panSon').classList.remove('on'); $('ouvrirCredits').onclick = () => $('panCredits').classList.add('on'); $('fermerCredits').onclick = () => $('panCredits').classList.remove('on');
+$('btnFin').onclick = () => { if (etat === 'jeu') finPartie(); };
+$('bSabre').onclick = activerSabre; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
+$('jouer').onclick = () => demarrer('classique');
+$('jouerZen').onclick = () => demarrer('zen');
+$('rejouer').onclick = () => demarrer(mode);
+$('menuFin').onclick = () => { musique('musique-calme'); etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
+$('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
+document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
+addEventListener('resize', resize); resize(); majVies(); majScore();
+requestAnimationFrame(boucle);
+window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
+if (TEST) window.jeu = { get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get vies() { return vies; }, get score() { return score; }, get coupes() { return coupes; }, get S() { return S; }, set niveau(v) { niveau = v; }, tachesEcran, eclabousser, vitre, cocos, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, lancer, finDeNiveau, get niveau() { return niveau; }, get phase() { return phase; } };
+</script>
+</body>
+</html>
