@@ -17,5 +17,5 @@
 Aucune voix, aucun son synthétisé par le code, aucun personnage ou logo tiers. Aucun Canvas 2D.
 
 | voix/p0 à p3 (cris des randonneurs, reprises de Bouclier volcan v1) | Générés ElevenLabs pour Kwélafé | Usage commercial (abonnement) |
-| voix/n0 à n3 (phrases rigolotes des touristes : Julien, Philippine, Olivier D, Morgane ; eleven_v4) | Générés ElevenLabs pour Kwélafé | Usage commercial (abonnement) |
+| voix/n0 à n3 (phrases rigolotes des touristes en français et en créole : Julien, Philippine, Olivier D, Morgane ; eleven_v4) | Générés ElevenLabs pour Kwélafé | Usage commercial (abonnement) |
 | sons/annonce.mp3 | Voix « Volcan la pété, la zot kanar lé noir marmaye ! » générée ElevenLabs (eleven_v4, voix Hugo) | Usage commercial (abonnement) |
