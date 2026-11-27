@@ -131,8 +131,8 @@ const FRUITS=[
  {n:"ananas",nom:"Ananas Victoria",c:"#ffb21e"}];
 const hsv=(h,s=.85,v=1)=>{h=((h%360)+360)%360/60;const i=Math.floor(h),f=h-i,p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f)),a=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6];return (Math.round(a[0]*255)<<16)|(Math.round(a[1]*255)<<8)|Math.round(a[2]*255);};
 const hsvS=(h)=>"#"+hsv(h).toString(16).padStart(6,"0");
-const FXN=["etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
-for(const n of FXN){const im=new Image();im.src="../commun/fx/"+n+".webp"+V;FXT[n]={im};}
+const FXN=["e-etincelles","e-onde","e-jus","etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
+for(const n of FXN){const im=new Image();im.src=(n[0]==="e"&&n[1]==="-"?"./":"../commun/fx/")+n+".webp"+V;FXT[n]={im};}
 function fxTex(n){const o=FXT[n];if(!o||!o.im.complete||!o.im.naturalWidth)return null;return o.t||(o.t=PIXI.Texture.from(o.im));}
 function fxSpr(n,x,y,w,rot,al,tint,add){const t=fxTex(n);if(!t)return;const L=add?"a":"n",P=FXP[L],i=FXU[L]++;let s=P[i];
   if(!s){s=new PIXI.Sprite();s.anchor.set(.5);(add?fxA:fxN).addChild(s);P[i]=s;}
@@ -364,7 +364,7 @@ function nettoie(){
   const mid=[...kill][0];const mc=Math.floor(mid/NR),mr=mid%NR;
   pop((G.cascade>1?"Cascade ×"+G.cascade+"  ":"")+"+"+pts,OX+(mc+.5)*CELL,OY+(mr+.5)*CELL,G.cascade>1?"#ffd24a":"#fff",G.cascade>1?34:28);
   sfx("pop",1,1+Math.min(.6,(G.cascade-1)*.12));vib(10);
-  if(G.cascade>=3){for(let i=0;i<14;i++){const a=rnd(0,6.28),v=rnd(150,420);fxSp({k:"etoile",add:1,x:W/2,y:OY+CELL*3,w:rnd(.3,.7)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:380,life:rnd(.7,1.2),tint:hsv(rnd(0,360))});}secoue(4);}
+  if(G.cascade>=3){fxSp({k:"e-etincelles",add:1,x:W/2,y:OY+CELL*3.5,w:CELL*3,grow:CELL*8,life:1,vr:.4,al:1});for(let i=0;i<14;i++){const a=rnd(0,6.28),v=rnd(150,420);fxSp({k:"etoile",add:1,x:W/2,y:OY+CELL*3,w:rnd(.3,.7)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:380,life:rnd(.7,1.2),tint:hsv(rnd(0,360))});}secoue(4);}
   G.state="clearing";G.timer=.24;
 }
 function goal(t){for(const x of G.goals)if(x.t===t&&x.got<x.n)x.got++;}
@@ -498,13 +498,14 @@ function animCells(dt){
   }
 }
 function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;
-  if(!G.sp||G.sp.length<260){fxSp({k:"jus",x,y,w:CELL*.7,grow:CELL*1.5,life:.55,vr:0,rot:rnd(0,6.28),tint:hx(col.length===7?col:"#ffffff")});for(let i=0;i<3;i++){const a=rnd(0,6.28),v=rnd(120,300);fxSp({k:i%2?"goutte":"paillettes",add:i%2?0:1,x,y,w:rnd(.2,.45)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,life:rnd(.5,.9),tint:i%2?hx(col.length===7?col:"#ffffff"):hsv(rnd(0,360))});}}
+  if(!G.sp||G.sp.length<260){fxSp({k:"e-jus",add:1,x,y,w:CELL*.9,grow:CELL*1.6,life:.5,vr:0,rot:rnd(0,6.28),al:.85});for(let i=0;i<3;i++){const a=rnd(0,6.28),v=rnd(120,300);fxSp({k:i%2?"goutte":"paillettes",add:i%2?0:1,x,y,w:rnd(.2,.45)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,life:rnd(.5,.9),tint:i%2?hx(col.length===7?col:"#ffffff"):hsv(rnd(0,360))});}}
   for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(60,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:600,t:0,life:rnd(.3,.65),r:rnd(3,7),col});}}
 function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;G.fx.push({k:"ring",x,y,col,R:R*CELL,t:0,life:.55});if(R>=2.4)grandMoment(x,y,col);}
 function grandMoment(x,y,col){
   for(let i=0;i<6;i++)G.fx.push({k:"ring",x,y,col:hsvS(i*60),R:(2.6+i*.5)*CELL,t:-i*.07,life:.7}); // ralenti, zoom, onde de choc et gerbe d'étincelles dorées
   G.slow=Math.max(G.slow||0,.32);G.zoom=1;G.onde={x,y,t:0};sfx("impact",.9);sfx("eclat",.6,1.05);
   for(let i=0;i<46;i++){const a=rnd(0,6.28),v=rnd(120,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-160,g:520,t:0,life:rnd(.5,1.1),r:rnd(2,6),col:i%3?"#ffe25a":col});}
+  fxSp({k:"e-onde",add:1,x,y,w:CELL*1.5,grow:CELL*7,life:.8,vr:0,rot:0,al:.8});fxSp({k:"e-etincelles",add:1,x,y,w:CELL*2,grow:CELL*6,life:.9,vr:.6,al:.6});
   fxSp({k:"flare",add:1,x,y,w:CELL*.9,grow:CELL*3.2,life:.5,al:.4});
   fxSp({k:"anneau",add:1,x,y,w:CELL*.8,grow:CELL*6,life:.7,vr:0,rot:0});
   fxSp({k:"jus",x,y,w:CELL*1.1,grow:CELL*2.2,life:.7,vr:0,rot:0,tint:hx(col.length===7?col:"#ffa020")});
@@ -610,7 +611,7 @@ function dessineCell(k,c,r){
     for(let i=0;i<4;i++){const a=G.t*2+i*1.57;gOver.circle(x+Math.cos(a)*R0*.6,y+Math.sin(a)*R0*.6,3).fill({color:0xffffff,alpha:al});}
     return;
   }
-  if(k.t>=0){gUnder.circle(x,y,CELL*.42*k.sc).fill({color:hx(FRUITS[k.t].c),alpha:.2*al});
+  if(k.t>=0){
     {const gl=.5+.5*Math.sin(G.t*3+c+r),cc=hx(FRUITS[k.t].c);gAdd.circle(x,y,CELL*.5*k.sc).fill({color:cc,alpha:(.07+.04*gl)*al});gAdd.circle(x,y,CELL*.38*k.sc).fill({color:cc,alpha:(.1+.05*gl)*al});}
     const ph=(G.t*.9+((c*13+r*7)%10)*.7)%7;if(ph<.55&&al>.9)fxSpr("etoile",x-CELL*.22,y-CELL*.26,CELL*.34*Math.sin(ph/.55*Math.PI),G.t*2,.95,0xffffff,true);}
   spr("cell",x,y,h,al,k.t);
