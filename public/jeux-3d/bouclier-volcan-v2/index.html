@@ -523,8 +523,8 @@ function audio() {
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7; maitre.connect(actx.destination); musG = actx.createGain(); musG.gain.value = S.mus; musG.connect(maitre); fxG = actx.createGain(); fxG.gain.value = S.fx; fxG.connect(maitre); } catch (e) {}
 }
 const bruit = () => {}, ton = () => {};   // plus aucun son synthétisé
-// voix des touristes : 4 voix d'origine (p0 à p3, 15 cris chacune) et 4 voix rigolotes (n0 à n3, 10 à 11 phrases chacune, français et créole)
-const VOIX = [['p0', 15], ['p1', 15], ['p2', 15], ['p3', 15], ['n0', 11], ['n1', 10], ['n2', 11], ['n3', 10]], voixBuf = {}; let voixDemandees = false, criGlobal = 0, voixG = null;
+// voix des touristes : 4 voix d'origine (p0 à p3, 15 cris chacune) et 4 voix rigolotes (n0 à n3, 10 à 13 phrases chacune, français et créole)
+const VOIX = [['p0', 15], ['p1', 15], ['p2', 15], ['p3', 15], ['n0', 13], ['n1', 12], ['n2', 13], ['n3', 10]], voixBuf = {}; let voixDemandees = false, criGlobal = 0, voixG = null;
 function chargerVoix() {
   if (voixDemandees || !actx) return; voixDemandees = true;
   voixG = actx.createGain(); voixG.gain.value = 0.9; voixG.connect(maitre);
@@ -533,12 +533,12 @@ function chargerVoix() {
 // un touriste crie : chacun a sa voix, on évite de répéter la même phrase et de parler tous en même temps
 function crier(m, urgent = false) {
   if (!actx || sonCoupe || !m || m.monte) return; const liste = voixBuf[VOIX[m.voix % VOIX.length][0]]; if (!liste || !liste.length) return;
-  const now = performance.now() / 1000; if (!urgent && (now < m.cri || now < criGlobal)) return; if (urgent && now < m.cri - 2.2) return;
+  const now = performance.now() / 1000; if (now < criGlobal) return; if (!urgent && now < m.cri) return; if (urgent && now < m.cri - 2.2) return; /* une seule voix à la fois, jamais deux touristes en même temps */
   let k; do { k = Math.floor(Math.random() * liste.length); } while (liste.length > 1 && k === m.derniere); m.derniere = k;
   const s2 = actx.createBufferSource(); s2.buffer = liste[k]; s2.playbackRate.value = rnd(0.97, 1.04); const g = actx.createGain(); g.gain.value = urgent ? 1 : 0.85;
   const pan = actx.createStereoPanner ? actx.createStereoPanner() : null;
   if (pan) { pan.pan.value = Math.max(-0.8, Math.min(0.8, m.x / (viewW / 2))); s2.connect(g).connect(pan).connect(voixG || maitre); } else s2.connect(g).connect(voixG || maitre);
-  s2.start(); m.cri = now + liste[k].duration + rnd(1.0, 2.2); criGlobal = now + liste[k].duration * (urgent ? 0.3 : 0.6);
+  s2.start(); m.cri = now + liste[k].duration + rnd(1.0, 2.2); criGlobal = now + liste[k].duration / s2.playbackRate.value + 0.3;
 }
 const tailleSon = k => k >= 1.0 ? 'grosse' : k >= 0.85 ? 'moyenne' : 'petite';
 function jouerRoche(vitesse, vol, k = 0.9) { const buf = sonsRoche[tailleSon(k)]; if (!actx || !buf) return false; const s2 = actx.createBufferSource(); s2.buffer = buf; s2.playbackRate.value = vitesse * rnd(0.93, 1.07); const g = actx.createGain(); g.gain.value = vol; s2.connect(g).connect(fxG); s2.start(); return true; }
@@ -1144,7 +1144,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, eclair, orage, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
+if (TEST) window.jeu = { crier, voixBuf, lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, eclair, orage, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
 </script>
 </body>
 </html>
