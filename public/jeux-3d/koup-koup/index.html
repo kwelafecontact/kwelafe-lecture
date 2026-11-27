@@ -318,7 +318,7 @@ function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
   o.connect(g); g.connect(maitre); o.start(t); o.stop(t + dur + 0.02);
 }
 // Familles de fruits pour le son de la découpe
-const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
+const CROQUANTS = new Set(['ail', 'oignon', 'oignon-vert', 'persil', 'thym', 'gingembre', 'curcuma', 'chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
 const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
 const son = {
   // le « whoosh » suit la vitesse du doigt
@@ -380,7 +380,6 @@ const cache = {};
 // Corrections d'apparence (comparaison avec les vrais fruits de La Réunion) :
 // teinte = couleur multipliée sur la peau ; aplatir = écrase le grand axe (fruit trop allongé)
 const CORRECTIONS = {
-  'bibasse': { teinte: '#ffb04a' },          // la bibasse mûre est jaune orangé, pas beige
   'chouchou': { teinte: '#cfe9a4' },         // chouchou vert tendre
   'carambole': { teinte: '#ffe680' },        // carambole jaune doré, cireuse
   'mandarine': { teinte: '#ffa040', aplatir: 0.62 }, // mandarine ronde et un peu aplatie, bien orange
