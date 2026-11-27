@@ -1112,3 +1112,15 @@ html[data-animations="non"] *{animation:none!important;transition:none!important
 .ce-salut{text-align:center;font-size:20px;font-weight:900}
 .ce-pause{text-align:center;padding:30px 10px;display:grid;gap:10px}.ce-pause h2{font-family:var(--titre);color:#24402f}
 .ce-rep:disabled:not(.ok){opacity:.45}
+.enf-portes{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.fz h2,.fz-livre h2{font-family:var(--titre);color:#24402f;text-align:center}
+.fz-etapes{display:flex;justify-content:center;gap:10px;margin-bottom:6px}
+.fz-etapes i{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#eee;font-style:normal;font-weight:900;font-size:20px}
+.fz-etapes i.fait{background:#d7ffb8}.fz-etapes i.ici{background:#fff;outline:3px solid #7a2e8f}
+.fz-cartes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.fz-cartes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 8px;border-radius:22px;border:3px solid #e5e0d8;border-bottom-width:6px;background:#fff;font-weight:900;font-size:17px;cursor:pointer}
+.fz-cartes button span{font-size:52px}
+.fz-livre{background:#fffaf0;border-radius:28px;padding:22px;box-shadow:var(--ombre);text-align:center}
+.fz-couv{font-size:48px;letter-spacing:6px}
+.fz-texte{font-size:22px;line-height:1.6;min-height:160px;text-align:left;margin:16px 0}
+.fz-nav{display:flex;align-items:center;gap:12px}.fz-nav .ce-gros{width:auto;flex:1;margin:0}.fz-nav span{font-weight:900}
