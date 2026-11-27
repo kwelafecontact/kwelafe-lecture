@@ -12,6 +12,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "koup-kann", titre: "Koup Kann", accroche: "Coupe la canne au ras du sol pendant la campagne sucrière.", emoji: "🌾", fond: "linear-gradient(135deg,#6a8a2a,#c8a040 55%,#a83a1a)" },
   { id: "tap-tap-moustik", titre: "Tap Tap Moustik", accroche: "Chasse les moustiques du jardin et vide les gîtes.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
   { id: "bichik-rush", titre: "Bichik Rush", accroche: "Ramasse les bichiques à la vouve, laisse passer les espèces protégées.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a7a)" },
+  { id: "bichik-rush-v2", titre: "Bichik Rush v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a8a)" },
   { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Presse les fruits péi et sers chaque client avant qu'il parte.", emoji: "🍹", fond: "linear-gradient(135deg,#ffb21e,#e8283a 55%,#2a8a4a)" },
   { id: "marche-des-jus-v2", titre: "Le marché des jus v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🍹", fond: "linear-gradient(135deg,#5fc84a,#ffb21e 50%,#ff5a2a)" },
   { id: "bouclier-volcan", titre: "Bouclier volcan", accroche: "Tranche les bombes de lave et protège les randonneurs de l'Enclos.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
