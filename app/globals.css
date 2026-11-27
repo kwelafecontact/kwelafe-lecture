@@ -997,3 +997,13 @@ body { background: var(--ivoire); }
 .ee-emoji{visibility:hidden}
 .app-mascotte{background:#fdf8e6}
 .app-mascotte img{object-fit:contain}
+.app-ligue{background:#fff;border-radius:22px;padding:18px;box-shadow:var(--ombre);margin:10px 0 18px}
+.app-ligue-tete{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.app-ligue-tete>span{font-size:34px}
+.app-ligue-tete small{display:block;color:var(--doux)}
+.app-ligue-info{background:#fdf2d6;border-radius:12px;padding:10px 12px;font-size:14px;margin:6px 0}
+.app-ligue-info a{font-weight:800;color:var(--lave)}
+.app-classement{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.app-classement li{display:grid;grid-template-columns:40px 1fr auto;align-items:center;padding:8px 10px;border-radius:12px;background:#faf7f1}
+.app-classement li.moi{background:#d7ffb8;font-weight:900}
+.cl-rang{font-weight:900;text-align:center}.cl-xp{font-weight:800;color:#e8a200}

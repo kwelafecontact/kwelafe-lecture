@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Unite, Mot } from "@/lib/apprendre";
 
-type Progres = { xp: number; serie: number; jour: string; finies: Record<number, number>; coeurs: number; jourCoeurs: string };
+type Progres = { xp: number; serie: number; jour: string; finies: Record<number, number>; coeurs: number; jourCoeurs: string; xpSemaine?: number };
+type Rang = { rang: number; prenom: string; xp: number; moi: boolean };
 type Exo = { type: "fr" | "kr"; mot: Mot; choix: string[] } | { type: "paires"; mots: Mot[] };
 
 const CLE = "kw-apprendre-v1";
@@ -43,22 +44,41 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
   const [p, setP] = useState<Progres | null>(null);
   const [lecon, setLecon] = useState<{ u: Unite; exos: Exo[]; i: number; erreurs: number } | null>(null);
   const [fin, setFin] = useState<{ xp: number; etoiles: number; u: Unite } | null>(null);
-  useEffect(() => setP(lire()), []);
+  const [connecte, setConnecte] = useState(false);
+  const [classement, setClassement] = useState<Rang[]>([]);
+  useEffect(() => {
+    const local = lire();
+    setP(local);
+    fetch("/api/apprendre").then((r) => r.json()).then(async (d) => {
+      setClassement(d.classement || []);
+      if (!d.connecte) return;
+      setConnecte(true);
+      let srv = d.progres;
+      if ((!srv || srv.xp === 0) && local.xp > 0) {
+        const r = await fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "importer", local }) });
+        const j = await r.json(); srv = j.progres; setClassement(j.classement || []);
+      }
+      if (srv) { setP(srv); ecrire(srv); }
+    }).catch(() => {});
+  }, []);
   if (!p) return null;
 
   const maj = (n: Progres) => { setP(n); ecrire(n); };
+  const envoyer = (corps: object) => fetch("/api/apprendre", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corps) })
+    .then((r) => r.json()).then((j) => { if (j.progres) maj(j.progres); if (j.classement) setClassement(j.classement); }).catch(() => {});
   const debloquee = (id: number) => id === 1 || p.finies[id - 1] !== undefined;
 
   function terminer(erreurs: number, u: Unite) {
     const etoiles = erreurs === 0 ? 3 : erreurs <= 2 ? 2 : 1;
     const gain = 10 + (3 - erreurs > 0 ? (3 - erreurs) * 5 : 0);
     const serie = p!.jour === auj() ? p!.serie : p!.jour === hier() ? p!.serie + 1 : 1;
-    maj({ ...p!, xp: p!.xp + gain, serie, jour: auj(), finies: { ...p!.finies, [u.id]: Math.max(etoiles, p!.finies[u.id] || 0) } });
+    maj({ ...p!, xp: p!.xp + gain, serie, jour: auj(), xpSemaine: (p!.xpSemaine || 0) + gain, finies: { ...p!.finies, [u.id]: Math.max(etoiles, p!.finies[u.id] || 0) } });
+    if (connecte) envoyer({ action: "lecon", unite: u.id, etoiles, gain });
     setLecon(null); setFin({ xp: gain, etoiles, u });
   }
 
   if (lecon) return <Lecon lecon={lecon} coeurs={p.coeurs}
-    onErreur={() => maj({ ...p, coeurs: Math.max(0, p.coeurs - 1) })}
+    onErreur={() => { maj({ ...p, coeurs: Math.max(0, p.coeurs - 1) }); if (connecte) envoyer({ action: "coeur" }); }}
     onSuivant={(err) => { const i = lecon.i + 1; if (i >= lecon.exos.length) terminer(err, lecon.u); else setLecon({ ...lecon, i, erreurs: err }); }}
     onQuitter={() => setLecon(null)} />;
 
@@ -113,6 +133,21 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
           );
         })}
       </div>
+      <section className="app-ligue">
+        <div className="app-ligue-tete"><span>🏆</span><div><b>Ligue de la semaine</b><small>Classement des XP gagnés depuis lundi. On repart à zéro chaque lundi.</small></div></div>
+        {!connecte && <p className="app-ligue-info">Connecte-toi pour garder tes progrès sur tous tes appareils et entrer dans la ligue. <a href="/auth/login">Me connecter</a></p>}
+        {classement.length === 0 ? <p className="app-ligue-info">Personne encore cette semaine : fais une leçon et prends la première place !</p> : (
+          <ol className="app-classement">
+            {classement.slice(0, 15).map((r) => (
+              <li key={r.rang} className={r.moi ? "moi" : ""}>
+                <span className="cl-rang">{r.rang <= 3 ? ["🥇", "🥈", "🥉"][r.rang - 1] : r.rang}</span>
+                <span className="cl-nom">{r.moi ? "Toi" : r.prenom}</span>
+                <span className="cl-xp">{r.xp} XP</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
       {p.coeurs === 0 && <p className="app-alerte">Plus de cœurs pour aujourd'hui : reviens demain, ou relis un livre en attendant 📚</p>}
       <p className="app-source">Les mots viennent des livres <Link href="/catalogue">OTÉ ! Les zarlor</Link> et Kosa i mank ?</p>
     </>
