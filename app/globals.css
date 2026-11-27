@@ -1087,3 +1087,28 @@ body { background: var(--ivoire); }
 .parents-conseils{line-height:1.7;padding-left:18px}
 .parents-actions{display:flex;flex-wrap:wrap;gap:10px}
 .lien-parents{display:inline-flex;gap:6px;align-items:center;margin:18px auto 0;padding:10px 16px;border-radius:999px;background:#fff;box-shadow:var(--ombre);font-weight:800;color:var(--texte);text-decoration:none}
+/* Réglages */
+.rg-bloc{background:#fff;border-radius:22px;padding:16px 18px;box-shadow:var(--ombre);margin-bottom:14px;display:grid;gap:10px}
+.rg-bloc h2{margin:0;font-size:19px}
+.rg-ligne{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-top:1px solid #f1ece4}
+.rg-ligne small{display:block;color:var(--doux);font-size:13px;font-weight:400}
+.rg-choix{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.rg-choix button{border:2px solid #e5e0d8;background:#fff;border-radius:12px;padding:7px 12px;font-weight:800;cursor:pointer}
+.rg-choix button.actif{border-color:#1f6fb2;background:#e3effa;color:#1f6fb2}
+.rg-bascule{appearance:none;width:52px;height:30px;border-radius:999px;background:#ddd;position:relative;cursor:pointer;flex:none;transition:.2s}
+.rg-bascule::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px #0003}
+.rg-bascule:checked{background:#58cc02}.rg-bascule:checked::after{left:25px}
+.rg-lien{display:block;text-align:left;padding:10px 12px;border-radius:12px;background:#faf7f1;font-weight:800;color:var(--texte);text-decoration:none;border:none;cursor:pointer;font-size:15px}
+.rg-ok{color:#3c8b00;font-weight:800}
+/* Application des réglages */
+html[data-taille="grand"]{font-size:112%}
+html[data-taille="tres-grand"]{font-size:125%}
+html[data-taille="grand"] body{font-size:1.08em}html[data-taille="tres-grand"] body{font-size:1.18em}
+html[data-theme="sepia"] body{background:#f4ecd8;filter:sepia(.12)}
+html[data-theme="nuit"] body{background:#14171f;color:#e8e3da;filter:invert(.92) hue-rotate(180deg)}
+html[data-theme="nuit"] img,html[data-theme="nuit"] .couv,html[data-theme="nuit"] [style*="url("]{filter:invert(1) hue-rotate(180deg)}
+html[data-animations="non"] *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.entete-actions{display:flex;gap:8px}
+.ce-salut{text-align:center;font-size:20px;font-weight:900}
+.ce-pause{text-align:center;padding:30px 10px;display:grid;gap:10px}.ce-pause h2{font-family:var(--titre);color:#24402f}
+.ce-rep:disabled:not(.ok){opacity:.45}

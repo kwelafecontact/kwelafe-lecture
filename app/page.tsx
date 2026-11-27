@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import NavBas from "@/components/NavBas";
 import CarteLivre, { Couverture } from "@/components/CarteLivre";
@@ -32,7 +33,7 @@ export default async function Accueil() {
   const mystere = livres.find((l) => l.mystere_du_mois);
   const mesFavoris = livres.filter((l) => favoris.has(l.id));
   const lus = progs.filter((p) => p.termine).length;
-  const objectif = 15;
+  const objectif = Math.max(5, Math.min(60, Number((await cookies()).get("kw_objectif")?.value) || 15));
   const visibles = sansDoublon(livres, acces);
   const une = mystere ?? [...visibles].sort((a, b) => b.cree_le.localeCompare(a.cree_le))[0];
   const nouveautes = [...visibles].sort((a, b) => b.cree_le.localeCompare(a.cree_le)).slice(0, 12);
@@ -54,7 +55,7 @@ export default async function Accueil() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-kwelafe.webp" alt="Kwélafé Production" />
           </Link>
-          <Link href="/portails" className="changer-espace">▦ Mes espaces</Link>
+          <span className="entete-actions"><Link href="/reglages" className="changer-espace" aria-label="Réglages">⚙️</Link><Link href="/portails" className="changer-espace">▦ Mes espaces</Link></span>
         </div>
 
         <header className="hero-accueil">

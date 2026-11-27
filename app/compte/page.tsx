@@ -68,6 +68,7 @@ export default async function Compte() {
         {editeur && <EspaceCreateur />}
 
         {session.visiteur && <BandeauVisiteur />}
+        <a className="btn large" href="/reglages" style={{ marginBottom: 10 }}>⚙️ Réglages de l'app</a>
         {!session.visiteur && <a className="btn secondaire large" href="/mes-livres-hors-ligne" style={{ marginBottom: 18 }}>⬇️ Mes livres hors connexion</a>}
 
         <section className="panneau panneau-stats">

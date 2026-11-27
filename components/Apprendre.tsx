@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Unite, Mot } from "@/lib/apprendre";
+import { lireReglages } from "@/lib/reglages";
 
 type Progres = { xp: number; serie: number; jour: string; finies: Record<number, number>; coeurs: number; jourCoeurs: string; xpSemaine?: number };
 type Rang = { rang: number; prenom: string; xp: number; moi: boolean };
@@ -80,7 +81,8 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
       setConnecte(true); setPrenom(d.prenom || ""); setProfils(d.profils || []);
       let deja: string | null = null;
       try { deja = sessionStorage.getItem("kw-app-profil"); } catch {}
-      if ((d.profils || []).length === 0) charger("");
+      const demander = lireReglages().profilAuto;
+      if (!demander && (d.profils || []).length === 0) charger("");
       else if (deja !== null && (deja === "" || d.profils.some((x: ProfilApp) => x.id === deja))) charger(deja);
     }).catch(() => { setProfil(""); setP(lire()); });
   }, []);
@@ -142,7 +144,7 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
   }
 
   if (lecon) return <Lecon lecon={lecon} coeurs={p.coeurs}
-    onErreur={() => { maj({ ...p, coeurs: Math.max(0, p.coeurs - 1) }); if (connecte) envoyer({ action: "coeur" }); }}
+    onErreur={() => { if (lireReglages().apprendreSansCoeurs) return; maj({ ...p, coeurs: Math.max(0, p.coeurs - 1) }); if (connecte) envoyer({ action: "coeur" }); }}
     onSuivant={(err) => { const i = lecon.i + 1; if (i >= lecon.exos.length) terminer(err, lecon.u); else setLecon({ ...lecon, i, erreurs: err }); }}
     onQuitter={() => setLecon(null)} />;
 
@@ -186,7 +188,7 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
               <button
                 className={`app-rond ${fait !== undefined ? "fait" : ok ? "ouvert" : "ferme"} ${actuelle ? "actuel" : ""}`}
                 style={{ ["--c" as any]: u.couleur }}
-                disabled={!ok || (p.coeurs === 0)}
+                disabled={!ok || (p.coeurs === 0 && !lireReglages().apprendreSansCoeurs)}
                 onClick={() => setLecon({ u, exos: preparer(u, unites), i: 0, erreurs: 0 })}
                 aria-label={`${u.titre}${ok ? "" : " (verrouillé)"}`}
               >

@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { tailleExtrait } from "@/lib/jeton-contenu";
 import { notFound } from "next/navigation";
@@ -29,6 +30,7 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
   const vEpub = vers.get("epub") || vers.get("interactif");
   const vPdf = vers.get("pdf");
   const deuxFormats = !!(vEpub && vPdf);
+  const pdfDabord = (await cookies()).get("kw_format")?.value === "pdf";
   const minutes = nbPages ? Math.max(5, Math.round(nbPages * 1.2)) : null;
   const coll = collectionDe(livre.titre);
   const tomes = coll
@@ -65,7 +67,7 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
 
             <div className="actions-fiche">
               {deuxFormats ? (
-                <div className="choix-lecture">
+                <div className="choix-lecture" style={pdfDabord ? { flexDirection: "row-reverse" } : undefined}>
                   <Link className="btn large" href={acces.get(vEpub!.id) || tailleExtrait(vEpub!.manifeste as any) > 0 ? `/lire/${vEpub!.slug}` : (livre.url_boutique || config.abonnementUrl)}>📖 Lire en EPUB{acces.get(vEpub!.id) ? "" : " 🔒"}<small>Texte adapté à l'écran</small></Link>
                   <Link className="btn large secondaire" href={acces.get(vPdf!.id) || tailleExtrait(vPdf!.manifeste as any) > 0 ? `/lire/${vPdf!.slug}` : (livre.url_boutique || config.abonnementUrl)}>📄 Lire en classique (PDF){acces.get(vPdf!.id) ? "" : " 🔒"}<small>Mise en page du livre</small></Link>
                 </div>

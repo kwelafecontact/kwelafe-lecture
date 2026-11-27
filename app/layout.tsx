@@ -1,3 +1,4 @@
+import AppliquerReglages from "@/components/AppliquerReglages";
 import RetourGlobal from "@/components/RetourGlobal";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <AppliquerReglages />
         <RetourGlobal />
         {children}
         <EnregistrerSW />
