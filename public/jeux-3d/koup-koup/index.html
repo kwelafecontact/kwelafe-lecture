@@ -81,6 +81,7 @@
 <canvas id="taches"></canvas>
 <canvas id="gl"></canvas>
 <canvas id="vitre"></canvas>
+<div id="voilePluie" style="position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity 1.2s;background:linear-gradient(rgba(36,58,82,.42),rgba(28,44,62,.28))"></div>
 <canvas id="trace"></canvas>
 <div id="flash"></div>
 <div id="dore"></div>
@@ -96,7 +97,11 @@
   <div class="sous">Les fruits et légumes péi en 3D</div>
   <div class="consigne">Coupe la mangue d'un coup de doigt pour jouer</div>
   <div class="defi" id="defiMenu"></div>
-  <button class="btn zone-interactive" id="jouer">Jouer</button>
+  <div class="modes">
+    <button class="btn mode zone-interactive" data-mode="trankil">Mi vé zoué trankil<small>Sans roche, sans vie perdue</small></button>
+    <button class="btn mode zone-interactive" data-mode="klasik" id="jouer">Klasik<small>3 vies, gare aux roches</small></button>
+    <button class="btn mode zone-interactive" data-mode="probleme">Mi rode problèm<small>Plus vite, plus de roches</small></button>
+  </div>
 </div>
 
 <div class="ecran cache" id="fin">
@@ -105,7 +110,7 @@
   <div class="sous" id="recordFin">Record : 0</div>
   <div class="defi" id="bilanFin"></div>
   <div class="consigne">Coupe la mangue pour rejouer</div>
-  <button class="btn zone-interactive" id="rejouer">Rejouer</button>
+  <div class="modes"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn autre zone-interactive" id="autreMode">Changer de mode</button></div>
 </div>
 
 <div class="bandeau" id="bandeau"></div>
@@ -113,6 +118,7 @@
   <button class="bbtn zone-interactive" id="bCoup" aria-label="Grand coup de lame">🔪</button>
   <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
   <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
+  <button class="bbtn zone-interactive" id="bFin" aria-label="Terminer la partie" style="display:none">🏁</button>
 </div>
 <div id="charge">Chargement des fruits…</div>
 <button class="retour-jeux zone-interactive" id="retourJeux" aria-label="Retour aux jeux">‹ Jeux</button>
@@ -123,7 +129,12 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
   location.href = '/jeux';
 });
 </script>
-<style>.defi{margin-top:10px;font:700 clamp(14px,3.6vw,17px)/1.35 "Baloo 2",system-ui,sans-serif;color:#ffe9b0;text-shadow:0 2px 0 rgba(58,26,0,.8);max-width:min(88vw,520px)}.defi b{color:#ffd23a}#bilanFin{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(env(safe-area-inset-bottom),0px) + 88px);width:max-content;margin:0;font-size:clamp(13px,3.2vw,15px)}</style>
+<style>.defi{margin-top:10px;font:700 clamp(14px,3.6vw,17px)/1.35 "Baloo 2",system-ui,sans-serif;color:#ffe9b0;text-shadow:0 2px 0 rgba(58,26,0,.8);max-width:min(88vw,520px)}.defi b{color:#ffd23a}
+.modes{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;pointer-events:auto;margin-top:18px;max-width:min(94vw,720px)}
+.modes .btn{margin-top:0;padding:11px 18px;font-size:clamp(15px,3.8vw,18px);line-height:1.1}
+.modes .btn small{display:block;font:700 12px/1.2 "Baloo 2",system-ui,sans-serif;opacity:.75;margin-top:3px}
+.modes .btn.mode{background:linear-gradient(#fff1c2,#ffcf5a)}.modes .btn.mode.choisi{background:linear-gradient(#ffe27a,#ff9a1e);box-shadow:0 5px 0 #a8580a,0 0 0 3px #fff,0 10px 22px rgba(0,0,0,.4)}
+.modes .btn.autre{background:linear-gradient(#f4f1e8,#d9d2bf);box-shadow:0 5px 0 #8a8270,0 10px 22px rgba(0,0,0,.4)}#bilanFin{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(env(safe-area-inset-bottom),0px) + 88px);width:max-content;margin:0;font-size:clamp(13px,3.2vw,15px)}</style>
 <button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
@@ -224,36 +235,82 @@ function resize() {
   peindreFond();
 }
 
-// Décor : étal en bois du marché forain, fanions aux couleurs de La Réunion
+// Décor : mur en bois d'une kaz kréol (bardage peint, un peu usé par le soleil) et frise de lambrequins sous l'avant-toit
 function peindreFond() {
   const g = fctx;
-  const grd = g.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, '#6b3f1d'); grd.addColorStop(1, '#3d220e');
-  g.fillStyle = grd; g.fillRect(0, 0, W, H);
-  const nb = Math.max(5, Math.round(W / 150)), lw = W / nb;
-  for (let i = 0; i < nb; i++) {
-    const x = i * lw, teinte = [0, 8, -6, 4, -10, 6][i % 6];
-    const pl = g.createLinearGradient(x, 0, x + lw, 0);
-    pl.addColorStop(0, `hsl(${26 + teinte * .3} 48% ${30 + teinte * .4}%)`);
-    pl.addColorStop(.5, `hsl(${28 + teinte * .3} 50% ${36 + teinte * .4}%)`);
-    pl.addColorStop(1, `hsl(${25 + teinte * .3} 46% ${28 + teinte * .4}%)`);
-    g.fillStyle = pl; g.fillRect(x + 2, 0, lw - 4, H);
-    g.save(); g.globalAlpha = .13; g.strokeStyle = '#1e0e04'; g.lineWidth = 1.2;
-    for (let k = 0; k < 9; k++) {
-      g.beginPath(); const ox = x + 8 + (k / 9) * (lw - 16) + Math.sin(i * 7 + k) * 4;
-      g.moveTo(ox, 0);
-      for (let y = 0; y <= H; y += 40) g.lineTo(ox + Math.sin(y / 90 + k * 1.7 + i) * 5, y);
-      g.stroke();
-    }
-    g.globalAlpha = .35; g.fillStyle = '#1a0c03';
-    const nx = x + lw * (0.3 + 0.4 * ((i * 37) % 10) / 10), ny = H * (0.2 + 0.6 * ((i * 53) % 10) / 10);
-    g.beginPath(); g.ellipse(nx, ny, 7, 11, 0, 0, 7); g.fill();
+  // planches posées à l'horizontale, à recouvrement, peintes vert d'eau
+  const hP = Math.max(34, Math.min(52, H / 15));
+  const base = { h: 152, s: 26, l: 58 };
+  g.fillStyle = `hsl(${base.h} ${base.s}% ${base.l}%)`; g.fillRect(0, 0, W, H);
+  let seed = 7; const alea = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (let y = 0, i = 0; y < H + hP; y += hP, i++) {
+    const t = (alea() - 0.5) * 6, l = base.l + (alea() - 0.5) * 5;
+    const pl = g.createLinearGradient(0, y, 0, y + hP);
+    pl.addColorStop(0, `hsl(${base.h + t} ${base.s}% ${l - 9}%)`);       // ombre sous la planche du dessus
+    pl.addColorStop(0.18, `hsl(${base.h + t} ${base.s}% ${l + 2}%)`);
+    pl.addColorStop(1, `hsl(${base.h + t} ${base.s - 4}% ${l - 3}%)`);
+    g.fillStyle = pl; g.fillRect(0, y, W, hP);
+    // fil du bois qui transparaît sous la peinture
+    g.save(); g.globalAlpha = 0.09; g.strokeStyle = '#2a3a30'; g.lineWidth = 1;
+    for (let k = 0; k < 4; k++) { const yy = y + hP * (0.3 + k * 0.17); g.beginPath(); g.moveTo(0, yy); for (let x = 0; x <= W; x += 60) g.lineTo(x, yy + Math.sin(x / 140 + i * 3 + k) * 1.6); g.stroke(); }
     g.restore();
-    g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(x, 0, 3, H);
+    // peinture écaillée qui laisse voir le bois brun
+    for (let k = 0; k < Math.round(W / 260); k++) {
+      if (alea() < 0.55) continue;
+      const x = alea() * W, yy = y + hP * (0.25 + alea() * 0.6), r = 3 + alea() * 9;
+      g.fillStyle = 'rgba(122,82,48,.75)'; g.beginPath();
+      for (let a = 0; a < 6.28; a += 0.7) { const rr = r * (0.6 + alea() * 0.6); g.lineTo(x + Math.cos(a) * rr * 1.6, yy + Math.sin(a) * rr * 0.6); }
+      g.fill();
+    }
+    // arête de la planche et clous
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, y + hP * 0.16, W, 1);
+    g.fillStyle = 'rgba(20,30,24,.35)'; g.fillRect(0, y + hP - 1.5, W, 1.5);
+    for (let x = (i % 2) * 90 + 40; x < W; x += 180) { g.fillStyle = 'rgba(40,40,40,.55)'; g.beginPath(); g.arc(x, y + hP * 0.55, 1.6, 0, 7); g.fill(); g.fillStyle = 'rgba(120,60,30,.18)'; g.fillRect(x - 1, y + hP * 0.55, 2, 9); }
   }
+  // poteaux d'angle (montants verticaux de la kaz)
+  for (const x of [0, W - 26]) { const p = g.createLinearGradient(x, 0, x + 26, 0); p.addColorStop(0, '#e9e3d2'); p.addColorStop(0.5, '#fbf8ef'); p.addColorStop(1, '#cfc7b2'); g.fillStyle = p; g.fillRect(x, 0, 26, H); }
+  // avant-toit et lambrequins
+  const hToit = Math.max(26, H * 0.035), hL = Math.max(54, Math.min(84, H * 0.09));
+  const tt = g.createLinearGradient(0, 0, 0, hToit); tt.addColorStop(0, '#5a2a1e'); tt.addColorStop(1, '#8a3b26');
+  g.fillStyle = tt; g.fillRect(0, 0, W, hToit);                                   // rive du toit en tôle rouge
+  g.fillStyle = 'rgba(0,0,0,.25)'; for (let x = 0; x < W; x += 14) g.fillRect(x, 0, 6, hToit);
+  dessinerLambrequins(g, hToit, hL);
+  // lumière douce du jour, bords plus sombres
   const v = g.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .75);
-  v.addColorStop(0, 'rgba(255,190,90,.10)'); v.addColorStop(1, 'rgba(10,4,0,.62)');
+  v.addColorStop(0, 'rgba(255,240,200,.08)'); v.addColorStop(1, 'rgba(10,20,14,.5)');
   g.fillStyle = v; g.fillRect(0, 0, W, H);
+}
+// Frise de lambrequins en bois découpé, peinte en blanc : bandeau, gouttes pendantes percées d'un cœur et d'un trou rond
+function dessinerLambrequins(g, y0, h) {
+  const motif = Math.max(46, Math.min(64, W / 14)), bande = h * 0.32;
+  const forme = (ctx, dx, dy) => {
+    ctx.beginPath(); ctx.moveTo(dx, dy);
+    for (let x = 0; x < W + motif; x += motif) {
+      const cx = x + motif / 2;
+      ctx.lineTo(x, dy + bande);
+      // pendant en forme de goutte, terminé par une pointe
+      ctx.bezierCurveTo(x + motif * 0.08, dy + bande + h * 0.18, cx - motif * 0.36, dy + bande + h * 0.22, cx - motif * 0.22, dy + h * 0.78);
+      ctx.quadraticCurveTo(cx - motif * 0.1, dy + h * 0.92, cx, dy + h);
+      ctx.quadraticCurveTo(cx + motif * 0.1, dy + h * 0.92, cx + motif * 0.22, dy + h * 0.78);
+      ctx.bezierCurveTo(cx + motif * 0.36, dy + bande + h * 0.22, x + motif * 0.92, dy + bande + h * 0.18, x + motif, dy + bande);
+    }
+    ctx.lineTo(W + motif, dy); ctx.closePath();
+  };
+  // ombre portée de la frise sur le mur
+  g.save(); g.fillStyle = 'rgba(10,25,18,.35)'; g.filter = 'blur(3px)'; forme(g, 4, y0 + 6); g.fill(); g.restore();
+  const blanc = g.createLinearGradient(0, y0, 0, y0 + h); blanc.addColorStop(0, '#fffdf6'); blanc.addColorStop(1, '#e4ddca');
+  g.fillStyle = blanc; forme(g, 0, y0); g.fill();
+  g.strokeStyle = 'rgba(90,80,60,.45)'; g.lineWidth = 1.2; forme(g, 0, y0); g.stroke();
+  // découpes : cœur dans chaque pendant, petit trou rond dans le bandeau, liseré sous la bande
+  for (let x = 0; x < W + motif; x += motif) {
+    const cx = x + motif / 2, cy = y0 + bande + h * 0.3, s = motif * 0.12;
+    g.fillStyle = 'rgba(60,90,74,.9)';
+    g.beginPath(); g.moveTo(cx, cy + s * 1.1);
+    g.bezierCurveTo(cx - s * 1.6, cy - s * 0.2, cx - s * 0.8, cy - s * 1.4, cx, cy - s * 0.5);
+    g.bezierCurveTo(cx + s * 0.8, cy - s * 1.4, cx + s * 1.6, cy - s * 0.2, cx, cy + s * 1.1); g.fill();
+    g.beginPath(); g.arc(x, y0 + bande * 0.55, motif * 0.06, 0, 7); g.fill();
+  }
+  g.fillStyle = 'rgba(120,110,90,.35)'; g.fillRect(0, y0 + bande - 1, W, 1.5);
 }
 
 // Fanions aux couleurs de La Réunion qui ondulent doucement au vent
@@ -336,7 +393,7 @@ const son = {
   ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
 };
 const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
+function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche', 'pluie', 'tonnerre']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(maitre); s.start(); return true; }
 const _coupe = son.coupe, _roche = son.roche, _or = son.or;
 son.coupe = (id, rayon = 0.6) => { const v = Math.max(0.75, Math.min(1.25, 1.35 - rayon * 0.6)); const n = CROQUANTS.has(id) ? 'croquant-' + (1 + (Math.random() * 2 | 0)) : SOURDS.has(id) ? 'sourd' : 'juteux-' + (1 + (Math.random() * 2 | 0)); if (!jouer(n, 0.95, v)) _coupe(id); };
@@ -794,6 +851,7 @@ function blob(ctx, x, y, r, ang, allonge, couleur, alpha, detail = false) {
 }
 const reflets = []; // reflets humides qui disparaissent en séchant
 function tache(sx, sy, color, taille, dir) {
+  salete++;
   const c = teinteTache(color);
   // dir : sens du geste à l'écran (y vers le bas)
   const ang = Math.atan2(-dir.y, dir.x);
@@ -995,7 +1053,8 @@ function finDeNiveau() {
   for (let i = 0; i < n; i++) setTimeout(() => { if (etat !== 'jeu' || !prets.length) return; const x = -viewW * 0.38 + (i / (n - 1)) * viewW * 0.76; lancer(prets[Math.floor(Math.random() * prets.length)], { x }); }, 200 + i * 170);
   setTimeout(() => { if (etat === 'jeu' && cache['letchi']) lancer(cache['letchi'], { or: true, x: rnd(-viewW * 0.2, viewW * 0.2) }); }, 900);
   if (cache['vanille']) setTimeout(() => { if (etat === 'jeu') lancer(cache['vanille']); }, 1300);
-  setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; niv++; majNiveauHud(); if (fx) fx.evenement('niveau', { niveau: niv }); bandeau('Accalmie… Niveau ' + niv, 3.2); }, 4200);
+  setTimeout(() => { if (etat !== 'jeu') return; niv++; majNiveauHud(); if (fx) fx.evenement('niveau', { niveau: niv });
+    if (doitPleuvoir()) commencerDessin(); else { phase = 'accalmie'; phaseT = 0; bandeau('Accalmie… Niveau ' + niv, 3.2); } }, 4200);
 } // points gagnés pendant le geste en cours
 const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
 function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
@@ -1005,7 +1064,7 @@ try { record = +(localStorage.getItem('koupkoup_record') || 0); } catch (e) {}
 // (onomatopées créoles, lignes de vitesse, aura, image d'impact, pièces qui volent vers le score),
 // les pépites surprises, la collection d'objets rares péi, le défi du jour et le record.
 const fx = window.KwFX ? KwFX.init({
-  theme: 'fruits', public: 'enfant', manga: 2, mode: 'probleme', support: 'web', jeu: 'koup-koup-2',
+  theme: 'fruits', public: 'enfant', manga: 1, mode: 'probleme', support: 'web', jeu: 'koup-koup-2', // manga 1 : onomatopées, sans lignes blanches
   complement: true, sons: false, messages: false, secousses: false,
   cibleScore: $('score'), zoneShake: glc, dprMax: MOBILE ? 1.5 : 2,
   onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
@@ -1152,7 +1211,7 @@ function pxRayon(r) { return r * H / viewH; }
 function menuMangue() {
   if (mangueMenu && mangueMenu.vivant) return;
   const m = cache['mangue'] || prets[0]; if (!m) return;
-  mangueMenu = lancer(m, { menu: true, y: W < H ? -0.9 : -0.9 });
+  mangueMenu = lancer(m, { menu: true, y: W < H ? -2.1 : -1.5 });
   mangueMenu.obj.scale.setScalar(1.8); mangueMenu.rayon *= 1.8;
 }
 function demarrer(reprise) {
@@ -1161,6 +1220,9 @@ function demarrer(reprise) {
   etat = 'jeu'; score = 0; vies = 3; temps = 0; niveau = 0; prochainLancer = 1.0;
   niv = 1; phase = 'actif'; phaseT = 0; charge = 0; serie = 0; ralentis = 0; frenesies = 0; frenesie = 0; ralentiBonus = 0;
   if (reprise) { score = reprise.score | 0; vies = Math.max(1, Math.min(3, reprise.vies | 0)); temps = +reprise.temps || 0; niv = Math.max(1, reprise.niv | 0 || 1); }
+  if (reprise && reprise.mode) choisirMode(reprise.mode); else choisirMode(modeJeu);
+  $('vies').style.visibility = modeJeu === 'trankil' ? 'hidden' : 'visible'; $('bFin').style.display = modeJeu === 'trankil' ? '' : 'none';
+  if (sonPluie) finPluie(); gouttesPluie.length = 0; $('voilePluie').style.opacity = 0;
   majNiveauHud(); majBonus(); $('bonus').classList.add('on');
   if (fx) fx.evenement('debut');
   masquerReprise();
@@ -1172,7 +1234,7 @@ function demarrer(reprise) {
 function finPartie() {
   etat = 'fin'; ralentiOr = 0; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
   try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {}
-  if (score > record) { record = score; try { localStorage.setItem('koupkoup_record', record); } catch (e) {} }
+  if (score > record) { record = score; try { localStorage.setItem(cleRecord(), record); } catch (e) {} }
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
   if (fx) {
     const b = fx.finPartie(score);
@@ -1185,14 +1247,15 @@ function finPartie() {
 // ---------------------------------------------------------------- geste de découpe
 const trait = []; let appui = false, dernier = null, comboN = 0, comboT = 0, comboPos = null, swooshT = 0;
 function pointer(e) { return { x: e.clientX, y: e.clientY, t: performance.now() }; }
-glc.addEventListener('pointerdown', e => { audio(); appui = true; dernier = pointer(e); trait.length = 0; trait.push(dernier); comboN = 0; coupeSwipe = 0; });
+glc.addEventListener('pointerdown', e => { audio(); appui = true; dernier = pointer(e); trait.length = 0; trait.push(dernier); comboN = 0; coupeSwipe = 0; if (phase === 'dessin') dessinPts = [{ x: e.clientX, y: e.clientY }]; });
 addEventListener('pointermove', e => {
   if (!appui) return;
   const p = pointer(e);
   if (dernier) testerCoupe(dernier, p);
   trait.push(p); dernier = p;
+  if (phase === 'dessin') dessinPts.push({ x: p.x, y: p.y });
 });
-const finAppui = () => { appui = false; dernier = null; finCombo(); };
+const finAppui = () => { appui = false; dernier = null; finCombo(); if (phase === 'dessin') evaluerDessin(); };
 addEventListener('pointerup', finAppui); addEventListener('pointercancel', finAppui);
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
@@ -1267,16 +1330,17 @@ function dessinerTrait(dt = 0.016) {
     }
     pts.push({ ...trait[trait.length - 1], v: pts.length ? pts[pts.length - 1].v : 1 });
     bctx.lineCap = 'round'; bctx.lineJoin = 'round';
-    for (const [larg, coul, flou] of [[18, 'rgba(255,140,30,.3)', 22], [8, 'rgba(255,222,130,.9)', 12], [3, '#ffffff', 0]]) {
-      bctx.shadowBlur = flou; bctx.shadowColor = '#ff8a1e'; bctx.strokeStyle = coul;
+    // traînée sans flou (le flou de canvas ralentissait le jeu sur téléphone)
+    for (const [larg, coul] of [[16, 'rgba(255,150,40,.28)'], [7, 'rgba(255,226,150,.85)'], [2.5, 'rgba(255,250,235,.95)']]) {
+      bctx.strokeStyle = coul;
       for (let i = 1; i < pts.length; i++) {
         const k = i / pts.length, vit = Math.min(2.4, 0.5 + pts[i].v * 0.6);   // plus large quand le geste est rapide
         bctx.lineWidth = larg * k * vit;
         bctx.beginPath(); bctx.moveTo(pts[i - 1].x, pts[i - 1].y); bctx.lineTo(pts[i].x, pts[i].y); bctx.stroke();
       }
     }
-    bctx.shadowBlur = 0;
   }
+  eclats.length = 0; // plus de flash lumineux à la découpe
   for (let i = eclats.length - 1; i >= 0; i--) {
     const e = eclats[i]; e.t += dt; const k = e.t / 0.22;
     if (k >= 1) { eclats.splice(i, 1); continue; }
@@ -1286,11 +1350,170 @@ function dessinerTrait(dt = 0.016) {
   }
 }
 
+// ---------------------------------------------------------------- accalmie : dessiner une forme pour appeler la pluie
+// Reconnaissance de geste façon « $1 » : le tracé est rééchantillonné, recentré, mis à l'échelle,
+// puis comparé à la forme demandée (dans les deux sens et depuis plusieurs points de départ).
+const FORMES = {
+  cercle: { nom: 'un rond', ferme: true, pts: Array.from({ length: 48 }, (_, i) => { const a = -Math.PI / 2 + i / 48 * Math.PI * 2; return { x: Math.cos(a), y: Math.sin(a) }; }) },
+  triangle: { nom: 'un triangle', ferme: true, pts: [{ x: 0, y: -1 }, { x: 0.95, y: 0.75 }, { x: -0.95, y: 0.75 }] },
+  carre: { nom: 'un carré', ferme: true, pts: [{ x: -0.85, y: -0.85 }, { x: 0.85, y: -0.85 }, { x: 0.85, y: 0.85 }, { x: -0.85, y: 0.85 }] },
+  eclair: { nom: 'un éclair', ferme: false, pts: [{ x: 0.35, y: -1 }, { x: -0.3, y: -0.05 }, { x: 0.3, y: -0.05 }, { x: -0.35, y: 1 }] },
+  coeur: { nom: 'un cœur', ferme: true, pts: Array.from({ length: 48 }, (_, i) => { const t = i / 48 * Math.PI * 2; return { x: 16 * Math.pow(Math.sin(t), 3) / 17, y: -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17 }; }) }
+};
+const N1 = 64, T1 = 250;
+const longueurChemin = p => { let d = 0; for (let i = 1; i < p.length; i++) d += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y); return d; };
+function reechantillonner(src, n) {
+  const p = src.map(q => ({ x: q.x, y: q.y })), I = longueurChemin(p) / (n - 1), out = [p[0]]; let D = 0;
+  for (let i = 1; i < p.length; i++) {
+    const d = Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+    if (D + d >= I && d > 0) { const t = (I - D) / d, q = { x: p[i - 1].x + t * (p[i].x - p[i - 1].x), y: p[i - 1].y + t * (p[i].y - p[i - 1].y) }; out.push(q); p.splice(i, 0, q); D = 0; }
+    else D += d;
+  }
+  while (out.length < n) out.push(p[p.length - 1]);
+  return out.slice(0, n);
+}
+function normaliser(src) {
+  let p = reechantillonner(src, N1);
+  let cx = 0, cy = 0; p.forEach(q => { cx += q.x; cy += q.y; }); cx /= N1; cy /= N1;
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; p.forEach(q => { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); });
+  const s = T1 / Math.max(x1 - x0, y1 - y0, 1e-6);
+  return p.map(q => ({ x: (q.x - cx) * s, y: (q.y - cy) * s }));
+}
+const distMoy = (a, b) => { let d = 0; for (let i = 0; i < a.length; i++) d += Math.hypot(a[i].x - b[i].x, a[i].y - b[i].y); return d / a.length; };
+function distRot(p, t, ang) { const c = Math.cos(ang), s = Math.sin(ang); return distMoy(p.map(q => ({ x: q.x * c - q.y * s, y: q.x * s + q.y * c })), t); }
+function meilleureDist(p, t) {
+  // recherche du meilleur angle entre -30° et +30° (nombre d'or)
+  let a = -Math.PI / 6, b = Math.PI / 6; const phi = 0.618;
+  let x1 = phi * a + (1 - phi) * b, x2 = (1 - phi) * a + phi * b, f1 = distRot(p, t, x1), f2 = distRot(p, t, x2);
+  while (Math.abs(b - a) > 0.035) { if (f1 < f2) { b = x2; x2 = x1; f2 = f1; x1 = phi * a + (1 - phi) * b; f1 = distRot(p, t, x1); } else { a = x1; x1 = x2; f1 = f2; x2 = (1 - phi) * a + phi * b; f2 = distRot(p, t, x2); } }
+  return Math.min(f1, f2);
+}
+const modeles = {};
+function modelesDe(nom) {
+  if (modeles[nom]) return modeles[nom];
+  const F = FORMES[nom], base = F.ferme ? [...F.pts, F.pts[0]] : F.pts, dense = reechantillonner(base, 96), v = [];
+  const departs = F.ferme ? 8 : 1;
+  for (let k = 0; k < departs; k++) {
+    const decale = F.ferme ? [...dense.slice(k * 12), ...dense.slice(0, k * 12)] : dense;
+    v.push(normaliser(decale), normaliser([...decale].reverse()));
+  }
+  return (modeles[nom] = v);
+}
+function scoreForme(trace, nom) {
+  if (trace.length < 8 || longueurChemin(trace) < Math.min(W, H) * 0.3) return 0;
+  const p = normaliser(trace); let d = 1e9;
+  for (const t of modelesDe(nom)) d = Math.min(d, meilleureDist(p, t));
+  return 1 - d / (0.5 * Math.sqrt(2 * T1 * T1));
+}
+
+let pluieDebut = 0, formeDemandee = 'cercle', dessinPts = [], salete = 0, essaisDessin = 0, sonPluie = null, pluieT = 0;
+const gouttesPluie = [];
+const doitPleuvoir = () => salete >= 6 && Math.random() < 0.65;
+function commencerDessin() {
+  const noms = Object.keys(FORMES); formeDemandee = noms[Math.floor(Math.random() * noms.length)];
+  phase = 'dessin'; phaseT = 0; dessinPts = []; essaisDessin = 0;
+  bandeau('Accalmie… Dessine ' + FORMES[formeDemandee].nom + ' pour faire venir la lapli !', 4.5);
+}
+function evaluerDessin() {
+  if (phase !== 'dessin' || dessinPts.length < 4) return;
+  // réussi si la forme demandée est reconnue, et mieux que toutes les autres formes
+  const sc = scoreForme(dessinPts, formeDemandee);
+  let autre = 0; for (const nom of Object.keys(FORMES)) if (nom !== formeDemandee) autre = Math.max(autre, scoreForme(dessinPts, nom));
+  dessinPts = [];
+  if (sc >= 0.8 && sc >= autre - 0.005) lancerPluie();
+  else { essaisDessin++; bandeau(essaisDessin < 3 ? 'Pa grav, éséy ankor : suis le dessin en pointillés' : 'Dousman… suis bien les pointillés', 2.2); }
+}
+function lancerPluie() {
+  phase = 'pluie'; phaseT = 0; pluieT = 0; pluieDebut = performance.now();
+  score += 10; majScore(); bandeau('Lapli i tonm ! La pluie lave le mur', 3);
+  const f = $('flash'); f.style.transition = 'none'; f.style.background = '#eef6ff'; f.style.opacity = 0.8; requestAnimationFrame(() => { f.style.transition = 'opacity .9s'; f.style.opacity = 0; setTimeout(() => { f.style.background = ''; }, 900); });
+  $('voilePluie').style.opacity = 1;
+  jouer('tonnerre', 0.9, 1);
+  if (actx && sons.pluie) {
+    const s = actx.createBufferSource(), g = actx.createGain(); s.buffer = sons.pluie; s.loop = true;
+    g.gain.setValueAtTime(0.0001, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.9, actx.currentTime + 0.8);
+    s.connect(g); g.connect(maitre); s.start(); sonPluie = { s, g };
+  }
+  for (const k of coulures) k.v = Math.max(k.v, 90);
+  if (fx) fx.joue('etoiles', { x: W / 2, y: H * 0.45, intensite: 0.8 });
+}
+const tampon = document.createElement('canvas'), bctx2 = tampon.getContext('2d');
+function majPluie(dt) {
+  if (phase !== 'pluie') return;
+  pluieT = (performance.now() - pluieDebut) / 1000;
+  // pluie battante : traits de pluie qui tombent en biais
+  const nb = Math.round((MOBILE ? 260 : 520) * dt * Math.min(1, pluieT * 2) * (pluieT < 4.8 ? 1 : 0.3));
+  for (let i = 0; i < nb; i++) gouttesPluie.push({ x: rnd(-60, W + 20), y: rnd(-80, -10), v: rnd(1300, 1900), l: rnd(18, 42) });
+  // les traces glissent vers le bas et s'effacent
+  if (tampon.width !== couche.width || tampon.height !== couche.height) { tampon.width = couche.width; tampon.height = couche.height; }
+  const dpr = couche.width / Math.max(1, W), dy = Math.min(30, 170 * dt) * dpr;
+  bctx2.clearRect(0, 0, tampon.width, tampon.height); bctx2.drawImage(couche, 0, 0);
+  cctx.save(); cctx.setTransform(1, 0, 0, 1, 0, 0); cctx.clearRect(0, 0, couche.width, couche.height);
+  cctx.globalAlpha = 0.5; cctx.drawImage(tampon, 0, 0); cctx.globalAlpha = 0.85; cctx.drawImage(tampon, rnd(-0.6, 0.6) * dpr, dy);
+  cctx.globalCompositeOperation = 'destination-out'; cctx.globalAlpha = 1; cctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.55)})`; cctx.fillRect(0, 0, couche.width, couche.height);
+  cctx.restore();
+  for (const k of coulures) k.v = Math.max(k.v, 160);
+  for (let j = 0; j < flaque.h.length; j++) if (flaque.h[j]) flaque.h[j] *= 1 - Math.min(1, dt * 0.5);
+  reflets.length = 0;
+  if (Math.random() < dt * 3) gouttesEcran(rnd(60, W - 60), rnd(80, H * 0.6), new THREE.Color(0xd6e9ff), new THREE.Vector3(rnd(-0.3, 0.3), -1, 0));
+  if (pluieT > 5.6) finPluie();
+}
+function dessinerPluie(ctx, dt) {
+  if (!gouttesPluie.length) return;
+  ctx.save(); ctx.lineCap = 'round';
+  for (let i = gouttesPluie.length - 1; i >= 0; i--) {
+    const g = gouttesPluie[i]; g.y += g.v * dt; g.x += g.v * 0.18 * dt;
+    if (g.y > H) { if (Math.random() < 0.3) { ctx.fillStyle = 'rgba(220,235,255,.5)'; ctx.beginPath(); ctx.ellipse(g.x, H - rnd(2, 30), rnd(3, 7), 1.5, 0, 0, 7); ctx.fill(); } gouttesPluie.splice(i, 1); continue; }
+    ctx.strokeStyle = 'rgba(232,242,255,.62)'; ctx.lineWidth = 1.9;
+    ctx.beginPath(); ctx.moveTo(g.x, g.y); ctx.lineTo(g.x - g.l * 0.18, g.y - g.l); ctx.stroke();
+  }
+  ctx.restore();
+}
+function finPluie() {
+  cctx.save(); cctx.setTransform(1, 0, 0, 1, 0, 0); cctx.clearRect(0, 0, couche.width, couche.height); cctx.restore();
+  coulures.length = 0; flaque.h.length = 0; flaque.c.length = 0; reflets.length = 0; salete = 0;
+  $('voilePluie').style.opacity = 0;
+  if (sonPluie && actx) { const { s, g } = sonPluie; g.gain.setTargetAtTime(0.0001, actx.currentTime, 0.4); setTimeout(() => { try { s.stop(); } catch (e) {} }, 1800); sonPluie = null; }
+  bandeau('Mur tout propre ! On repart', 2);
+  phase = 'accalmie'; phaseT = 2.5;
+}
+// pointillés lumineux de la forme à suivre et tracé du joueur
+function dessinerGuide(ctx) {
+  if (phase !== 'dessin') return;
+  const F = FORMES[formeDemandee], R = Math.min(W, H) * 0.26, cx = W / 2, cy = H * 0.52, t = performance.now() / 1000;
+  const pts = F.ferme ? [...F.pts, F.pts[0]] : F.pts;
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.setLineDash([14, 12]); ctx.lineDashOffset = -t * 40;
+  for (const [lw, col] of [[14, 'rgba(160,210,255,.25)'], [5, 'rgba(255,255,255,.9)']]) {
+    ctx.lineWidth = lw; ctx.strokeStyle = col; ctx.beginPath();
+    pts.forEach((p, i) => i ? ctx.lineTo(cx + p.x * R, cy + p.y * R) : ctx.moveTo(cx + p.x * R, cy + p.y * R)); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  if (dessinPts.length > 1) {
+    ctx.lineWidth = 9; ctx.strokeStyle = 'rgba(120,200,255,.95)'; ctx.beginPath();
+    dessinPts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- modes de jeu
+// trankil : sans roche, aucune vie perdue, rythme doux, on termine quand on veut
+// klasik : 3 vies, roches du volcan
+// probleme : plus de fruits, plus vite, roches dès le début
+let modeJeu = (() => { try { return localStorage.getItem('koupkoup2_mode') || 'klasik'; } catch (e) { return 'klasik'; } })();
+const cleRecord = () => modeJeu === 'klasik' ? 'koupkoup_record' : 'koupkoup_record_' + modeJeu;
+function choisirMode(m) {
+  modeJeu = m; try { localStorage.setItem('koupkoup2_mode', m); } catch (e) {}
+  try { record = +(localStorage.getItem(cleRecord()) || 0); } catch (e) { record = 0; }
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('choisi', b.dataset.mode === m));
+  if (fx) fx.regler({ mode: m === 'trankil' ? 'trankil' : 'probleme' });
+  majScore();
+}
 // ---------------------------------------------------------------- vagues de lancers
 function vague() {
   niveau = Math.min(14, Math.floor((niv - 1) * 1.3 + phaseT / 16));
-  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5));
-  const chanceRoche = temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28);
+  const n = 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.6, 5)) + (modeJeu === 'probleme' ? 1 : 0);
+  const chanceRoche = modeJeu === 'trankil' ? 0 : modeJeu === 'probleme' ? (temps < 3 ? 0 : Math.min(0.16 + niveau * 0.025, 0.36)) : (temps < 8 ? 0 : Math.min(0.09 + niveau * 0.02, 0.28));
   for (let i = 0; i < n; i++) {
     setTimeout(() => {
       if (etat !== 'jeu' || !prets.length) return;
@@ -1300,7 +1523,7 @@ function vague() {
       if (i === 0 && temps > 12 && cache['letchi'] && !objets.some(x => x.or && x.vivant) && Math.random() < 0.07) setTimeout(() => etat === 'jeu' && lancer(cache['letchi'], { or: true }), 350);
     }, i * rnd(120, 300));
   }
-  prochainLancer = Math.max(0.7, 2.2 - niveau * 0.12) + rnd(0, 0.5);
+  prochainLancer = (Math.max(0.7, 2.2 - niveau * 0.12) + rnd(0, 0.5)) * (modeJeu === 'trankil' ? 1.3 : modeJeu === 'probleme' ? 0.78 : 1);
 }
 
 // ---------------------------------------------------------------- gestionnaire de performances commun
@@ -1309,7 +1532,7 @@ function vague() {
 let contextePerdu = false, pauseAuto = false;
 function sauverPartie() {
   if (etat !== 'jeu') return;
-  try { localStorage.setItem('koupkoup2_partie', JSON.stringify({ score, vies, temps, niv, t: Date.now() })); } catch (e) {}
+  try { localStorage.setItem('koupkoup2_partie', JSON.stringify({ score, vies, temps, niv, mode: modeJeu, t: Date.now() })); } catch (e) {}
 }
 const perf = new GestionnairePerf({
   nom: 'koup-koup-2',
@@ -1379,6 +1602,7 @@ function boucle() {
   if (etat === 'jeu') {
     temps += dt; phaseT += dt; charge = Math.min(RECHARGE, charge + vrai); if (frenesie > 0) frenesie -= vrai; majBonus();
     if (phase === 'actif') { prochainLancer -= dt; if (prochainLancer <= 0) vague(); if (phaseT > dureePhase()) finDeNiveau(); }
+    else if (phase === 'dessin' && phaseT > 15) { dessinPts = []; phase = 'accalmie'; phaseT = 2.4; bandeau('Pa grav ! La lapli viendra une autre fois', 2); }
     else if (phase === 'accalmie' && phaseT > 4) { phase = 'actif'; phaseT = 0; prochainLancer = 0.2; bandeau('Niveau ' + niv + ' ! Ça repart', 1.6); }
   }
   if (comboN > 0 && performance.now() - comboT > 260) finCombo();
@@ -1395,7 +1619,7 @@ function boucle() {
     if (o.roche && Math.random() < 0.5) goutte(o.obj.position.clone().add(new THREE.Vector3(rnd(-.3, .3), .5, 0)), new THREE.Vector3(rnd(-.5, .5), rnd(1, 2.5), 0), rnd(0.03, 0.06), fumee, 0.5, 0.15);
     if (o.vel.y < 0 && o.obj.position.y < -viewH / 2 - 1.5) {
       o.vivant = false; scene.remove(o.obj);
-      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); serie = 0; if (fx) fx.evenement('erreur', { x: toScreen(o.obj.position).x, y: H - 140 }); perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
+      if (!o.roche && !o.or && !o.vanille && etat === 'jeu') { son.rate(); serie = 0; if (fx) fx.evenement('erreur', { x: toScreen(o.obj.position).x, y: H - 140 }); if (modeJeu !== 'trankil') perdreVie(); popup('Raté !', new THREE.Vector3(o.obj.position.x, -viewH / 2 + 1.2, 0), 'aie'); }
     }
   }
   for (let i = moities.length - 1; i >= 0; i--) {
@@ -1414,7 +1638,7 @@ function boucle() {
   if (tremble > 0) { tremble -= vrai; camera.position.x = rnd(-.25, .25) * tremble * 3; camera.position.y = rnd(-.25, .25) * tremble * 3; } else { camera.position.x = camera.position.y = 0; }
 
   if (POSTFX && QUALITE > 0) composer.render(); else renderer.render(scene, camera);
-  majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerTrait(vrai); dessinerFanions(performance.now() / 1000);
+  majPluie(vrai); majTaches(vrai); dessinerTaches(vrai); majVitre(vrai); dessinerPluie(vctx, vrai); dessinerTrait(vrai); dessinerGuide(bctx);
 }
 
 // ---------------------------------------------------------------- démarrage
@@ -1424,7 +1648,10 @@ $('btnSon').onclick = () => {
   if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
 };
 $('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
-$('jouer').onclick = () => { audio(); masquerReprise(); try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {} demarrer(); };
+document.querySelectorAll('#menu [data-mode]').forEach(b => b.onclick = () => { audio(); choisirMode(b.dataset.mode); masquerReprise(); try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {} demarrer(); });
+$('autreMode').onclick = () => { $('fin').classList.add('cache'); $('menu').classList.remove('cache'); };
+$('bFin').onclick = () => { if (etat === 'jeu') finPartie(); };
+choisirMode(modeJeu);
 $('rejouer').onclick = () => { audio(); demarrer(); };
 // touchers : ne pas laisser passer aux couches inférieures
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function(event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
@@ -1495,7 +1722,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, moities, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+  window.jeu = { demarrer, lancer, prets, objets, moities, cache, commencerDessin, lancerPluie, scoreForme, FORMES, choisirMode, get forme() { return formeDemandee; }, salir: () => { salete = 99; }, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 }
 }
 </script>
