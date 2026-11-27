@@ -67,6 +67,8 @@
   .bbtn.vide { opacity:.38; }
   .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
   @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  /* téléphone à la verticale : les bonus passent en ligne en bas de l'écran, sous la carte du plat prêt, pour ne plus la cacher */
+  @media (orientation:portrait) and (max-width:640px) { .bonus { flex-direction:row; top:auto; right:auto; left:50%; transform:translateX(-50%); bottom:calc(86px + env(safe-area-inset-bottom)); gap:18px; } }
   @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
   .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", Impact, sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a1a00, 0 0 12px rgba(255,180,40,.6); }
   .niveauHud.saute { animation:sauteN .5s; } @keyframes sauteN { 40% { transform:scale(1.35); } }
@@ -120,6 +122,7 @@
 <div class="ecran" id="menu">
   <div class="titre">Koup Rougail</div>
   <div class="sous">Tranche les bons ingrédients de la recette</div>
+  <div class="defi" id="defiMenu"></div>
   <div class="consigne">Coupe la tomate d'un coup de doigt pour jouer</div>
   <button class="btn mode calme zone-interactive" id="bCalme"><b>Mi vé zoué trankil</b><small>Sans pression : étoiles et carnet des recettes</small></button>
   <button class="btn mode defi zone-interactive" id="jouer"><b>Mi rode problèm</b><small>Minuteur, vies, grand repas du dimanche, records</small></button>
@@ -130,6 +133,7 @@
   <div class="sous" style="margin-top:0">Partie terminée</div>
   <div class="gros" id="scoreFin">0</div>
   <div class="sous" id="recordFin">Record : 0</div>
+  <div class="defi" id="bilanFin"></div>
   <div class="consigne">Coupe la tomate pour rejouer</div>
   <button class="btn zone-interactive" id="rejouer">Rejouer</button>
   <button class="btn mini zone-interactive" id="menuFin">Menu</button>
@@ -141,7 +145,8 @@
   <div class="curs"><span>Effets</span><input type="range" id="rFx" min="0" max="100"></div><button class="btn mini" id="bSonFerme">Retour</button></div></div>
 <div class="ecran cache" id="panCredits"><div class="voile"><div class="titre2">CRÉDITS</div><div class="cred">
   <p><b>Jeu</b> : Kwélafé Production. Code, interface, recettes et textes écrits pour Kwélafé.</p>
-  <p><b>Ingrédients</b> : 15 modèles 3D modélisés par programme dans Blender pour Kwélafé.</p>
+  <p><b>Ingrédients</b> : 31 légumes, herbes et fruits péi en 3D, modélisés par programme dans Blender pour Kwélafé.</p>
+  <p><b>Effets</b> : KwFX, le directeur d'effets Kwélafé (bruitages ElevenLabs).</p>
   <p><b>Décor</b> : cuisine créée pour Kwélafé (image générée, usage commercial autorisé par l'abonnement).</p>
   <p><b>Sons et musiques</b> : générés avec ElevenLabs pour Kwélafé, dans l'esprit du maloya et du séga. Aucune voix de synthèse.</p>
   <p><b>Recettes</b> : repères tirés de reunion.fr, france.fr et ileauxepices.com, reformulés.</p>
@@ -168,7 +173,9 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
 <button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
+<style>.defi{margin-top:10px;font:700 clamp(14px,3.6vw,17px)/1.35 "Baloo 2",system-ui,sans-serif;color:#ffe9b0;text-shadow:0 2px 0 rgba(58,26,0,.8);max-width:min(88vw,520px)}.defi b{color:#ffd23a}.defi:empty{display:none}</style>
 <script src="../commun/pixi.min.js"></script>
+<script src="../commun/kwelafe-fx.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -200,7 +207,10 @@ const MOBILE = appareil.ios || appareil.tactile;
 const PARAMS = new URLSearchParams(location.search);
 const DOSSIER_MODELES = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? '../koup-koup-3/models/mobile/' : '../koup-koup-3/models/';
 const DOSSIER_PROPRES = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? '../koup-rougail/models/mobile/' : '../koup-rougail/models/'; // oignon, ail, gingembre, curcuma, mangue verte
-const MAX_CHARGES = +PARAMS.get('max') || 15; // les 15 ingrédients du jeu restent en mémoire
+const DOSSIER_KK2 = (MOBILE && !PARAMS.has('hd')) || PARAMS.has('mobile') ? '../koup-koup/models/mobile/' : '../koup-koup/models/'; // persil, cive, thym (Koup Koup 2)
+const dossierDe = d => d.source === 'koup-koup-2' ? DOSSIER_KK2 : d.source ? DOSSIER_MODELES : DOSSIER_PROPRES;
+// 31 ingrédients : on n'en garde qu'une partie en mémoire, et chaque recette charge les siens avant de commencer
+const MAX_CHARGES = +PARAMS.get('max') || (MOBILE ? 14 : 20);
 const PROTEGES = new Set(['tomate']); // le menu
 const ratioRendu = () => Math.min(dprCible(2), [1, 1.4, 1.75][QUALITE]);
 const qx = () => [0.45, 0.75, 1][QUALITE];
@@ -360,7 +370,7 @@ function sTone(freq, dur, vol, type = 'sine', when = 0, glide = 1) {
   o.connect(g); g.connect(fxG); o.start(t); o.stop(t + dur + 0.02);
 }
 // Familles de fruits pour le son de la découpe
-const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge']);
+const CROQUANTS = new Set(['chouchou', 'carambole', 'coco', 'combava', 'citron-galet', 'margoze', 'bringelle', 'piment', 'avocat', 'evi', 'jambos-rouge', 'ail', 'oignon', 'oignon-vert', 'persil', 'thym', 'gingembre', 'curcuma', 'carotte', 'chou-blanc', 'chou-rouge', 'haricot-vert', 'radis', 'poivron-vert', 'poivron-rouge', 'piment-vert', 'concombre', 'betterave']);
 const SOURDS = new Set(['citrouille', 'jacque', 'fruit-a-pain', 'songe', 'corossol', 'ananas']);
 const son = {
   // le « whoosh » suit la vitesse du doigt
@@ -457,10 +467,29 @@ function preparer(d, g) {
   const rayon = Math.max(0.5 * taille * 0.9, 0.5);
   return { d, gltf: g.scene, entier: make('entier'), A: make('moitie_A'), B: make('moitie_B'), rayon, jus: new THREE.Color(d.couleur_jus), charge: performance.now() };
 }
+const chargements = {};
 async function charger(d) {
   if (cache[d.id]) return cache[d.id];
-  const g = await loader.loadAsync((d.source ? DOSSIER_MODELES : DOSSIER_PROPRES) + (d.fichier_web || d.fichier));
-  return (cache[d.id] = preparer(d, g));
+  if (!chargements[d.id]) chargements[d.id] = loader.loadAsync(dossierDe(d) + (d.fichier_web || d.fichier)).then(g => (cache[d.id] = preparer(d, g))).finally(() => { delete chargements[d.id]; });
+  return chargements[d.id];
+}
+/** Avant une recette : charge ses ingrédients manquants et fait de la place en oubliant les plus anciens inutiles. */
+async function assurerIngredients(ids) {
+  const manquants = ids.filter(id => !cache[id]).map(id => catalogue.find(d => d.id === id)).filter(Boolean);
+  if (!manquants.length) return;
+  for (const d of manquants) {
+    try {
+      const f = await charger(d);
+      if (!prets.includes(f)) prets.push(f);
+      reserve = reserve.filter(x => x.id !== d.id);
+      while (prets.length > MAX_CHARGES) {
+        const garder = new Set([...ids, ...PROTEGES, ...(recette ? Object.keys(recette.ing) : [])]);
+        const ancien = prets.filter(x => !garder.has(x.d.id) && !enVol(x)).sort((a, b) => a.charge - b.charge)[0];
+        if (!ancien) break;
+        oublier(ancien); reserve.push(ancien.d);
+      }
+    } catch (e) { console.warn('ingrédient non chargé', d.id, e); }
+  }
 }
 /** Libère un fruit chargé (géométries, matières, textures) quand on fait de la place. */
 function oublier(f) {
@@ -523,7 +552,7 @@ pulpe.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXQ *
 pulpe.frustumCulled = false; scene.add(pulpe);
 const Q = Array.from({ length: MAXQ }, () => ({ vie: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.05, rx: 0, ry: 0, vr: 0, plat: 0.4 }));
 let qIdx = 0;
-const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'jambos-rouge': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210' };
+const PEPINS = { 'papaye': '#151210', 'fruit-de-la-passion': '#2a1a10', 'pitaya': '#0d0d0d', 'goyave': '#e8dcc0', 'tomate': '#f2e2a0', 'bringelle': '#d9c88a', 'corossol': '#1a1410', 'pomme-cannelle': '#1a1410', 'jamrosa': '#7a5a3a', 'jambos-rouge': '#7a5a3a', 'longani': '#2a1a10', 'letchi': '#3a2210', 'margoze': '#c84a2a', 'citrouille': '#f2e8c0', 'tamarin': '#3a2210', 'concombre': '#f4f0d0', 'poivron-vert': '#f4eec8', 'poivron-rouge': '#f6e8c8', 'piment-vert': '#f4eec0', 'citron-vert': '#f2ecc8', 'haricot-vert': '#eef2dc', 'citron-galet': '#f2ecc8', 'jacque': '#c8a060' };
 const tmpM = new THREE.Matrix4(), tmpC = new THREE.Color(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3(), tmpE = new THREE.Euler();
 function goutte(pos, vel, s, color, vie, grav = 1, impact = false) {
   const i = pIdx, p = P[i]; pIdx = (pIdx + 1) % MAXP;
@@ -808,20 +837,33 @@ const RECETTES = [
   { nom: 'Rougail tomate au combava', ing: { tomate: 3, oignon: 1, piment: 1, combava: 1 }, fait: "Le zeste de combava, un agrume péi très parfumé, relève aussi les caris de poisson." },
   { nom: 'Rougail zavocat', ing: { avocat: 2, oignon: 1, piment: 1 }, fait: "Dans le rougail zavocat, l'avocat prend la place de la tomate." },
   { nom: 'Cari poulet gingembre', ing: { oignon: 2, ail: 2, gingembre: 2, curcuma: 1, tomate: 1 }, fait: "À La Réunion, le curcuma s'appelle « safran péi » : il parfume et colore le cari." },
+  // Nouvelles recettes (nov. 2026), vérifiées : france.fr et ileauxepices.com (achards, rougail citron, cari porc chouchou),
+  // Cookidoo « La Réunion lé la » (rougail morue au thym), RTBF (rougail concombre), franco.wiki / Carry (cari ti'jacque), e-santé (rougail dorade à la ciboule).
+  { nom: 'Achards de légumes', ing: { carotte: 2, 'chou-blanc': 2, 'haricot-vert': 2, oignon: 1, curcuma: 1, piment: 1 }, fait: "Les achards se servent avec la viande, le poisson ou en sandwich : chou blanc, haricots verts, carottes et oignons, colorés au curcuma." },
+  { nom: 'Rougail morue', ing: { tomate: 3, oignon: 2, ail: 2, piment: 1, thym: 1 }, fait: "La morue séchée, dessalée la veille, se cuisine en rougail avec la tomate, l'oignon, l'ail et une branche de thym." },
+  { nom: 'Rougail citron', ing: { 'citron-galet': 3, oignon: 1, gingembre: 1, piment: 1 }, fait: "Beaucoup de Réunionnais l'appellent tout simplement « sauce citron ». Le gingembre n'est pas obligatoire." },
+  { nom: 'Rougail concombre', ing: { concombre: 2, oignon: 1, ail: 1, piment: 1, thym: 1 }, fait: "Frais et croquant, le rougail concombre accompagne très bien un cari bien relevé." },
+  { nom: 'Cari porc chouchou', ing: { chouchou: 2, oignon: 1, tomate: 2, ail: 1, thym: 1, curcuma: 1 }, fait: "Le chouchou pousse en treille dans les Hauts, à Salazie surtout : en cari avec le porc, il fond dans la sauce." },
+  { nom: "Cari ti'jacque", ing: { jacque: 2, tomate: 2, oignon: 1, ail: 1, gingembre: 1, curcuma: 1, thym: 1 }, fait: "Le cari ti'jacque se prépare avec le jeune fruit du jacquier, souvent avec du boucané." },
+  { nom: 'Rougail poisson à la cive', ing: { tomate: 3, oignon: 1, ail: 1, gingembre: 1, 'oignon-vert': 1, piment: 1 }, fait: "La cive, c'est l'oignon vert. Hachée fin, elle parfume le rougail de poisson au dernier moment." },
 ];
 let recette = null, faits = {}, nbRecettes = 0, pauseRecette = 0, ordreRecettes = [], tempsRecette = Infinity, dernierTic = 0;
-const nomDe = id => (cache[id] ? cache[id].d.nom : id);
+const nomDe = id => { const d = cache[id] ? cache[id].d : catalogue.find(x => x.id === id); return d ? d.nom : id; };
 const besoins = () => recette ? Object.keys(recette.ing).filter(k => faits[k] < recette.ing[k]) : [];
+const ingredientsPrets = () => !recette || Object.keys(recette.ing).every(k => cache[k]);
+function tirerRecette() { if (!ordreRecettes.length) ordreRecettes = RECETTES.map((r, i) => i).sort(() => Math.random() - .5); return ordreRecettes.shift(); }
 function nouvelleRecette() {
-  if (!ordreRecettes.length) ordreRecettes = RECETTES.map((r, i) => i).sort(() => Math.random() - .5);
-  const idx = ordreRecettes.shift(), base = RECETTES[idx];
+  const idx = tirerRecette(), base = RECETTES[idx];
+  // charge les ingrédients de cette recette, puis prépare déjà ceux de la suivante
+  assurerIngredients(Object.keys(base.ing)).then(() => { if (!ordreRecettes.length) ordreRecettes = RECETTES.map((r, i) => i).sort(() => Math.random() - .5); const s = RECETTES[ordreRecettes[0]]; if (s) assurerIngredients(Object.keys(s.ing)); });
   const calme = modeJeu === 'calme', grand = !calme && (nbRecettes + 1) % 5 === 0;
   const x = (1 + Math.floor(nbRecettes / RECETTES.length) * 0.5) * (grand ? 2 : 1);
   recette = { idx, nom: grand ? base.nom + ' du dimanche' : base.nom, fait: base.fait, grand, ing: Object.fromEntries(Object.entries(base.ing).map(([k, n]) => [k, Math.ceil(n * x)])) };
   faits = Object.fromEntries(Object.keys(recette.ing).map(k => [k, 0]));
   tempsRecette = calme ? Infinity : Math.max(22, 42 - nbRecettes * 1.5) * (grand ? 1.8 : 1); dernierTic = 99;
   afficherRecette(); majNiveauHud();
-  if (grand) { bandeau('GRAND REPAS DU DIMANCHE ! Quantités doublées', 3); son.gong(); }
+  if (grand) { bandeau('GRAND REPAS DU DIMANCHE ! Quantités doublées', 3); son.gong(); if (fx) fx.evenement('niveau', { niveau: nbRecettes + 1, transition: 'pailleenqueue' }); }
+  else if (fx && etat === 'jeu') { const r = $('recette').getBoundingClientRect(); fx.joue('anneau', { x: r.left + r.width / 2, y: r.top + r.height / 2, intensite: 0.5 }); }
 }
 function afficherRecette(saute) {
   if (!recette) return;
@@ -835,6 +877,7 @@ function recetteFinie() {
   score += bonus; if (calme) etoilesC++; majScore(); son.plat();
   const neuve = !S.carnet[r.idx]; S.carnet[r.idx] = (S.carnet[r.idx] || 0) + 1; sauveS();
   etincelles(new THREE.Vector3(0, 0.5, 1), 90, 0xffd84a);
+  if (fx) fx.evenement('victoire', { x: W / 2, y: H * 0.46 });
   $('platNom').textContent = r.nom + ' prêt !' + (calme ? '' : ' +' + bonus);
   $('platFait').textContent = (calme || neuve) ? r.fait : '';
   pauseRecette = (calme || neuve) ? 4.4 : 2.2; $('plat').classList.add('on');
@@ -843,6 +886,7 @@ function recetteFinie() {
 }
 function recetteBrulee() {
   popup('Le plat a brûlé !', new THREE.Vector3(0, 0.5, 1), 'brule'); son.brule(); tremble = 0.4; serie = 0;
+  if (fx) { fx.evenement('erreur', { x: W / 2, y: H * 0.46, grave: true }); fx.joue('fumee', { x: W / 2, y: H * 0.5, intensite: 0.9 }); }
   recette = null; tempsRecette = Infinity; videEnVol(); pauseRecette = 1.6; $('recetteIng').innerHTML = '';
   perdreVie();
 }
@@ -854,12 +898,30 @@ function majBonus() {
   $('nRalenti').textContent = ralentis; $('bRalenti').classList.toggle('vide', !ralentis); $('bRalenti').classList.toggle('pret', ralentis > 0);
   $('nFrenesie').textContent = frenesies; $('bFrenesie').classList.toggle('vide', !frenesies); $('bFrenesie').classList.toggle('pret', frenesies > 0);
 }
-function activerCoup() { if (etat !== 'jeu' || charge < RECHARGE || !recette) return; charge = 0; let n = 0; for (const o of [...objets]) if (o.vivant && !o.roche && !o.menu && besoins().includes(o.fruit.d.id)) { couper(o, new THREE.Vector3(Math.random() - .5, 1, 0).normalize(), 0.5); n++; } bandeau('Grand coup de lame ! ' + n + ' ingrédient' + (n > 1 ? 's' : '')); tremble = 0.35; zoom = 1; majBonus(); }
-function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralentiBonus = 5; ralenti = Math.max(ralenti, 5); bandeau('Ralenti !', 5); majBonus(); }
-function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); }
+function activerCoup() { if (etat !== 'jeu' || charge < RECHARGE || !recette) return; charge = 0; let n = 0; for (const o of [...objets]) if (o.vivant && !o.roche && !o.menu && besoins().includes(o.fruit.d.id)) { couper(o, new THREE.Vector3(Math.random() - .5, 1, 0).normalize(), 0.5); n++; } bandeau('Grand coup de lame ! ' + n + ' ingrédient' + (n > 1 ? 's' : '')); tremble = 0.35; zoom = 1; majBonus(); if (fx) { fx.joue('lignes', { intensite: 0.9 }); fx.joue('onomatopee', { texte: 'VLAP !', intensite: 0.9 }); } }
+function activerRalenti() { if (etat !== 'jeu' || !ralentis) return; ralentis--; ralentiBonus = 5; ralenti = Math.max(ralenti, 5); bandeau('Ralenti !', 5); majBonus(); if (fx) { fx.joue('halo', { intensite: 0.6 }); fx.joue('bulles', { intensite: 0.6 }); } }
+function activerFrenesie() { if (etat !== 'jeu' || !frenesies) return; frenesies--; frenesie = 8; bandeau('Points doublés !', 8); majBonus(); if (fx) { fx.joue('aura', { intensite: 0.9 }); fx.joue('poussiereOr', { intensite: 0.9 }); } }
 const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc83a, metalness: 1, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, emissive: 0x6a4200, emissiveIntensity: 0.55 });
 function dorer(obj) { obj.traverse(m => { if (m.isMesh && (!m.material.name || !m.material.name.endsWith('_chair'))) m.material = matOr; }); }
 try { record = +(localStorage.getItem('kr2_record') || 0); } catch (e) {}
+// ---------------------------------------------------------------- KwFX, le directeur d'effets Kwélafé
+// Le jeu signale seulement ce qui se passe (bon ingrédient, intrus, plat prêt, plat brûlé, combo, roche...).
+// KwFX décide de la mise en scène : onomatopées créoles, aura et lignes de vitesse en série, pépites surprises,
+// collection d'objets rares péi, défi du jour, record, messages doux après une erreur et bruitages ElevenLabs.
+// Mode complément : le jus 3D, les taches et les sons de coupe restent ceux du jeu (aucun doublon).
+const modeFx = () => modeJeu === 'calme' ? 'trankil' : 'probleme';
+const fx = window.KwFX ? KwFX.init({
+  theme: 'fruits', public: 'enfant', manga: 1, mode: modeFx(), support: 'web', jeu: 'koup-rougail-2',
+  complement: true, secousses: false, // le jeu a déjà ses propres secousses de caméra
+  sons: true, sonsPack: '../commun/kwfx-sons/', sonsEvenements: ['combo', 'pepite', 'niveau', 'victoire', 'defaite', 'debut', 'clic', 'presque'],
+  volume: sonCoupe ? 0 : S.fx,
+  messages: true, messagesTypes: ['serie', 'record', 'victoire', 'defaite', 'encourage', 'niveau', 'pepite', 'debut'], echelleMessages: 0.55, hautMessages: innerHeight > innerWidth ? '68%' : '26%', // portrait : sous la carte du plat, pour ne pas cacher l'ardoise
+  cibleScore: $('score'), zoneShake: glc, dprMax: MOBILE ? 1.5 : 2,
+  onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
+}) : null;
+let recordDepart = 0, recordFete = false;
+function majDefi() { if (!fx) return; const d = fx.defiDuJour(); $('defiMenu').innerHTML = '<b>Défi du jour :</b> ' + d.texte + (d.reussi ? ' ✓' : ''); }
+majDefi();
 
 function lancer(fruit, opts = {}) {
   const roche = !fruit;
@@ -895,6 +957,7 @@ function couper(o, dir, precision = 1) {
     son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
     const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
     popup('Aïe ! Une roche du volcan !', pos, 'aie'); serie = 0;
+    if (fx && etat === 'jeu') { const s0 = toScreen(pos); fx.evenement('erreur', { x: s0.x, y: s0.y, grave: true }); fx.joue('braises', { x: s0.x, y: s0.y, intensite: 1 }); }
     perdreVie(); perdreVie();
     return;
   }
@@ -927,17 +990,28 @@ function couper(o, dir, precision = 1) {
   const id = f.d.id, calme = modeJeu === 'calme', parfait = precision < 0.28;
   popup(f.d.nom, pos.clone().add(new THREE.Vector3(0, 1.1, 0)), 'nom');
   if (besoins().includes(id)) {
-    serie++; if (!calme && serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } son.bonus(); majBonus(); }
+    serie++; if (!calme && serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } son.bonus(); majBonus(); if (fx) { const r = $('bonus').getBoundingClientRect(); fx.joue('etincelles', { x: r.left + r.width / 2, y: r.top + r.height / 2, intensite: 0.9 }); } }
     let pts = parfait ? 3 : 2; if (frenesie > 0) pts *= 2;
+    const sc = toScreen(pos);
+    if (fx) {
+      const d = fx.evenement('coupe', { x: sc.x, y: sc.y, couleur: '#' + f.jus.getHexString() });
+      if (!calme) pts = Math.round(pts * d.multiplicateur);
+      if (d.pepite) { if (!calme) { score += 10; setTimeout(() => popup('Pépite ! +10', pos.clone().add(new THREE.Vector3(0, 1.7, 0)), 'or'), 200); } else { etoilesC++; setTimeout(() => popup('Pépite ! ★', pos.clone().add(new THREE.Vector3(0, 1.7, 0)), 'or'), 200); } }
+      if (parfait) fx.joue('etoiles', { x: sc.x, y: sc.y, intensite: 0.7 });
+    }
     faits[id]++; score += pts; coupeSwipe += pts; majScore(); afficherRecette(id);
+    if (fx && !calme && !recordFete && recordDepart > 0 && score > recordDepart) { recordFete = true; fx.evenement('record', { x: sc.x, y: sc.y }); }
     if (!calme) popup('+' + pts, pos, 'pts', '#' + teinteTache(f.jus).offsetHSL(0, 0.15, 0.08).getHexString());
     if (parfait) setTimeout(() => popup('Pile au centre !', pos.clone().add(new THREE.Vector3(0, -0.9, 0)), 'bonus'), 120);
     if (!besoins().length) recetteFinie();
   } else if (recette.ing[id]) {
     popup('Déjà prêt', pos.clone().add(new THREE.Vector3(0, -0.6, 0)), 'bonus');
+    if (fx) { const sc = toScreen(pos); fx.evenement('presque', { x: sc.x, y: sc.y }); }
   } else if (calme) {
     popup('Pas pour ce plat', pos.clone().add(new THREE.Vector3(0, -0.6, 0)), 'bonus');
+    if (fx) { const sc = toScreen(pos); fx.evenement('presque', { x: sc.x, y: sc.y }); }
   } else {
+    if (fx) { const sc = toScreen(pos); fx.evenement('erreur', { x: sc.x, y: sc.y }); }
     son.brule(); tremble = Math.max(tremble, 0.25); serie = 0;
     for (let i = 0; i < 26; i++) goutte(pos.clone().add(new THREE.Vector3(rnd(-.4, .4), rnd(-.2, .4), .3)), new THREE.Vector3(rnd(-.6, .6), rnd(1, 2.6), 0), rnd(0.08, 0.16), new THREE.Color(0x5a5550), rnd(0.8, 1.4), -0.1);
     popup('Ça brûle !', pos.clone().add(new THREE.Vector3(0, -0.8, 0)), 'brule');
@@ -988,13 +1062,20 @@ function demarrer(reprise) {
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
   $('lien').classList.add('discret');
   for (const o of objets) if (o.menu && o.vivant) { o.vivant = false; scene.remove(o.obj); }
+  recordDepart = record; recordFete = false; $('bilanFin').innerHTML = '';
+  if (fx) { fx.regler({ mode: modeFx() }); fx.evenement('debut'); }
 }
 function terminerCalme() {
   if (etat !== 'jeu' || modeJeu !== 'calme') return;
   etat = 'fin'; $('bonus').classList.remove('on'); $('bTerminer').style.display = 'none'; $('recette').classList.remove('on'); $('plat').classList.remove('on'); recette = null; videEnVol();
   S.etoiles += etoilesC; sauveS();
+  if (fx) { fx.evenement('victoire'); const b = fx.finPartie(); bilan(b); }
   $('scoreFin').textContent = '★ ' + etoilesC; $('recordFin').textContent = nbRecettes + (nbRecettes > 1 ? ' plats réussis' : ' plat réussi') + ' · carnet : ' + Object.keys(S.carnet).length + ' / ' + RECETTES.length;
   $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue();
+}
+function bilan(b) {
+  $('bilanFin').innerHTML = '<b>Défi du jour :</b> ' + b.defi.texte + (b.defi.reussi ? ' ✓ réussi' : '') + '<br><b>Collection péi :</b> ' + b.collection.obtenus + ' / ' + b.collection.total + ' objets rares';
+  majDefi();
 }
 function finPartie() {
   etat = 'fin'; ralentiOr = 0; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on'); $('recette').classList.remove('on'); $('plat').classList.remove('on'); recette = null; videEnVol();
@@ -1002,6 +1083,7 @@ function finPartie() {
   $('bTerminer').style.display = 'none'; musique('musique-calme');
   if (score > record) { record = score; try { localStorage.setItem('kr2_record', record); } catch (e) {} }
   S.recordD = record; sauveS();
+  if (fx) { const nouveau = score > recordDepart && recordDepart > 0; setTimeout(() => fx.evenement(nouveau ? 'victoire' : 'defaite'), 350); bilan(fx.finPartie(score)); }
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record + ' · ' + nbRecettes + (nbRecettes > 1 ? ' plats' : ' plat');
   setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); menuMangue(); }, 1200);
 }
@@ -1043,6 +1125,7 @@ function finCombo() {
     const bonus = coupeSwipe * (comboN - 1);
     score += bonus; majScore(); son.combo(comboN);
     popup(`Multi ×${comboN} ! +${bonus}`, comboPos, 'combo');
+    if (fx) { const s = toScreen(comboPos); fx.evenement('combo', { n: comboN, x: s.x, y: s.y }); }
     etincelles(comboPos, 30 + comboN * 12);
     if (comboN >= 3) { ralenti = Math.max(ralenti, 0.35); zoom = 1; }
   }
@@ -1185,7 +1268,7 @@ function boucle() {
     if (pauseRecette > 0) { pauseRecette -= dt; if (pauseRecette <= 0) nouvelleRecette(); }
     else if (recette) {
       prochainLancer -= dt; if (prochainLancer <= 0) vague();
-      if (isFinite(tempsRecette)) {
+      if (isFinite(tempsRecette) && ingredientsPrets()) { // le minuteur attend que tous les ingrédients soient chargés
         tempsRecette -= dt; const t = Math.ceil(tempsRecette);
         if (t !== dernierTic) { dernierTic = t; majNiveauHud(); if (t > 0 && t <= 5) son.tic(); }
         if (tempsRecette <= 0) recetteBrulee();
@@ -1230,6 +1313,7 @@ initPixi(); addEventListener('resize', resize); resize(); majVies(); majScore();
 $('btnSon').onclick = () => {
   sonCoupe = !sonCoupe; try { localStorage.setItem('kr2_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
   if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
+  if (fx) fx.regler({ volume: sonCoupe ? 0 : S.fx });
 };
 $('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
 $('bCalme').onclick = () => { modeJeu = 'calme'; audio(); masquerReprise(); demarrer(); };
@@ -1244,19 +1328,20 @@ $('bAlbFerme').onclick = () => $('panAlbum').classList.add('cache');
 $('bSonOpt').onclick = () => { $('rMus').value = Math.round(S.mus * 100); $('rFx').value = Math.round(S.fx * 100); $('panSon').classList.remove('cache'); };
 $('bSonFerme').onclick = () => { $('panSon').classList.add('cache'); sauveS(); };
 $('rMus').oninput = e => { S.mus = e.target.value / 100; if (musG) musG.gain.value = S.mus; };
-$('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; };
+$('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; if (fx) fx.regler({ volume: sonCoupe ? 0 : S.fx }); };
 $('bCredits').onclick = () => $('panCredits').classList.remove('cache');
 $('bCrFerme').onclick = () => $('panCredits').classList.add('cache');
 $('jouer').onclick = () => { modeJeu = 'defi'; audio(); masquerReprise(); try { localStorage.removeItem('kr2_partie'); } catch (e) {} demarrer(); };
 $('rejouer').onclick = () => { audio(); demarrer(); };
 $('menuFin').onclick = () => { modeJeu = 'defi'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); etat = 'menu'; menuMangue(); };
+document.querySelectorAll('.btn, .bbtn, #btnSon').forEach(b => b.addEventListener('click', () => { if (fx && !b.classList.contains('vide')) { const r = b.getBoundingClientRect(); fx.evenement('clic', { x: r.left + r.width / 2, y: r.top + r.height / 2 }); } }));
 // touchers : ne pas laisser passer aux couches inférieures
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function(event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
 
 (async () => {
   const info = await (await fetch('../koup-rougail/models/fruits.json')).json();
   catalogue = info.fruits.slice();
-  const premiers = ['tomate', 'oignon', 'ail', 'piment'];
+  const premiers = ['tomate', 'oignon', 'ail', 'piment', 'gingembre', 'curcuma', 'thym'];
   catalogue.sort((a, b) => (premiers.indexOf(b.id) >= 0) - (premiers.indexOf(a.id) >= 0) || Math.random() - 0.5);
   let fait = 0;
   const majCharge = () => { $('charge').textContent = fait < catalogue.length ? `On prépare la cuisine… ${fait}/${catalogue.length}` : ''; };
@@ -1268,7 +1353,7 @@ document.querySelectorAll('.zone-interactive').forEach(element => { element.addE
   async function ouvrier() {
     while (file.length) {
       const d = file.shift();
-      try { prets.push(await charger(d)); } catch (e) { console.warn('fruit non chargé', d.id, e); }
+      try { const f = await charger(d); if (!prets.includes(f)) prets.push(f); } catch (e) { console.warn('fruit non chargé', d.id, e); }
       fait++; majCharge2();
       if (d.id === 'tomate' && etat === 'menu') menuMangue();
     }
@@ -1286,14 +1371,16 @@ async function renouveler() {
   const maintenant = performance.now() / 1000; // (l'intervalle ne tourne pas en arrière-plan : perf.actif)
   if (maintenant - tempsRenouvellement < 20) return;
   tempsRenouvellement = maintenant;
-  if (!prets.some(f => !PROTEGES.has(f.d.id) && !enVol(f))) return;
+  const garde = f => PROTEGES.has(f.d.id) || (recette && recette.ing[f.d.id]) || enVol(f);
+  if (!prets.some(f => !garde(f))) return;
   renouvellementEnCours = true;
   const d = reserve.shift();
+  if (cache[d.id]) { renouvellementEnCours = false; return; } // déjà chargé pour une recette
   try {
     const nouveau = await charger(d);
-    const ancien = prets.filter(f => !PROTEGES.has(f.d.id) && !enVol(f)).sort((a, b) => a.charge - b.charge)[0];
+    const ancien = prets.filter(f => !garde(f) && f !== nouveau).sort((a, b) => a.charge - b.charge)[0];
     if (ancien) { oublier(ancien); reserve.push(ancien.d); }
-    prets.push(nouveau);
+    if (!prets.includes(nouveau)) prets.push(nouveau);
   } catch (e) { console.warn('fruit non chargé', d.id, e); reserve.push(d); }
   renouvellementEnCours = false;
 }
@@ -1320,7 +1407,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { set mode(m) { modeJeu = m; }, get S() { return S; }, terminerCalme, demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, couper, get recette() { return recette; }, get faits() { return faits; }, get score() { return score; }, get vies() { return vies; }, get nbRecettes() { return nbRecettes; }, get etoilesC() { return etoilesC; }, get tempsRecette() { return tempsRecette; }, set tempsRecette(v) { tempsRecette = v; }, set nbRecettes(v) { nbRecettes = v; }, besoins, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+  window.jeu = { fx, set mode(m) { modeJeu = m; }, get S() { return S; }, terminerCalme, demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, couper, get recette() { return recette; }, get faits() { return faits; }, get score() { return score; }, get vies() { return vies; }, get nbRecettes() { return nbRecettes; }, get etoilesC() { return etoilesC; }, get tempsRecette() { return tempsRecette; }, set tempsRecette(v) { tempsRecette = v; }, set nbRecettes(v) { nbRecettes = v; }, besoins, forcerCoup: () => { charge = RECHARGE; activerCoup(); }, forcerRecette: i => { ordreRecettes.unshift(i); pauseRecette = 0; nouvelleRecette(); }, get pret() { return ingredientsPrets(); }, RECETTES };
 }
 }
 </script>
