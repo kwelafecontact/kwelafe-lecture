@@ -2,6 +2,7 @@
 // Créole pour les enfants : une grande carte avec un dessin et un mot, trois grosses réponses. Pas de cœurs, que des encouragements.
 import { useEffect, useMemo, useState } from "react";
 import { lireReglages } from "@/lib/reglages";
+import { fx, preparerFx } from "@/lib/kwfx";
 import BarriereParentale from "./BarriereParentale";
 import { MOTS_ENFANTS, THEMES_ENFANTS, type MotEnfant } from "@/lib/creole-enfants";
 
@@ -14,6 +15,7 @@ export default function CreoleEnfant() {
   const [profils, setProfils] = useState<P[] | null>(null);
   const [joueur, setJoueur] = useState<{ id: string; nom: string; avatar: string } | null>(null);
   const [pause, setPause] = useState(false);
+  useEffect(() => { preparerFx({ theme: "flore", public: "enfant" }); }, []);
   useEffect(() => {
     fetch("/api/apprendre").then((r) => r.json()).then((d) => {
       const ps: P[] = d.connecte ? d.profils || [] : [];
@@ -79,6 +81,7 @@ export default function CreoleEnfant() {
   const t = THEMES_ENFANTS.find((x) => x.id === theme)!;
   if (!mot) return (
     <div className="ce-fin" style={{ ["--c" as any]: t.couleur }}>
+      <FinFx />
       <div className="ce-fin-etoiles">{"⭐".repeat(Math.max(1, Math.round((etoiles / serie.length) * 3)))}</div>
       <h2>Tu as trouvé {etoiles} mot{etoiles > 1 ? "s" : ""} sur {serie.length} !</h2>
       <p>Ti pa, ti pa, n'arivé. Reviens demain pour apprendre encore.</p>
@@ -105,7 +108,7 @@ export default function CreoleEnfant() {
         {choix.map((c) => {
           const v = sens === "kr" ? c.fr : c.kr;
           const etat = choisi === v ? (v === bonne ? "ok" : "ko") : (ok && v === bonne ? "ok" : "");
-          return <button key={v} className={`ce-rep ${etat}`} disabled={ok || rates.includes(v)} onClick={() => { if (ok) return; if (v === bonne && rates.length === 0) setEtoiles((e) => e + 1); if (v !== bonne) setRates([...rates, v]); setChoisi(v); }}>{v}</button>;
+          return <button key={v} className={`ce-rep ${etat}`} disabled={ok || rates.includes(v)} onClick={(ev) => { if (ok) return; fx(v === bonne ? "bonne" : "presque", ev.currentTarget); if (v === bonne && rates.length === 0) setEtoiles((e) => e + 1); if (v !== bonne) setRates([...rates, v]); setChoisi(v); }}>{v}</button>;
         })}
       </div>
       {choisi && (
@@ -117,3 +120,5 @@ export default function CreoleEnfant() {
     </div>
   );
 }
+
+function FinFx() { useEffect(() => { fx("victoire"); }, []); return null; }

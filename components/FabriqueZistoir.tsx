@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import BoutonEcouter from "./BoutonEcouter";
+import { useEffect } from "react";
+import { fx, preparerFx } from "@/lib/kwfx";
 import { COMPAGNONS, HEROS, LIEUX, OBJETS, histoire, type Choix } from "@/lib/zistoir";
 
 const ETAPES = [
@@ -36,6 +38,7 @@ export default function FabriqueZistoir() {
       <div className="fz-couv">{choix.map((c) => c.emoji).join(" ")}</div>
       <h2>{z.titre}</h2>
       <p className="fz-texte">{z.pages[page]}</p>
+      <FxZ finie={finie} />
       <BoutonEcouter texte={(page === 0 ? z.titre + ". " : "") + z.pages[page]} />
       <div className="fz-nav">
         <button className="ce-gros secondaire" disabled={page === 0} onClick={() => setPage(page - 1)}>←</button>
@@ -44,4 +47,10 @@ export default function FabriqueZistoir() {
       </div>
     </div>
   );
+}
+
+function FxZ({ finie }: { finie: boolean }) {
+  useEffect(() => { preparerFx({ theme: "noel", public: "enfant" }); }, []);
+  useEffect(() => { if (finie) fx("victoire"); }, [finie]);
+  return null;
 }

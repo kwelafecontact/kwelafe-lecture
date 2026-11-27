@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Unite, Mot } from "@/lib/apprendre";
 import { lireReglages } from "@/lib/reglages";
+import { fx, preparerFx } from "@/lib/kwfx";
 
 type Progres = { xp: number; serie: number; jour: string; finies: Record<number, number>; coeurs: number; jourCoeurs: string; xpSemaine?: number };
 type Rang = { rang: number; prenom: string; xp: number; moi: boolean };
@@ -74,6 +75,7 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
     if (srv) { setP(srv); ecrire(srv, cleLocale(pr)); }
   }
 
+  useEffect(() => { preparerFx({ theme: "reunion", public: "adulte" }); }, []);
   useEffect(() => {
     fetch("/api/apprendre").then((r) => r.json()).then((d) => {
       setClassement(d.classement || []);
@@ -141,6 +143,7 @@ export default function Apprendre({ unites }: { unites: Unite[] }) {
     maj({ ...p!, xp: p!.xp + gain, serie, jour: auj(), xpSemaine: (p!.xpSemaine || 0) + gain, finies: { ...p!.finies, [u.id]: Math.max(etoiles, p!.finies[u.id] || 0) } });
     if (connecte) envoyer({ action: "lecon", unite: u.id, etoiles, gain });
     setLecon(null); setFin({ xp: gain, etoiles, u });
+    setTimeout(() => fx(etoiles === 3 ? "victoire" : "niveau"), 150);
   }
 
   if (lecon) return <Lecon lecon={lecon} coeurs={p.coeurs}
@@ -242,13 +245,14 @@ function Lecon({ lecon, coeurs, onErreur, onSuivant, onQuitter }: {
   function verifier() {
     const ok = choisi === bonne;
     setVerdict(ok);
+    fx(ok ? "bonne" : "erreur", document.querySelector(".app-tuile.sel"));
     if (!ok) { setErreurs((e) => e + 1); onErreur(); }
   }
   function clicDroite(fr: string) {
     if (!selG || exo.type !== "paires") return;
     const m = exo.mots.find((x) => x.kr === selG)!;
-    if (m.fr === fr) { const t = [...trouves, selG]; setTrouves(t); setSelG(null); if (t.length === exo.mots.length) setVerdict(true); }
-    else { setRate(fr); setErreurs((e) => e + 1); onErreur(); setTimeout(() => setRate(null), 500); }
+    if (m.fr === fr) { const t = [...trouves, selG]; setTrouves(t); setSelG(null); fx("bonne"); if (t.length === exo.mots.length) setVerdict(true); }
+    else { setRate(fr); fx("erreur"); setErreurs((e) => e + 1); onErreur(); setTimeout(() => setRate(null), 500); }
   }
 
   const pct = Math.round((lecon.i / lecon.exos.length) * 100);

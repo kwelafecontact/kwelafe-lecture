@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { fx, preparerFx } from "@/lib/kwfx";
 import Link from "next/link";
 import { melanger } from "@/lib/quiz/questions";
 import { BANQUE, type QuestionLivre } from "@/lib/quiz/banque";
@@ -39,12 +40,14 @@ export default function QuizReunion({ famille }: { famille?: boolean }) {
       const ordre = melanger([0, 1, 2, 3]);
       return { ...x, r: ordre.map((i) => x.r[i]), ok: ordre.indexOf(0) };
     }));
+    preparerFx({ theme: "reunion", public: "ado" });
     setScores(joueurs.map(() => 0)); setN(0); setChoix(null);
     setPhase(famille ? "passe" : "question");
   }
   function repondre(i: number) {
     if (choix !== null) return;
     setChoix(i);
+    fx(i === q.ok ? "bonne" : "erreur", document.activeElement);
     if (i === q.ok) setScores((s) => s.map((v, k) => (k === joueur ? v + 1 : v)));
   }
   function suivante() {
