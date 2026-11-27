@@ -59,7 +59,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 816
+      "poids_ko": 763
     },
     {
       "id": "banane",
@@ -134,7 +134,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 2355
+      "poids_ko": 1907
     },
     {
       "id": "chouchou",
@@ -194,7 +194,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 1284
+      "poids_ko": 1274
     },
     {
       "id": "avocat",
@@ -308,13 +308,13 @@
       "taille_reelle_m": 0.045,
       "couleur_jus": "#F4A23A",
       "clearcoat": 0.0,
-      "sheen": 0.5,
+      "sheen": 0.12,
       "noeuds": {
         "entier": "entier",
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 592
+      "poids_ko": 573
     },
     {
       "id": "jamrosa",
@@ -389,7 +389,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 1399
+      "poids_ko": 1081
     },
     {
       "id": "mandarine",
@@ -494,7 +494,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 753
+      "poids_ko": 721
     },
     {
       "id": "mangue-auguste",
@@ -509,7 +509,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 765
+      "poids_ko": 751
     },
     {
       "id": "mangue-cogshall",
@@ -524,7 +524,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 760
+      "poids_ko": 758
     },
     {
       "id": "mangue-emile",
@@ -539,7 +539,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 786
+      "poids_ko": 808
     },
     {
       "id": "mangue-lucie",
@@ -554,7 +554,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 772
+      "poids_ko": 758
     },
     {
       "id": "figue-sucree",
@@ -569,7 +569,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 933
+      "poids_ko": 932
     },
     {
       "id": "jambos-rouge",
@@ -584,7 +584,112 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 569
+      "poids_ko": 667
+    },
+    {
+      "id": "ail",
+      "nom": "Ail",
+      "fichier": "ail.glb",
+      "taille_reelle_m": 0.06,
+      "couleur_jus": "#F6F2E2",
+      "clearcoat": 0.0,
+      "sheen": 0.2,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 254
+    },
+    {
+      "id": "oignon",
+      "nom": "Oignon",
+      "fichier": "oignon.glb",
+      "taille_reelle_m": 0.08,
+      "couleur_jus": "#F4F0DC",
+      "clearcoat": 0.15,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 258
+    },
+    {
+      "id": "persil",
+      "nom": "Persil",
+      "fichier": "persil.glb",
+      "taille_reelle_m": 0.17,
+      "couleur_jus": "#7AB04A",
+      "clearcoat": 0.3,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 248
+    },
+    {
+      "id": "oignon-vert",
+      "nom": "Oignon vert",
+      "fichier": "oignon-vert.glb",
+      "taille_reelle_m": 0.3,
+      "couleur_jus": "#E8F2D0",
+      "clearcoat": 0.3,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 226
+    },
+    {
+      "id": "thym",
+      "nom": "Thym",
+      "fichier": "thym.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#A8B88A",
+      "clearcoat": 0.0,
+      "sheen": 0.15,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 273
+    },
+    {
+      "id": "gingembre",
+      "nom": "Gingembre",
+      "fichier": "gingembre.glb",
+      "taille_reelle_m": 0.13,
+      "couleur_jus": "#F2E2A0",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 603
+    },
+    {
+      "id": "curcuma",
+      "nom": "Curcuma",
+      "fichier": "curcuma.glb",
+      "taille_reelle_m": 0.07,
+      "couleur_jus": "#F09A1A",
+      "clearcoat": 0.0,
+      "sheen": 0.0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 505
     }
   ],
   "compression": "meshopt (MeshoptDecoder requis dans GLTFLoader)"
