@@ -298,9 +298,14 @@ function audio() {
     maitre.connect(filtreRalenti); filtreRalenti.connect(comp); comp.connect(actx.destination);
     bruit = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
     const d = bruit.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    setTimeout(chargerSons, 0);
+    // iOS : un son muet joué pendant le geste déverrouille vraiment la sortie audio
+    try { const v = actx.createBufferSource(); v.buffer = actx.createBuffer(1, 1, 22050); v.connect(actx.destination); v.start(0); } catch (e) {}
+    reveillerAudio(actx);
+    chargerSons();
   } catch (e) { actx = null; }
 }
+// déverrouillage au tout premier contact, où que ce soit sur l'écran
+['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown', 'click'].forEach(t => document.addEventListener(t, audio, { capture: true, passive: true }));
 const hauteur = () => 2 ** (rnd(-2.5, 2.5) / 12); // petite variation à chaque son
 function sNoise(dur, f0, f1, q, vol, type = 'bandpass', when = 0) {
   if (!actx) return; const t = actx.currentTime + when;
@@ -347,7 +352,19 @@ const son = {
   ploc: () => { sTone(rnd(900, 1500) * hauteur(), 0.06, 0.03, 'sine', 0, 0.45); },
 };
 const sons = {}; let sonsDemandes = false;
-function chargerSons() { if (sonsDemandes || !actx) return; sonsDemandes = true; for (const n of ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche']) fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => { sons[n] = d; if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); } }).catch(() => {}); }
+// les fichiers sont téléchargés dès l'ouverture de la page (sans attendre le premier toucher)
+const NOMS_SONS = ['juteux-1', 'juteux-2', 'croquant-1', 'croquant-2', 'sourd', 'roche', 'or', 'marche'];
+const fichiersSons = {}; NOMS_SONS.forEach(n => { fichiersSons[n] = fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).catch(() => null); });
+function decoder(buf) { return new Promise((ok, ko) => { try { const p = actx.decodeAudioData(buf, ok, ko); if (p && p.then) p.then(ok, ko); } catch (e) { ko(e); } }); }
+async function chargerSons() {
+  if (sonsDemandes || !actx) return; sonsDemandes = true;
+  // sons de coupe d'abord, l'ambiance du marché (plus lourde) en dernier
+  for (const n of NOMS_SONS) {
+    try { const b = await fichiersSons[n]; if (!b) continue; const d = await decoder(b.slice(0)); sons[n] = d;
+      if (n === 'marche') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.22; s.connect(g); g.connect(maitre); s.start(); }
+    } catch (e) {}
+  }
+}
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * hauteur(); const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(maitre); s.start(); return true; }
 const _coupe = son.coupe, _roche = son.roche, _or = son.or;
 son.coupe = (id, rayon = 0.6) => { const v = Math.max(0.75, Math.min(1.25, 1.35 - rayon * 0.6)); const n = CROQUANTS.has(id) ? 'croquant-' + (1 + (Math.random() * 2 | 0)) : SOURDS.has(id) ? 'sourd' : 'juteux-' + (1 + (Math.random() * 2 | 0)); if (!jouer(n, 0.95, v)) _coupe(id); };
@@ -1523,7 +1540,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, moities, cache, choisirMode, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+  window.jeu = { sons, get actx() { return actx; }, demarrer, lancer, prets, objets, moities, cache, choisirMode, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 }
 }
 </script>
