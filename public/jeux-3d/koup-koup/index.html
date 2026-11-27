@@ -1032,7 +1032,12 @@ try { record = +(localStorage.getItem('koupkoup_record') || 0); } catch (e) {}
 // les pépites surprises, la collection d'objets rares péi, le défi du jour et le record.
 const fx = window.KwFX ? KwFX.init({
   theme: 'fruits', public: 'enfant', manga: 1, mode: 'probleme', support: 'web', jeu: 'koup-koup-2', // manga 1 : onomatopées, sans lignes blanches
-  complement: true, sons: false, messages: false, secousses: false,
+  complement: true, secousses: false,
+  // vrais bruitages ElevenLabs de KwFX, seulement pour ce que le jeu ne sonorise pas lui-même
+  sons: true, sonsPack: '../commun/kwfx-sons/', sonsEvenements: ['combo', 'pepite', 'niveau', 'victoire', 'defaite', 'debut', 'clic'],
+  volume: sonCoupe ? 0 : 0.9,
+  // messages en créole aux paliers de série, record et fin ; le jeu garde son bandeau (niveaux, bonus) et ses popups (pépites)
+  messages: true, messagesTypes: ['serie', 'record', 'victoire', 'defaite', 'encourage'], echelleMessages: 0.55, hautMessages: '22%',
   cibleScore: $('score'), zoneShake: glc, dprMax: MOBILE ? 1.5 : 2,
   onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
 }) : null;
@@ -1140,6 +1145,7 @@ function couper(o, dir, precision = 1, decalage = 0) {
   if (parfait) pts += 1;
   if (frenesie > 0) pts *= 2;
   score += pts; coupeSwipe += pts; majScore();
+  if (fx && etat === 'jeu' && !recordFete && recordDepart > 0 && score > recordDepart) { recordFete = true; fx.evenement('record', { x: s.x, y: s.y }); }
   if (fx && etat === 'jeu') {
     const d = fx.evenement('coupe', { x: s.x, y: s.y, couleur: '#' + jus.getHexString() });
     if (d.pepite) { score += 10; majScore(); setTimeout(() => popup('Pépite ! +10', pos.clone().add(new THREE.Vector3(0, 1.7, 0)), 'or'), 200); }
@@ -1191,16 +1197,20 @@ function demarrer(reprise) {
   $('vies').style.visibility = modeJeu === 'trankil' ? 'hidden' : 'visible'; $('bFin').style.display = modeJeu === 'trankil' ? '' : 'none';
   majNiveauHud(); majBonus(); $('bonus').classList.add('on');
   if (fx) fx.evenement('debut');
+  recordDepart = record; recordFete = false;
   masquerReprise();
   majScore(); majVies();
   $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on');
   $('lien').classList.add('discret');
   for (const o of objets) if (o.menu && o.vivant) { o.vivant = false; scene.remove(o.obj); }
 }
+let recordDepart = 0, recordFete = false;
 function finPartie() {
   etat = 'fin'; ralentiOr = 0; $('bonus').classList.remove('on'); $('bandeau').classList.remove('on');
   try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {}
+  const nouveauRecord = score > record && score > 0;
   if (score > record) { record = score; try { localStorage.setItem(cleRecord(), record); } catch (e) {} }
+  if (fx) setTimeout(() => fx.evenement(nouveauRecord || modeJeu === 'trankil' ? 'victoire' : 'defaite'), 350);
   $('scoreFin').textContent = score; $('recordFin').textContent = 'Record : ' + record;
   if (fx) {
     const b = fx.finPartie(score);
@@ -1463,7 +1473,7 @@ function boucle() {
 addEventListener('resize', resize); resize(); majVies(); majScore(); majBoutonSon();
 $('btnSon').onclick = () => {
   sonCoupe = !sonCoupe; try { localStorage.setItem('koupkoup_son', sonCoupe ? 'non' : 'oui'); } catch (e) {}
-  if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon();
+  if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; if (fx) fx.regler({ volume: sonCoupe ? 0 : 0.9 }); majBoutonSon();
 };
 $('bCoup').onclick = activerCoup; $('bRalenti').onclick = activerRalenti; $('bFrenesie').onclick = activerFrenesie;
 document.querySelectorAll('#menu [data-mode]').forEach(b => b.onclick = () => { audio(); choisirMode(b.dataset.mode); masquerReprise(); try { localStorage.removeItem('koupkoup2_partie'); } catch (e) {} demarrer(); });
@@ -1471,6 +1481,8 @@ $('autreMode').onclick = () => { $('fin').classList.add('cache'); $('menu').clas
 $('bFin').onclick = () => { if (etat === 'jeu') finPartie(); };
 choisirMode(modeJeu);
 $('rejouer').onclick = () => { audio(); demarrer(); };
+// petit retour sonore et visuel KwFX sur les boutons
+document.querySelectorAll('.btn, .bbtn, #btnSon').forEach(b => b.addEventListener('click', () => { if (fx && !b.classList.contains('vide')) { const r = b.getBoundingClientRect(); fx.evenement('clic', { x: r.left + r.width / 2, y: r.top + r.height / 2 }); } }));
 // touchers : ne pas laisser passer aux couches inférieures
 document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function(event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
 
@@ -1540,7 +1552,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { sons, get actx() { return actx; }, demarrer, lancer, prets, objets, moities, cache, choisirMode, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+  window.jeu = { fx, sons, get actx() { return actx; }, demarrer, lancer, prets, objets, moities, cache, choisirMode, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 }
 }
 </script>
