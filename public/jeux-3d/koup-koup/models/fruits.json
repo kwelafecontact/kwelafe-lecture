@@ -351,7 +351,7 @@
       "nom": "Noix de coco",
       "fichier": "coco.glb",
       "taille_reelle_m": 0.13,
-      "couleur_jus": "#F4F2EA",
+      "couleur_jus": "#EAF2F2",
       "clearcoat": 0.0,
       "sheen": 0.3,
       "noeuds": {
@@ -359,7 +359,7 @@
         "moitie_1": "moitie_A",
         "moitie_2": "moitie_B"
       },
-      "poids_ko": 1048
+      "poids_ko": 468
     },
     {
       "id": "combava",
