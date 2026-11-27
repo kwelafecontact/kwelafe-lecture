@@ -1124,3 +1124,5 @@ html[data-animations="non"] *{animation:none!important;transition:none!important
 .fz-couv{font-size:48px;letter-spacing:6px}
 .fz-texte{font-size:22px;line-height:1.6;min-height:160px;text-align:left;margin:16px 0}
 .fz-nav{display:flex;align-items:center;gap:12px}.fz-nav .ce-gros{width:auto;flex:1;margin:0}.fz-nav span{font-weight:900}
+.bouton-ecouter{display:block;margin:14px auto 4px;padding:12px 26px;border:0;border-radius:999px;background:#1f3a5f;color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(31,58,95,.25)}
+.bouton-ecouter[aria-pressed="true"]{background:#c0392b}

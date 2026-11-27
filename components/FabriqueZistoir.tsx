@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import BoutonEcouter from "./BoutonEcouter";
 import { COMPAGNONS, HEROS, LIEUX, OBJETS, histoire, type Choix } from "@/lib/zistoir";
 
 const ETAPES = [
@@ -35,6 +36,7 @@ export default function FabriqueZistoir() {
       <div className="fz-couv">{choix.map((c) => c.emoji).join(" ")}</div>
       <h2>{z.titre}</h2>
       <p className="fz-texte">{z.pages[page]}</p>
+      <BoutonEcouter texte={(page === 0 ? z.titre + ". " : "") + z.pages[page]} />
       <div className="fz-nav">
         <button className="ce-gros secondaire" disabled={page === 0} onClick={() => setPage(page - 1)}>←</button>
         <span>{page + 1} / {z.pages.length}</span>
