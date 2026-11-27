@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalogue des fruits de La Réunion · Kwélafé</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:linear-gradient(#2f6b3a,#1d4a2a);color:#fff}
+h1{text-align:center;margin:18px 12px 4px;font-size:1.5rem}p{text-align:center;margin:0 12px 14px;opacity:.85}
+#g{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;padding:12px;max-width:900px;margin:auto}
+.c{background:rgba(255,255,255,.1);border-radius:14px;padding:8px;text-align:center}
+.c img{width:100%;aspect-ratio:1;object-fit:contain}.c b{display:block;font-size:.9rem}
+</style></head><body>
+<h1>Fruits de La Réunion</h1><p id="n"></p><div id="g"></div>
+<script>
+fetch("catalogue.json").then(r=>r.json()).then(d=>{document.getElementById("n").textContent=d.fruits.length+" fruits entiers";
+document.getElementById("g").innerHTML=d.fruits.map(f=>'<div class="c"><img loading="lazy" src="'+f.image+'" alt="'+f.nom+'"><b>'+f.nom+'</b></div>').join("");});
+</script></body></html>
