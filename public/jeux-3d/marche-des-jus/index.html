@@ -82,6 +82,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#3a1a08;font-family:"B
 </div>
 
 <script src="../commun/pixi.min.js"></script>
+<script src="../commun/pixi-filters.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -201,7 +202,12 @@ function speciaux(){
 let last=0;
 function frame(ts){
   const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
-  if(mode==="play")maj(dt);
+  let d=dt;
+  if(G){if(G.slow>0){G.slow-=dt;d=dt*.3;}
+    if(G.zoom>0)G.zoom=Math.max(0,G.zoom-dt*1.6);
+    if(G.onde){G.onde.t+=dt;if(G.onde.t>1.1)G.onde=null;}
+    if(G.fw>0){G.fw-=dt;if(Math.random()<dt*9)fwBurst();}}
+  if(mode==="play")maj(d);
   dessine();requestAnimationFrame(frame);
 }
 function maj(dt){
@@ -284,7 +290,7 @@ function tap(x,y){
         }else{G.streak=0;G.o.pat-=2.5;sfx("faux",.8);pop("Pas ce fruit !",f.x,f.y,"#ff9a8a",26);}
       }else if(f.k==="pourri"){G.vies--;G.streak=0;sfx("faux");pop("Pourri !",f.x,f.y,"#9aff7a",34);perdu();}
       else if(f.k==="guepe"){G.score+=5;sfx("swat");pop("+5 €",f.x,f.y,"#ffd24a",28);}
-      else if(f.k==="dore"){G.o.or=true;G.ice.cd=0;sfx("dore");pop("Letchi doré ! Prix ×2",f.x,f.y,"#ffd24a",32);}
+      else if(f.k==="dore"){G.o.or=true;G.ice.cd=0;sfx("dore");grandMoment(f.x,f.y,"#ffd24a");pop("Letchi doré ! Prix ×2",f.x,f.y,"#ffd24a",32);}
       return;
     }
   }
@@ -296,10 +302,15 @@ function servir(){
   G.score+=gain;G.serv++;G.srv[F.n]=(G.srv[F.n]||0)+1;
   sfx("caisse");pop("+"+gain+" €",verrePos().x,CY-ux()*.4,"#ffd24a",44);burst(verrePos().x,CY-ux()*.15,"#ffd24a",18,.9);vib([20,40,20]);
   G.verre=null;
-  if(G.serv%3===0){G.niv++;G.gros={txt:"NIVEAU "+G.niv,t:1.8};sfx("niveau");}
+  if(gain>=60||o.or)grandMoment(verrePos().x,CY-ux()*.15,"#ffd24a");
+  if(G.serv%3===0){G.niv++;G.gros={txt:"NIVEAU "+G.niv,t:1.8};sfx("niveau");G.fw=1.6;grandMoment(W/2,H*.38,"#ffd24a");}
   ordre();
 }
 function vib(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+function grandMoment(x,y,col){G.slow=Math.max(G.slow||0,.3);G.zoom=1;G.onde={x,y,t:0};
+  for(let i=0;i<40;i++){const a=rnd(0,6.28),v=rnd(150,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:420,t:0,life:rnd(.5,1.1),r:rnd(2.5,6),col:i%2?"#ffd24a":col,add:1});}}
+function fwBurst(){const x=rnd(W*.15,W*.85),y=rnd(H*.12,H*.4),cs=["#ffd24a","#ff5a3a","#7be04a","#4ac8ff","#ff7ad2"],c=cs[Math.floor(Math.random()*cs.length)];
+  for(let i=0;i<26;i++){const a=i/26*6.28,v=rnd(120,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,g:260,t:0,life:rnd(.7,1.2),r:rnd(2.5,5),col:c,add:1});}}
 function burst(x,y,col,n,sz){for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(80,300);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,t:0,life:rnd(.35,.7),r:rnd(3,8)*(sz+.4),col});}}
 function pause(v){if(v){ambiance(false);mode="pause";$("pause").classList.remove("cache");}else{ambiance(true);mode="play";$("pause").classList.add("cache");}}
 function btnIce(){return {x:W*.5,y:CY+ux()*.2,r:Math.max(26,ux()*.075)};}
@@ -307,17 +318,20 @@ function btnIce(){return {x:W*.5,y:CY+ux()*.2,r:Math.max(26,ux()*.075)};}
 /* ---------- Dessin (PixiJS) ---------- */
 const hx=c=>{if(!c)return 0xffffff;if(c[0]==="#")return parseInt(c.slice(1,7),16);const m=c.match(/[\d.]+/g);return m?(+m[0]<<16)|(+m[1]<<8)|+m[2]:0xffffff;};
 const ha=c=>{if(c&&c[0]==="r"){const m=c.match(/[\d.]+/g);return m[3]===undefined?1:+m[3];}return 1;};
-let gBack,gJus,sprC,gFront,sprH,txtA,txtB,jusM;
+let gBack,gJus,sprC,gFront,sprH,txtA,txtB,jusM,world,gAdd,bloomF,shockF;
 const texs={},POOL={a:[],h:[],ta:[]},USED={a:0,h:0,ta:0};
 function initPixi(){
   app=new PIXI.Application();
   return app.init({canvas:cv,width:W,height:H,backgroundAlpha:0,antialias:true,resolution:DPR,autoDensity:true,autoStart:false}).then(()=>{
-    const st=app.stage;
+    const st=new PIXI.Container();app.stage.addChild(st);world=st;
     gBack=new PIXI.Graphics();st.addChild(gBack);
     gJus=new PIXI.Graphics();st.addChild(gJus);jusM=new PIXI.Graphics();gJus.mask=jusM;
     sprC=new PIXI.Container();st.addChild(sprC);
     gFront=new PIXI.Graphics();st.addChild(gFront);
     sprH=new PIXI.Container();st.addChild(sprH);
+    gAdd=new PIXI.Graphics();gAdd.blendMode="add";st.addChild(gAdd);
+    try{bloomF=new PIXI.filters.AdvancedBloomFilter({threshold:.55,bloomScale:.7,brightness:1,blur:4,quality:3});gAdd.filters=[bloomF];
+      shockF=new PIXI.filters.ShockwaveFilter({center:{x:0,y:0},speed:600,amplitude:26,wavelength:150,brightness:1.1,radius:-1});}catch(e){bloomF=shockF=null;}
     txtA=new PIXI.Container();st.addChild(txtA);
     resize();
   });
@@ -352,7 +366,7 @@ function T(str,x,y,size,fill="#fff",stroke="#000",al="center",alpha=1,sc=1,fam=n
 const txt=(t,x,y,s,col,ombre,al)=>T(t,x,y,s,col,ombre,al);
 function debutImage(){
   for(const k in POOL){const P=POOL[k];for(let i=0;i<USED[k]&&i<P.length;i++)P[i].visible=false;USED[k]=0;}
-  for(const x of [gBack,gJus,gFront,jusM])x.clear();
+  for(const x of [gBack,gJus,gFront,jusM,gAdd])x.clear();
 }
 function ring(gr,x,y,r,col,al,w){gr.circle(x,y,r).stroke({width:w,color:hx(col),alpha:al});}
 function glow(x,y,r,col){for(let i=3;i>=1;i--)gBack.circle(x,y,r*(1+i*.18)).fill({color:hx(col),alpha:.1});}
@@ -361,6 +375,8 @@ function dessine(){
   debutImage();
   if(!G||mode==="menu"){app.stage.visible=false;app.render();return;}
   app.stage.visible=true;
+  {const z=1+(G.zoom||0)*.03;world.pivot.set(W/2,H/2);world.scale.set(z);world.position.set(W/2,H/2);
+   if(shockF){if(G.onde){shockF.center={x:G.onde.x,y:G.onde.y};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}}
   const u=ux(),o=G.o;
   const c=cible(),bl=bld(),bw=bl.h*341/664,ch=u*.13,cw=ch*497/286;
   const tn=Math.sin(Math.min(1,Math.max(0,G.press/.25))*Math.PI)*5;
@@ -433,7 +449,9 @@ function dessine(){
    const ht=T(h,W/2,hy+1,17,"#fff",null,"center",1,1,"b");
    const tw2=ht.width+28;gFront.roundRect(W/2-tw2/2,hy-15,tw2,30,15).fill({color:0x1e0a00,alpha:.6});
    if(G.streak>=3){const ss=1+Math.sin(G.t*10)*.05;T("🔥 COMBO ×"+G.streak,W/2,hy+38,26,"#ffb21e","#7a2a00","center",1,ss);}}
-  for(const q of G.parts)gFront.circle(q.x,q.y,q.r).fill({color:hx(q.col),alpha:Math.max(0,1-q.t/q.life)});
+  for(const q of G.parts){const al=Math.max(0,1-q.t/q.life);
+    if(q.add){gAdd.circle(q.x,q.y,q.r*2.2).fill({color:hx(q.col),alpha:al*.25});gAdd.circle(q.x,q.y,q.r).fill({color:hx(q.col),alpha:al});gAdd.circle(q.x,q.y,q.r*.45).fill({color:0xffffff,alpha:al});}
+    else gFront.circle(q.x,q.y,q.r).fill({color:hx(q.col),alpha:al});}
   for(const p of G.pops){const a=1-p.t/1.6;T(p.txt,p.x,p.y-p.t*50,p.s,p.col,"#000","center",Math.max(0,Math.min(1,a*2)));}
   if(G.gros.t>0){const k=G.gros.t/1.8;T(G.gros.txt,W/2,H*.38,Math.min(110,W*.2),"#ffd24a","#8a4a08","center",Math.min(1,k*2.5),1+(1-k)*.25);}
   app.render();
