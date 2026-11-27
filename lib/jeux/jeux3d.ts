@@ -14,6 +14,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "koup-kann", titre: "Koup Kann", accroche: "Coupe la canne au ras du sol pendant la campagne sucrière.", emoji: "🌾", fond: "linear-gradient(135deg,#6a8a2a,#c8a040 55%,#a83a1a)" },
   { id: "koup-kann-v2", titre: "Koup Kann v2", accroche: "Deux modes : récolte tranquille ou grand champ à relever, avec le cachalot qui passe.", emoji: "🌾", fond: "linear-gradient(135deg,#6a8a2a,#c8a040 55%,#a83a1a)" },
   { id: "tap-tap-moustik", titre: "Tap Tap Moustik", accroche: "Chasse les moustiques du jardin et vide les gîtes.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
+  { id: "tap-tap-moustik-v2", titre: "Tap Tap Moustik v2", accroche: "Chasse les moustiques tigres, vide les gîtes et protège les abeilles.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
   { id: "bichik-rush", titre: "Bichik Rush", accroche: "Ramasse les bichiques à la vouve, laisse passer les espèces protégées.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a7a)" },
   { id: "bichik-rush-v2", titre: "Bichik Rush v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a8a)" },
   { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Presse les fruits péi et sers chaque client avant qu'il parte.", emoji: "🍹", fond: "linear-gradient(135deg,#ffb21e,#e8283a 55%,#2a8a4a)" },
