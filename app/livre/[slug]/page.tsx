@@ -64,14 +64,14 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
             )}
 
             <div className="actions-fiche">
-              {deuxFormats && (vEpub && acces.get(vEpub.id) || vPdf && acces.get(vPdf.id)) ? (
+              {deuxFormats ? (
                 <div className="choix-lecture">
-                  {vEpub && acces.get(vEpub.id) && <Link className="btn large" href={`/lire/${vEpub.slug}`}>📖 Lire en EPUB<small>Texte adapté à l'écran</small></Link>}
-                  {vPdf && acces.get(vPdf.id) && <Link className="btn large secondaire" href={`/lire/${vPdf.slug}`}>📄 Lire en classique<small>Mise en page du livre</small></Link>}
+                  <Link className="btn large" href={acces.get(vEpub!.id) || tailleExtrait(vEpub!.manifeste as any) > 0 ? `/lire/${vEpub!.slug}` : (livre.url_boutique || config.abonnementUrl)}>📖 Lire en EPUB{acces.get(vEpub!.id) ? "" : " 🔒"}<small>Texte adapté à l'écran</small></Link>
+                  <Link className="btn large secondaire" href={acces.get(vPdf!.id) || tailleExtrait(vPdf!.manifeste as any) > 0 ? `/lire/${vPdf!.slug}` : (livre.url_boutique || config.abonnementUrl)}>📄 Lire en classique (PDF){acces.get(vPdf!.id) ? "" : " 🔒"}<small>Mise en page du livre</small></Link>
                 </div>
               ) : ok ? (
                 <Link className="btn large" href={`/lire/${livre.slug}`}>
-                  {p && p.pourcentage > 0 && !p.termine ? `Reprendre la lecture` : p?.termine ? "Relire" : "Commencer la lecture"}
+                  {p && p.pourcentage > 0 && !p.termine ? `Reprendre la lecture` : p?.termine ? "Relire" : formatDe(livre) === "pdf" ? "📄 Lire en classique (PDF)" : "📖 Lire en EPUB"}
                 </Link>
               ) : (
                 <>

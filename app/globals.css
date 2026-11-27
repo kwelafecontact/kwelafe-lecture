@@ -921,3 +921,5 @@ body { background: var(--ivoire); }
 .choix-lecture{display:flex;flex-wrap:wrap;gap:10px}
 .choix-lecture .btn{display:flex;flex-direction:column;align-items:center;line-height:1.2}
 .choix-lecture .btn small{font-size:12px;font-weight:600;opacity:.85}
+.choix-lecture{width:100%}
+.choix-lecture .btn{flex:1 1 200px}
