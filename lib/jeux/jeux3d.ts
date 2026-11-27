@@ -11,7 +11,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "tap-tap-moustik", titre: "Tap Tap Moustik", accroche: "Chasse les moustiques du jardin et vide les gîtes.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
   { id: "bichik-rush", titre: "Bichik Rush", accroche: "Ramasse les bichiques à la vouve, laisse passer les espèces protégées.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a7a)" },
   { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Presse les fruits péi et sers chaque client avant qu'il parte.", emoji: "🍹", fond: "linear-gradient(135deg,#ffb21e,#e8283a 55%,#2a8a4a)" },
-  { id: "bazar-krush", titre: "Bazar Krush", accroche: "Aligne les fruits péi, fais éclater les bombes et enchaîne les cascades.", emoji: "🍋", fond: "linear-gradient(135deg,#bff0a8,#ffb21e 55%,#e8283a)" },
+  { id: "cascade-pei", titre: "Cascade Péi", accroche: "Aligne les fruits péi, fais éclater les bombes et enchaîne les cascades.", emoji: "🍋", fond: "linear-gradient(135deg,#bff0a8,#ffb21e 55%,#e8283a)" },
   { id: "bouclier-volcan", titre: "Bouclier volcan", accroche: "Tranche les bombes de lave et protège les randonneurs de l'Enclos.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
   { id: "kass-koko", titre: "Kass Koko", accroche: "Casse les noix de coco au bon moment sur la plage de l'Ouest.", emoji: "🥥", fond: "linear-gradient(135deg,#3ac8e8,#f4e2b0 55%,#2a8a3a)" },
   { id: "route-littoral", titre: "Route du Littoral", accroche: "Libère les voitures coincées entre la falaise et l'océan.", emoji: "🚗", fond: "linear-gradient(135deg,#6a655d,#1f8fc4)" },
