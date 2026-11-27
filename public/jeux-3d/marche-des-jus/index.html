@@ -390,7 +390,7 @@ function dessine(){
   if(!G||mode==="menu"){app.stage.visible=false;app.render();return;}
   app.stage.visible=true;
   {const z=1+(G.zoom||0)*.03;world.pivot.set(W/2,H/2);world.scale.set(z);world.position.set(W/2,H/2);
-   if(shockF){if(G.onde){shockF.center={x:G.onde.x,y:G.onde.y};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}}
+   if(shockF){if(G.onde){shockF.center={x:G.onde.x*DPR,y:G.onde.y*DPR};shockF.time=G.onde.t;world.filters=[shockF];}else world.filters=null;}}
   const u=ux(),o=G.o;
   const c=cible(),bl=bld(),bw=bl.h*341/664,ch=u*.13,cw=ch*497/286;
   const tn=Math.sin(Math.min(1,Math.max(0,G.press/.25))*Math.PI)*5;
