@@ -123,20 +123,22 @@ const NB=7,NR=8;
 
 /* ---------- Données : fruits (planche du Marché des jus, même style) ---------- */
 const FRUITS=[
- {n:"letchi",nom:"Letchi",fiche:[0,315,327],c:"#e8607a"},
- {n:"mangue",nom:"Mangue",fiche:[323,269,329],c:"#ffa51e"},
- {n:"ananas",nom:"Ananas Victoria",fiche:[600,226,352],c:"#ffc83a"},
- {n:"passion",nom:"Fruit de la passion",fiche:[834,354,277],c:"#c88a1a"},
- {n:"banane",nom:"Banane",fiche:[1196,330,312],c:"#ffe36a"},
- {n:"citron",nom:"Citron galet",fiche:[1534,352,248],c:"#8fd04a"}];
-const FXN=["etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
-for(const n of FXN){const im=new Image();im.src="../commun/fx/"+n+".webp"+V;FXT[n]={im};}
+ {n:"letchi",nom:"Letchi",c:"#e8405a"},
+ {n:"mangue",nom:"Mangue",c:"#ffa51e"},
+ {n:"grenadine",nom:"Grenadine",c:"#a64cd8"},
+ {n:"citron",nom:"Citron galet",c:"#8fd04a"},
+ {n:"banane",nom:"Banane",c:"#ffe03a"},
+ {n:"ananas",nom:"Ananas Victoria",c:"#ffb21e"}];
+const hsv=(h,s=.85,v=1)=>{h=((h%360)+360)%360/60;const i=Math.floor(h),f=h-i,p=v*(1-s),q=v*(1-s*f),t=v*(1-s*(1-f)),a=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6];return (Math.round(a[0]*255)<<16)|(Math.round(a[1]*255)<<8)|Math.round(a[2]*255);};
+const hsvS=(h)=>"#"+hsv(h).toString(16).padStart(6,"0");
+const FXN=["e-etincelles","e-onde","e-jus","etoile","jus","flare","petale","goutte","anneau","fumee","feuille","paillettes"],FXT={},FXP={n:[],a:[]},FXU={n:0,a:0};
+for(const n of FXN){const im=new Image();im.src=(n[0]==="e"&&n[1]==="-"?"./":"../commun/fx/")+n+".webp"+V;FXT[n]={im};}
 function fxTex(n){const o=FXT[n];if(!o||!o.im.complete||!o.im.naturalWidth)return null;return o.t||(o.t=PIXI.Texture.from(o.im));}
 function fxSpr(n,x,y,w,rot,al,tint,add){const t=fxTex(n);if(!t)return;const L=add?"a":"n",P=FXP[L],i=FXU[L]++;let s=P[i];
   if(!s){s=new PIXI.Sprite();s.anchor.set(.5);(add?fxA:fxN).addChild(s);P[i]=s;}
   s.texture=t;s.position.set(x,y);s.width=w;s.height=w*t.height/t.width;s.rotation=rot;s.alpha=al;s.tint=tint||0xffffff;s.visible=true;}
 function fxSp(o){(G.sp||(G.sp=[])).push(Object.assign({t:0,rot:rnd(0,6.28),vr:rnd(-4,4),vx:0,vy:0,g:0,grow:0,al:1,tint:0xffffff},o));}
-const IMG={fruits:new Image()};IMG.fruits.src="./fruits.webp"+V;
+const IMG={fruits:FRUITS.map(f=>{const im=new Image();im.src="./fruit-"+f.n+".webp"+V;return im;})};
 
 const FAITS=[
  "L'ananas Victoria de La Réunion a le Label rouge depuis 2006.",
@@ -362,6 +364,7 @@ function nettoie(){
   const mid=[...kill][0];const mc=Math.floor(mid/NR),mr=mid%NR;
   pop((G.cascade>1?"Cascade ×"+G.cascade+"  ":"")+"+"+pts,OX+(mc+.5)*CELL,OY+(mr+.5)*CELL,G.cascade>1?"#ffd24a":"#fff",G.cascade>1?34:28);
   sfx("pop",1,1+Math.min(.6,(G.cascade-1)*.12));vib(10);
+  if(G.cascade>=3){fxSp({k:"e-etincelles",add:1,x:W/2,y:OY+CELL*3.5,w:CELL*3,grow:CELL*8,life:1,vr:.4,al:1});for(let i=0;i<14;i++){const a=rnd(0,6.28),v=rnd(150,420);fxSp({k:"etoile",add:1,x:W/2,y:OY+CELL*3,w:rnd(.3,.7)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,g:380,life:rnd(.7,1.2),tint:hsv(rnd(0,360))});}secoue(4);}
   G.state="clearing";G.timer=.24;
 }
 function goal(t){for(const x of G.goals)if(x.t===t&&x.got<x.n)x.got++;}
@@ -494,11 +497,15 @@ function animCells(dt){
     else if(k.sc<1)k.sc=Math.min(1,k.sc+dt*5);
   }
 }
-function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(60,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:600,t:0,life:rnd(.3,.65),r:rnd(3,7),col});}}
+function burst(c,r,col,n){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;
+  if(!G.sp||G.sp.length<260){fxSp({k:"e-jus",add:1,x,y,w:CELL*.9,grow:CELL*1.6,life:.5,vr:0,rot:rnd(0,6.28),al:.85});for(let i=0;i<3;i++){const a=rnd(0,6.28),v=rnd(120,300);fxSp({k:i%2?"goutte":"paillettes",add:i%2?0:1,x,y,w:rnd(.2,.45)*CELL,vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:700,life:rnd(.5,.9),tint:i%2?hx(col.length===7?col:"#ffffff"):hsv(rnd(0,360))});}}
+  for(let i=0;i<n;i++){const a=rnd(0,6.28),v=rnd(60,260);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,g:600,t:0,life:rnd(.3,.65),r:rnd(3,7),col});}}
 function fxRing(c,r,col,R){const x=OX+(c+.5)*CELL,y=OY+(r+.5)*CELL;G.fx.push({k:"ring",x,y,col,R:R*CELL,t:0,life:.55});if(R>=2.4)grandMoment(x,y,col);}
-function grandMoment(x,y,col){ // ralenti, zoom, onde de choc et gerbe d'étincelles dorées
+function grandMoment(x,y,col){
+  for(let i=0;i<6;i++)G.fx.push({k:"ring",x,y,col:hsvS(i*60),R:(2.6+i*.5)*CELL,t:-i*.07,life:.7}); // ralenti, zoom, onde de choc et gerbe d'étincelles dorées
   G.slow=Math.max(G.slow||0,.32);G.zoom=1;G.onde={x,y,t:0};sfx("impact",.9);sfx("eclat",.6,1.05);
   for(let i=0;i<46;i++){const a=rnd(0,6.28),v=rnd(120,520);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-160,g:520,t:0,life:rnd(.5,1.1),r:rnd(2,6),col:i%3?"#ffe25a":col});}
+  fxSp({k:"e-onde",add:1,x,y,w:CELL*1.5,grow:CELL*7,life:.8,vr:0,rot:0,al:.8});fxSp({k:"e-etincelles",add:1,x,y,w:CELL*2,grow:CELL*6,life:.9,vr:.6,al:.6});
   fxSp({k:"flare",add:1,x,y,w:CELL*.9,grow:CELL*3.2,life:.5,al:.4});
   fxSp({k:"anneau",add:1,x,y,w:CELL*.8,grow:CELL*6,life:.7,vr:0,rot:0});
   fxSp({k:"jus",x,y,w:CELL*1.1,grow:CELL*2.2,life:.7,vr:0,rot:0,tint:hx(col.length===7?col:"#ffa020")});
@@ -566,8 +573,7 @@ function initPixi(){
     txtA=new PIXI.Container();st.addChild(txtA);
     gDim=new PIXI.Graphics();st.addChild(gDim);
     txtB=new PIXI.Container();st.addChild(txtB);
-    const montre=()=>{const base=PIXI.Texture.from(IMG.fruits);FRUITS.forEach((f,i)=>{const m=f.fiche;fruitTex[i]=new PIXI.Texture({source:base.source,frame:new PIXI.Rectangle(m[0],0,m[1],m[2])});});};
-    if(IMG.fruits.complete&&IMG.fruits.naturalWidth)montre();else IMG.fruits.addEventListener("load",montre);
+    IMG.fruits.forEach((im,i)=>{const mk=()=>{fruitTex[i]=PIXI.Texture.from(im);};if(im.complete&&im.naturalWidth)mk();else im.addEventListener("load",mk);});
     resize();
   });
 }
@@ -575,8 +581,8 @@ function spr(pool,cx,cy,h,al,t){
   const tx=fruitTex[t];if(!tx)return;
   const P=POOL[pool],i=USED[pool]++;
   let s=P[i];if(!s){s=new PIXI.Sprite();s.anchor.set(.5);(pool==="cell"?sprC:sprH).addChild(s);P[i]=s;}
-  const m=FRUITS[t].fiche,w=h*m[1]/m[2];
-  s.texture=tx;s.position.set(cx,cy);s.width=w;s.height=h;s.alpha=al;s.visible=true;
+  const k2=h/Math.max(tx.width,tx.height);
+  s.texture=tx;s.position.set(cx,cy);s.width=tx.width*k2;s.height=tx.height*k2;s.alpha=al;s.visible=true;
 }
 function T(layer,str,x,y,size,fill="#fff",stroke="#000",al="center",alpha=1,sc=1,emoji=false){
   const P=POOL[layer],i=USED[layer]++;
@@ -593,7 +599,7 @@ function debutImage(){
   for(const x of [gBoard,gUnder,gOver,gFx,gHud,gDim,cellMask])x.clear();
 }
 function dessineCell(k,c,r){
-  const x=OX+(k.vx+.5)*CELL,y=OY+(k.vy+.5)*CELL,h=CELL*.86*k.sc,al=k.al;
+  const x=OX+(k.vx+.5)*CELL,y=OY+(k.vy+.5)*CELL,h=CELL*.98*k.sc,al=k.al;
   if(h<=1)return;
   if(k.sp===3){
     const R0=h*.5;
@@ -605,7 +611,9 @@ function dessineCell(k,c,r){
     for(let i=0;i<4;i++){const a=G.t*2+i*1.57;gOver.circle(x+Math.cos(a)*R0*.6,y+Math.sin(a)*R0*.6,3).fill({color:0xffffff,alpha:al});}
     return;
   }
-  if(k.t>=0)gUnder.circle(x,y,CELL*.4*k.sc).fill({color:hx(FRUITS[k.t].c),alpha:.27*al});
+  if(k.t>=0){
+    {const gl=.5+.5*Math.sin(G.t*3+c+r),cc=hx(FRUITS[k.t].c);gAdd.circle(x,y,CELL*.5*k.sc).fill({color:cc,alpha:(.07+.04*gl)*al});gAdd.circle(x,y,CELL*.38*k.sc).fill({color:cc,alpha:(.1+.05*gl)*al});}
+    const ph=(G.t*.9+((c*13+r*7)%10)*.7)%7;if(ph<.55&&al>.9)fxSpr("etoile",x-CELL*.22,y-CELL*.26,CELL*.34*Math.sin(ph/.55*Math.PI),G.t*2,.95,0xffffff,true);}
   spr("cell",x,y,h,al,k.t);
   if(k.sp){
     const pulse=.5+.5*Math.sin(G.t*8),Rr=CELL*.44*k.sc;
@@ -636,6 +644,8 @@ function dessine(){
   gAdd.clear();
   for(const L of ["n","a"]){const P=FXP[L];for(let i=0;i<FXU[L]&&i<P.length;i++)P[i].visible=false;FXU[L]=0;}
   if(G.sp)for(const q of G.sp){const k=q.t/q.life;fxSpr(q.k,q.x,q.y,q.w,q.rot,Math.min(1,(1-k)*2)*q.al,q.tint,q.add);}
+  if(G.cascade>=2){const a=Math.min(.9,.3+G.cascade*.15);for(let i=0;i<3;i++)gAdd.roundRect(OX-10-i*3,OY-10-i*3,bw+20+i*6,bh+20+i*6,24).stroke({width:6-i*1.5,color:hsv(G.t*140+i*50),alpha:a/(i+1)});}
+  for(let i=0;i<5;i++){const a=G.t*.25+i*1.26;gAdd.poly([W/2,-20,W/2+Math.cos(a)*H*1.4-60,H,W/2+Math.cos(a)*H*1.4+60,H]).fill({color:hsv(i*70+G.t*30,.4,1),alpha:.035});}
   gBoard.roundRect(OX-8,OY-8,bw+16,bh+16,22).fill({color:0x3c220a,alpha:.55}).stroke({width:4,color:0xffe28c,alpha:.85});
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++)if((c+r)%2===0)gBoard.rect(OX+c*CELL,OY+r*CELL,CELL,CELL).fill({color:0xfff0c8,alpha:.1});
   if(G.sel)gBoard.rect(OX+G.sel[0]*CELL+3,OY+G.sel[1]*CELL+3,CELL-6,CELL-6).stroke({width:4,color:0xffffff});
@@ -644,6 +654,7 @@ function dessine(){
   for(let c=0;c<NB;c++)for(let r=0;r<NR;r++){const k=G.grid[c][r];if(k)dessineCell(k,c,r);}
   for(const q of G.parts){const al=Math.max(0,1-q.t/q.life),c=hx(q.col.length===7?q.col:"#ffffff");gAdd.circle(q.x,q.y,q.r*2.2).fill({color:c,alpha:al*.25});gAdd.circle(q.x,q.y,q.r).fill({color:c,alpha:al});gAdd.circle(q.x,q.y,q.r*.45).fill({color:0xffffff,alpha:al});}
   for(const f of G.fx){const p=f.t/f.life,al=Math.max(0,1-p),col=f.col.length===7?hx(f.col):0xffffff;
+    if(f.t<0)continue;
     if(f.k==="ring"){const R=f.R*p+8;gFx.circle(f.x,f.y,R).stroke({width:26*(1-p)+4,color:col,alpha:al*.3});gFx.circle(f.x,f.y,R).stroke({width:10*(1-p)+2,color:col,alpha:al});}
     else{const th=CELL*.5*(1-p)+4;
       if(f.horiz){gFx.rect(OX-4,f.y-th,CELL*NB+8,th*2).fill({color:col,alpha:al*.3});gFx.rect(OX-4,f.y-th/2,CELL*NB+8,th).fill({color:col,alpha:al});}
@@ -694,7 +705,7 @@ function dessineRythme(){
 /* ---------- Fin, panneaux ---------- */
 function jourStr(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
 function defiDuJour(){const d=jourStr();let h=0;for(const c of d)h=(h*31+c.charCodeAt(0))%997;return {t:h%6,n:25+(h%4)*5};}
-const DE=["de letchis","de mangues","d'ananas Victoria","de fruits de la passion","de bananes","de citrons galets"];
+const DE=["de letchis","de mangues","de grenadines","de citrons galets","de bananes","d'ananas Victoria"];
 function majMenu(){
   const D=defiDuJour();
   $("defiMenu").textContent="⭐ Défi du jour : ramasse "+D.n+" fruits "+DE[D.t]+(S.defi.d===jourStr()&&S.defi.ok?" (réussi ✔)":" (+30 pièces)");
