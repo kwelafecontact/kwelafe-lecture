@@ -78,6 +78,7 @@ export default async function Accueil() {
           <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>📚</span>Ma bibliothèque</Link>
           <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📖</span>Mes lectures</Link>
           <Link href="/enfants" style={{ ["--c" as any]: "#f2b705" }}><span aria-hidden>🧸</span>Coin des enfants</Link>
+          <Link href="/apprendre" style={{ ["--c" as any]: "#58cc02" }}><span aria-hidden>🐦</span>Apprendre le créole</Link>
           <Link href="/jeux" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>🎮</span>Jeux</Link>
         </nav>
 

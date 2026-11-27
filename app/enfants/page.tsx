@@ -39,7 +39,7 @@ export default async function CoinEnfants() {
           <a href="#lire" style={{ ["--c" as any]: "#f2b705" }}><span>📚</span>Lire</a>
           <a href="#jouer" style={{ ["--c" as any]: "#2e9d4f" }}><span>🎲</span>Jouer</a>
           <Link href="/jeux/famille" style={{ ["--c" as any]: "#d6332a" }}><span>👨‍👩‍👧</span>En famille</Link>
-          <Link href="/age/tout-petits" style={{ ["--c" as any]: "#1f6fb2" }}><span>🍼</span>Tout-petits</Link>
+          <Link href="/apprendre" style={{ ["--c" as any]: "#1f6fb2" }}><span>🐦</span>Créole</Link>
         </nav>
 
         <div id="lire" />

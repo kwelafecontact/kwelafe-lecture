@@ -529,7 +529,7 @@ body { background: var(--ivoire); }
 .une .btn.clair { background: #fff; color: #0f1626; }
 .une .btn.transp { background: rgba(255,255,255,.18); color: #fff; }
 /* Accès rapides */
-.raccourcis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 24px; }
+.raccourcis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 0 0 24px; }
 .raccourcis a { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; border-radius: 18px; background: var(--blanc); box-shadow: var(--ombre); text-decoration: none; color: var(--texte); font-weight: 800; font-size: 13px; border-bottom: 4px solid var(--c); }
 .raccourcis a span { font-size: 24px; }
 /* Top 10 */
@@ -923,3 +923,77 @@ body { background: var(--ivoire); }
 .choix-lecture .btn small{font-size:12px;font-weight:600;opacity:.85}
 .choix-lecture{width:100%}
 .choix-lecture .btn{flex:1 1 200px}
+
+/* ===== Apprendre le créole (façon Duolingo) ===== */
+.page-apprendre{max-width:640px}
+.app-entete{margin-bottom:10px}
+.app-stats{display:flex;justify-content:flex-end;gap:10px;margin-bottom:12px}
+.app-stats span{background:#fff;border-radius:999px;padding:6px 12px;font-weight:900;box-shadow:var(--ombre);font-size:14px}
+.app-hero{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#2e9d4f,#1f6fb2);color:#fff;border-radius:26px;padding:20px}
+.app-hero .eyebrow{color:#ffe08a}
+.app-hero h1{font-family:var(--titre);color:#fff;font-size:28px;margin:6px 0}
+.app-hero p{margin:0;opacity:.92}
+.app-mascotte{flex:0 0 86px;height:86px;border-radius:50%;background:#fff3;display:grid;place-items:center;overflow:hidden;font-size:44px}
+.app-mascotte::before{content:"🐦";position:absolute}
+.app-mascotte{position:relative}
+.app-mascotte img{width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
+.app-mascotte.grand{width:150px;height:150px;flex:none;margin:0 auto 10px;background:#fdf2d6;font-size:70px}
+.app-chemin{display:flex;flex-direction:column;align-items:center;gap:22px;padding:28px 0 10px}
+.app-noeud{display:flex;flex-direction:column;align-items:center;position:relative;transition:transform .2s}
+.app-noeud.d1{transform:translateX(70px)}.app-noeud.g1{transform:translateX(-70px)}
+.app-rond{width:78px;height:78px;border-radius:50%;border:none;cursor:pointer;font-size:34px;background:var(--c);color:#fff;box-shadow:0 7px 0 color-mix(in srgb,var(--c) 70%,#000);transition:transform .1s}
+.app-rond:active{transform:translateY(5px);box-shadow:0 2px 0 color-mix(in srgb,var(--c) 70%,#000)}
+.app-rond.ferme{background:#e5e0d8;box-shadow:0 7px 0 #c9c2b6;cursor:not-allowed}
+.app-rond.fait{background:#f2b705;box-shadow:0 7px 0 #c48f00}
+.app-rond.actuel{animation:app-pulse 1.6s infinite}
+@keyframes app-pulse{0%,100%{outline:6px solid color-mix(in srgb,var(--c) 30%,transparent)}50%{outline:12px solid color-mix(in srgb,var(--c) 12%,transparent)}}
+.app-bulle{position:absolute;top:-34px;background:#fff;color:var(--c,#2e9d4f);font-weight:900;padding:5px 12px;border-radius:12px;box-shadow:var(--ombre);font-size:13px;white-space:nowrap}
+.app-noeud-titre{margin-top:12px;text-align:center;font-size:13px;max-width:150px}
+.app-noeud-titre small{display:block;color:#e8a200;font-size:15px}
+.app-alerte{text-align:center;background:#fde6e3;color:#a52a14;border-radius:14px;padding:12px;font-weight:700}
+.app-source{text-align:center;color:var(--doux);font-size:13px}
+/* Leçon */
+.app-lecon{display:flex;flex-direction:column;min-height:calc(100vh - 140px);padding-bottom:120px}
+.app-barre-haut{display:flex;align-items:center;gap:12px;margin:6px 0 24px}
+.app-quitter{border:none;background:none;font-size:22px;color:#999;cursor:pointer}
+.app-progression{flex:1;height:16px;background:#e9e4dc;border-radius:999px;overflow:hidden}
+.app-progression i{display:block;height:100%;background:#58cc02;border-radius:999px;transition:width .4s}
+.app-coeurs{font-weight:900;color:#d6332a}
+.app-consigne{font-family:var(--titre);font-size:24px;color:#24402f;margin:0 0 18px}
+.app-carte-mot{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.app-carte-mot b{background:#fff;border:2px solid #e5e0d8;border-radius:16px;padding:14px 18px;font-size:22px;position:relative}
+.app-mini-mascotte{font-size:46px}
+.app-choix{display:grid;gap:10px}
+.app-tuile{background:#fff;border:2px solid #e5e0d8;border-bottom-width:5px;border-radius:16px;padding:14px;font-size:17px;font-weight:700;cursor:pointer;text-align:center;color:var(--texte);transition:transform .08s}
+.app-tuile:active{transform:translateY(2px)}
+.app-tuile.sel{border-color:#1cb0f6;background:#ddf4ff;color:#1480b8}
+.app-tuile.ok{border-color:#58cc02;background:#d7ffb8;color:#3c8b00}
+.app-tuile.ko{border-color:#ff4b4b;background:#ffdfe0;color:#c62828;animation:app-secoue .3s}
+@keyframes app-secoue{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.app-paires{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.app-paires>div{display:grid;gap:10px;align-content:start}
+.app-pied{position:fixed;left:0;right:0;bottom:0;padding:16px 20px calc(16px + env(safe-area-inset-bottom));background:#fff;border-top:2px solid #eee;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:60}
+.app-pied.bien{background:#d7ffb8;color:#3c8b00}.app-pied.mal{background:#ffdfe0;color:#c62828}
+.app-retour{font-weight:900;font-size:18px}.app-retour small{display:block;font-weight:600;font-size:14px;opacity:.85}
+.app-btn{margin-left:auto;background:#58cc02;color:#fff;border:none;border-radius:16px;padding:14px 28px;font-weight:900;font-size:16px;box-shadow:0 5px 0 #46a302;cursor:pointer;min-width:160px}
+.app-btn:disabled{background:#e5e0d8;box-shadow:0 5px 0 #cfc8bc;color:#aaa;cursor:not-allowed}
+.app-pied.mal .app-btn{background:#ff4b4b;box-shadow:0 5px 0 #d33131}
+.app-fin{text-align:center;padding:30px 0}
+.app-fin h1{font-family:var(--titre);color:#24402f}
+.app-etoiles{font-size:44px;color:#f2b705;letter-spacing:6px}.app-etoiles span{color:#e5e0d8}
+.app-gains{display:flex;justify-content:center;gap:14px;margin:18px 0 26px}
+.app-gains div{background:#fff;border-radius:16px;padding:12px 20px;box-shadow:var(--ombre)}
+.app-gains b{display:block;font-size:24px}.app-gains small{color:var(--doux)}
+.app-fin .app-btn{margin:0 auto}
+/* Visuels ElevenLabs */
+.hero-accueil{background:linear-gradient(90deg,rgba(20,32,60,.96) 0%,rgba(27,42,74,.86) 42%,rgba(27,42,74,.25) 75%,rgba(27,42,74,.05) 100%),url(/visuels/accueil-reunion.webp) center right/cover no-repeat}
+@media(max-width:700px){.hero-accueil{background:linear-gradient(180deg,rgba(20,32,60,.55) 0%,rgba(20,32,60,.92) 55%),url(/visuels/accueil-reunion.webp) center/cover no-repeat}}
+.hero-accueil::before{display:none}
+.hero-enfants{background:linear-gradient(90deg,rgba(240,138,36,.95) 0%,rgba(242,183,5,.75) 45%,rgba(242,183,5,0) 80%),url(/visuels/coin-enfants.webp) center right/cover no-repeat;min-height:240px}
+@media(max-width:700px){.hero-enfants{background:linear-gradient(180deg,rgba(240,138,36,.35),rgba(240,138,36,.95) 60%),url(/visuels/coin-enfants.webp) center top/cover no-repeat;padding-top:140px}}
+.hero-enfants h1,.hero-enfants p{text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.enf-bulles{display:none}
+.encart-enfants{background:linear-gradient(90deg,rgba(240,138,36,.96) 0%,rgba(242,183,5,.8) 50%,rgba(242,183,5,.1) 85%),url(/visuels/coin-enfants.webp) center right/cover no-repeat;min-height:150px}
+.ee-emoji{visibility:hidden}
+.app-mascotte{background:#fdf8e6}
+.app-mascotte img{object-fit:contain}
