@@ -1,5 +1,5 @@
 /*!
- * KwFX — Directeur d'effets Kwélafé  v2.2
+ * KwFX — Directeur d'effets Kwélafé  v2.3
  * Kwélafé Production · kwelafeproduction.com
  *
  * Un « cerveau » d'effets pour les jeux Kwélafé (site Kwélafé Lecture et EPUB Apple Books).
@@ -17,6 +17,8 @@
  * Vrais bruitages (pack ElevenLabs) : ajouter AVANT ce fichier
  *   <script src="kwelafe-fx-sons.js"></script>      (sons intégrés, marche partout, idéal EPUB)
  *   ou passer  KwFX.init({ sonsPack: 'kwfx-sons/' })  (dossier de fichiers .mp3, idéal site web)
+ *
+ * Éclair (v2.3) : fx.joue('eclair', { x, y, x2, y2, intensite })  zigzag ramifié + flash + tonnerre
  *
  * Conseils pour un nouveau jeu :
  *   KwFX.conseiller({ type: 'quiz', theme: 'volcan', public: 'enfant', mode: 'trankil' })
@@ -683,8 +685,8 @@
    *   1. option sonsPack : { bonne: 'url ou data:...', ... }  ou  un dossier 'kwfx-sons/'
    *   2. window.KwFX_SONS (fichier kwelafe-fx-sons.js, sons intégrés : idéal pour les EPUB)
    * Si un son manque ou ne charge pas, le son synthétisé prend le relais. */
-  var NOMS_SONS = ['bonne', 'combo', 'erreur', 'coupe', 'pepite', 'niveau', 'victoire', 'defaite', 'clic', 'presque', 'debut', 'eclat', 'bulles', 'volcan', 'impact', 'oiseau', 'vent'];
-  var VOLUME_SONS = { bonne: 0.8, combo: 0.85, erreur: 0.55, coupe: 0.8, pepite: 0.9, niveau: 0.85, victoire: 0.9, defaite: 0.6, clic: 0.35, presque: 0.6, debut: 0.8, eclat: 0.55, bulles: 0.45, volcan: 0.6, impact: 0.7, oiseau: 0.45, vent: 0.45 };
+  var NOMS_SONS = ['bonne', 'combo', 'erreur', 'coupe', 'pepite', 'niveau', 'victoire', 'defaite', 'clic', 'presque', 'debut', 'eclat', 'bulles', 'volcan', 'impact', 'oiseau', 'vent', 'tonnerre'];
+  var VOLUME_SONS = { bonne: 0.8, combo: 0.85, erreur: 0.55, coupe: 0.8, pepite: 0.9, niveau: 0.85, victoire: 0.9, defaite: 0.6, clic: 0.35, presque: 0.6, debut: 0.8, eclat: 0.55, bulles: 0.45, volcan: 0.6, impact: 0.7, oiseau: 0.45, vent: 0.45, tonnerre: 0.75 };
   Sons.prototype.charger = function (pack) {
     var self = this; this.tampons = this.tampons || {};
     var src = {};
@@ -1088,6 +1090,7 @@
     else if (nom === 'aura') this.aura(p, k);
     else if (nom === 'plan') this.planDramatique(p, d.duree);
     else if (nom === 'aberration') this.aberration(k);
+    else if (nom === 'eclair') this.eclair(d);
     else if (nom === 'transition') return this.transition(d.type, d.onMilieu);
     return this;
   };
@@ -1194,6 +1197,40 @@
         .onfinish = function () { c.style.transformOrigin = o; };
     }
     this.ralenti(duree * 0.7);
+  };
+  /* Éclair (v2.3) : zigzag lumineux ramifié qui crépite, flash bleuté et tonnerre.
+   * d.x, d.y : départ (par défaut en haut de l'écran) ; d.x2, d.y2 : point d'arrivée ; d.intensite 0 à 1 ; d.couleur ; d.branches */
+  Directeur.prototype.eclair = function (d) {
+    d = d || {}; var t = this.taille(), k = d.intensite == null ? 0.8 : borne(d.intensite, 0, 1), NS = 'http://www.w3.org/2000/svg';
+    var x1 = d.x != null ? d.x : t.l * hasard(0.2, 0.8), y1 = d.y != null ? d.y : -10;
+    var x2 = d.x2 != null ? d.x2 : x1 + hasard(-0.18, 0.18) * t.l, y2 = d.y2 != null ? d.y2 : t.h * hasard(0.3, 0.55);
+    function zig(ax, ay, bx, by, dep, prof, pts) {   // déplacement du point milieu : un tracé naturel, jamais deux fois le même
+      if (prof <= 0) { pts.push([bx, by]); return pts; }
+      var mx = (ax + bx) / 2 + hasard(-dep, dep), my = (ay + by) / 2 + hasard(-dep, dep) * 0.35;
+      zig(ax, ay, mx, my, dep / 2, prof - 1, pts); zig(mx, my, bx, by, dep / 2, prof - 1, pts); return pts;
+    }
+    var long = Math.hypot(x2 - x1, y2 - y1), tronc = zig(x1, y1, x2, y2, long * 0.22, 6, [[x1, y1]]);
+    var traces = [tronc], nb = d.branches == null ? 2 + Math.floor(Math.random() * 3) : d.branches;
+    for (var b = 0; b < nb; b++) {
+      var i0 = Math.floor(hasard(0.2, 0.75) * tronc.length), a = tronc[i0], ang = Math.atan2(y2 - y1, x2 - x1) + hasard(-0.9, 0.9), lb = long * hasard(0.15, 0.4);
+      traces.push(zig(a[0], a[1], a[0] + Math.cos(ang) * lb, a[1] + Math.sin(ang) * lb, lb * 0.25, 4, [[a[0], a[1]]]));
+    }
+    var svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + t.l + ' ' + t.h); svg.setAttribute('preserveAspectRatio', 'none');
+    svg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible;mix-blend-mode:screen;filter:drop-shadow(0 0 6px #bcd8ff) drop-shadow(0 0 16px #6aa0ff)';
+    var coul = d.couleur || '#f2f8ff';
+    traces.forEach(function (pts, n) {
+      var dd = 'M' + pts.map(function (q) { return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join(' L');
+      [[n ? 7 : 14, 'rgba(140,185,255,.35)'], [n ? 1.6 : 2.6 + 2.4 * k, coul]].forEach(function (c) {
+        var pa = document.createElementNS(NS, 'path'); pa.setAttribute('d', dd); pa.setAttribute('fill', 'none'); pa.setAttribute('stroke', c[1]);
+        pa.setAttribute('stroke-width', c[0]); pa.setAttribute('stroke-linejoin', 'round'); pa.setAttribute('stroke-linecap', 'round'); svg.appendChild(pa);
+      });
+    });
+    this.calque.appendChild(svg);
+    var an = svg.animate([{ opacity: 1 }, { opacity: 0.15, offset: 0.18 }, { opacity: 1, offset: 0.32 }, { opacity: 0.5, offset: 0.55 }, { opacity: 0.9, offset: 0.65 }, { opacity: 0 }], { duration: 380 + 240 * k, easing: 'linear' });
+    an.onfinish = function () { svg.remove(); };
+    this.flash(d.flash || '#d8e8ff', (this.opt.support === 'epub' ? 0.18 : 0.28) + 0.3 * k);
+    var self = this; setTimeout(function () { self.son('tonnerre'); }, d.retardSon == null ? 60 : d.retardSon);
+    return { x: x2, y: y2 };
   };
   /* Aberration chromatique légère (web uniquement) */
   Directeur.prototype.aberration = function (k) {

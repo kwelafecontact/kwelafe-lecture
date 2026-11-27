@@ -219,6 +219,7 @@ const FAITS = [
   "Dans ce jeu, les bombes de lave sont imaginaires : en vrai, on ne s'approche jamais d'une éruption hors des zones autorisées.",
   "À La Réunion, les secours en montagne sont menés par les gendarmes du PGHM, souvent avec l'hélicoptère de la Section aérienne de gendarmerie.",
   "Quand la préfecture donne l'alerte au volcan, les gendarmes du PGHM ont environ 30 minutes pour évacuer les personnes autour du Pas de Bellecombe.",
+  "Sur certains volcans du monde, des éclairs jaillissent dans le panache de cendres pendant les éruptions explosives : on les appelle des éclairs volcaniques.",
 ];
 const CLE = 'bv2_save';
 let save = { recordSauves: 0, recordSauvesZen: 0, oliv: 0, amelio: { bouclier: 0, lame: 0, jumelles: 0, sismo: 0 }, faits: [], defi: null, record: 0, recordZen: 0 };
@@ -285,6 +286,7 @@ Object.assign(lueurLave.shadow.camera, { left: -14, right: 14, top: 14, bottom: 
 const capteur = new THREE.Mesh(new THREE.PlaneGeometry(60, 14), new THREE.ShadowMaterial({ opacity: 0.5, color: 0x200800 })); capteur.rotation.x = -Math.PI / 2; capteur.receiveShadow = true; scene.add(capteur);
 const lumLave = [0, 1, 2].map(() => { const l = new THREE.PointLight(0xff6a1a, 0, 7, 1.6); scene.add(l); return l; });
 const contre = new THREE.DirectionalLight(0xff5a20, 1.4); contre.position.set(-4, 3, -6); scene.add(contre);
+const lumEclair = new THREE.DirectionalLight(0xcfe0ff, 0); lumEclair.position.set(0, 10, 6); scene.add(lumEclair); let eclairLum = 0;
 scene.add(new THREE.HemisphereLight(0xffc8a0, 0x201010, 0.7));
 let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3;
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
@@ -497,7 +499,7 @@ try { sonCoupe = localStorage.getItem('bv2_son') === 'non'; } catch (e) {}
 try { const sv0 = JSON.parse(localStorage.getItem('bv2_s') || 'null'); if (sv0) S = Object.assign(S, sv0); } catch (e) {}
 const sauveS = () => { try { localStorage.setItem('bv2_s', JSON.stringify(S)); } catch (e) {} };
 const SFX = {}; let sfxDemandes = false;
-const NOMS_SFX = ['musique-calme', 'musique-intense', 'tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte', 'appel', 'combo', 'bonus', 'grand', 'annonce', 'helico'];
+const NOMS_SFX = ['musique-calme', 'musique-intense', 'musique-stress', 'tir', 'olivine', 'bouclier', 'rappel', 'niveau', 'alerte', 'appel', 'combo', 'bonus', 'grand', 'annonce', 'helico'];
 const NOMS_ROCHE = ['petite', 'moyenne', 'grosse'], sonsRoche = {};
 let musCur = null, musVoulue = 'musique-calme', musNom = null;
 function musique(n) {
@@ -507,7 +509,7 @@ function musique(n) {
   const sr = actx.createBufferSource(); sr.buffer = SFX[n]; sr.loop = true; const g = actx.createGain(); g.gain.value = 0; sr.connect(g).connect(musG); sr.start();
   g.gain.setTargetAtTime(1, actx.currentTime, 0.6); musCur = { s: sr, g }; musNom = n;
 }
-function vitesseMusique() { if (musCur && musNom === 'musique-intense') musCur.s.playbackRate.setTargetAtTime(1 + Math.min(0.25, (niveau - 1) * 0.025), actx.currentTime, 0.5); }
+function vitesseMusique() { if (musCur && musNom === 'musique-stress') musCur.s.playbackRate.setTargetAtTime(1 + Math.min(0.12, (niveau - 1) * 0.015), actx.currentTime, 0.5); }
 const charger = (url) => fetch(url).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b));
 function chargerSfx() {
   if (sfxDemandes || !actx) return; sfxDemandes = true;
@@ -572,7 +574,7 @@ const BLEU = ['#9EE7FF', '#FFFFFF', '#5AB4FF', '#2A8AFF'], VERT = ['#B8FF9A', '#
 const fx = window.KwFX ? KwFX.init({
   theme: 'volcan', public: 'enfant', manga: 1, mode: 'trankil', support: 'web', jeu: 'bouclier-volcan-v2',
   complement: true, secousses: false,   // le jeu a déjà sa propre secousse de caméra
-  sons: true, sonsPack: '../commun/kwfx-sons/', sonsEvenements: ['pepite', 'record', 'victoire', 'defaite', 'debut', 'clic', 'presque', 'arrivee'],
+  sons: true, sonsPack: '../commun/kwfx-sons/', sonsEvenements: ['pepite', 'record', 'victoire', 'defaite', 'debut', 'clic', 'presque', 'arrivee', 'tonnerre'],
   volume: sonCoupe ? 0 : 0.85,
   messages: true, messagesTypes: ['serie', 'record', 'victoire', 'defaite', 'encourage', 'pepite', 'debut'], echelleMessages: 0.55, hautMessages: '34%',
   cibleScore: $('score'), zoneShake: $('gl'), dprMax: PETIT ? 1.5 : 2,
@@ -583,6 +585,17 @@ const fxJoue = (nom, v, o = {}) => { if (!fx) return; const e = v ? ecran(v) : {
 const fxEvt = (type, v, o = {}) => { if (!fx) return {}; const e = v ? ecran(v) : {}; return fx.evenement(type, Object.assign({ x: e.x, y: e.y }, o)) || {}; };
 const fxSon = () => { if (fx) fx.regler({ volume: sonCoupe ? 0 : 0.85 * Math.max(0.2, S.fx) }); };
 fxSon();
+// ---------------------------------------------------------------- éclairs volcaniques (effet KwFX « eclair »)
+let prochainEclair = 4;
+function eclair(fort = false, versSol = false) {
+  if (!fx) return;
+  const c = ecran(new THREE.Vector3(cratere.x, cratere.y, -25)), sx = Math.max(W * 0.12, Math.min(W * 0.88, c.x + rnd(-0.35, 0.35) * W));
+  const cible = versSol ? { x: sx + rnd(-0.15, 0.15) * W, y: ecran(new THREE.Vector3(0, sol, 0)).y - rnd(20, 90) } : { x: sx + rnd(-0.12, 0.12) * W, y: c.y + rnd(-0.04, 0.16) * H };
+  fx.joue('eclair', { x: sx + rnd(-0.06, 0.06) * W, y: -10, x2: cible.x, y2: cible.y, intensite: fort ? 1 : rnd(0.55, 0.85), branches: fort ? 4 : undefined });
+  eclairLum = fort ? 1 : 0.7; bloom.strength = Math.max(bloom.strength, 1.15);
+  if (etat === 'jeu' && Math.random() < 0.6) setTimeout(() => { const m = marcheurs[Math.floor(Math.random() * marcheurs.length)]; m && crier(m, true); }, 350);
+}
+function orage(n, fort) { for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && eclair(fort && i === 0, Math.random() < 0.4), i * rnd(260, 520)); }
 
 // ---------------------------------------------------------------- partie
 const DUREE_ZEN = 90, RECHARGE_BOUCLIER = 12; let DUREE_BOUCLIER = 5;
@@ -807,7 +820,7 @@ function montrerFait() {
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 3.6; (() => { let n = 0; const t = setInterval(() => { if (son.annonce() || ++n > 8 || etat !== 'jeu') clearInterval(t); }, 250); })(); coupees = 0; niveau = 1; etoilesC = 0; $('faitBulle').classList.remove('on'); ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
   phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; sauves = 0; majSauves(); helico.etat = 'loin'; helico.obj.visible = false; son.helico(false); majJauge(0, '🚁 En approche', false); $('hJauge').classList.add('on'); viderTouristes(); ajouterTouristes(nbTouristes(), false); majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); 
-  record = calme() ? 0 : save.record; ambiancer(); musique(calme() ? 'musique-calme' : 'musique-intense'); vitesseMusique();
+  prochainEclair = 2.5; record = calme() ? 0 : save.record; ambiancer(); musique('musique-stress'); vitesseMusique();
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
   if (fx) { fx.regler({ mode: calme() ? 'trankil' : 'probleme' }); fx.evenement('debut'); } recordFete = false; recordDepart = record; arret = 0;
@@ -842,11 +855,11 @@ function finPartie() {
 // fin de niveau : fontaine de lave (avec une bombe en fuseau), puis accalmie et sismographe
 function finDeNiveau() {
   if (!calme() && niveau % 5 === 0) {   // éruption majeure : la bombe-mère, lente et énorme, à briser en plusieurs coupes
-    phase = 'speciales'; phaseT = 0; bandeau('ÉRUPTION MAJEURE ! Brise la bombe-mère', 3); secousse = 0.6; son.grand(); fxJoue('plan', new THREE.Vector3(cratere.jx, cratere.jy - 1, 0), { duree: 1300 }); fxJoue('aberration', null, { intensite: 0.5 }); fxJoue('eruption', new THREE.Vector3(cratere.jx, cratere.jy - 1.2, 0), { intensite: 1, couleurs: LAVE }); lancerBombe(false, true, true);
+    phase = 'speciales'; phaseT = 0; bandeau('ÉRUPTION MAJEURE ! Brise la bombe-mère', 3); secousse = 0.6; son.grand(); orage(3, true); fxJoue('plan', new THREE.Vector3(cratere.jx, cratere.jy - 1, 0), { duree: 1300 }); fxJoue('aberration', null, { intensite: 0.5 }); fxJoue('eruption', new THREE.Vector3(cratere.jx, cratere.jy - 1.2, 0), { intensite: 1, couleurs: LAVE }); lancerBombe(false, true, true);
     for (let i = 0; i < 4; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 1800 + i * 1100);
     setTimeout(() => { if (etat !== 'jeu') return; phase = 'accalmie'; phaseT = 0; lancerSismo(); }, 11500); return;
   }
-  phase = 'speciales'; phaseT = 0; bandeau('Fontaine de lave !', 2.2); secousse = 0.4; fxJoue('eruption', new THREE.Vector3(cratere.jx, cratere.jy - 1.2, 0), { intensite: 0.8, couleurs: LAVE }); fxJoue('halo', null, { intensite: 0.5 });
+  phase = 'speciales'; phaseT = 0; bandeau('Fontaine de lave !', 2.2); secousse = 0.4; orage(1, false); fxJoue('eruption', new THREE.Vector3(cratere.jx, cratere.jy - 1.2, 0), { intensite: 0.8, couleurs: LAVE }); fxJoue('halo', null, { intensite: 0.5 });
   const n = 5 + Math.min(6, niveau);
   for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lancerBombe(), 150 + i * 200);
   setTimeout(() => etat === 'jeu' && lancerBombe(true), 900);
@@ -996,6 +1009,8 @@ function boucle() {
   }
   dessinerSismo(dt);
   if (!fige) majHelico(dt);
+  if (joue) { prochainEclair -= dt; if (prochainEclair <= 0) { eclair(false, !calme() && Math.random() < 0.3); if (!calme() && niveau >= 3 && Math.random() < 0.3) setTimeout(() => etat === 'jeu' && eclair(), 300); prochainEclair = calme() ? rnd(6, 11) : Math.max(2.5, rnd(4, 8) - niveau * 0.25); } }
+  eclairLum = Math.max(0, eclairLum - dt * 3.2); lumEclair.intensity = eclairLum * (0.6 + Math.random() * 0.4) * 7; if (eclairLum <= 0 && bloom.strength > 0.8) bloom.strength += ((calme() ? 0.6 : 0.75) - bloom.strength) * Math.min(1, dt * 4);
   for (let i = olivines.length - 1; i >= 0; i--) { const o = olivines[i]; o.t += dt; o.obj.rotation.y += dt * 2; o.obj.position.y = sol + 0.3 + Math.sin(o.t * 4) * 0.06; o.obj.material.emissiveIntensity = 1 + Math.sin(o.t * 8) * 0.4; if (o.prise || o.t > 6) { scene.remove(o.obj); olivines.splice(i, 1); } else if (o.t > 4.5) o.obj.visible = Math.floor(o.t * 10) % 2 === 0; }
   if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.4; lancerBombe(); } }
   if (joue) { if (bouclier > 0) { bouclier -= dt; if (bouclier <= 0) $('bandeau').classList.remove('on'); } else charge = Math.min(RECHARGE_BOUCLIER, charge + dt); if (ralenti > 0) { ralenti -= dt; if (ralenti <= 0 && bouclier <= 0) $('bandeau').classList.remove('on'); } majBonus(); }
@@ -1129,7 +1144,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
+if (TEST) window.jeu = { lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, eclair, orage, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
 </script>
 </body>
 </html>

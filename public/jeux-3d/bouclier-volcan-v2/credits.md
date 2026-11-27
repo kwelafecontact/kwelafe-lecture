@@ -8,6 +8,8 @@
 | fond-enclos(.webp, -large) | Image créée pour Kwélafé | Propriété Kwélafé |
 | explosion-petite/moyenne/grosse.mp3 | Générés ElevenLabs pour Kwélafé | Usage commercial (abonnement ElevenLabs) |
 | sons/ (tir, olivine, bouclier, rappel, niveau, alerte, appel, combo, bonus, grand, grondement, helico) | Générés ElevenLabs (text-to-sound v2) | Usage commercial (abonnement) |
+| musique-stress (musique de partie, ElevenLabs Music v2, vérifiée sans voix par transcription) | Générée ElevenLabs pour Kwélafé | Usage commercial (abonnement) |
+| tonnerre.mp3 (pack KwFX, éclairs) | Généré ElevenLabs pour Kwélafé | Usage commercial (abonnement) |
 | musique-calme, musique-intense | Générées ElevenLabs (Music v2), vérifiées sans voix par transcription | Usage commercial (abonnement) |
 | Moteur d’effets KwFX (kwelafe-fx.js) + bruitages KwFX | Kwélafé Production, sons générés ElevenLabs | Propriété Kwélafé |
 | Faits du carnet | Préfecture (ORSEC Volcan), OVPF, guides de randonnée | Texte reformulé |
