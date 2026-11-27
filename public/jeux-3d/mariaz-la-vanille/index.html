@@ -221,7 +221,10 @@ Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12
 scene.add(new THREE.HemisphereLight(0xd8f0c0, 0x203010, 0.9));
 const texFond = new THREE.TextureLoader().load('./fond-sous-bois.webp', () => { $('charge').textContent = ''; window.PRET = true; }); texFond.colorSpace = THREE.SRGBColorSpace;
 const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false, color: 0xd0d0d0 })); planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
-const texRayon = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 256; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, 'rgba(255,240,190,0.9)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 256); const gx = g.createLinearGradient(0, 0, 64, 0); gx.addColorStop(0, 'rgba(0,0,0,1)'); gx.addColorStop(.5, 'rgba(0,0,0,0)'); gx.addColorStop(1, 'rgba(0,0,0,1)'); g.globalCompositeOperation = 'destination-out'; g.fillStyle = gx; g.fillRect(0, 0, 64, 256); return new THREE.CanvasTexture(c); })();
+const texRayon = (() => { const w = 64, h = 256, d = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const a1 = 0.9 * (1 - y / (h - 1)), ga = Math.min(1, Math.abs((x + 0.5) / w - 0.5) * 2), o = ((h - 1 - y) * w + x) * 4;
+    d[o] = 255; d[o + 1] = 240; d[o + 2] = 190; d[o + 3] = Math.round(255 * a1 * (1 - ga)); }
+  const t = new THREE.DataTexture(d, w, h, THREE.RGBAFormat); t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; t.needsUpdate = true; return t; })();
 const rayons = [];
 for (let i = 0; i < 5; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 22), new THREE.MeshBasicMaterial({ map: texRayon, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.1, toneMapped: false })); m.position.set(-8 + i * 4 + rnd(-1, 1), 2, -6 - i * 0.5); m.rotation.z = 0.32; scene.add(m); rayons.push({ m, ph: rnd(0, 6) }); }
 const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
