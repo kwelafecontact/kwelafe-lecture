@@ -238,7 +238,7 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
             {res.nouveauRecord && <div className="kk-badge">Nouveau record !</div>}
             <div className="kk-gros-score">{res.score}</div>
             {res.lignes?.map((l, i) => <p key={i} style={{ margin: "4px 0", fontWeight: 700 }}>{l}</p>)}
-            {res.savoir && <div style={{ margin: "10px auto 4px", maxWidth: 440, padding: "12px 16px", borderRadius: 16, background: "linear-gradient(#f6ecd2, #e8d6a8)", color: "#3a2410", textAlign: "left", fontSize: 14 }}><b style={{ display: "block", marginBottom: 4 }}>{res.savoir.titre}</b>{res.savoir.texte}</div>}
+            {res.savoir && <div style={{ margin: "10px auto 4px", maxWidth: 440, padding: "12px 16px", borderRadius: 16, background: "linear-gradient(#f6ecd2, #e8d6a8)", color: "#3a2410", textAlign: "left", fontSize: 14, whiteSpace: "pre-line" }}><b style={{ display: "block", marginBottom: 4 }}>{res.savoir.titre}</b>{res.savoir.texte}</div>}
             <div className="kk-boutons">
               {def.niveaux > 0 && res.gagne && niveau < def.niveaux && <button className="btn" onClick={() => jouer(niveau + 1)}>Niveau suivant</button>}
               <button className={def.niveaux > 0 && res.gagne ? "btn secondaire" : "btn"} onClick={() => jouer(niveau)}>Encore une !</button>

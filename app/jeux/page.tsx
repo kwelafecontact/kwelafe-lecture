@@ -40,7 +40,7 @@ export default async function PageJeux() {
           </section>
         )}
 
-        {([["fruits", "Fruits et légumes péi"], ["reunion", "Jeux de La Réunion"]] as const).map(([serie, titre]) => (
+        {([["fruits", "Fruits et légumes péi"], ["reunion", "Jeux de La Réunion"], ["memoire", "Mémoire et transmission"]] as const).map(([serie, titre]) => (
         <section key={serie} id={serie === "fruits" ? "mini-jeux" : undefined} className="section" style={{ marginTop: serie === "fruits" ? 0 : undefined }}>
           <h2>{titre}</h2>
           <div className="jeux-grille">
