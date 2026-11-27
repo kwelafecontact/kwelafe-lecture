@@ -1074,3 +1074,16 @@ body { background: var(--ivoire); }
 .app-suppr{border:none;background:#fde6e3;color:#a52a14;border-radius:10px;padding:5px;font-size:12px;cursor:pointer}
 .app-suppr-q{font-size:12px;background:#fde6e3;border-radius:10px;padding:6px}.app-suppr-q button{margin:4px 2px 0;border:none;border-radius:8px;padding:3px 8px;cursor:pointer}
 .app-qui{margin-right:auto;border:none;background:#fff;border-radius:999px;padding:6px 12px;font-weight:800;box-shadow:var(--ombre);cursor:pointer;font-size:14px}
+/* Barrière parentale et espace parents */
+.barriere{max-width:380px;margin:30px auto;text-align:center;display:grid;gap:12px}
+.barriere-ico{font-size:54px}.barriere h1{font-family:var(--titre);color:#24402f;margin:0}
+.barriere-q{font-size:34px;font-weight:900;color:#1f6fb2}
+.barriere input{font-size:28px;text-align:center;padding:12px;border-radius:16px;border:2px solid #e5e0d8}
+.parents-fiches{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.parents-fiche{background:#fff;border-radius:20px;padding:16px;box-shadow:var(--ombre);display:grid;gap:10px}
+.pf-tete{display:flex;align-items:center;gap:10px;font-size:18px}.pf-tete span{font-size:34px}
+.pf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.pf-stats b{display:block;font-size:17px;color:#e8a200}.pf-stats small{font-size:11px;color:var(--doux)}
+.parents-conseils{line-height:1.7;padding-left:18px}
+.parents-actions{display:flex;flex-wrap:wrap;gap:10px}
+.lien-parents{display:inline-flex;gap:6px;align-items:center;margin:18px auto 0;padding:10px 16px;border-radius:999px;background:#fff;box-shadow:var(--ombre);font-weight:800;color:var(--texte);text-decoration:none}

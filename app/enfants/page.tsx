@@ -58,6 +58,7 @@ export default async function CoinEnfants() {
             ))}
           </div>
         </section>
+        <div style={{ textAlign: "center" }}><Link className="lien-parents" href="/parents">🔒 Espace parents</Link></div>
         <LienSite />
       </main>
       <NavBas />
