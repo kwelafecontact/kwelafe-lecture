@@ -137,6 +137,7 @@
 <button class="coin zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
+<script src="../commun/pixi.min.js"></script>
 <script type="importmap">{ "imports": { "three": "../koup-koup/lib/three.module.js" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -177,10 +178,11 @@ const chargerDecor = () => { const src = innerWidth > innerHeight ? './fond-pays
 chargerDecor();
 let W = 0, H = 0, viewH = 10, viewW = 10;
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
-const trace = $('trace'), tctx = trace.getContext('2d');
+const trace = $('trace'); let papp = null, gTrait = null; const app0 = new PIXI.Application();
+app0.init({ canvas: trace, width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: Math.min(devicePixelRatio, 2), autoDensity: true, autoStart: false }).then(() => { papp = app0; gTrait = new PIXI.Graphics(); app0.stage.addChild(gTrait); resize(); });
 function resize() {
   W = innerWidth; H = innerHeight; renderer.setSize(W, H, false);
-  const d = Math.min(devicePixelRatio, 2); trace.width = W * d; trace.height = H * d; tctx.setTransform(d, 0, 0, d, 0, 0);
+  if (papp) papp.renderer.resize(W, H, Math.min(devicePixelRatio, 2));
   camera.aspect = W / H; camera.updateProjectionMatrix(); decorUni.asp.value = W / H;
   viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
 }
@@ -481,15 +483,18 @@ function balayer(a, b) {
   }
 }
 function dessinerTrait() {
-  tctx.clearRect(0, 0, W, H);
+  if (!papp) return;
+  gTrait.clear();
   const now = performance.now(); while (trait.length && now - trait[0].t > 220) trait.shift();
-  if (trait.length < 2) return;
-  const ech = rayonVouve() / 0.5;
-  for (let i = 1; i < trait.length; i++) {
-    const k = i / trait.length; tctx.strokeStyle = grandeVouve > 0 ? `rgba(150,230,255,${k * 0.8})` : `rgba(230,205,150,${k * 0.75})`; tctx.lineWidth = (10 + k * 26) * Math.min(2, ech); tctx.lineCap = 'round';
-    tctx.beginPath(); tctx.moveTo(trait[i - 1].x, trait[i - 1].y); tctx.lineTo(trait[i].x, trait[i].y); tctx.stroke();
-    tctx.strokeStyle = `rgba(120,80,30,${k * 0.5})`; tctx.lineWidth = 2; tctx.setLineDash([6, 6]); tctx.stroke(); tctx.setLineDash([]);
+  if (trait.length >= 2) {
+    const ech = rayonVouve() / 0.5, bleu = grandeVouve > 0;
+    for (let i = 1; i < trait.length; i++) {
+      const k = i / trait.length, p = trait[i - 1], q = trait[i];
+      gTrait.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: (10 + k * 26) * Math.min(2, ech), color: bleu ? 0x96e6ff : 0xe6cd96, alpha: k * (bleu ? 0.8 : 0.75), cap: 'round' });
+      gTrait.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ width: 2, color: 0x78501e, alpha: k * 0.5 });
+    }
   }
+  papp.render();
 }
 
 // ---------------------------------------------------------------- barrage de galets, vouve et goni
@@ -504,7 +509,15 @@ const ROCHERS = [[0, 335, 313, 1], [345, 392, 229, 1.05], [747, 351, 319, 1], [1
 const texRoche = chargerTex('./rochers.webp?v=1');
 const geoRoche = ROCHERS.map(([x, w, h]) => { const g = new THREE.PlaneGeometry(1, h / w); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + uv.getX(i) * w) / SHEET_W, 1 - h / SHEET_H + uv.getY(i) * h / SHEET_H); return g; });
 const matRoche = new THREE.MeshBasicMaterial({ map: texRoche, transparent: true, depthWrite: false, toneMapped: false });
-const blob = (stops) => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 4, 64, 64, 62); stops.forEach(([o, col]) => gr.addColorStop(o, col)); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+const blob = (stops) => { // dégradé radial calculé à la main (DataTexture), sans canvas 2D
+  const N = 128, d = new Uint8Array(N * N * 4), st = stops.map(([o, c]) => { const m = c.match(/[\d.]+/g).map(Number); return [o, m[0], m[1], m[2], m[3]]; });
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const r = Math.hypot(x + 0.5 - 64, y + 0.5 - 64), t = Math.min(1, Math.max(0, (r - 4) / 58)); let i = 0; while (i < st.length - 2 && t > st[i + 1][0]) i++;
+    const a = st[i], b = st[i + 1], k = Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0] || 1))), o = (y * N + x) * 4;
+    d[o] = a[1] + (b[1] - a[1]) * k; d[o + 1] = a[2] + (b[2] - a[2]) * k; d[o + 2] = a[3] + (b[3] - a[3]) * k; d[o + 3] = 255 * (a[4] + (b[4] - a[4]) * k);
+  }
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t;
+};
 const texOmbre = blob([[0, 'rgba(0,25,40,.55)'], [0.6, 'rgba(0,25,40,.28)'], [1, 'rgba(0,25,40,0)']]);
 const texEcume = blob([[0, 'rgba(255,255,255,0)'], [0.55, 'rgba(255,255,255,0)'], [0.72, 'rgba(235,250,255,.7)'], [0.88, 'rgba(235,250,255,.22)'], [1, 'rgba(255,255,255,0)']]);
 const matOmbre = new THREE.MeshBasicMaterial({ map: texOmbre, transparent: true, depthWrite: false, toneMapped: false });
