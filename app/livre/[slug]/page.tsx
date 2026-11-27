@@ -7,7 +7,7 @@ import BoutonFavori from "@/components/BoutonFavori";
 import BoutonHorsLigne from "@/components/BoutonHorsLigne";
 import { contexte } from "@/lib/contexte";
 import { UNIVERS, config } from "@/lib/config";
-import { autresFormats, formatDe, infoFormat, sansDoublon } from "@/lib/formats";
+import { autresFormats, formatDe, infoFormat, sansDoublon, versions } from "@/lib/formats";
 import { leger } from "@/lib/leger";
 import { collectionDe, cleCollection } from "@/lib/organisation";
 
@@ -25,6 +25,10 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
   const nbPages = m.type === "pdf" ? m.pages : m.type === "web" ? m.pages || null : m.fixe ? m.pages.length : null;
   const f = infoFormat(formatDe(livre));
   const autres = autresFormats(livre, livres);
+  const vers = versions(livre, livres);
+  const vEpub = vers.get("epub") || vers.get("interactif");
+  const vPdf = vers.get("pdf");
+  const deuxFormats = !!(vEpub && vPdf);
   const minutes = nbPages ? Math.max(5, Math.round(nbPages * 1.2)) : null;
   const coll = collectionDe(livre.titre);
   const tomes = coll
@@ -60,7 +64,12 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
             )}
 
             <div className="actions-fiche">
-              {ok ? (
+              {deuxFormats && (vEpub && acces.get(vEpub.id) || vPdf && acces.get(vPdf.id)) ? (
+                <div className="choix-lecture">
+                  {vEpub && acces.get(vEpub.id) && <Link className="btn large" href={`/lire/${vEpub.slug}`}>📖 Lire en EPUB<small>Texte adapté à l'écran</small></Link>}
+                  {vPdf && acces.get(vPdf.id) && <Link className="btn large secondaire" href={`/lire/${vPdf.slug}`}>📄 Lire en classique<small>Mise en page du livre</small></Link>}
+                </div>
+              ) : ok ? (
                 <Link className="btn large" href={`/lire/${livre.slug}`}>
                   {p && p.pourcentage > 0 && !p.termine ? `Reprendre la lecture` : p?.termine ? "Relire" : "Commencer la lecture"}
                 </Link>
@@ -79,7 +88,7 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
               </p>
             )}
 
-            {autres.length > 0 && (
+            {autres.length > 0 && !deuxFormats && (
               <div className="autres-formats">
                 <h3>Aussi disponible en</h3>
                 <div className="liens-formats">

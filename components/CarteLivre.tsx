@@ -2,11 +2,14 @@ import Link from "next/link";
 import { urlCouverture } from "@/lib/cf";
 import type { Livre } from "@/lib/donnees";
 import { formatDe, infoFormat } from "@/lib/formats";
+import { collectionDe } from "@/lib/organisation";
 
 export function Couverture({ livre, verrouille }: { livre: Pick<Livre, "titre" | "couverture">; verrouille?: boolean }) {
   const src = urlCouverture(livre.couverture);
+  const t = collectionDe(livre.titre)?.tome || 0;
   return (
-    <div className="couv">
+    <div className={`couv${t ? ` couv-tome tome-${((t - 1) % 4) + 1}` : ""}`}>
+      {t > 0 && <span className="badge-tome">{/volume|vol\b/i.test(livre.titre) ? "Vol." : "Tome"} {t}</span>}
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={`Couverture : ${livre.titre}`} loading="lazy" />

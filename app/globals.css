@@ -914,3 +914,10 @@ body { background: var(--ivoire); }
 .hero-accueil p{font-style:normal;opacity:.85;font-size:16px;max-width:560px;margin:0 0 22px;line-height:1.5}
 .stat-bulle{background:rgba(255,255,255,.12);backdrop-filter:blur(6px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
 .stat-bulle.feu{background:rgba(255,255,255,.12)}
+/* Tomes : cadre lumineux de couleur différente par tome */
+.couv-tome{position:relative;--g:#f2b705;box-shadow:0 0 0 2px var(--g),0 0 14px 2px color-mix(in srgb,var(--g) 60%,transparent);border-radius:10px}
+.couv-tome.tome-2{--g:#3a9be0}.couv-tome.tome-3{--g:#2ec27e}.couv-tome.tome-4{--g:#e0457b}
+.badge-tome{position:absolute;top:6px;left:6px;z-index:2;background:var(--g);color:#fff;font-size:11px;font-weight:900;padding:3px 8px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.choix-lecture{display:flex;flex-wrap:wrap;gap:10px}
+.choix-lecture .btn{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.choix-lecture .btn small{font-size:12px;font-weight:600;opacity:.85}
