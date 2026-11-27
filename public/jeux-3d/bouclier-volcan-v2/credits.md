@@ -12,3 +12,5 @@
 | Faits du carnet | Préfecture (ORSEC Volcan), OVPF, guides de randonnée | Texte reformulé |
 
 Aucune voix, aucun son synthétisé par le code, aucun personnage ou logo tiers. Aucun Canvas 2D.
+
+| sons/annonce.mp3 | Voix « Volcan la pété, la zot kanar lé noir, la marmaye ! » générée ElevenLabs (eleven_v4, voix Hugo) | Usage commercial (abonnement) |
