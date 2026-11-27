@@ -58,8 +58,8 @@ export default async function Accueil() {
 
         <header className="hero-accueil">
           <div className="hero-texte">
-            <div className="sur-titre">{salut()}{session.prenom ? ` ${session.prenom}` : ""} !</div>
-            <h1>Mi lir</h1>
+            <div className="sur-titre date-accueil">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Indian/Reunion" })}</div>
+            <h1>{salut()}{session.prenom ? ` ${session.prenom}` : ""} !</h1>
             <p>Préserver aujourd'hui ce que nous voulons transmettre demain.</p>
           </div>
           <div className="hero-stats">
@@ -83,7 +83,7 @@ export default async function Accueil() {
           <h2>Choisis ton univers</h2>
           <div className="univers">
             {UNIVERS.map((u) => (
-              <Link key={u.id} href={`/catalogue?univers=${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
+              <Link key={u.id} href={`/univers/${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
                 <span className="emoji" aria-hidden>{u.emoji}</span>
                 <b>{u.nom}</b>
                 <small>{livres.filter((l) => l.univers === u.id).length ? `${sansDoublon(livres.filter((l) => l.univers === u.id)).length} livres` : "Bientôt"}</small>

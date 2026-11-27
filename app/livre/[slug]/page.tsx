@@ -42,7 +42,7 @@ export default async function FicheLivre({ params }: { params: Promise<{ slug: s
             <Couverture livre={livre} verrouille={!ok} />
           </div>
           <div>
-            {univers && <Link href={`/catalogue?univers=${univers.id}`} className="univers-lien">{univers.emoji} {univers.nom}</Link>}
+            {univers && <Link href={`/univers/${univers.id}`} className="univers-lien">{univers.emoji} {univers.nom}</Link>}
             <h1>{livre.titre}</h1>
             <div className="meta">
               <span className="badge format" style={{ background: f.clair, color: f.couleur }}>{f.emoji} {f.nom.replace("Livres ", "Livre ")}</span>

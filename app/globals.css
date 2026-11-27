@@ -842,3 +842,11 @@ body { background: var(--ivoire); }
 .confirm-suppr{background:#fdecea;border:1px solid #f5b7b1;border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .confirm-suppr p{margin:0;flex-basis:100%;font-size:.88rem}
 .texte-erreur{color:#c0392b}
+.date-accueil{text-transform:capitalize}
+.retour-themes{display:inline-block;margin:6px 0 12px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid #ddd;font-weight:600;text-decoration:none;color:inherit}
+.puces-age{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px}
+.puces-age a{padding:6px 12px;border-radius:999px;border:1px solid #ccc;text-decoration:none;color:inherit;font-size:.9rem;background:#fff}
+.puces-age a.actif{background:#1f6fb2;color:#fff;border-color:#1f6fb2}
+.titre-rayon{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.titre-rayon small{font-weight:400;color:#888}
+.titre-rayon .lien{font-size:.9rem}
