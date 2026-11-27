@@ -1,5 +1,5 @@
 /*!
- * KwFX — Directeur d'effets Kwélafé  v2.1
+ * KwFX — Directeur d'effets Kwélafé  v2.2
  * Kwélafé Production · kwelafeproduction.com
  *
  * Un « cerveau » d'effets pour les jeux Kwélafé (site Kwélafé Lecture et EPUB Apple Books).
@@ -647,8 +647,14 @@
   function Sons(fx) { this.fx = fx; this.ctx = null; }
   Sons.prototype.pret = function () {
     if (!this.ctx) { var A = global.AudioContext || global.webkitAudioContext; if (!A) return null; try { this.ctx = new A(); } catch (e) { return null; } }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') { try { var p = this.ctx.resume(); if (p && p.catch) p.catch(function () {}); } catch (e) {} } // iOS : « suspended » ou « interrupted »
     return this.ctx;
+  };
+  /* déverrouillage pendant un vrai geste (touchend / click : ce sont eux qu'iOS et Chrome acceptent) */
+  Sons.prototype.deverrouiller = function () {
+    var c = this.pret(); if (!c || this._ok) return;
+    try { var v = c.createBufferSource(); v.buffer = c.createBuffer(1, 1, 22050); v.connect(c.destination); v.start(0); } catch (e) {}
+    if (c.state === 'running') this._ok = true;
   };
   Sons.prototype.note = function (f, dur, type, vol, glisse, retard) {
     var c = this.pret(); if (!c) return;
@@ -774,7 +780,7 @@
       support: opt.support || 'web', sons: opt.sons !== false, volume: opt.volume == null ? 1 : opt.volume,
       messages: opt.messages !== false, bonusRares: opt.bonusRares !== false, ambiance: !!opt.ambiance,
       secousses: opt.secousses !== false, manga: opt.manga == null ? null : opt.manga, jeu: opt.jeu || null, collection: opt.collection !== false,
-      onHitStop: opt.onHitStop || null, cibleScore: opt.cibleScore || null, complement: !!opt.complement, dprMax: opt.dprMax || null, onArrivee: opt.onArrivee || null, rendu: opt.rendu || 'auto', bloom: opt.bloom == null ? null : opt.bloom, onDecision: opt.onDecision || null, zoneShake: opt.zoneShake || null
+      onHitStop: opt.onHitStop || null, sonsEvenements: opt.sonsEvenements || null, messagesTypes: opt.messagesTypes || null, echelleMessages: opt.echelleMessages || 1, hautMessages: opt.hautMessages || '38%', cibleScore: opt.cibleScore || null, complement: !!opt.complement, dprMax: opt.dprMax || null, onArrivee: opt.onArrivee || null, rendu: opt.rendu || 'auto', bloom: opt.bloom == null ? null : opt.bloom, onDecision: opt.onDecision || null, zoneShake: opt.zoneShake || null
     };
     this.conteneur = opt.conteneur || document.body;
     this.plein = this.conteneur === document.body || this.conteneur === document.documentElement;
@@ -792,7 +798,9 @@
     // NB : on ignore volontairement « Réduire les animations » (prefers-reduced-motion) : choix Kwélafé.
     if (this.opt.support === 'epub' && opt.bloquerPropagation !== false) KwFX.proteger();
     if (this.opt.ambiance) this.ambiance(true);
-    global.addEventListener('pointerdown', function () { if (self.opt.sons) self.audio.pret(); }, { once: true });
+    var deverrou = function () { if (self.opt.sons) self.audio.deverrouiller(); };
+    ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'mousedown', 'click', 'keydown'].forEach(function (t) { global.addEventListener(t, deverrou, { capture: true, passive: true }); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) self.audio._ok = false; }); // après un appel ou un verrouillage, on redéverrouille
   }
   Directeur.prototype.regler = function (o) {
     for (var k in o) if (o.hasOwnProperty(k)) this.opt[k] = o[k];
@@ -889,7 +897,7 @@
         if (palierAtteint) {
           if (this.styleManga() >= 1 && Math.random() < 0.75) { this.onomatopee(choisir(type === 'coupe' ? ONOMATOPEES.coupe : ONOMATOPEES.combo), p, k); dec.effets.push('onomatopée'); }
           dec.message = MESSAGES.serie[Math.min(paliers.indexOf(e.serie) < 0 ? 6 : paliers.indexOf(e.serie) + (Math.random() < 0.3 ? 1 : 0), 6)];
-          this.banniere(dec.message, k);
+          this.banniere(dec.message, k, null, 'serie');
           this.son('combo');
           dec.raison += 'Palier de série ' + e.serie + ' : message et son montant. ';
         } else this.son(type === 'coupe' ? 'coupe' : 'bonne');
@@ -898,7 +906,7 @@
         if (this.opt.bonusRares && e.serie >= 2 && Math.random() < chance) {
           dec.pepite = true; e.secheresse = 0; e.pepites++;
           var obj = this.opt.collection !== false ? this.tirerObjet() : null; dec.objet = obj;
-          setTimeout(function () { self.lance('pepite', p, 1); self.son('pepite'); self.banniere(choisir(MESSAGES.pepite), 0.9, '#FFD23F');
+          setTimeout(function () { self.lance('pepite', p, 1); self.son('pepite'); self.banniere(choisir(MESSAGES.pepite), 0.9, '#FFD23F', 'pepite');
             if (obj) setTimeout(function () { self.texte((obj.nouveau ? 'Nouveau : ' : '') + obj.nom, { x: p.x, y: Math.max(p.y, self.zoneSure().y1 + 60) }, 0.5); }, 450); }, 180);
           dec.effets.push('pepite'); dec.raison += 'Pépite surprise (chance ' + Math.round(chance * 100) + ' %) : le joueur ne sait jamais quand elle tombe. ';
           if (d.onPepite) d.onPepite();
@@ -922,7 +930,7 @@
         }
         if (e.erreursSuite >= 3 || (taux > 0.5 && e.recents.length >= 4 && e.erreursSuite >= 2)) {
           e.aide = true; e.erreursSuite = 0;
-          dec.message = choisir(MESSAGES.encourage); this.banniere(dec.message, 0.4, '#9EC5FF');
+          dec.message = choisir(MESSAGES.encourage); this.banniere(dec.message, 0.4, '#9EC5FF', 'encourage');
           dec.raison = 'Le joueur peine (' + Math.round(taux * 100) + ' % d\'erreurs) : message doux, et la prochaine réussite sera fêtée en grand.';
           dec.conseilJeu = 'faciliter';
         } else dec.raison = perdue >= 5 ? 'Série de ' + perdue + ' perdue : effet discret pour ne pas décourager.' : 'Erreur : retour doux et discret.';
@@ -944,35 +952,35 @@
         if (d.transition) {
           var selfN = this, typeT = d.transition === true ? null : d.transition;
           dec.effets.push('transition ' + (typeT || TRANSITION_THEME[this.opt.theme] || 'pailleenqueue'));
-          this.transition(typeT, d.onMilieu).then(function () { selfN.banniere(dec.message, 0.9); selfN.son('niveau'); });
+          this.transition(typeT, d.onMilieu).then(function () { selfN.banniere(dec.message, 0.9, null, 'niveau'); selfN.son('niveau'); });
           dec.raison = 'Passage de niveau avec transition plein écran adaptée au thème.';
-        } else { this.halo(0.6); this.banniere(dec.message, 0.9); this.son('niveau'); dec.raison = 'Passage de niveau : moment fort, onde + bannière.'; }
+        } else { this.halo(0.6); this.banniere(dec.message, 0.9, null, 'niveau'); this.son('niveau'); dec.raison = 'Passage de niveau : moment fort, onde + bannière.'; }
         break; }
 
       case 'record':
         if (this.styleManga() >= 2) { this.planDramatique(p, 900); dec.effets.push('plan dramatique'); }
-        dec.intensite = 1; fait('pepite', 1); dec.message = MESSAGES.record[0]; this.banniere(dec.message, 1, '#FFD23F'); this.son('pepite');
+        dec.intensite = 1; fait('pepite', 1); dec.message = MESSAGES.record[0]; this.banniere(dec.message, 1, '#FFD23F', 'record'); this.son('pepite');
         dec.raison = 'Nouveau record personnel.'; break;
 
       case 'pepite':
-        dec.intensite = 1; dec.pepite = true; fait('pepite', 1); dec.message = choisir(MESSAGES.pepite); this.banniere(dec.message, 1, '#FFD23F'); this.son('pepite');
+        dec.intensite = 1; dec.pepite = true; fait('pepite', 1); dec.message = choisir(MESSAGES.pepite); this.banniere(dec.message, 1, '#FFD23F', 'pepite'); this.son('pepite');
         dec.raison = 'Bonus déclenché par le jeu.'; break;
 
       case 'victoire': {
         var precision = e.bonnes + e.erreurs ? e.bonnes / (e.bonnes + e.erreurs) : 1;
         var kv = borne(0.55 + precision * 0.45, 0, 1); dec.intensite = kv;
         th.sig.victoire.forEach(function (n) { fait(n, kv); });
-        this.halo(0.8); dec.message = choisir(MESSAGES.victoire); this.banniere(dec.message, 1); this.son('victoire');
+        this.halo(0.8); dec.message = choisir(MESSAGES.victoire); this.banniere(dec.message, 1, null, 'victoire'); this.son('victoire');
         if (this.styleManga() >= 2) { this.planDramatique(p, 1000); dec.effets.push('plan dramatique'); }
         else if (this.styleManga() === 1) { var pc = this.position({}); this.onomatopee('OTÉ !', { x: pc.x, y: pc.y + 90 }, 0.9); dec.effets.push('onomatopée'); }
         dec.raison = 'Victoire, précision ' + Math.round(precision * 100) + ' % : célébration ' + (kv > 0.85 ? 'maximale.' : 'forte.'); break; }
 
       case 'defaite':
-        dec.intensite = 0.3; fait(th.sig.erreur[0], 0.4); dec.message = choisir(MESSAGES.defaite); this.banniere(dec.message, 0.4, '#9EC5FF'); this.son('defaite');
+        dec.intensite = 0.3; fait(th.sig.erreur[0], 0.4); dec.message = choisir(MESSAGES.defaite); this.banniere(dec.message, 0.4, '#9EC5FF', 'defaite'); this.son('defaite');
         dec.raison = 'Fin de partie : ton doux, on donne envie de rejouer.'; break;
 
       case 'debut':
-        this.reinitialiser(); dec.message = MESSAGES.debut[0]; this.banniere(dec.message, 0.6); this.son('debut');
+        this.reinitialiser(); dec.message = MESSAGES.debut[0]; this.banniere(dec.message, 0.6, null, 'debut'); this.son('debut');
         dec.raison = 'Début de partie.'; break;
 
       default:
@@ -989,10 +997,14 @@
   Directeur.prototype.arrivee = function () {
     var t = maintenant(); if (this._arr && t - this._arr < 70) return; this._arr = t;
     var el = this.opt.cibleScore; if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 160, easing: 'ease-out' });
-    if (this.opt.sons) this.audio.echantillon('clic', { demi: hasard(4, 9), vol: 0.9 }) || this.audio.joue('clic');
+    var fs = this.opt.sonsEvenements; if (this.opt.sons && (!fs || fs.indexOf('arrivee') >= 0)) this.audio.echantillon('clic', { demi: hasard(4, 9), vol: 0.9 }) || this.audio.joue('clic');
     if (this.opt.onArrivee) this.opt.onArrivee();
   };
-  Directeur.prototype.son = function (nom) { if (this.opt.sons) this.audio.joue(nom, this.e.serie); };
+  Directeur.prototype.son = function (nom) {
+    if (!this.opt.sons) return;
+    var f = this.opt.sonsEvenements; if (f && f.indexOf(nom) < 0 && !(nom === 'erreurGrave' && f.indexOf('erreur') >= 0)) return; // le jeu choisit les sons qu'il laisse à KwFX
+    this.audio.joue(nom, this.e.serie);
+  };
   Directeur.prototype.secousse = function (k) {
     if (!this.opt.secousses || !this.pub.secousse) return;
     var cible = this.cibleEcran();
@@ -1026,13 +1038,14 @@
       { transform: 'translate(-50%,-220%) scale(1)', opacity: 0 }], { duration: 900, easing: 'cubic-bezier(.2,.8,.3,1)' });
     an.onfinish = function () { el.remove(); };
   };
-  Directeur.prototype.banniere = function (txt, k, couleur) {
+  Directeur.prototype.banniere = function (txt, k, couleur, typ) {
     if (!this.opt.messages) return;
+    var fm = this.opt.messagesTypes; if (fm && typ && fm.indexOf(typ) < 0) return; // le jeu choisit les messages qu'il laisse à KwFX
     if (this.bann) this.bann.remove();
     var cs = this.theme.couleurs, s = this.zoneSure();
     var taille = Math.round(Math.min(s.x2 - s.x1, 700) / Math.max(6, txt.length) * 1.5 * this.pub.texte);
-    taille = borne(taille, 28, 84);
-    var el = this.calqueDiv('left:50%;top:38%;transform:translate(-50%,-50%);max-width:' + (s.x2 - s.x1) + 'px;text-align:center;font:900 ' + taille + 'px/1.05 system-ui,-apple-system,sans-serif;' +
+    taille = Math.round(borne(taille, 28, 84) * this.opt.echelleMessages);
+    var el = this.calqueDiv('left:50%;top:' + this.opt.hautMessages + ';transform:translate(-50%,-50%);white-space:nowrap;max-width:' + (s.x2 - s.x1) + 'px;text-align:center;font:900 ' + taille + 'px/1.05 system-ui,-apple-system,sans-serif;' +
       'color:' + (couleur || cs[1] || '#FFD23F') + ';-webkit-text-stroke:' + Math.max(2, taille / 18).toFixed(1) + 'px ' + (cs[3] || '#222') + ';paint-order:stroke fill;text-shadow:0 6px 0 rgba(0,0,0,.25),0 0 30px ' + (couleur || cs[1] || '#fff'));
     el.textContent = txt; this.bann = el;
     var an = el.animate([{ transform: 'translate(-50%,-50%) scale(.2) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.12) rotate(2deg)', opacity: 1, offset: 0.18 },
