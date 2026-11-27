@@ -5,11 +5,11 @@ export const HEROS: (Choix & { il: string; le: string })[] = [
   { id: "noa", nom: "Noa", emoji: "👦🏽", il: "il", le: "le" },
   { id: "timeo", nom: "Timéo", emoji: "🧢", il: "il", le: "le" },
 ];
-export const LIEUX: (Choix & { decor: string; defi: string; fin: string })[] = [
-  { id: "volcan", nom: "le volcan", emoji: "🌋", decor: "au pied du Piton de la Fournaise, où la terre est noire et les fougères toutes douces", defi: "un brouillard épais tombe d'un coup sur le sentier", fin: "le cratère s'allume en orange, comme une grande lampe pour leur dire au revoir" },
-  { id: "lagon", nom: "le lagon", emoji: "🏝️", decor: "au bord du lagon de L'Hermitage, où l'eau est claire comme une vitre", defi: "la marée monte et cache le chemin de sable", fin: "une tortue verte sort la tête de l'eau pour les saluer" },
-  { id: "mafate", nom: "Mafate", emoji: "⛰️", decor: "dans le cirque de Mafate, où l'on marche à pied entre les îlets", defi: "le sentier se sépare en trois et personne ne sait lequel prendre", fin: "les gramoun de l'îlet leur offrent un bon café et des bonbons piment" },
-  { id: "foret", nom: "la forêt de Bébour", emoji: "🌳", decor: "dans la forêt de Bébour-Bélouve, où les grands tamarins des Hauts dansent avec le vent", defi: "la pluie se met à tomber, fariné d'abord, puis très fort", fin: "un arc-en-ciel se pose juste au-dessus de la forêt" },
+export const LIEUX: (Choix & { a: string; decor: string; defi: string; fin: string })[] = [
+  { id: "volcan", a: "au volcan", nom: "le volcan", emoji: "🌋", decor: "au pied du Piton de la Fournaise, où la terre est noire et les fougères toutes douces", defi: "un brouillard épais tombe d'un coup sur le sentier", fin: "le cratère s'allume en orange, comme une grande lampe pour leur dire au revoir" },
+  { id: "lagon", a: "au lagon", nom: "le lagon", emoji: "🏝️", decor: "au bord du lagon de L'Hermitage, où l'eau est claire comme une vitre", defi: "la marée monte et cache le chemin de sable", fin: "une tortue verte sort la tête de l'eau pour les saluer" },
+  { id: "mafate", a: "à Mafate", nom: "Mafate", emoji: "⛰️", decor: "dans le cirque de Mafate, où l'on marche à pied entre les îlets", defi: "le sentier se sépare en trois et personne ne sait lequel prendre", fin: "les gramoun de l'îlet leur offrent un bon café et des bonbons piment" },
+  { id: "foret", a: "dans la forêt de Bébour", nom: "la forêt de Bébour", emoji: "🌳", decor: "dans la forêt de Bébour-Bélouve, où les grands tamarins des Hauts dansent avec le vent", defi: "la pluie se met à tomber, fariné d'abord, puis très fort", fin: "un arc-en-ciel se pose juste au-dessus de la forêt" },
 ];
 export const COMPAGNONS: (Choix & { aide: string })[] = [
   { id: "pailleenqueue", nom: "un paille-en-queue", emoji: "🐦", aide: "s'envole très haut, regarde partout, puis revient montrer le bon chemin avec sa longue queue blanche" },
@@ -27,7 +27,7 @@ export const OBJETS: (Choix & { usage: string })[] = [
 export function histoire(h: (typeof HEROS)[number], l: (typeof LIEUX)[number], c: (typeof COMPAGNONS)[number], o: (typeof OBJETS)[number]) {
   const Il = h.il[0].toUpperCase() + h.il.slice(1);
   return {
-    titre: `${h.nom} et ${c.nom} à ${l.nom}`,
+    titre: `${h.nom} et ${c.nom} ${l.a}`,
     pages: [
       `Oté ! Ce matin-là, ${h.nom} se réveille avec une grande envie d'aventure. Dans son sac, ${h.il} glisse ${o.nom}. « On ne sait jamais », dit sa gramoun en souriant.`,
       `${Il} part ${l.decor}. En chemin, ${h.il} rencontre ${c.nom}. « Ou vé vien avèk moin ? » demande ${h.nom}. Et voilà nos deux amis qui avancent ensemble.`,
