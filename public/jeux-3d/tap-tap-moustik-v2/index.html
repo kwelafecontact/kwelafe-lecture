@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Tap Tap Moustik v2 · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="./lib/bangers.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family:"Bangers"; src:url("./lib/bangers.woff2") format("woff2"); font-display:swap; }
+  :root { --or:#ffd24a; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#0d2410; font-family:"Baloo 2", system-ui, sans-serif; color:#fff; -webkit-user-select:none; user-select:none; touch-action:none; overscroll-behavior:none; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; }
+  #fond, #trace { pointer-events:none; }
+  .hud { position:fixed; left:0; right:0; top:max(78px, calc(env(safe-area-inset-top) + 64px)); display:flex; justify-content:space-between; padding:0 max(30px, env(safe-area-inset-left)); pointer-events:none; opacity:0; transition:opacity .3s; }
+  .hud.on { opacity:1; }
+  .score { font-family:"Bangers", sans-serif; font-size:clamp(38px, 8vw, 58px); line-height:1; color:var(--or); letter-spacing:.04em; text-shadow:0 3px 0 #7a4a08, 0 0 18px rgba(255,190,60,.55); }
+  .score.saute { animation:saute .3s ease-out; }
+  @keyframes saute { 40% { transform:scale(1.25); } }
+  .meilleur { font-size:15px; font-weight:600; opacity:.9; margin-top:2px; text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  .vies { font-size:30px; letter-spacing:4px; text-align:right; }
+  .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:max(9vh, 60px) 28px 0; text-align:center; pointer-events:none; transition:opacity .4s; }
+  #fin, #panAlbum, #panSon, #panCredits { z-index:8; }
+  .ecran.cache { opacity:0; }
+  .ecran.cache * { pointer-events:none !important; }
+  .titre { font-family:"Bangers", sans-serif; font-size:clamp(62px, 15vw, 118px); line-height:.95; letter-spacing:.04em; transform:rotate(-3deg);
+    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.45)); }
+  .sous { margin-top:12px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  .consigne { margin-top:14px; font-size:clamp(15px, 3.4vw, 18px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.9); max-width:520px; }
+  .btn { pointer-events:auto; margin-top:16px; border:0; border-radius:999px; padding:14px 34px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.45); cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .btn.mode { display:block; width:min(320px,80vw); margin-top:14px; padding:12px 22px; border-radius:26px; }
+  .btn.mode b { display:block; font-size:21px; } .btn.mode small { display:block; margin-top:4px; font-size:14px; font-weight:600; opacity:.85; }
+  .btn.mode.calme { background:linear-gradient(#c9f5b0,#5fc84a); box-shadow:0 5px 0 #2d7a22,0 10px 22px rgba(0,0,0,.45); color:#0f3a0a; }
+  .btn.mode.defi { background:linear-gradient(#ffb08a,#ff5a2a); box-shadow:0 5px 0 #a02a08,0 10px 22px rgba(0,0,0,.45); color:#3a0a00; }
+  .petits { display:flex; gap:10px; margin-top:6px; } .btn.mini { padding:10px 20px; font-size:16px; margin-top:12px; background:linear-gradient(#b8f0ff,#3fb4e6); box-shadow:0 4px 0 #1f6f94; color:#0b2a3a; }
+  .voile { pointer-events:auto; padding:18px 22px 22px; border-radius:26px; background:#0a1e08; max-width:min(520px,88vw); max-height:80vh; overflow:auto; margin-top:-4vh; touch-action:pan-y; }
+  .gros { font-family:"Bangers", sans-serif; font-size:clamp(70px, 17vw, 120px); color:var(--or); line-height:1; text-shadow:0 5px 0 #8a4a08, 0 0 30px rgba(255,190,60,.5); }
+  .etoiles { font-size:clamp(42px, 10vw, 64px); letter-spacing:.12em; color:#ffd24a; text-shadow:0 3px 0 #8a5a00, 0 0 18px rgba(255,200,60,.6); }
+  .etoiles .vide { color:rgba(255,255,255,.22); text-shadow:none; }
+  .nouveau { font-family:"Bangers", sans-serif; font-size:clamp(26px, 6vw, 38px); letter-spacing:.06em; color:#7bf0ff; text-shadow:0 0 16px #2fb4ff; }
+  .pop { position:fixed; pointer-events:none; font-family:"Bangers", sans-serif; letter-spacing:.05em; transform:translate(-50%,-50%); white-space:nowrap; animation:monte 1s ease-out forwards; z-index:5; }
+  .pop.pts { font-size:clamp(28px, 6vw, 40px); color:#fff; text-shadow:0 0 12px currentColor, 0 3px 0 rgba(0,0,0,.5); }
+  .pop.chaine { font-size:clamp(30px, 7vw, 48px); background:linear-gradient(90deg, #ffe23a, #ff9a1f, #ff4fb4, #2fb4ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 0 #1a0830); animation-duration:1.3s; }
+  .pop.aie { font-size:clamp(26px, 6vw, 38px); color:#d8d8e0; text-shadow:0 3px 0 rgba(0,0,0,.6); }
+  .pop.doux { font-size:clamp(24px, 5.5vw, 34px); color:#bff0a8; text-shadow:0 3px 0 rgba(0,0,0,.6); }
+  @keyframes monte { 0% { opacity:0; transform:translate(-50%,-30%) scale(.6); } 15% { opacity:1; transform:translate(-50%,-50%) scale(1.15); } 100% { opacity:0; transform:translate(-50%,-150%) scale(1); } }
+  .lien { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(30px + env(safe-area-inset-bottom)); padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; pointer-events:auto; animation:feu 1.5s ease-in-out infinite alternate; white-space:nowrap; transition:opacity .3s; z-index:7; }
+  .lien.discret { opacity:0; pointer-events:none; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+  .coin { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); min-height:44px; padding:0 18px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(10,8,30,.6); color:#fff; font:800 16px "Baloo 2", system-ui, sans-serif; cursor:pointer; }
+  #retour { left:max(26px, env(safe-area-inset-left)); }
+  .btn-son { position:fixed; z-index:20; top:max(22px, env(safe-area-inset-top)); right:max(26px, env(safe-area-inset-right)); width:44px; height:44px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(10,8,30,.6); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  #bTerminer { display:none; left:50%; transform:translateX(-50%); }
+  #charge { position:fixed; left:0; right:0; bottom:calc(100px + env(safe-area-inset-bottom)); text-align:center; font-weight:600; opacity:.85; pointer-events:none; }
+  .fiche { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9); width:min(86vw, 460px); padding:22px 24px 20px; border-radius:22px; text-align:center;
+    background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .35s cubic-bezier(.2,1.5,.4,1); z-index:15; }
+  .fiche.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+  .fiche h2 { margin:0 0 4px; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:clamp(24px, 6vw, 32px); color:#1f6a2a; }
+  .fiche .num { font-weight:800; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#8a6a3a; }
+  .fiche p { font-size:clamp(16px, 4vw, 19px); line-height:1.35; margin:10px 0 16px; font-weight:600; }
+  .fiche .btn { font-size:18px; padding:12px 26px; margin-top:0; }
+  .niveau { position:fixed; left:50%; top:max(140px, calc(env(safe-area-inset-top) + 124px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#f6ecd2; text-shadow:0 2px 0 #1a3010, 0 0 10px rgba(0,0,0,.5); pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .niveau.on { opacity:1; }
+  .bandeau { position:fixed; left:50%; transform:translateX(-50%); top:max(184px, calc(env(safe-area-inset-top) + 168px)); padding:6px 20px; border-radius:14px; background:rgba(10,30,8,.7); color:#ffe27a; font-weight:800; font-size:clamp(16px,3.8vw,22px); text-shadow:0 2px 0 #1a3010; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; z-index:6; }
+  .bandeau.on { opacity:1; }
+  .bandeau.alerte { background:rgba(120,20,10,.85); color:#fff; }
+  .titre2 { font-size:48px; font-weight:800; color:var(--or); line-height:1; text-shadow:0 4px 0 #a8460a; } .petit { font-size:15px; font-weight:600; margin-top:6px; }
+  .alb { display:grid; grid-template-columns:1fr; gap:8px 12px; text-align:left; font-size:14px; font-weight:600; margin-top:10px; } .alb .vide { opacity:.55; }
+  .curs { display:flex; align-items:center; gap:10px; margin:12px 0; font-weight:700; text-align:left; } .curs span { width:78px; } .curs input { flex:1; accent-color:#ffb21e; height:30px; }
+  @media (max-height:520px) {
+    #menu { flex-direction:row; flex-wrap:wrap; justify-content:center; align-content:flex-start; column-gap:14px; padding-top:max(10px, env(safe-area-inset-top)); }
+    #menu .titre, #menu .sous, #menu .consigne, #menu .petits { flex:0 0 100%; justify-content:center; }
+    #menu .titre { font-size:50px; } #menu .sous { margin-top:4px; font-size:16px; } #menu .consigne { margin:4px auto 0; font-size:13px; }
+    .btn.mode { margin-top:10px; width:min(300px,42vw); padding:9px 16px; } .btn.mode b { font-size:18px; } .btn.mode small { font-size:12px; }
+    .btn.mini { margin-top:8px; padding:8px 18px; } .voile { max-height:92vh; margin-top:0; } .titre2 { font-size:36px; }
+    .gros { font-size:64px; } .etoiles { font-size:40px; } .lien { bottom:calc(10px + env(safe-area-inset-bottom)); }
+  }
+  .cred { font-size:13px; font-weight:600; text-align:left; line-height:1.35; } .cred p { margin:7px 0; } .cred b { color:var(--or); }
+</style>
+</head>
+<body>
+<canvas id="fond"></canvas>
+<canvas id="gl"></canvas>
+<canvas id="trace"></canvas>
+
+<div class="hud" id="hud">
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div class="vies" id="vies"></div>
+</div>
+<div class="niveau" id="niveau"></div>
+<div class="bandeau" id="bandeau"></div>
+
+<div class="ecran" id="menu">
+  <div class="titre">Tap Tap Moustik</div>
+  <div class="sous">Le jardin de la kaz, à l'heure des moustiques</div>
+  <div class="consigne">Tape les moustiques tigres, laisse les abeilles et les papillons, et vide les gîtes avant que l'eau n'attire d'autres moustiques.</div>
+  <button class="btn mode calme zone-interactive" id="bCalme"><b>Mi vé zoué trankil</b><small>Sans pression : étoiles et carnet du jardin</small></button>
+  <button class="btn mode defi zone-interactive" id="jouer"><b>Mi rode problèm</b><small>3 vies, séries, invasion après la pluie, records</small></button>
+  <div class="petits"><button class="btn mini zone-interactive" id="bAlbum">Carnet</button><button class="btn mini zone-interactive" id="bSonOpt">Son</button><button class="btn mini zone-interactive" id="bCredits">Crédits</button></div>
+</div>
+
+<div class="ecran cache" id="fin"><div class="voile">
+  <div class="sous" style="margin-top:0" id="titreFin">Le jardin est tranquille</div>
+  <div class="gros" id="scoreFin">0</div>
+  <div class="etoiles" id="etoilesFin"></div>
+  <div class="nouveau" id="nouveauRecord"></div>
+  <div class="sous" id="moustiquesFin"></div>
+  <div class="sous" id="recordFin">Record : 0</div>
+  <div class="petits" style="justify-content:center"><button class="btn zone-interactive" id="rejouer">Rejouer</button><button class="btn mini zone-interactive" id="menuFin">Menu</button></div>
+</div></div>
+
+<div class="fiche" id="fiche"><div class="num" id="ficheNum"></div><h2>Le bon geste</h2><p id="ficheTexte"></p><button class="btn zone-interactive" id="ficheOk">On continue</button></div>
+
+<div class="ecran cache" id="panAlbum"><div class="voile"><div class="titre2">CARNET</div><div class="petit" id="albCompte"></div><div id="albListe" class="alb"></div><button class="btn mini zone-interactive" id="bAlbFerme">Retour</button></div></div>
+<div class="ecran cache" id="panSon"><div class="voile"><div class="titre2">SON</div>
+  <div class="curs"><span>Musique</span><input type="range" id="rMus" min="0" max="100"></div>
+  <div class="curs"><span>Effets</span><input type="range" id="rFx" min="0" max="100"></div><button class="btn mini zone-interactive" id="bSonFerme">Retour</button></div></div>
+<div class="ecran cache" id="panCredits"><div class="voile"><div class="titre2">CRÉDITS</div><div class="cred">
+  <p><b>Jeu</b> : Kwélafé Production. Code, interface, niveaux et textes écrits pour Kwélafé.</p>
+  <p><b>Moustiques, abeilles, papillons, gîtes</b> : modèles 3D construits par programme avec Three.js pour Kwélafé.</p>
+  <p><b>Décor</b> : jardin créé pour Kwélafé (image générée, usage commercial autorisé par l'abonnement ElevenLabs).</p>
+  <p><b>Effets</b> : pack d'effets commun Kwélafé (images générées pour Kwélafé).</p>
+  <p><b>Sons et musiques</b> : générés avec ElevenLabs pour Kwélafé, dans l'esprit du maloya et du séga. Aucune voix de synthèse.</p>
+  <p><b>Conseils du carnet</b> : repères de l'ARS La Réunion sur la lutte contre le moustique tigre, reformulés.</p>
+  <p><b>Moteurs</b> : Three.js et PixiJS (licence MIT).</p>
+  <p><b>Polices</b> : Bangers, Baloo 2 (SIL Open Font License 1.1).</p></div><button class="btn mini zone-interactive" id="bCrFerme">Retour</button></div></div>
+
+<div id="charge">On prépare le jardin…</div>
+<button class="coin zone-interactive" id="retour" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="btn mini coin zone-interactive" id="bTerminer" style="padding:0 18px;margin-top:0">Terminer</button>
+<button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
+<a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+
+<script src="../commun/pixi.min.js"></script>
+<script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { dprCible, reveillerAudio, endormirAudio, journal, libererCanvas } from '../commun/performances.js';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
+
+// Conseils de l'ARS La Réunion (lutte anti-vectorielle), reformulés
+const CONSEILS = [
+  "Chaque semaine, vide les soucoupes sous les pots de fleurs, ou mieux, supprime-les.",
+  "Range les seaux, arrosoirs et petits récipients à l'abri de la pluie.",
+  "Mets les vieux pneus à l'abri ou couvre-les, pour que l'eau n'y reste pas.",
+  "Jette les petits déchets dans une poubelle fermée par un couvercle.",
+  "Change souvent l'eau des vases et des boutures.",
+  "Pense à entretenir les gouttières : l'eau qui y stagne attire les moustiques.",
+  "Près de 8 lieux de ponte du moustique tigre sur 10 sont créés par l'homme, autour de la maison.",
+  "Le moustique tigre ne vole pas loin, 50 à 100 mètres : vider l'eau chez soi protège tout le quartier.",
+  "Le moustique tigre est rayé noir et blanc. À La Réunion, il peut transmettre la dengue et le chikungunya.",
+  "Range aussi tes jouets à l'abri de la pluie : un petit fond d'eau suffit au moustique.",
+];
+
+// ---------------------------------------------------------------- 3D
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true, preserveDrawingBuffer: TEST });
+renderer.setPixelRatio(dprCible(2));
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer); scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100); camera.position.set(0, 0, 14);
+const soleil = new THREE.DirectionalLight(0xffe0b0, 2.4); soleil.position.set(-4, 6, 8); scene.add(soleil);
+scene.add(new THREE.HemisphereLight(0xfff4dc, 0x40502a, 0.8));
+let W = 0, H = 0, viewH = 10, viewW = 10, sol = -3;
+const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
+
+const matNoir = new THREE.MeshStandardMaterial({ color: 0x14140f, roughness: 0.5 });
+const matBlanc = new THREE.MeshStandardMaterial({ color: 0xf2f2ea, roughness: 0.5 });
+const matAile = new THREE.MeshPhysicalMaterial({ color: 0xe8f0ff, transparent: true, opacity: 0.4, roughness: 0.1, side: THREE.DoubleSide });
+function moustique() {
+  // moustique tigre : corps rayé noir et blanc, longues pattes, ailes fines
+  const g = new THREE.Group();
+  for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.06 - i * 0.004, 8, 6), i % 2 ? matBlanc : matNoir); s.scale.set(1.3, 1, 1); s.position.x = -0.08 - i * 0.08; g.add(s); }
+  const tho = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), matNoir); g.add(tho);
+  const tete = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), matNoir); tete.position.x = 0.11; g.add(tete);
+  const trompe = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.004, 0.22, 4), matNoir); trompe.rotation.z = Math.PI / 2 + 0.4; trompe.position.set(0.2, -0.04, 0); g.add(trompe);
+  for (let k = 0; k < 6; k++) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.42, 4), k % 2 ? matBlanc : matNoir); p.position.set(0.05 - (k % 3) * 0.06, -0.16, k < 3 ? 0.08 : -0.08); p.rotation.set(k < 3 ? 0.6 : -0.6, 0, (k % 3 - 1) * 0.5); g.add(p); }
+  const ailes = []; for (const s of [1, -1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(0.16, 10), matAile); a.scale.set(1.8, 0.45, 1); a.position.set(-0.12, 0.06, 0.08 * s); a.rotation.x = -Math.PI / 2 + s * 0.5; g.add(a); ailes.push(a); }
+  g.userData.ailes = ailes; g.scale.setScalar(2); return g;
+}
+const matJaune = new THREE.MeshStandardMaterial({ color: 0xf0a818, roughness: 0.45 }), matDuvet = new THREE.MeshPhysicalMaterial({ color: 0xe8b030, roughness: 0.9, sheen: 1, sheenColor: 0xfff0a0 });
+function abeille() {
+  const g = new THREE.Group();
+  const abd = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), matJaune); abd.scale.set(1.4, 1, 1); abd.position.x = -0.2; g.add(abd);
+  for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.TorusGeometry(0.17 - i * 0.02, 0.035, 6, 16), matNoir); b.rotation.y = Math.PI / 2; b.position.x = -0.12 - i * 0.12; g.add(b); }
+  const tho = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), matDuvet); tho.position.x = 0.08; g.add(tho);
+  const tete = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), matNoir); tete.position.x = 0.25; g.add(tete);
+  const ailes = []; for (const s of [1, -1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(0.2, 12), matAile); a.scale.set(1.4, 0.7, 1); a.position.set(0, 0.16, 0.12 * s); a.rotation.x = -Math.PI / 2 + s * 0.5; g.add(a); ailes.push(a); }
+  g.userData.ailes = ailes; g.scale.setScalar(1.7); return g;
+}
+// texture des ailes du papillon, calculée par le code (aucun Canvas 2D)
+let texPapillon = null;
+function texAiles() {
+  if (texPapillon) return texPapillon;
+  const N = 128, d = new Uint8Array(N * N * 4);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const o = (y * N + x) * 4, r = Math.hypot(x - 40, y - 64) / 64; let c;
+    if (r < 0.6) { const t = r / 0.6; c = [255 + (255 - 255) * t, 210 + (122 - 210) * t, 58 + (26 - 58) * t]; }
+    else if (r < 0.85) { const t = (r - 0.6) / 0.25; c = [255 + (26 - 255) * t, 122 + (16 - 122) * t, 26 + (8 - 26) * t]; }
+    else c = [26, 16, 8];
+    for (let i = 0; i < 6; i++) { if (Math.hypot(x - (100 + Math.cos(i) * 10), y - (30 + i * 14)) < 4) c = [255, 255, 255]; }
+    d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
+  }
+  texPapillon = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); texPapillon.colorSpace = THREE.SRGBColorSpace; texPapillon.needsUpdate = true; texPapillon.magFilter = THREE.LinearFilter; texPapillon.minFilter = THREE.LinearFilter; texPapillon.generateMipmaps = false;
+  return texPapillon;
+}
+function papillon() {
+  const g = new THREE.Group();
+  const corps = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.4, 6), matNoir); corps.rotation.z = Math.PI / 2; g.add(corps);
+  const mat = new THREE.MeshStandardMaterial({ map: texAiles(), side: THREE.DoubleSide, roughness: 0.6 });
+  const forme = new THREE.Shape(); forme.moveTo(0, 0); forme.bezierCurveTo(0.2, 0.5, 0.6, 0.55, 0.5, 0.1); forme.bezierCurveTo(0.55, -0.2, 0.3, -0.45, 0, 0);
+  const geo = new THREE.ShapeGeometry(forme, 12); const uv = geo.attributes.uv, p = geo.attributes.position; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 0.6, p.getY(i) + 0.5);
+  const ailes = []; for (const s of [1, -1]) { const piv = new THREE.Group(); const a = new THREE.Mesh(geo, mat); a.rotation.x = -Math.PI / 2; a.scale.z = s; a.scale.y = s; piv.add(a); g.add(piv); ailes.push(piv); piv.userData.s = s; }
+  g.userData.ailes = ailes; g.userData.papillon = true; g.scale.setScalar(1.4); return g;
+}
+
+// gîtes larvaires : soucoupe, pneu, bidon
+const matTerre = new THREE.MeshStandardMaterial({ color: 0xb8582a, roughness: 0.8 });
+const matPneu = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85 });
+const matBidon = new THREE.MeshStandardMaterial({ color: 0x2a6ad8, roughness: 0.4 });
+const matEau = new THREE.MeshPhysicalMaterial({ color: 0x5a7a6a, roughness: 0.05, transmission: 0.2, clearcoat: 1 });
+function gite(type) {
+  const g = new THREE.Group(); let eau;
+  if (type === 'soucoupe') { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.48, 0.16, 24), matTerre); g.add(s); eau = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), matEau); eau.rotation.x = -Math.PI / 2; eau.position.y = 0.06; g.add(eau); const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.34, 0.7, 20), matTerre); pot.position.y = 0.42; g.add(pot); const pl = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), new THREE.MeshStandardMaterial({ color: 0x3a8a2a, roughness: 0.6 })); pl.position.y = 1.05; pl.scale.y = 0.8; g.add(pl); }
+  else if (type === 'pneu') { const t = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.24, 12, 28), matPneu); t.rotation.x = Math.PI / 2; g.add(t); eau = new THREE.Mesh(new THREE.CircleGeometry(0.4, 20), matEau); eau.rotation.x = -Math.PI / 2; eau.position.y = 0.05; g.add(eau); }
+  else { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.1, 20, 1, true), matBidon); b.position.y = 0.55; g.add(b); const fond = new THREE.Mesh(new THREE.CircleGeometry(0.45, 20), matBidon); fond.rotation.x = -Math.PI / 2; g.add(fond); eau = new THREE.Mesh(new THREE.CircleGeometry(0.44, 20), matEau); eau.rotation.x = -Math.PI / 2; eau.position.y = 0.9; g.add(eau); }
+  g.rotation.x = 0.35; return { obj: g, eau, type, vide: 0 };
+}
+
+// particules (GPU)
+const MAXP = 1200, pPos = new Float32Array(MAXP * 3), pCol = new Float32Array(MAXP * 3), pAlp = new Float32Array(MAXP), pTai = new Float32Array(MAXP);
+const PP = Array.from({ length: MAXP }, () => ({ vie: 0, max: 1, vx: 0, vy: 0, t0: 1, g: 4 }));
+const geoP = new THREE.BufferGeometry();
+geoP.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); geoP.setAttribute('couleur', new THREE.BufferAttribute(pCol, 3)); geoP.setAttribute('alpha', new THREE.BufferAttribute(pAlp, 1)); geoP.setAttribute('taille', new THREE.BufferAttribute(pTai, 1));
+const matP = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { echelle: { value: 1 } },
+  vertexShader: `attribute vec3 couleur; attribute float alpha; attribute float taille; varying vec3 vC; varying float vA; uniform float echelle; void main() { vC = couleur; vA = alpha; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * echelle / -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main() { float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.5, 0.2, r)); }` });
+const ptsP = new THREE.Points(geoP, matP); ptsP.frustumCulled = false; scene.add(ptsP);
+let pI = 0;
+function eclats(p, c, n, v = 2, taille = 34, g = 4) { for (let i = 0; i < n; i++) { const q = PP[pI], k = pI; pI = (pI + 1) % MAXP; q.vie = q.max = rnd(0.4, 0.8); q.vx = rnd(-v, v); q.vy = rnd(-v * .3, v); q.t0 = taille * rnd(0.5, 1.2); q.g = g; pPos[k * 3] = p.x; pPos[k * 3 + 1] = p.y; pPos[k * 3 + 2] = p.z + 0.5; const cc = c[Math.floor(Math.random() * c.length)]; pCol[k * 3] = cc[0]; pCol[k * 3 + 1] = cc[1]; pCol[k * 3 + 2] = cc[2]; } }
+function majParticules(dt) { for (let i = 0; i < MAXP; i++) { const q = PP[i]; if (q.vie <= 0) { pAlp[i] = 0; continue; } q.vie -= dt; q.vy -= q.g * dt; pPos[i * 3] += q.vx * dt; pPos[i * 3 + 1] += q.vy * dt; pAlp[i] = Math.min(1, q.vie / q.max * 2); pTai[i] = q.t0; } for (const n of ['position', 'alpha', 'taille', 'couleur']) geoP.attributes[n].needsUpdate = true; }
+
+// ---------------------------------------------------------------- PixiJS : décor (sous la 3D) et taches (au-dessus)
+let pd = null, pu = null, sprJardin = null, texJardin = null, gVeil = null, sprVig = null, texVig = null, texJus = null, texAnneau = null, texFlare = null;
+const motes = [], taches = [];
+function initPixi() {
+  const dpr = dprCible(2), a1 = new PIXI.Application(), a2 = new PIXI.Application();
+  Promise.all([
+    a1.init({ canvas: $('fond'), width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: dpr, autoDensity: true, autoStart: false }),
+    a2.init({ canvas: $('trace'), width: innerWidth, height: innerHeight, backgroundAlpha: 0, antialias: true, resolution: dpr, autoDensity: true, autoStart: false }),
+  ]).then(() => {
+    for (const ap of [a1, a2]) { try { ap.renderer.events.autoPreventDefault = false; ap.renderer.events.destroy(); } catch (e) {} ap.canvas.style.touchAction = ''; ap.canvas.style.pointerEvents = 'none'; }
+    sprJardin = new PIXI.Sprite(); gVeil = new PIXI.Graphics(); a1.stage.addChild(sprJardin, gVeil);
+    pd = a1; pu = a2; calerPixi();
+    Promise.all([PIXI.Assets.load('./fond-jardin.webp'), PIXI.Assets.load('../commun/fx/jus.webp'), PIXI.Assets.load('../commun/fx/anneau.webp'), PIXI.Assets.load('../commun/fx/flare.webp')]).then(([j, ju, an, fl]) => {
+      texJardin = j; texJus = ju; texAnneau = an; texFlare = fl; peindreFond();
+      for (let i = 0; i < 14; i++) { const s = new PIXI.Sprite(texFlare); s.anchor.set(0.5); s.blendMode = 'add'; s.tint = 0xfff0b0; pd.stage.addChild(s); motes.push({ s, x: Math.random(), y: Math.random(), v: rnd(0.004, 0.012), p: Math.random() * 6, t: rnd(16, 40) }); }
+      pd.stage.addChild(sprVig); sprVig.parent && 0;
+    }).catch(() => {});
+  });
+}
+function calerPixi() { if (!pd) return; const dpr = dprCible(2); pd.renderer.resize(W, H, dpr); pu.renderer.resize(W, H, dpr); peindreFond(); }
+function peindreFond() {
+  if (!pd) return;
+  if (texJardin) { sprJardin.texture = texJardin; const k = Math.max(W / texJardin.width, H / texJardin.height); sprJardin.scale.set(k); sprJardin.x = (W - texJardin.width * k) / 2; sprJardin.y = H - texJardin.height * k; sprJardin.visible = true; }
+  gVeil.clear(); gVeil.rect(0, 0, W, H).fill({ color: 0x0d2410, alpha: 0.12 });
+  if (!texVig) { const N = 128, d = new Uint8Array(N * N * 4);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const t = Math.max(0, Math.min(1, (Math.hypot(x / N - 0.5, y / N - 0.4) - 0.2) / 0.32)), al = 0.5 * t, o = (y * N + x) * 4; d[o] = 2 * al; d[o + 1] = 10 * al; d[o + 2] = 4 * al; d[o + 3] = al * 255; }
+    texVig = new PIXI.Texture({ source: new PIXI.BufferImageSource({ resource: d, width: N, height: N, alphaMode: 'premultiplied-alpha', scaleMode: 'linear' }) }); sprVig = new PIXI.Sprite(texVig); pd.stage.addChild(sprVig); }
+  sprVig.width = W; sprVig.height = H;
+}
+function tache(p, kind) {
+  if (!pu || !texJus) return; const s = toScreen(p), sp = new PIXI.Sprite(kind === 'eau' ? texAnneau : texJus); sp.anchor.set(0.5); sp.x = s.x; sp.y = s.y;
+  const base = (H / viewH) * (kind === 'eau' ? 0.9 : 0.55) / Math.max(sp.texture.width, sp.texture.height);
+  sp.scale.set(base * (kind === 'eau' ? 0.4 : 1)); sp.tint = kind === 'eau' ? 0xbfe6ff : 0x2a0c0c; sp.alpha = kind === 'eau' ? 0.8 : 0.55; sp.rotation = Math.random() * 6;
+  pu.stage.addChild(sp); taches.push({ sp, t: 0, d: kind === 'eau' ? 0.9 : 3, kind, base });
+}
+let tour = 0;
+function majPixi(dt) {
+  if (!pd) return;
+  for (const m of motes) { m.p += dt; m.y -= m.v * dt; m.x += Math.sin(m.p * 0.5) * 0.004 * dt * 10; if (m.y < -0.05) { m.y = 1.05; m.x = Math.random(); } m.s.x = m.x * W; m.s.y = m.y * H; m.s.alpha = 0.18 + 0.12 * Math.sin(m.p * 1.3); m.s.scale.set(m.t / (m.s.texture.width || 64)); }
+  if ((tour++ & 1) === 0) pd.renderer.render(pd.stage);
+  if (taches.length || tachesVides < 1) {
+    for (let i = taches.length - 1; i >= 0; i--) { const t = taches[i]; t.t += dt; const k = t.t / t.d; if (k >= 1) { t.sp.destroy(); taches.splice(i, 1); continue; } if (t.kind === 'eau') { t.sp.scale.set(t.base * (0.4 + k * 1.6)); t.sp.alpha = 0.8 * (1 - k); } else t.sp.alpha = 0.55 * (1 - k * k); }
+    pu.renderer.render(pu.stage); tachesVides = taches.length ? 0 : tachesVides + 1;
+  }
+}
+let tachesVides = 0;
+
+// ---------------------------------------------------------------- sons (ElevenLabs, aucun son synthétisé)
+let S = { recordC: 0, recordD: 0, etoiles: 0, carnet: {}, mus: 0.6, fx: 0.9 };
+try { S = Object.assign(S, JSON.parse(localStorage.getItem('tt2_s') || '{}')); } catch (e) {}
+const sauveS = () => { try { localStorage.setItem('tt2_s', JSON.stringify(S)); } catch (e) {} };
+let actx = null, maitre = null, fxG = null, musG = null, bzzG = null, bzzSrc = null, sonCoupe = false, musCur = null, musVoulue = 'musique-calme', sonsDemandes = false;
+const sons = {};
+try { sonCoupe = localStorage.getItem('tt2_son') === 'non'; } catch (e) {}
+function audio() {
+  if (actx) { reveillerAudio(actx); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.7;
+    const comp = actx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+    fxG = actx.createGain(); musG = actx.createGain(); fxG.gain.value = S.fx; musG.gain.value = S.mus; fxG.connect(maitre); musG.connect(maitre);
+    maitre.connect(comp); comp.connect(actx.destination);
+    bzzG = actx.createGain(); bzzG.gain.value = 0; bzzG.connect(fxG);
+    setTimeout(chargerSons, 0);
+  } catch (e) { actx = null; }
+}
+function chargerSons() {
+  if (sonsDemandes || !actx) return; sonsDemandes = true;
+  for (const n of ['tape-1', 'tape-2', 'oups', 'pique', 'vide', 'niveau', 'etoile', 'gong', 'bzz', 'musique-calme', 'musique-intense'])
+    fetch('./sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => {
+      sons[n] = d; if (n === musVoulue) musique(n);
+      if (n === 'bzz') { bzzSrc = actx.createBufferSource(); bzzSrc.buffer = d; bzzSrc.loop = true; bzzSrc.connect(bzzG); bzzSrc.start(); }
+    }).catch(() => {});
+}
+function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit; const g = actx.createGain(); g.gain.value = vol; s.connect(g); g.connect(fxG); s.start(); return true; }
+function musique(n) {
+  musVoulue = n; if (!actx || !musG) return; if (musCur && musCur.n === n) return;
+  const t = actx.currentTime;
+  if (musCur) { try { musCur.g.gain.setValueAtTime(musCur.g.gain.value, t); musCur.g.gain.linearRampToValueAtTime(0, t + 0.9); musCur.s.stop(t + 1); } catch (e) {} musCur = null; }
+  if (!n || !sons[n]) return;
+  const src = actx.createBufferSource(), g = actx.createGain(); src.buffer = sons[n]; src.loop = true; g.gain.value = 0; g.gain.linearRampToValueAtTime(1, t + 1.2); src.connect(g); g.connect(musG); src.start(); musCur = { n, s: src, g };
+}
+const son = {
+  tape: () => jouer('tape-' + (1 + (Math.random() * 2 | 0)), 0.95, rnd(0.92, 1.12)),
+  oups: () => jouer('oups', 0.7),
+  pique: () => jouer('pique', 0.6),
+  vide: () => jouer('vide', 0.85),
+  niveau: () => jouer('niveau', 0.85),
+  etoile: () => jouer('etoile', 0.7),
+  gong: () => jouer('gong', 0.9),
+};
+function majBoutonSon() {
+  $('btnSon').innerHTML = sonCoupe
+    ? '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="m16 9 6 6m0-6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+    : '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+}
+
+// ---------------------------------------------------------------- partie
+const PAR_NIVEAU = { calme: 8, defi: 10 }, BOSS_TOUS = 4;
+let etat = 'menu', mode = 'defi', score = 0, vies = 3, temps = 0, prochain = 1, ecrases = 0, niveau = 1, serie = 0, etoilesC = 0, videsC = 0, invasion = 0, viesInvasion = 3, invDemarre = false, record = 0;
+const bestioles = [], gites = [];
+function resize() {
+  W = innerWidth; H = innerHeight; renderer.setPixelRatio(dprCible(2)); renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.fov = W < H ? Math.min(54, 40 * Math.max(1, 0.75 / camera.aspect)) : 40; camera.updateProjectionMatrix();
+  viewH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; viewW = viewH * camera.aspect;
+  sol = -viewH * 0.36;
+  gites.forEach(g => scene.remove(g.obj)); gites.length = 0;
+  const types = ['soucoupe', 'pneu', 'bidon', 'soucoupe', 'pneu'];
+  const n = viewW < 9 ? 4 : 5;
+  for (let i = 0; i < n; i++) { const g = gite(types[i]); g.obj.position.set((i + 0.5) / n * viewW * 0.84 - viewW * 0.42, sol, 0.5); scene.add(g.obj); gites.push(g); }
+  calerPixi();
+}
+function popup(txt, pos, cls) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
+let bandeauT = 0;
+function bandeau(txt, alerte) { const b = $('bandeau'); b.textContent = txt; b.classList.toggle('alerte', !!alerte); b.classList.add('on'); clearTimeout(bandeauT); bandeauT = setTimeout(() => b.classList.remove('on'), 2400); }
+const nbConseils = () => Object.keys(S.carnet).length;
+function majScore() {
+  const e = $('score'); e.textContent = mode === 'calme' ? '★ ' + etoilesC : score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute');
+  $('meilleurHud').textContent = mode === 'calme' ? 'Conseils du carnet : ' + nbConseils() + ' / ' + CONSEILS.length : 'Record : ' + Math.max(record, score);
+}
+function majVies() { $('vies').innerHTML = mode === 'calme' ? '' : [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">💚</span>`).join(''); }
+function majNiveau() { $('niveau').textContent = 'Niveau ' + niveau + ' · ' + ecrases + (ecrases > 1 ? ' moustiques' : ' moustique'); }
+function perdreVie() { if (etat !== 'jeu' || mode !== 'defi') return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
+const pleins = () => gites.filter(g => g.vide <= 0);
+function lacher(type) {
+  let obj, depart;
+  if (type === 'moustique') {
+    const p = pleins(); const g = p.length ? p[Math.floor(Math.random() * p.length)] : null;
+    if (!g) return;
+    obj = moustique(); depart = g.obj.position.clone().add(new THREE.Vector3(rnd(-0.3, 0.3), 0.6, 0.6));
+  } else {
+    obj = type === 'abeille' ? abeille() : papillon();
+    const cote = Math.random() < .5 ? -1 : 1; depart = new THREE.Vector3(cote * (viewW / 2 + 1), rnd(sol + 2, viewH * 0.3), 0.8);
+  }
+  obj.position.copy(depart); scene.add(obj);
+  const calme = mode === 'calme';
+  const v = type === 'moustique' ? (calme ? 0.9 + niveau * 0.05 : 1.3 + niveau * 0.1) : rnd(1.4, 2.2);
+  const vie = type === 'moustique' ? (calme ? 10 : Math.max(3.2, 6 - niveau * 0.25)) : 12;
+  bestioles.push({ type, obj, t: 0, vie, cible: new THREE.Vector3(rnd(-viewW * .4, viewW * .4), rnd(sol + 1.5, viewH * .35), 0.8), v, cote: depart.x < 0 ? 1 : -1, vivant: true });
+}
+function vague() {
+  const calme = mode === 'calme', np = pleins().length, part = np / Math.max(1, gites.length);
+  if (!np && etat === 'jeu') { if (calme || Math.random() < 0.3) { prochain = 2.5; return; } }
+  const maxM = calme ? 3 : 4 + Math.floor(niveau / 3);
+  const vivants = bestioles.filter(b => b.vivant && b.type === 'moustique').length;
+  const n = Math.min(maxM - vivants, 1 + Math.floor(Math.random() * Math.min(1 + niveau * 0.4, calme ? 2 : 4)));
+  for (let i = 0; i < n; i++) setTimeout(() => etat === 'jeu' && lacher('moustique'), i * rnd(150, 350));
+  if (temps > 6 && Math.random() < (calme ? 0.4 : Math.min(0.25 + niveau * 0.03, 0.5))) setTimeout(() => etat === 'jeu' && lacher(Math.random() < .5 ? 'abeille' : 'papillon'), rnd(200, 700));
+  // plus il reste de gîtes pleins, plus les moustiques arrivent vite
+  const base = calme ? 2.6 : Math.max(0.7, 1.9 - niveau * 0.1) + rnd(0, 0.4);
+  prochain = base / (0.4 + 0.8 * part) * (invasion > 0 ? 0.45 : 1);
+}
+function demarrer(m) {
+  audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 0.6; ecrases = 0; niveau = 1; serie = 0; etoilesC = 0; videsC = 0; invasion = 0; invDemarre = false;
+  record = mode === 'calme' ? 0 : (S.recordD || 0);
+  bestioles.forEach(b => scene.remove(b.obj)); bestioles.length = 0; gites.forEach(g => { g.vide = 0; g.eau.visible = true; });
+  majScore(); majVies(); majNiveau(); musique(mode === 'calme' ? 'musique-calme' : 'musique-intense');
+  $('menu').classList.add('cache'); $('fin').classList.add('cache'); $('hud').classList.add('on'); $('niveau').classList.add('on'); $('lien').classList.add('discret');
+  $('bTerminer').style.display = mode === 'calme' ? 'block' : 'none';
+  if (mode === 'calme') bandeau('Prends ton temps, le jardin est à toi'); else bandeau('Protège la kaz : 3 vies');
+}
+function finPartie() {
+  if (etat === 'fin') return;
+  etat = 'fin'; $('niveau').classList.remove('on'); $('bTerminer').style.display = 'none'; if (bzzG) bzzG.gain.value = 0; $('fiche').classList.remove('on');
+  const calme = mode === 'calme';
+  let nouveau = false;
+  if (calme) { S.etoiles = (S.etoiles || 0) + etoilesC; }
+  else if (score > (S.recordD || 0) && score > 0) { S.recordD = score; record = score; nouveau = true; }
+  sauveS();
+  $('titreFin').textContent = calme ? 'Quel beau jardin tranquille' : 'Les moustiques ont gagné cette fois';
+  $('scoreFin').textContent = calme ? '★ ' + etoilesC : score;
+  $('recordFin').textContent = calme ? 'Conseils du carnet : ' + nbConseils() + ' / ' + CONSEILS.length : 'Record : ' + (S.recordD || 0);
+  $('nouveauRecord').textContent = nouveau ? 'Nouveau record !' : '';
+  $('moustiquesFin').textContent = ecrases + (ecrases > 1 ? ' moustiques écrasés' : ' moustique écrasé') + ' · ' + videsC + (videsC > 1 ? ' gîtes vidés' : ' gîte vidé') + ' · niveau ' + niveau;
+  const et = calme ? 0 : ecrases >= 40 ? 3 : ecrases >= 20 ? 2 : ecrases >= 8 ? 1 : 0;
+  $('etoilesFin').innerHTML = calme ? '' : [0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('');
+  setTimeout(() => { if (etat !== 'fin') return; $('fin').classList.remove('cache'); $('hud').classList.remove('on'); $('lien').classList.remove('discret'); }, 900);
+}
+// niveau suivant : un conseil du carnet, et l'invasion tous les 4 niveaux en mode défi
+function conseilSuivant() { const libres = CONSEILS.map((c, i) => i).filter(i => !S.carnet[i]); return libres.length ? libres[0] : -1; }
+function niveauSuivant() {
+  const idx = conseilSuivant();
+  if (mode === 'calme') { etoilesC++; majScore(); son.etoile(); }
+  if (idx >= 0) {
+    S.carnet[idx] = 1; sauveS(); majScore();
+    etat = 'fiche'; if (bzzG) bzzG.gain.value = 0;
+    $('ficheNum').textContent = 'Niveau ' + (niveau - 1) + ' réussi';
+    $('ficheTexte').textContent = CONSEILS[idx]; $('fiche').classList.add('on');
+  } else { bandeau('Niveau ' + niveau, false); apresNiveau(); }
+}
+function apresNiveau() {
+  if (mode === 'defi' && niveau % BOSS_TOUS === 0) lancerInvasion();
+}
+function lancerInvasion() {
+  invasion = 16; viesInvasion = vies; invDemarre = true; prochain = 0.4;
+  gites.forEach(g => { g.vide = 0; g.eau.visible = true; });
+  bandeau('Invasion après la pluie !', true); son.gong();
+}
+function toucher(x, y) {
+  if (etat !== 'jeu') return;
+  const unite = H / viewH, calme = mode === 'calme';
+  let meilleure = null, dMin = 1e9;
+  for (const b of bestioles) { if (!b.vivant) continue; const s = toScreen(b.obj.position); const d = Math.hypot(s.x - x, s.y - y); if (d < dMin) { dMin = d; meilleure = b; } }
+  if (meilleure && dMin < (meilleure.type === 'moustique' ? 0.8 : 0.7) * unite) {
+    const b = meilleure; b.vivant = false; scene.remove(b.obj);
+    if (b.type === 'moustique') {
+      serie++; ecrases++; const pts = 2 + Math.min(serie, 8); score += pts; son.tape(); tache(b.obj.position, 'sang');
+      majScore(); majNiveau();
+      eclats(b.obj.position, [[0.1, 0.1, 0.1], [0.9, 0.9, 0.85]], 10, 1.5, 22);
+      popup(calme ? '+1' : '+' + pts, b.obj.position, 'pts');
+      if (!calme && serie >= 5 && serie % 5 === 0) setTimeout(() => popup('Série de ' + serie + ' !', b.obj.position.clone().add(new THREE.Vector3(0, -0.8, 0)), 'chaine'), 80);
+      if (ecrases % PAR_NIVEAU[mode] === 0) { niveau++; son.niveau(); majNiveau(); setTimeout(() => { if (etat === 'jeu') niveauSuivant(); }, 600); }
+    } else {
+      serie = 0; son.oups();
+      eclats(b.obj.position, [[1, 0.8, 0.2]], 12, 1.2, 26);
+      if (calme) popup('Doucement, ami du jardin', b.obj.position, 'doux');
+      else { popup(b.type === 'abeille' ? 'Pas l\'abeille !' : 'Pas le papillon !', b.obj.position, 'aie'); perdreVie(); }
+    }
+    return;
+  }
+  for (const g of gites) {
+    const s = toScreen(g.obj.position.clone().add(new THREE.Vector3(0, 0.3, 0)));
+    if (Math.hypot(s.x - x, s.y - y) < 0.95 * unite && g.vide <= 0) {
+      g.vide = calme ? 20 : 14; g.eau.visible = false; videsC++; score += 5; son.vide(); tache(g.obj.position.clone().add(new THREE.Vector3(0, 0.3, 0)), 'eau');
+      eclats(g.obj.position.clone().add(new THREE.Vector3(0, 0.4, 0)), [[0.5, 0.75, 0.95], [0.7, 0.9, 1]], 30, 2.2, 30, 6);
+      popup(calme ? 'Gîte vidé !' : 'Gîte vidé ! +5', g.obj.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 'chaine');
+      if (calme && videsC % 5 === 0) { etoilesC++; son.etoile(); popup('★', g.obj.position.clone().add(new THREE.Vector3(0, 2, 0)), 'chaine'); }
+      majScore();
+      if (!pleins().length) bandeau('Plus de gîte plein : le jardin respire', false);
+      return;
+    }
+  }
+}
+addEventListener('pointerdown', e => { if (e.target.closest('.zone-interactive')) return; audio(); toucher(e.clientX, e.clientY); });
+
+// ---------------------------------------------------------------- boucle
+const horloge = new THREE.Clock(); let ambiance = 0;
+function boucle() {
+  const dt = Math.min(horloge.getDelta(), 0.05);
+  matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
+  if (etat === 'jeu') {
+    temps += dt; prochain -= dt; if (prochain <= 0) vague();
+    if (invasion > 0) { invasion -= dt; if (invasion <= 0) { invasion = 0; if (vies >= viesInvasion) { score += 50; majScore(); bandeau('Jardin sauvé ! +50', false); son.etoile(); } else bandeau('L\'invasion est passée', false); } }
+    if (musCur && mode === 'defi') musCur.s.playbackRate.value = 1 + Math.min(0.2, niveau * 0.02);
+  } else if (etat === 'menu') { ambiance -= dt; if (ambiance <= 0) { ambiance = 1.3; if (bestioles.length < 5) lacher(['moustique', 'moustique', 'papillon', 'abeille'][Math.floor(Math.random() * 4)]); } }
+  for (const g of gites) if (g.vide > 0) { g.vide -= dt; if (g.vide <= 0) { g.eau.visible = true; if (etat === 'jeu') popup('La pluie a rempli le gîte…', g.obj.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 'aie'); } }
+  let nbM = 0;
+  for (let i = bestioles.length - 1; i >= 0; i--) {
+    const b = bestioles[i];
+    if (!b.vivant) { bestioles.splice(i, 1); continue; }
+    b.t += dt;
+    const p = b.obj.position;
+    if (b.type === 'moustique') {
+      nbM++;
+      if (b.t % 1.2 < dt || p.distanceTo(b.cible) < 0.4) b.cible.set(rnd(-viewW * .42, viewW * .42), rnd(sol + 1.2, viewH * .36), 0.8);
+      const d = b.cible.clone().sub(p).normalize();
+      p.addScaledVector(d, b.v * dt); p.x += Math.sin(b.t * 13) * 0.02; p.y += Math.cos(b.t * 11) * 0.02;
+      b.obj.rotation.y = d.x < 0 ? Math.PI : 0; b.obj.rotation.z = Math.sin(b.t * 5) * 0.2;
+      b.obj.userData.ailes.forEach((a, k) => a.rotation.y = Math.sin(b.t * 90 + k * Math.PI) * 0.7);
+      if (b.t > b.vie) {
+        b.vivant = false; scene.remove(b.obj);
+        if (etat === 'jeu') {
+          serie = 0;
+          if (mode === 'calme') popup('Il s\'est sauvé', p, 'doux');
+          else { son.pique(); popup('Piqûre ! 🦟', p, 'aie'); perdreVie(); }
+        }
+      } else if (b.t > b.vie - 1) b.obj.scale.setScalar(2 * (1 + Math.sin(b.t * 30) * 0.08));
+    } else {
+      p.x += b.cote * b.v * dt; p.y += Math.sin(b.t * (b.type === 'papillon' ? 3 : 6)) * 0.02;
+      b.obj.rotation.y = b.cote > 0 ? 0 : Math.PI;
+      if (b.obj.userData.papillon) b.obj.userData.ailes.forEach(a => a.rotation.x = a.userData.s * Math.sin(b.t * 14) * 0.9);
+      else b.obj.userData.ailes.forEach((a, k) => a.rotation.y = Math.sin(b.t * 70 + k * Math.PI) * 0.6);
+      if (Math.abs(p.x) > viewW / 2 + 2) { b.vivant = false; scene.remove(b.obj); }
+    }
+  }
+  if (bzzG) bzzG.gain.setTargetAtTime(etat === 'jeu' || etat === 'menu' ? Math.min(0.5, nbM * 0.12) : 0, actx.currentTime, 0.2);
+  majParticules(dt); majPixi(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(boucle);
+}
+
+// ---------------------------------------------------------------- boutons
+$('btnSon').onclick = () => { sonCoupe = !sonCoupe; try { localStorage.setItem('tt2_son', sonCoupe ? 'non' : 'oui'); } catch (e) {} if (maitre) maitre.gain.value = sonCoupe ? 0 : 0.7; majBoutonSon(); };
+$('bCalme').onclick = () => demarrer('calme');
+$('jouer').onclick = () => demarrer('defi');
+$('rejouer').onclick = () => demarrer(mode);
+$('bTerminer').onclick = () => finPartie();
+$('menuFin').onclick = () => { etat = 'menu'; $('fin').classList.add('cache'); $('menu').classList.remove('cache'); $('hud').classList.remove('on'); musique('musique-calme'); };
+$('ficheOk').onclick = () => { $('fiche').classList.remove('on'); etat = 'jeu'; horloge.getDelta(); apresNiveau(); };
+$('bAlbum').onclick = () => {
+  const L = $('albListe'); L.innerHTML = ''; $('albCompte').textContent = nbConseils() + ' / ' + CONSEILS.length + ' conseils découverts · ' + (S.etoiles || 0) + ((S.etoiles || 0) > 1 ? ' étoiles' : ' étoile');
+  CONSEILS.forEach((c, i) => { const d = document.createElement('div'); if (S.carnet[i]) d.textContent = c; else { d.className = 'vide'; d.textContent = '??? Continue de jouer pour le découvrir'; } L.appendChild(d); });
+  $('panAlbum').classList.remove('cache');
+};
+$('bAlbFerme').onclick = () => $('panAlbum').classList.add('cache');
+$('bSonOpt').onclick = () => { $('rMus').value = Math.round(S.mus * 100); $('rFx').value = Math.round(S.fx * 100); $('panSon').classList.remove('cache'); };
+$('bSonFerme').onclick = () => { $('panSon').classList.add('cache'); sauveS(); };
+$('rMus').oninput = e => { S.mus = e.target.value / 100; if (musG) musG.gain.value = S.mus; };
+$('rFx').oninput = e => { S.fx = e.target.value / 100; if (fxG) fxG.gain.value = S.fx; };
+$('bCredits').onclick = () => $('panCredits').classList.remove('cache');
+$('bCrFerme').onclick = () => $('panCredits').classList.add('cache');
+$('retour').onclick = () => { try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {} location.href = '/jeux'; };
+document.querySelectorAll('.zone-interactive').forEach(element => { element.addEventListener('touchend', function (event) { event.preventDefault(); event.stopPropagation(); if (event.currentTarget.click) event.currentTarget.click(); }, { passive: false }); });
+document.addEventListener('visibilitychange', () => { if (!actx) return; if (document.hidden) endormirAudio(actx); else reveillerAudio(actx); });
+initPixi(); addEventListener('resize', resize); resize(); majVies(); majScore(); majBoutonSon();
+const img = new Image(); img.src = './fond-jardin.webp'; img.onload = img.onerror = () => { $('charge').textContent = ''; window.PRET = true; };
+requestAnimationFrame(boucle);
+function liberer() { try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} if (actx) try { actx.close(); } catch (e) {} [$('fond'), $('trace'), $('gl')].forEach(libererCanvas); journal('liberation', 'tap-tap-moustik-v2'); }
+window.kwelafeLiberer = liberer;
+journal('taptap2', 'démarrage');
+if (TEST) window.jeu = { bestioles, gites, toScreen, toucher, lacher, demarrer, finPartie, S, taches, get etat() { return etat; }, get mode() { return mode; }, get score() { return score; }, get vies() { return vies; }, get niveau() { return niveau; }, get ecrases() { return ecrases; }, get etoilesC() { return etoilesC; }, get invasion() { return invasion; }, get videsC() { return videsC; }, set ecrases(v) { ecrases = v; }, set niveau(v) { niveau = v; }, set temps(v) { temps = v; } };
+</script>
+</body>
+</html>
