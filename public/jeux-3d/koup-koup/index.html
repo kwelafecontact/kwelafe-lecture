@@ -169,7 +169,7 @@ const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false, alpha:
 renderer.setClearColor(0x000000, 0);
 renderer.setPixelRatio(ratioRendu());
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.08;
+renderer.toneMappingExposure = 1.0;   // couleurs plus franches, moins délavées
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 function construireEnvironnement() {
@@ -183,7 +183,17 @@ construireEnvironnement();
 scene.environmentIntensity = 0.8;
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
 camera.position.set(0, 0, 14);
-const sun = new THREE.DirectionalLight(0xfff0d0, 2.8); sun.position.set(3, 6, 8); scene.add(sun);
+const sun = new THREE.DirectionalLight(0xfff0d0, 2.8); sun.position.set(2.5, 5.5, 9); scene.add(sun);
+// Ombres projetées vers le fond : le soleil vient de devant, l'ombre de chaque fruit tombe sur l'étal derrière lui,
+// d'autant plus décalée et plus floue que le fruit est loin du bois.
+const OMBRES = QUALITE > 0 && !new URLSearchParams(location.search).has('simple');
+if (OMBRES) {
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+  sun.castShadow = true; sun.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 30; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.02; sun.shadow.radius = 6;
+}
+const solOmbre = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ color: 0x1a0c02, opacity: 0.42 }));
+solOmbre.position.z = -2.4; solOmbre.receiveShadow = true; solOmbre.visible = OMBRES; scene.add(solOmbre);
 const rim = new THREE.DirectionalLight(0xbfdcff, 1.6); rim.position.set(-6, 3, -4); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xfff4dc, 0x6a4020, 0.4));
 // post-traitement : halo lumineux léger (seuls les éclats très clairs brillent) et contours lissés
@@ -210,6 +220,7 @@ function resize() {
   camera.updateProjectionMatrix();
   viewH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   viewW = viewH * camera.aspect;
+  if (OMBRES) { const sc = sun.shadow.camera, m = Math.max(viewW, viewH) * 0.75 + 3; sc.left = -m; sc.right = m; sc.top = m; sc.bottom = -m; sc.updateProjectionMatrix(); }
   peindreFond();
 }
 
@@ -355,14 +366,27 @@ const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
 let catalogue = [];           // tous les fruits du fichier
 const prets = [];             // fruits chargés et prêts à lancer
 const cache = {};
+// Corrections d'apparence (comparaison avec les vrais fruits de La Réunion) :
+// teinte = couleur multipliée sur la peau ; aplatir = écrase le grand axe (fruit trop allongé)
+const CORRECTIONS = {
+  'bibasse': { teinte: '#ffb04a' },          // la bibasse mûre est jaune orangé, pas beige
+  'chouchou': { teinte: '#cfe9a4' },         // chouchou vert tendre
+  'carambole': { teinte: '#ffe680' },        // carambole jaune doré, cireuse
+  'mandarine': { teinte: '#ffa040', aplatir: 0.62 }, // mandarine ronde et un peu aplatie, bien orange
+  'jacque': { teinte: '#c9d67a' },           // jacque vert jaune
+  'goyave': { teinte: '#f4f0a6' },           // goyave rose : peau jaune pâle
+  'citrouille': { teinte: '#f0c27a' }        // citrouille péi plus terne
+};
 function preparer(d, g) {
+  const corr = CORRECTIONS[d.id] || {};
   g.scene.traverse(o => {
     if (!o.isMesh) return;
     const m = o.material, p = new THREE.MeshPhysicalMaterial();
     THREE.MeshStandardMaterial.prototype.copy.call(p, m);
+    if (m.name.endsWith('_peau') && corr.teinte) p.color.multiply(new THREE.Color(corr.teinte));
     if (m.name.endsWith('_peau')) { p.clearcoat = d.clearcoat; p.clearcoatRoughness = 0.22; if (d.sheen > 0) { p.sheen = d.sheen; p.sheenRoughness = 0.6; p.sheenColor = new THREE.Color(0xffffff); } }
     else if (m.name.endsWith('_chair')) { p.clearcoat = 0.9; p.clearcoatRoughness = 0.1; }
-    o.material = p; o.frustumCulled = false;
+    o.material = p; o.frustumCulled = false; o.castShadow = true;
   });
   const entier = g.scene.getObjectByName('entier');
   const box = new THREE.Box3().setFromObject(entier);
@@ -370,9 +394,17 @@ function preparer(d, g) {
   const maxd = Math.max(size.x, size.y, size.z);
   const taille = 1.3 * (1 + 0.18 * THREE.MathUtils.clamp(Math.log2(d.taille_reelle_m / 0.07), -1.2, 2.5));
   const k = taille / maxd;
-  const make = name => { const o = g.scene.getObjectByName(name).clone(); o.position.sub(center); const w = new THREE.Group(); const s = new THREE.Group(); s.scale.setScalar(k); s.add(o); w.add(s); return w; };
+  const grandAxe = size.x >= size.y && size.x >= size.z ? 'x' : size.y >= size.z ? 'y' : 'z';
+  const make = name => { const o = g.scene.getObjectByName(name).clone(); o.position.sub(center); const w = new THREE.Group(); const s = new THREE.Group(); s.scale.setScalar(k); if (corr.aplatir) s.scale[grandAxe] *= corr.aplatir; s.add(o); w.add(s); return w; };
   const rayon = Math.max(0.5 * taille * 0.9, 0.5);
-  return { d, gltf: g.scene, entier: make('entier'), A: make('moitie_A'), B: make('moitie_B'), rayon, jus: new THREE.Color(d.couleur_jus), charge: performance.now() };
+  const A = make('moitie_A');
+  // chair du fruit (texture de la face coupée) et sa zone de texture, pour refermer les coupes réelles
+  let chair = null, chairUV = [0, 1, 0, 1];
+  A.traverse(o => { if (!o.isMesh || !/_chair$/.test(o.material.name || '')) return;
+    // face de coupe : texture de chair seule (le relief de la chair d'origine éclaircit trop une coupe plane)
+    chair = new THREE.MeshStandardMaterial({ name: o.material.name, map: o.material.map, color: 0xcdcdcd, roughness: 0.42, metalness: 0, envMapIntensity: 0.35 }); const u = o.geometry.attributes.uv; if (!u) return;
+    let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9; for (let i = 0; i < u.count; i++) { const x = u.getX(i), y = u.getY(i); u0 = Math.min(u0, x); u1 = Math.max(u1, x); v0 = Math.min(v0, y); v1 = Math.max(v1, y); } chairUV = [u0, u1, v0, v1]; });
+  return { d, gltf: g.scene, entier: make('entier'), A, B: make('moitie_B'), rayon, R: taille * 0.5, chair, chairUV, jus: new THREE.Color(d.couleur_jus), charge: performance.now() };
 }
 async function charger(d) {
   if (cache[d.id]) return cache[d.id];
@@ -414,13 +446,152 @@ const rocheGeo = (() => {
   }
   g.computeVertexNormals(); return g;
 })();
-const rocheMat = new THREE.MeshStandardMaterial({ color: 0x2a2624, roughness: 0.92, metalness: 0.05, emissive: 0xffffff, emissiveMap: rocheTexture(), emissiveIntensity: 1.6, flatShading: true });
+// basalte vitreux, luisant comme de la lave refroidie, avec des veines de lave qui pulsent
+const rocheMat = new THREE.MeshPhysicalMaterial({ color: 0x15110f, roughness: 0.16, metalness: 0.12, clearcoat: 1, clearcoatRoughness: 0.04, specularIntensity: 1, envMapIntensity: 1.8, emissive: 0xffffff, emissiveMap: rocheTexture(), emissiveIntensity: 1.9, flatShading: true });
+
+// ---------------------------------------------------------------- découpe réelle : on tranche la géométrie 3D le long du geste
+// Chaque coupe suit exactement la ligne tracée par le doigt (angle et position). La face coupée est refermée
+// avec la chair du fruit. Un morceau peut être recoupé une deuxième fois.
+const _vA = new THREE.Vector3(), _mInv = new THREE.Matrix4(), _rel = new THREE.Matrix4();
+function trancherGeo(geo, plan) {
+  const pos = geo.attributes.position, nor = geo.attributes.normal, uv = geo.attributes.uv, idx = geo.index;
+  const nV = pos.count, D = new Float32Array(nV);
+  const pn = plan.normal, pc = plan.constant;
+  for (let i = 0; i < nV; i++) D[i] = pn.x * pos.getX(i) + pn.y * pos.getY(i) + pn.z * pos.getZ(i) + pc;
+  const sortie = [{ p: [], n: [], u: [] }, { p: [], n: [], u: [] }], segs = [];
+  const sommet = i => [pos.getX(i), pos.getY(i), pos.getZ(i), nor ? nor.getX(i) : 0, nor ? nor.getY(i) : 0, nor ? nor.getZ(i) : 1, uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0];
+  const lerp = (a, b, t) => { const r = new Array(8); for (let k = 0; k < 8; k++) r[k] = a[k] + (b[k] - a[k]) * t; return r; };
+  const pousser = (s, v) => { const o = sortie[s]; o.p.push(v[0], v[1], v[2]); o.n.push(v[3], v[4], v[5]); o.u.push(v[6], v[7]); };
+  const nT = (idx ? idx.count : nV) / 3;
+  for (let t = 0; t < nT; t++) {
+    const i0 = idx ? idx.getX(t * 3) : t * 3, i1 = idx ? idx.getX(t * 3 + 1) : t * 3 + 1, i2 = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+    const d0 = D[i0], d1 = D[i1], d2 = D[i2];
+    if (d0 >= 0 && d1 >= 0 && d2 >= 0) { pousser(0, sommet(i0)); pousser(0, sommet(i1)); pousser(0, sommet(i2)); continue; }
+    if (d0 < 0 && d1 < 0 && d2 < 0) { pousser(1, sommet(i0)); pousser(1, sommet(i1)); pousser(1, sommet(i2)); continue; }
+    // triangle coupé : on découpe le polygone de chaque côté du plan
+    const v = [sommet(i0), sommet(i1), sommet(i2)], d = [d0, d1, d2], cote = [[], []], inter = [];
+    for (let k = 0; k < 3; k++) {
+      const a = v[k], b = v[(k + 1) % 3], da = d[k], db = d[(k + 1) % 3];
+      cote[da >= 0 ? 0 : 1].push(a);
+      if ((da >= 0) !== (db >= 0)) { const x = lerp(a, b, da / (da - db)); cote[0].push(x); cote[1].push(x); inter.push(x); }
+    }
+    for (let s = 0; s < 2; s++) { const pg = cote[s]; for (let k = 1; k + 1 < pg.length; k++) { pousser(s, pg[0]); pousser(s, pg[k]); pousser(s, pg[k + 1]); } }
+    if (inter.length === 2) segs.push([inter[0][0], inter[0][1], inter[0][2]], [inter[1][0], inter[1][1], inter[1][2]]);
+  }
+  const geos = sortie.map(o => {
+    if (!o.p.length) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(o.p, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(o.n, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(o.u, 2));
+    g.computeBoundingSphere(); return g;
+  });
+  return { geos, segs };
+}
+// relie les segments de coupe en boucles fermées, puis les remplit (face de chair)
+function capuchon(segs, n, repere) {
+  if (segs.length < 6) return null;
+  const q = 1e4, cle = p => Math.round(p[0] * q) + ',' + Math.round(p[1] * q) + ',' + Math.round(p[2] * q);
+  const parCle = new Map(), libre = new Uint8Array(segs.length / 2).fill(1);
+  for (let s = 0; s < segs.length / 2; s++) for (const e of [0, 1]) { const k = cle(segs[s * 2 + e]); if (!parCle.has(k)) parCle.set(k, []); parCle.get(k).push(s * 2 + e); }
+  const boucles = [];
+  for (let s0 = 0; s0 < libre.length; s0++) {
+    if (!libre[s0]) continue;
+    libre[s0] = 0; const b = [segs[s0 * 2], segs[s0 * 2 + 1]]; let bout = segs[s0 * 2 + 1], garde = 0;
+    while (garde++ < 20000) {
+      const l = parCle.get(cle(bout)); let suivant = -1;
+      if (l) for (const e of l) { const s = e >> 1; if (libre[s]) { suivant = e; break; } }
+      if (suivant < 0) break;
+      const s = suivant >> 1; libre[s] = 0; bout = segs[(suivant & 1) ? s * 2 : s * 2 + 1]; b.push(bout);
+    }
+    if (b.length >= 3) boucles.push(b);
+  }
+  if (!boucles.length) return null;
+  // repère du plan de coupe pour plaquer la texture de chair (centrée sur le cœur du fruit)
+  const a = new THREE.Vector3(), bb = new THREE.Vector3();
+  a.set(Math.abs(n.x) < 0.9 ? 1 : 0, Math.abs(n.x) < 0.9 ? 0 : 1, 0).cross(n).normalize(); bb.crossVectors(n, a);
+  // la texture de chair est une coupe transversale (chair autour, noyau ou pépins au centre) :
+  // on la cale sur l'étendue réelle de la coupe, centrée sur le cœur du fruit, grand axe à la verticale de la texture
+  const proj = (p, w) => (p[0] - repere.c.x) * w.x + (p[1] - repere.c.y) * w.y + (p[2] - repere.c.z) * w.z;
+  let ea = 1e-4, eb = 1e-4;
+  for (const b0 of boucles) for (const p of b0) { ea = Math.max(ea, Math.abs(proj(p, a))); eb = Math.max(eb, Math.abs(proj(p, bb))); }
+  const inverse = ea > eb;
+  const P = [], N = [], U = [], uvMap = (p) => {
+    let u = 0.5 + 0.47 * proj(p, a) / ea, v = 0.5 + 0.47 * proj(p, bb) / eb;
+    if (inverse) { const t = u; u = v; v = t; }
+    return [repere.uv[0] + u * (repere.uv[1] - repere.uv[0]), repere.uv[2] + v * (repere.uv[3] - repere.uv[2])];
+  };
+  for (const b of boucles) {
+    const c = [0, 0, 0]; for (const p of b) { c[0] += p[0]; c[1] += p[1]; c[2] += p[2]; } c[0] /= b.length; c[1] /= b.length; c[2] /= b.length;
+    const uc = uvMap(c);
+    for (let i = 0; i < b.length; i++) {
+      const p1 = b[i], p2 = b[(i + 1) % b.length];
+      // orientation : la face regarde vers -n (côté coupé du morceau positif)
+      const e1x = p1[0] - c[0], e1y = p1[1] - c[1], e1z = p1[2] - c[2], e2x = p2[0] - c[0], e2y = p2[1] - c[1], e2z = p2[2] - c[2];
+      const cx = e1y * e2z - e1z * e2y, cy = e1z * e2x - e1x * e2z, cz = e1x * e2y - e1y * e2x;
+      const ok = cx * n.x + cy * n.y + cz * n.z < 0;
+      const A = ok ? p1 : p2, B = ok ? p2 : p1;
+      P.push(c[0], c[1], c[2], A[0], A[1], A[2], B[0], B[1], B[2]);
+      for (let k = 0; k < 3; k++) N.push(-n.x, -n.y, -n.z);
+      const ua = uvMap(A), ub = uvMap(B); U.push(uc[0], uc[1], ua[0], ua[1], ub[0], ub[1]);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+  g.computeBoundingSphere();
+  return g;
+}
+// tranche un objet (fruit entier ou morceau) : renvoie deux groupes prêts à tomber, ou null
+function trancherObjet(racine, planMonde, f, repere) {
+  racine.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(racine.matrixWorld).invert();
+  const planR = planMonde.clone().applyMatrix4(inv);            // plan dans le repère du morceau
+  const pieces = [new THREE.Group(), new THREE.Group()], segs = [], nb = [0, 0];
+  for (const g of pieces) { g.position.copy(racine.position); g.quaternion.copy(racine.quaternion); g.scale.copy(racine.scale); }
+  const maillages = []; racine.traverse(o => { if (o.isMesh) maillages.push(o); });
+  for (const m of maillages) {
+    _rel.copy(inv).multiply(m.matrixWorld);
+    const planL = planR.clone().applyMatrix4(_mInv.copy(_rel).invert());
+    const r = trancherGeo(m.geometry, planL);
+    const corps = m.userData.corps || /_peau$/.test(m.material.name || '') || m.material === matOr;
+    if (corps) for (const p of r.segs) { _vA.set(p[0], p[1], p[2]).applyMatrix4(_rel); segs.push([_vA.x, _vA.y, _vA.z]); }
+    r.geos.forEach((geo, s) => {
+      if (!geo) return;
+      const nm = new THREE.Mesh(geo, m.material); nm.matrixAutoUpdate = true; _rel.decompose(nm.position, nm.quaternion, nm.scale);
+      nm.userData.corps = corps; nm.userData.genere = true; nm.castShadow = true; nm.frustumCulled = false;
+      pieces[s].add(nm); nb[s] += geo.attributes.position.count;
+    });
+  }
+  if (!nb[0] || !nb[1]) return null;
+  const nR = planR.normal;
+  const cap = capuchon(segs, nR, repere);
+  if (cap && f.chair) {
+    const c0 = new THREE.Mesh(cap, f.chair), c1 = new THREE.Mesh(cap.clone(), f.chair);
+    const nrm = c1.geometry.attributes.normal; for (let i = 0; i < nrm.count; i++) nrm.setXYZ(i, nR.x, nR.y, nR.z);
+    const ix = c1.geometry.attributes.position, iu = c1.geometry.attributes.uv; // inverser l'ordre des sommets pour l'autre face
+    for (let i = 0; i < ix.count; i += 3) { for (const at of [ix, iu, nrm]) { const t = []; for (let k = 0; k < at.itemSize; k++) t.push(at.getComponent(i + 1, k)); for (let k = 0; k < at.itemSize; k++) at.setComponent(i + 1, k, at.getComponent(i + 2, k)); for (let k = 0; k < at.itemSize; k++) at.setComponent(i + 2, k, t[k]); } }
+    for (const [cm, s] of [[c0, 0], [c1, 1]]) { cm.userData.corps = true; cm.userData.genere = true; cm.castShadow = true; cm.frustumCulled = false; pieces[s].add(cm); }
+  }
+  // chaque morceau tourne autour de son propre centre
+  const reperes = pieces.map(g => {
+    g.updateMatrixWorld(true);
+    const bx = new THREE.Box3().setFromObject(g), cw = bx.getCenter(new THREE.Vector3()), taille = bx.getSize(new THREE.Vector3());
+    const cl = g.worldToLocal(cw.clone());
+    g.children.forEach(ch => ch.position.sub(cl));
+    g.position.copy(cw);
+    return { c: repere.c.clone().sub(cl), R: repere.R, uv: repere.uv, rayon: Math.max(0.28, Math.max(taille.x, taille.y) * 0.5) };
+  });
+  return { pieces, reperes, normal: planMonde.normal.clone() };
+}
+function libererMorceau(obj) { obj.traverse(o => { if (o.isMesh && o.userData.genere && o.geometry) o.geometry.dispose(); }); }
 
 // ---------------------------------------------------------------- particules de jus (une seule pièce instanciée)
 // Les gouttes sont étirées dans le sens de leur vitesse, translucides et brillantes.
 // Trois tailles : fine bruine, gouttes moyennes, grosses gouttes lourdes.
 // Une grosse goutte qui retombe laisse une petite tache en couronne sur l'étal.
-const MAXP = 900;
+const MAXP = 1400;
 const pGeo = (() => { const g = new THREE.SphereGeometry(1, 10, 8); g.scale(1, 1, 0.8); return g; })();
 const pMat = new THREE.MeshPhysicalMaterial({ roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, transparent: true, opacity: 0.88, specularIntensity: 1, ior: 1.33, sheen: 0.4, sheenColor: 0xffffff });
 const parts = new THREE.InstancedMesh(pGeo, pMat, MAXP);
@@ -470,19 +641,82 @@ function giclee(pos, dir, color, n = 34, id = '') {
     tmpC.copy(color).offsetHSL(rnd(-0.015, 0.015), rnd(-0.05, 0.05), rnd(-0.08, 0.1));
     goutte(pos, v, rnd(0.03, 0.07), tmpC, rnd(0.6, 1.2), 1, Math.random() < 0.18);
   }
+  // jet de jus dans le sens exact du geste
+  for (let i = 0; i < Math.round(n * 0.45 * k); i++) {
+    const v = dir.clone().multiplyScalar(rnd(6, 13)).addScaledVector(perp, rnd(-1.2, 1.2)); v.y += rnd(0.5, 2.5); v.z = rnd(0, 2.5);
+    tmpC.copy(color).offsetHSL(0, rnd(-0.03, 0.05), rnd(-0.06, 0.1));
+    goutte(pos, v, rnd(0.035, 0.08), tmpC, rnd(0.5, 1), 1.1, Math.random() < 0.3);
+  }
   // grosses gouttes lourdes
-  for (let i = 0; i < Math.round(7 * k) + 1; i++) {
+  for (let i = 0; i < Math.round(12 * k) + 2; i++) {
     const v = new THREE.Vector3(rnd(-2, 2), rnd(0, 3.5), rnd(0, 2)).addScaledVector(dir, rnd(0.5, 3));
     goutte(pos, v, rnd(0.08, 0.15), color, rnd(0.45, 0.9), 1.5, true);
   }
   // pulpe (chair du fruit) et pépins selon le fruit
   const chair = color.clone().offsetHSL(0, -0.05, 0.1);
-  for (let i = 0; i < Math.round(10 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4, 4), rnd(0, 6), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.03, 0.07), chair, rnd(0.7, 1.3), 0.35);
+  for (let i = 0; i < Math.round(16 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4, 4), rnd(0, 6), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.03, 0.07), chair, rnd(0.7, 1.3), 0.35);
   if (PEPINS[id]) { const pc = new THREE.Color(PEPINS[id]); for (let i = 0; i < Math.round(12 * k); i++) morceau(pos, new THREE.Vector3(rnd(-4.5, 4.5), rnd(0, 6.5), rnd(-1, 2)).addScaledVector(dir, rnd(0, 3)), rnd(0.025, 0.05), pc, rnd(0.8, 1.4), 0.6); }
 }
 function etincelles(pos, n = 40, couleur = 0xffcf4a) {
   const c = new THREE.Color(couleur);
   for (let i = 0; i < Math.round(n * qx()); i++) { const a = rnd(0, 6.283), sp = rnd(3, 10); goutte(pos, new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp, rnd(-2, 2)), rnd(0.03, 0.08), c.clone().offsetHSL(0, 0, rnd(-0.1, 0.15)), rnd(0.4, 0.9), 0.5); }
+}
+// ---------------------------------------------------------------- explosion de la roche du volcan
+// boule de feu, onde de choc, fumée, éclats de basalte incandescents, braises lumineuses et éclair qui illumine les fruits
+function texRadiale(stops) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  stops.forEach(([o, col]) => gr.addColorStop(o, col)); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const TEX_FEU = texRadiale([[0, 'rgba(255,255,235,1)'], [0.18, 'rgba(255,230,120,1)'], [0.42, 'rgba(255,120,20,.9)'], [0.7, 'rgba(180,30,0,.45)'], [1, 'rgba(60,0,0,0)']]);
+const TEX_FUMEE = texRadiale([[0, 'rgba(60,50,46,.85)'], [0.55, 'rgba(40,34,32,.45)'], [1, 'rgba(20,16,14,0)']]);
+const TEX_ONDE = texRadiale([[0, 'rgba(255,200,120,0)'], [0.72, 'rgba(255,200,120,0)'], [0.86, 'rgba(255,230,170,.9)'], [1, 'rgba(255,160,60,0)']]);
+const explosions = [];
+const lumiereExplo = new THREE.PointLight(0xff8a2a, 0, 14, 1.6); scene.add(lumiereExplo);
+const MAXE = 48;
+const eclatGeo = new THREE.DodecahedronGeometry(1, 0);
+const eclatMat = new THREE.MeshPhysicalMaterial({ color: 0x1a1412, roughness: 0.2, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05, emissive: 0xff4a08, emissiveIntensity: 1.4, flatShading: true });
+const eclatsRoche = new THREE.InstancedMesh(eclatGeo, eclatMat, MAXE); eclatsRoche.instanceMatrix.setUsage(THREE.DynamicDrawUsage); eclatsRoche.frustumCulled = false; eclatsRoche.castShadow = true; scene.add(eclatsRoche);
+const E = Array.from({ length: MAXE }, () => ({ vie: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, s: 0.1, rx: 0, ry: 0, vr: 0 })); let eIdx = 0;
+function sprite(tex, add, pos, s0, s1, vie, retard = 0) {
+  const m = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, color: add ? new THREE.Color(2.2, 2.2, 2.2) : 0xffffff });
+  const sp = new THREE.Sprite(m); sp.position.copy(pos); sp.scale.setScalar(s0); sp.visible = retard <= 0; scene.add(sp);
+  explosions.push({ sp, s0, s1, vie, t: -retard, rot: rnd(-1.5, 1.5) });
+}
+function explosionRoche(pos) {
+  const p = pos.clone(); p.z += 0.3;
+  sprite(TEX_ONDE, true, p, 0.5, 9, 0.45);
+  sprite(TEX_FEU, true, p, 0.6, 5.2, 0.55);
+  sprite(TEX_FEU, true, p.clone().add(new THREE.Vector3(rnd(-.4, .4), rnd(-.2, .4), 0.1)), 0.4, 3.6, 0.7, 0.06);
+  for (let i = 0; i < 5; i++) sprite(TEX_FUMEE, false, p.clone().add(new THREE.Vector3(rnd(-.6, .6), rnd(-.3, .5), -0.2)), 0.8, rnd(3.5, 5.5), rnd(1.4, 2.1), 0.12 + i * 0.05);
+  lumiereExplo.position.copy(p).add(new THREE.Vector3(0, 0, 1.2)); lumiereExplo.intensity = 90;
+  for (let i = 0; i < Math.round(26 * qx()) + 8; i++) {
+    const e = E[eIdx]; eIdx = (eIdx + 1) % MAXE; const a = rnd(0, 6.283), sp = rnd(4, 11);
+    Object.assign(e, { vie: rnd(1.1, 1.8), x: p.x, y: p.y, z: p.z, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp + 3, vz: rnd(-2, 3), s: rnd(0.06, 0.17), rx: rnd(0, 6), ry: rnd(0, 6), vr: rnd(-14, 14) });
+  }
+  // braises très lumineuses (le halo du jeu les fait briller)
+  const chaud = [0xfff2b0, 0xffc23a, 0xff7a1a, 0xff4a0a];
+  for (let i = 0; i < Math.round(110 * qx()) + 20; i++) { const a = rnd(0, 6.283), sp = rnd(2, 13); goutte(p, new THREE.Vector3(Math.cos(a) * sp, Math.sin(a) * sp + 2, rnd(-2, 3)), rnd(0.025, 0.07), new THREE.Color(chaud[i % 4]).multiplyScalar(rnd(2.5, 4.5)), rnd(0.5, 1.4), 0.55); }
+  if (fx) { const sc = toScreen(p); fx.joue('etincelles', { x: sc.x, y: sc.y, intensite: 1 }); fx.joue('braises', { x: sc.x, y: sc.y, intensite: 1 }); }
+}
+function majExplosions(vrai, dt) {
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    const x = explosions[i]; x.t += vrai;
+    if (x.t < 0) continue; x.sp.visible = true;
+    const k = Math.min(1, x.t / x.vie), e = 1 - Math.pow(1 - k, 3);
+    x.sp.scale.setScalar(x.s0 + (x.s1 - x.s0) * e); x.sp.material.opacity = 1 - k; x.sp.material.rotation += x.rot * vrai;
+    if (k >= 1) { scene.remove(x.sp); x.sp.material.dispose(); explosions.splice(i, 1); }
+  }
+  if (lumiereExplo.intensity > 0) lumiereExplo.intensity = Math.max(0, lumiereExplo.intensity - vrai * 160);
+  for (let i = 0; i < MAXE; i++) {
+    const e = E[i];
+    if (e.vie <= 0) { tmpM.makeScale(0, 0, 0); eclatsRoche.setMatrixAt(i, tmpM); continue; }
+    e.vie -= dt; e.vy -= 12 * dt; e.x += e.vx * dt; e.y += e.vy * dt; e.z += e.vz * dt; e.rx += e.vr * dt; e.ry += e.vr * 0.7 * dt;
+    const sc = e.s * Math.min(1, e.vie * 2.5);
+    tmpQ.setFromEuler(tmpE.set(e.rx, e.ry, 0)); tmpS.set(sc, sc * 0.8, sc);
+    tmpM.compose(tmpP.set(e.x, e.y, e.z), tmpQ, tmpS); eclatsRoche.setMatrixAt(i, tmpM);
+  }
+  eclatsRoche.instanceMatrix.needsUpdate = true;
 }
 function majParticules(dt) {
   for (let i = 0; i < MAXP; i++) {
@@ -579,8 +813,22 @@ function tache(sx, sy, color, taille, dir) {
   // reflet humide (il s'efface en quelques secondes, comme le jus qui sèche)
   reflets.push({ x: cx - taille * 0.25, y: cy - taille * 0.3, rx: taille * 0.3, ry: taille * 0.11, a: ang - 0.4, t: 0 });
   // les coulures partent du bas de la flaque
-  const nb = 3 + Math.floor(Math.random() * 4);
+  const nb = 4 + Math.floor(Math.random() * 5);
   for (let i = 0; i < nb; i++) nouvelleCoulure(cx + rnd(-0.75, 0.75) * taille, cy + taille * rnd(0.35, 0.6), rnd(1.8, Math.max(2.6, taille * 0.13)), c, rnd(70, 300));
+}
+// une goutte de jus qui coule : pointe effilée vers le haut, ventre renflé en bas, bord plus sombre, reflet allongé
+function larme(ctx, x, y, r, c, etire = 1, alpha = 0.95) {
+  const h = r * (1.9 + 0.9 * etire);
+  ctx.beginPath(); ctx.moveTo(x, y - h);
+  ctx.bezierCurveTo(x + r * 0.22, y - h * 0.62, x + r * 1.02, y - r * 0.75, x + r * 0.98, y + r * 0.05);
+  ctx.bezierCurveTo(x + r * 0.95, y + r * 0.8, x + r * 0.45, y + r * 1.05, x, y + r * 1.05);
+  ctx.bezierCurveTo(x - r * 0.45, y + r * 1.05, x - r * 0.95, y + r * 0.8, x - r * 0.98, y + r * 0.05);
+  ctx.bezierCurveTo(x - r * 1.02, y - r * 0.75, x - r * 0.22, y - h * 0.62, x, y - h);
+  const g = ctx.createLinearGradient(x - r, y - h, x + r, y + r);
+  g.addColorStop(0, rgba(c.clone().offsetHSL(0, 0, 0.12), alpha * 0.8)); g.addColorStop(0.55, rgba(c, alpha)); g.addColorStop(1, rgba(c.clone().offsetHSL(0, 0.05, -0.22), alpha));
+  ctx.fillStyle = g; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(x - r * 0.38, y - r * 0.2, r * 0.16, r * 0.42, -0.25, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(x + r * 0.4, y + r * 0.55, r * 0.12, 0, 7); ctx.fill();
 }
 function nouvelleCoulure(x, y, largeur, c, longueur) {
   if (coulures.length > 160 * qx()) coulures.shift();
@@ -617,8 +865,7 @@ function majTaches(dt) {
     if (k.y > H - 3 - (flaque.h[Math.floor(k.x / 8)] || 0)) { verserFlaque(k.x, k.l * 1.4, k.c); coulures.splice(i, 1); continue; }
     if (k.reste <= 0) {
       // une petite goutte se forme au bout du filet
-      cctx.fillStyle = rgba(k.c.clone().offsetHSL(0, 0, -0.08), 0.9);
-      cctx.beginPath(); cctx.arc(k.x, k.y + k.l * 0.4, k.l * 1.35, 0, 7); cctx.fill();
+      larme(cctx, k.x, k.y + k.l * 0.5, k.l * 1.05, k.c.clone().offsetHSL(0, 0, -0.05), 0.4, 0.88);
       coulures.splice(i, 1);
     }
   }
@@ -627,7 +874,7 @@ function dessinerTaches(dt = 0.016) {
   tctx.clearRect(0, 0, W, H);
   tctx.globalAlpha = 0.92; tctx.drawImage(couche, 0, 0, W, H); tctx.globalAlpha = 1;
   // ombres douces des fruits sur l'étal (le soleil vient d'en haut à droite)
-  for (const o of objets) {
+  if (!OMBRES) for (const o of objets) {
     if (!o.vivant) continue;
     const sc = toScreen(o.obj.position), r = pxRayon(o.rayon);
     const g = tctx.createRadialGradient(sc.x - r * 0.35, sc.y + r * 0.55, r * 0.1, sc.x - r * 0.35, sc.y + r * 0.55, r * 1.2);
@@ -652,9 +899,7 @@ function dessinerTaches(dt = 0.016) {
   // tête brillante des filets qui coulent encore
   for (const k of coulures) {
     if (k.attente > 0) continue;
-    const r = k.l * 1.25;
-    tctx.fillStyle = rgba(k.c, 0.95); tctx.beginPath(); tctx.arc(k.x, k.y, r, 0, 7); tctx.fill();
-    tctx.fillStyle = 'rgba(255,255,255,.55)'; tctx.beginPath(); tctx.arc(k.x - r * 0.35, k.y - r * 0.35, r * 0.35, 0, 7); tctx.fill();
+    larme(tctx, k.x, k.y, k.l * 1.0, k.c, Math.min(1.6, k.v / 25), 0.95);
   }
 }
 // ---------------------------------------------------------------- gouttes qui coulent sur l'écran (la « vitre »)
@@ -705,10 +950,13 @@ function majVitre(dt) {
     grd.addColorStop(0, rgba(g.c.clone().offsetHSL(0, 0, 0.15), 0.55));
     grd.addColorStop(0.7, rgba(g.c, 0.62));
     grd.addColorStop(1, rgba(g.c.clone().offsetHSL(0, 0, -0.25), 0.85));
-    vctx.fillStyle = grd;
-    vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.fill();
-    vctx.fillStyle = 'rgba(255,255,255,.75)';
-    vctx.beginPath(); vctx.ellipse(g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6, 0, 7); vctx.fill();
+    if (g.v > 8) { larme(vctx, g.x, g.y, r * 0.9, g.c, Math.min(1.8, g.v / 60), 0.8); }
+    else {
+      vctx.fillStyle = grd;
+      vctx.beginPath(); vctx.ellipse(g.x, g.y + r * 0.12, r * 0.92, r * 1.08, 0, 0, 7); vctx.fill();
+      vctx.fillStyle = 'rgba(255,255,255,.75)';
+      vctx.beginPath(); vctx.ellipse(g.x - r * 0.32, g.y - r * 0.32, r * 0.22, r * 0.14, -0.6, 0, 7); vctx.fill();
+    }
     if (g.y - r > H) gouttesVitre.splice(i, 1);
   }
   // deux gouttes qui se touchent fusionnent en une plus grosse
@@ -771,6 +1019,7 @@ majDefi();
 function lancer(fruit, opts = {}) {
   const roche = !fruit;
   const grp = roche ? new THREE.Mesh(rocheGeo, rocheMat) : fruit.entier.clone();
+  if (roche) grp.castShadow = true;
   if (opts.or) { dorer(grp); grp.scale.multiplyScalar(1.15); }
   const vanille = !roche && !opts.menu && fruit.d.id === 'vanille';
   const x0 = opts.x ?? rnd(-viewW * 0.38, viewW * 0.38);
@@ -795,11 +1044,12 @@ function lancer(fruit, opts = {}) {
   return o;
 }
 
-function couper(o, dir, precision = 1) {
+function couper(o, dir, precision = 1, decalage = 0) {
   o.vivant = false; scene.remove(o.obj);
   const pos = o.obj.position.clone();
   if (o.roche) {
-    son.roche(); tremble = 0.5; try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} etincelles(pos, 70, 0xff7a1a); etincelles(pos, 30, 0x333333);
+    son.roche(); tremble = 0.75; try { navigator.vibrate && navigator.vibrate([60, 30, 90]); } catch (e) {}
+    explosionRoche(pos);
     const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.85; requestAnimationFrame(() => { f.style.transition = 'opacity .6s'; f.style.opacity = 0; });
     popup('Aïe ! Une roche du volcan !', pos, 'aie'); serie = 0;
     if (fx && etat === 'jeu') { const s0 = toScreen(pos); fx.evenement('erreur', { x: s0.x, y: s0.y, grave: true }); }
@@ -810,9 +1060,22 @@ function couper(o, dir, precision = 1) {
   son.coupe(f.d.id, f.rayon);
   arret = 0.04;                                   // très courte pause d'impact
   tremble = Math.max(tremble, 0.05 + f.rayon * 0.06);
-  eclats.push({ p: toScreen(pos), t: 0, c: f.jus });
-  // plan de coupe : contient la direction du geste et l'axe de vue
   const n = new THREE.Vector3(-dir.y, dir.x, 0).normalize();
+  const pointCoupe = pos.clone().addScaledVector(n, decalage);   // la lame passe exactement là où le doigt a coupé
+  eclats.push({ p: toScreen(pointCoupe), t: 0, c: f.jus });
+  const jus = o.or ? new THREE.Color(0xffd23a) : f.jus;
+  // découpe réelle de la géométrie le long du geste
+  let res = null;
+  try { res = trancherObjet(o.obj, new THREE.Plane().setFromNormalAndCoplanarPoint(n, pointCoupe), f, o.repere || { c: new THREE.Vector3(), R: f.R, uv: f.chairUV }); } catch (e) { res = null; }
+  if (o.morceau) libererMorceau(o.obj);
+  if (res) {
+    res.pieces.forEach((g, i) => {
+      const sgn = i === 0 ? 1 : -1; scene.add(g);
+      moities.push({ fruit: f, jus, obj: g, vel: o.vel.clone().multiplyScalar(o.morceau ? 0.6 : 0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)),
+        axe: dir.clone(), vrot: sgn * rnd(2.2, 3.4), vie: 4, gen: (o.gen || 0) + 1, rayon: res.reperes[i].rayon, repere: res.reperes[i], ne: performance.now(), or: o.or, genere: true });
+    });
+  } else if (!o.morceau) {
+  // (repli) moitiés préparées dans le modèle, si la découpe réelle échoue
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
   const yApres = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
   const ang = Math.atan2(new THREE.Vector3().crossVectors(yApres, dir).dot(n), yApres.dot(dir));
@@ -822,15 +1085,22 @@ function couper(o, dir, precision = 1) {
     if (o.or) dorer(m);
     const cap = n.clone().multiplyScalar(-sgn);
     const axe = dir.clone(); const sens = Math.sign(new THREE.Vector3().crossVectors(axe, cap).z) || 1;
-    moities.push({ fruit: f, jus: o.or ? new THREE.Color(0xffd23a) : f.jus, obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4 });
+    moities.push({ fruit: f, jus, obj: m, vel: o.vel.clone().multiplyScalar(0.4).addScaledVector(n, sgn * rnd(2.2, 3.2)).add(new THREE.Vector3(0, 1.5, 0)), axe, vrot: sens * rnd(2.2, 3.4), vie: 4, gen: 2 });
   }
-  const jus = o.or ? new THREE.Color(0xffd23a) : f.jus;
-  giclee(pos, dir, jus, o.or ? 60 : 34, f.d.id);
-  const s = toScreen(pos);
-  tache(s.x, s.y, jus, pxRayon(f.rayon) * 0.9, dir);
-  if (Math.random() < (o.or ? 1 : 0.3)) gouttesEcran(s.x, s.y, jus, dir);
+  }
+  // jus : plus abondant, projeté dans le sens du geste (moins pour une recoupe)
+  giclee(pointCoupe, dir, jus, o.morceau ? 40 : (o.or ? 90 : 60), f.d.id);
+  const s = toScreen(pointCoupe);
+  tache(s.x, s.y, jus, pxRayon(f.rayon) * (o.morceau ? 0.8 : 1.15), dir);
+  if (Math.random() < (o.or ? 1 : o.morceau ? 0.35 : 0.5)) gouttesEcran(s.x, s.y, jus, dir);
   try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
   if (o.menu) { demarrer(); return; }
+  if (o.morceau) {
+    // recoupe d'un morceau : un point de plus
+    if (etat === 'jeu') { const pts = frenesie > 0 ? 2 : 1; score += pts; coupeSwipe += pts; majScore(); popup('Recoupe ! +' + pts, pointCoupe, 'bonus');
+      if (fx) fx.evenement('coupe', { x: s.x, y: s.y, couleur: '#' + jus.getHexString() }); }
+    return;
+  }
   let pts = 1;
   if (o.vanille) pts = 3;
   if (!o.menu && etat === 'jeu') { serie++; if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ralenti ⏳'); } son.bonus(); majBonus(); } }
@@ -938,9 +1208,29 @@ function testerCoupe(a, b) {
     const d = Math.hypot(a.x + dx * t - c.x, a.y + dy * t - c.y);
     if (d < r) {
       const dir = new THREE.Vector3(dx, -dy, 0).normalize();
-      couper(o, dir, d / r);
+      // position exacte de la lame par rapport au centre du fruit (en unités de la scène)
+      const kk = viewH / H, wx = (a.x + dx * t - c.x) * kk, wy = -(a.y + dy * t - c.y) * kk;
+      const nx = -dir.y, ny = dir.x, dec = THREE.MathUtils.clamp(wx * nx + wy * ny, -o.rayon * 0.72, o.rayon * 0.72);
+      couper(o, dir, d / r, dec);
       if (!o.roche && !o.menu) { comboN++; comboT = performance.now(); comboPos = o.obj.position.clone(); if (comboN >= 2) son.note(comboN); }
     }
+  }
+  // un morceau déjà coupé peut être recoupé une deuxième fois
+  if (etat !== 'jeu') return;
+  const maint = performance.now();
+  for (let i = moities.length - 1; i >= 0; i--) {
+    const m = moities[i];
+    if (!m.genere || m.gen >= 2 || maint - m.ne < 200 || m.vie < 0.6) continue;
+    const c = toScreen(m.obj.position), r = pxRayon(m.rayon) * 1.1;
+    const t = Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / (L * L)));
+    const d = Math.hypot(a.x + dx * t - c.x, a.y + dy * t - c.y);
+    if (d >= r) continue;
+    const dir = new THREE.Vector3(dx, -dy, 0).normalize(), kk = viewH / H;
+    const wx = (a.x + dx * t - c.x) * kk, wy = -(a.y + dy * t - c.y) * kk;
+    const dec = THREE.MathUtils.clamp(wx * -dir.y + wy * dir.x, -m.rayon * 0.6, m.rayon * 0.6);
+    moities.splice(i, 1);
+    couper({ morceau: true, obj: m.obj, fruit: m.fruit, vel: m.vel, rayon: m.rayon, repere: m.repere, gen: m.gen, or: m.or, vivant: true }, dir, d / r, dec);
+    comboN++; comboT = maint; comboPos = m.obj.position.clone(); if (comboN >= 2) son.note(comboN);
   }
 }
 function finCombo() {
@@ -1113,9 +1403,11 @@ function boucle() {
     // la face coupée continue de goutter pendant la chute
     if (m.vie > 2.6 && Math.random() < 9 * dt * qx()) goutte(m.obj.position.clone().add(new THREE.Vector3(rnd(-.2, .2), -.15, 0.2)), new THREE.Vector3(rnd(-.3, .3), rnd(-1, 0), 0), rnd(0.03, 0.06), m.jus, rnd(0.5, 0.9), 1.1, Math.random() < 0.3);
     m.obj.position.addScaledVector(m.vel, dt); m.obj.rotateOnWorldAxis(m.axe, m.vrot * dt);
-    if (m.vie <= 0 || m.obj.position.y < -viewH / 2 - 3) { scene.remove(m.obj); moities.splice(i, 1); }
+    if (m.vie <= 0 || m.obj.position.y < -viewH / 2 - 3) { scene.remove(m.obj); if (m.genere) libererMorceau(m.obj); moities.splice(i, 1); }
   }
   majParticules(dt);
+  rocheMat.emissiveIntensity = 1.7 + Math.sin(performance.now() / 160) * 0.55;
+  majExplosions(vrai, dt);
 
   if (zoom > 0) zoom = Math.max(0, zoom - vrai * 2.2);
   camera.position.z = 14 - 1.4 * Math.sin(zoom * Math.PI);
@@ -1203,7 +1495,7 @@ perf.boucle(boucle);
 // mode test : simuler une partie pour les captures
 if (TEST) {
   window.testCoupe = (ax, ay, bx, by) => { const t = performance.now(); testerCoupe({ x: ax, y: ay, t: t - 30 }, { x: bx, y: by, t }); };
-  window.jeu = { demarrer, lancer, prets, objets, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
+  window.jeu = { demarrer, lancer, prets, objets, moities, cache, get etat() { return etat; }, toScreen, trait, renouveler, reserve: () => reserve, perf, finDeNiveau, couper, get phase() { return phase; }, forcerCoup: () => { charge = RECHARGE; activerCoup(); } };
 }
 }
 </script>
