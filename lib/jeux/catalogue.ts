@@ -37,6 +37,7 @@ export const CATALOGUE: FicheJeu[] = [
   { id: "traces-des-libres", titre: "Sur les traces des libres", accroche: "La frise de la liberté et les lieux du marronnage.", vignette: "", emoji: "⛰️", fond: "linear-gradient(135deg,#f4c27a,#7a3a1a)", serie: "memoire" },
   { id: "kabar-marmay", titre: "Kabar Marmay", accroche: "Ose parler : défis en créole et en français.", vignette: "", emoji: "🥁", fond: "linear-gradient(135deg,#ffb36a,#a8321d)", serie: "memoire" },
   { id: "nout-leritaz", titre: "Nout Léritaz", accroche: "Enquête auprès d'un gramoun et remplis ton carnet.", vignette: "", image: "/jeux/lontan/obj-lanp.webp", fond: "linear-gradient(135deg,#bfe8d8,#2e7d4f)", serie: "memoire" },
+  { id: "puzzle-pei", titre: "Puzzle péi", accroche: "Reconstitue les tableaux de l'île, de 12 à 35 pièces.", vignette: "", image: "/jeux/fonds/marche-des-jus.webp", fond: "linear-gradient(135deg,#9fe0f0,#2a7fa8)", serie: "reunion" },
   { id: "coulee-de-lave", titre: "Coulée de lave", accroche: "Guide la lave du volcan jusqu'à la mer.", vignette: "", emoji: "🌋", fond: "linear-gradient(135deg,#ff9a5a,#5a2a1c)", serie: "reunion" },
 ];
 
@@ -66,6 +67,7 @@ export async function chargerJeu(id: string): Promise<DefJeu | null> {
     case "expressions-a-recoller": return (await import("./jeux/expressions-a-recoller")).default;
     case "case-bleue": return (await import("./jeux/case-bleue")).default;
     case "coulee-de-lave": return (await import("./jeux/coulee-de-lave")).default;
+    case "puzzle-pei": return (await import("./jeux/puzzle-pei")).default;
     case "traces-des-libres": return (await import("./jeux/traces-des-libres")).default;
     case "kabar-marmay": return (await import("./jeux/kabar-marmay")).default;
     case "nout-leritaz": return (await import("./jeux/nout-leritaz")).default;
