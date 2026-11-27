@@ -24,7 +24,8 @@
   .vies svg.perdue { opacity:.35; transform:scale(.8); }
   .vies svg.perdue .x { opacity:1; }
   .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:max(9vh, 60px); text-align:center; pointer-events:none; transition:opacity .45s; }
-  .ecran.cache { opacity:0; }
+  .ecran.cache { opacity:0; visibility:hidden; transition:opacity .45s, visibility 0s linear .45s; }
+  .ecran.cache * { pointer-events:none !important; }
   .titre { font-size:clamp(58px, 14vw, 120px); font-weight:800; line-height:.9; color:var(--or); letter-spacing:.01em; text-shadow:0 5px 0 #a8460a, 0 10px 0 #5a2406, 0 18px 30px rgba(0,0,0,.5); transform:rotate(-3deg); }
   .sous { margin-top:18px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.7); }
   .consigne { position:fixed; left:0; right:0; padding:0 32px; bottom:calc(150px + env(safe-area-inset-bottom)); font-size:clamp(17px, 3.8vw, 22px); font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); animation:pulse 1.4s ease-in-out infinite; }
