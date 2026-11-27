@@ -21,7 +21,7 @@ export default async function PageAge({ params }: { params: Promise<{ id: string
       <main className="page">
         <Link href="/univers" className="retour-themes">← Thèmes et âges</Link>
         <header className="entete bandeau" style={{ background: p.clair, borderColor: p.couleur }}>
-          <div><div className="sur-titre">{p.age}</div><h1 style={{ color: p.couleur }}>{p.emoji} {p.nom}</h1><p>{duPublic.length} livres, rangés par thème</p></div>
+          <div><div className="sur-titre" style={{ color: p.couleur }}>{p.age}</div><h1 style={{ color: p.couleur }}>{p.emoji} {p.nom}</h1><p style={{ color: "#5a524a" }}>{duPublic.length} livres, rangés par thème</p></div>
         </header>
         {UNIVERS.map((u) => {
           const l = duPublic.filter((x) => x.univers === u.id).sort((a, b) => a.titre.localeCompare(b.titre, "fr"));

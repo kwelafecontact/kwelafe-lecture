@@ -17,14 +17,14 @@ export default async function PageUnivers({ params, searchParams }: { params: Pr
   if (!u) notFound();
   const { livres, acces, prog, favoris } = await contexte();
   const duTheme = sansDoublon(livres, acces).filter((l) => l.univers === u.id);
-  const ages = PUBLICS.filter((p) => duTheme.some((l) => publicsDe(l).includes(p.id)));
+  const ages = PUBLICS.filter((p) => !(u.id === "jeunesse" && p.id === "adultes")).filter((p) => duTheme.some((l) => publicsDe(l).includes(p.id)));
   const liste = duTheme.filter((l) => !age || publicsDe(l).includes(age as any)).sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
   return (
     <>
       <main className="page">
         <Link href="/univers" className="retour-themes">← Tous les thèmes</Link>
         <header className="entete bandeau" style={{ background: u.clair, borderColor: u.couleur }}>
-          <div><div className="sur-titre">Thème</div><h1 style={{ color: u.couleur }}>{u.emoji} {u.nom}</h1><p>{liste.length} livre{liste.length > 1 ? "s" : ""}</p></div>
+          <div><div className="sur-titre" style={{ color: u.couleur }}>Thème</div><h1 style={{ color: u.couleur }}>{u.emoji} {u.nom}</h1><p style={{ color: "#5a524a" }}>{liste.length} livre{liste.length > 1 ? "s" : ""}</p></div>
         </header>
         {ages.length > 1 && (
           <nav className="puces-age" aria-label="Filtrer par âge">

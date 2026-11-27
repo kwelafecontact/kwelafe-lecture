@@ -903,3 +903,14 @@ body { background: var(--ivoire); }
 .encart-enfants h2{font-family:var(--titre);color:#fff;margin:6px 0;font-size:26px}
 .encart-enfants p{margin:0;opacity:.95}
 .ee-emoji{font-size:54px}
+/* Hero premium (27/11 soir) */
+.hero-accueil{background:radial-gradient(120% 140% at 100% 0%,#3d5a8c 0%,#24375e 45%,#1b2a4a 100%);padding:30px 26px 22px;border-radius:28px;box-shadow:0 18px 40px rgba(27,42,74,.28)}
+.hero-accueil::before{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(242,183,5,.35),transparent 70%)}
+.hero-accueil::after{content:"";position:absolute;left:26px;right:26px;top:0;height:3px;background:linear-gradient(90deg,#1f6fb2,#f2b705,#d6332a,#2e9d4f);border-radius:0 0 3px 3px}
+.hero-salut{font-size:14px;color:rgba(255,255,255,.75);text-transform:capitalize;margin-bottom:14px}
+.hero-eyebrow{color:#f2c94c}
+.hero-accueil h1{font-family:var(--titre);font-size:34px;line-height:1.08;letter-spacing:-.015em;margin:8px 0 10px;color:#fff}
+@media(min-width:720px){.hero-accueil h1{font-size:48px}}
+.hero-accueil p{font-style:normal;opacity:.85;font-size:16px;max-width:560px;margin:0 0 22px;line-height:1.5}
+.stat-bulle{background:rgba(255,255,255,.12);backdrop-filter:blur(6px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.stat-bulle.feu{background:rgba(255,255,255,.12)}

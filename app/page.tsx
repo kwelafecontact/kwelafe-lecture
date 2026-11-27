@@ -59,9 +59,10 @@ export default async function Accueil() {
 
         <header className="hero-accueil">
           <div className="hero-texte">
-            <div className="sur-titre date-accueil">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Indian/Reunion" })}</div>
-            <h1>{salut()}{session.prenom ? ` ${session.prenom}` : ""} !</h1>
-            <p>Préserver aujourd'hui ce que nous voulons transmettre demain.</p>
+            <div className="hero-salut">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Indian/Reunion" })} · {salut()}{session.prenom ? ` ${session.prenom}` : ""} !</div>
+            <div className="eyebrow hero-eyebrow">Votre bibliothèque</div>
+            <h1>Tout un univers à découvrir.</h1>
+            <p>Des lectures pour découvrir, comprendre et transmettre les richesses de La Réunion.</p>
           </div>
           <div className="hero-stats">
             <div className="stat-bulle feu"><b>{stats.serie}</b><span>🔥 jour{stats.serie > 1 ? "s" : ""} de suite</span></div>
@@ -81,11 +82,7 @@ export default async function Accueil() {
         </nav>
 
         <section className="section univers-accueil" aria-label="Choisis ton univers">
-          <div className="bloc-editorial">
-            <div className="eyebrow">Votre bibliothèque</div>
-            <h2>Tout un univers à découvrir.</h2>
-            <p>Des lectures pour découvrir, comprendre et transmettre les richesses de La Réunion.</p>
-          </div>
+          <div className="bloc-editorial petit"><div className="eyebrow">Par thème</div><h2>Choisis ton univers</h2></div>
           <div className="univers">
             {UNIVERS.map((u) => (
               <Link key={u.id} href={`/univers/${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
