@@ -203,8 +203,9 @@ function initPixi() {
     gFond = new PIXI.Graphics(); gFan = new PIXI.Graphics(); sprC = new PIXI.Sprite(); sprC.alpha = 0.92; gT = new PIXI.Graphics();
     a1.stage.addChild(gFond, gFan, sprC, gT);
     gS = new PIXI.Graphics(); gFadeC = new PIXI.Graphics(); gFadeC.blendMode = 'erase';
+    new PIXI.Container().addChild(gFadeC);   // le mode « erase » ne s'applique qu'à un enfant : chaque pinceau d'effacement a donc son conteneur
     sprV = new PIXI.Sprite(); gGout = new PIXI.Graphics(); gTr = new PIXI.Graphics();
-    gVS = new PIXI.Graphics(); gFadeV = new PIXI.Graphics(); gFadeV.blendMode = 'erase';
+    gVS = new PIXI.Graphics(); gFadeV = new PIXI.Graphics(); gFadeV.blendMode = 'erase'; new PIXI.Container().addChild(gFadeV);
     a2.stage.addChild(sprV, gGout, gTr);
     // aucun besoin du système d'événements de Pixi : il écoutait les doigts pour rien et pouvait gêner le jeu
     for (const ap of [a1, a2]) { try { ap.renderer.events.autoPreventDefault = false; ap.renderer.events.destroy(); } catch (e) {} ap.canvas.style.touchAction = ''; ap.canvas.style.pointerEvents = 'none'; }
@@ -217,13 +218,16 @@ function calerPixi() {
   if (rtC) rtC.destroy(true); if (rtV) rtV.destroy(true);
   rtC = PIXI.RenderTexture.create({ width: W, height: H, resolution: dpr }); sprC.texture = rtC;
   rtV = PIXI.RenderTexture.create({ width: W, height: H, resolution: dpr }); sprV.texture = rtV;
+  // les deux calques persistants doivent démarrer transparents (sinon ils recouvrent le décor de noir)
+  pd.renderer.render({ container: new PIXI.Container(), target: rtC, clear: true, clearColor: [0, 0, 0, 0] });
+  pu.renderer.render({ container: new PIXI.Container(), target: rtV, clear: true, clearColor: [0, 0, 0, 0] });
   for (const l of lentilles) l.tx = null; lensSrc = null;
   peindreFond();
 }
 // ajoute au calque persistant (rt) ce que contient g, puis vide g
 function graver(app, rt, g) { app.renderer.render({ container: g, target: rt, clear: false }); g.clear(); }
 // fait pâlir un calque persistant ; l'effacement est cumulé pour dépasser la précision 8 bits
-function pâlir(app, rt, g, a) { g.clear(); g.rect(0, 0, W, H).fill({ color: 0, alpha: Math.min(1, a) }); app.renderer.render({ container: g, target: rt, clear: false }); g.clear(); }
+function pâlir(app, rt, g, a) { g.clear(); g.rect(0, 0, W, H).fill({ color: 0, alpha: Math.min(1, a) }); app.renderer.render({ container: g.parent, target: rt, clear: false }); g.clear(); }
 function resize() {
   W = innerWidth; H = innerHeight;
   const dpr = dprCible(2); // 1,5 au plus sur iPhone : 7 calques plein écran
@@ -240,12 +244,14 @@ function resize() {
 // Décor : étal en bois du marché forain, fanions aux couleurs de La Réunion
 function peindreFond() {
   if (!gFond) return; const g = gFond; g.clear();
-  g.rect(0, 0, W, H).fill(new PIXI.FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: H }, colorStops: [{ offset: 0, color: '#6b3f1d' }, { offset: 1, color: '#3d220e' }], textureSpace: 'global' }));
+  g.rect(0, 0, W, H).fill(0x5a331a);
   const nb = Math.max(5, Math.round(W / 150)), lw = W / nb;
   for (let i = 0; i < nb; i++) {
     const x = i * lw, teinte = [0, 8, -6, 4, -10, 6][i % 6];
-    g.rect(x + 2, 0, lw - 4, H).fill(new PIXI.FillGradient({ type: 'linear', start: { x, y: 0 }, end: { x: x + lw, y: 0 }, textureSpace: 'global', colorStops: [
-      { offset: 0, color: `hsl(${26 + teinte * .3},48%,${30 + teinte * .4}%)` }, { offset: .5, color: `hsl(${28 + teinte * .3},50%,${36 + teinte * .4}%)` }, { offset: 1, color: `hsl(${25 + teinte * .3},46%,${28 + teinte * .4}%)` }] }));
+    const hs = (h, sat, l) => new PIXI.Color(`hsl(${h},${sat}%,${l}%)`).toNumber();   // planche en trois bandes de ton (remplace le dégradé horizontal)
+    g.rect(x + 2, 0, lw - 4, H).fill(hs(28 + teinte * .3, 50, 36 + teinte * .4));
+    g.rect(x + 2, 0, (lw - 4) * .3, H).fill(hs(26 + teinte * .3, 48, 31 + teinte * .4));
+    g.rect(x + 2 + (lw - 4) * .75, 0, (lw - 4) * .25, H).fill(hs(25 + teinte * .3, 46, 29 + teinte * .4));
     for (let k = 0; k < 9; k++) {
       const ox = x + 8 + (k / 9) * (lw - 16) + Math.sin(i * 7 + k) * 4; g.moveTo(ox, 0);
       for (let y = 0; y <= H; y += 40) g.lineTo(ox + Math.sin(y / 90 + k * 1.7 + i) * 5, y);
