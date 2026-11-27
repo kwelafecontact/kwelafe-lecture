@@ -166,10 +166,21 @@ function papillon() {
   // papillon aux ailes orangées bordées de noir
   const g = new THREE.Group();
   const corps = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.4, 6), matNoir); corps.rotation.z = Math.PI / 2; g.add(corps);
-  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
-  const grd = x.createRadialGradient(40, 64, 5, 64, 64, 64); grd.addColorStop(0, '#ffd23a'); grd.addColorStop(.6, '#ff7a1a'); grd.addColorStop(.85, '#1a1008'); grd.addColorStop(1, '#1a1008');
-  x.fillStyle = grd; x.fillRect(0, 0, 128, 128); x.fillStyle = '#fff'; for (let i = 0; i < 6; i++) { x.beginPath(); x.arc(100 + Math.cos(i) * 10, 30 + i * 14, 4, 0, 7); x.fill(); }
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  // texture d'aile calculée à la main (DataTexture), sans canvas 2D : dégradé radial jaune, orange, bordure sombre + 6 points blancs
+  const N = 128, dat = new Uint8Array(N * N * 4), stops = [[0, 255, 210, 58], [0.6, 255, 122, 26], [0.85, 26, 16, 8], [1, 26, 16, 8]];
+  for (let y = 0; y < N; y++) for (let xx = 0; xx < N; xx++) {
+    const px = xx + 0.5, py = y + 0.5, dx = px - 40, dy = py - 64;
+    // cercle de départ (40,64) r5, cercle d'arrivée (64,64) r64 : plus grand t tel que |p - c(t)| = r(t)
+    const A = 24 * 24 - 59 * 59, B = -2 * (dx * 24) - 2 * 5 * 59, C = dx * dx + dy * dy - 25;
+    let t = 1; const disc = B * B - 4 * A * C; if (disc >= 0) { const r1 = (-B + Math.sqrt(disc)) / (2 * A), r2 = (-B - Math.sqrt(disc)) / (2 * A); t = Math.max(r1, r2); }
+    t = Math.min(1, Math.max(0, t)); let i = 0; while (i < stops.length - 2 && t > stops[i + 1][0]) i++;
+    const p = stops[i], q = stops[i + 1], k = Math.min(1, Math.max(0, (t - p[0]) / (q[0] - p[0] || 1)));
+    let r = p[1] + (q[1] - p[1]) * k, g = p[2] + (q[2] - p[2]) * k, bl = p[3] + (q[3] - p[3]) * k;
+    for (let j = 0; j < 6; j++) if (Math.hypot(px - (100 + Math.cos(j) * 10), py - (30 + j * 14)) < 4) { r = g = bl = 255; }
+    const o = ((N - 1 - y) * N + xx) * 4; dat[o] = r; dat[o + 1] = g; dat[o + 2] = bl; dat[o + 3] = 255;
+  }
+  const tex = new THREE.DataTexture(dat, N, N, THREE.RGBAFormat); tex.magFilter = tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
+  tex.colorSpace = THREE.SRGBColorSpace;
   const mat = new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.6 });
   const forme = new THREE.Shape(); forme.moveTo(0, 0); forme.bezierCurveTo(0.2, 0.5, 0.6, 0.55, 0.5, 0.1); forme.bezierCurveTo(0.55, -0.2, 0.3, -0.45, 0, 0);
   const geo = new THREE.ShapeGeometry(forme, 12); const uv = geo.attributes.uv, p = geo.attributes.position; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 0.6, p.getY(i) + 0.5);
