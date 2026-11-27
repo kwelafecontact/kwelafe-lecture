@@ -1,4 +1,6 @@
 import Link from "next/link";
+import MotDuMoisAdmin from "@/components/MotDuMoisAdmin";
+import { tous as tousSql } from "@/lib/cf";
 import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
 import ImportLivre from "@/components/ImportLivre";
@@ -24,6 +26,7 @@ export default async function Admin() {
   const etabs = await tous("SELECT e.*, (SELECT COUNT(*) FROM groupes g WHERE g.etab_id = e.id) AS nb FROM etablissements e ORDER BY e.cree_le DESC").catch(() => []);
   const codesTest = await tous("SELECT empreinte, nom, fin, revoque, dernier_usage, apercu FROM codes_test ORDER BY cree_le DESC LIMIT 100").catch(() => []);
 
+  const motDuMois = (await tousSql<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'mot_du_mois'").catch(() => []))[0]?.valeur || "";
   return (
     <>
       <main className="page">
@@ -32,6 +35,11 @@ export default async function Admin() {
         <nav className="sommaire-admin" aria-label="Sommaire">
           <a href="#mes-livres">📚 Mes livres</a><a href="#importer">📥 Importer</a><a href="#etabs">🏫 Établissements</a><a href="#ressources">🗂️ Ressources</a><a href="#codes">🔑 Codes</a>
         </nav>
+
+        <section className="panneau" id="mot-du-mois">
+          <h2>💬 Le mot du mois (affiché en haut de l'accueil)</h2>
+          <MotDuMoisAdmin valeur={motDuMois} />
+        </section>
 
         <section className="panneau" id="mes-livres">
           <h2>Mes livres ({livres.filter((l) => l.publie).length} en ligne)</h2>

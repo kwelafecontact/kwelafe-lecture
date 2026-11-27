@@ -13,6 +13,8 @@ import { FORMATS, formatDe, sansDoublon } from "@/lib/formats";
 import { leger } from "@/lib/leger";
 import { tous, urlCouverture } from "@/lib/cf";
 import { livresBientot } from "@/lib/donnees";
+import PrevenirMoi from "@/components/PrevenirMoi";
+import ArrivesVu from "@/components/ArrivesVu";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Bibliothèque · Kwélafé" };
@@ -26,6 +28,10 @@ export default async function Accueil() {
   const { session, livres, progs, prog, acces, favoris, abonne } = await contexte();
   const stats = await statistiques(session.cid);
   const bientot = await livresBientot();
+  const mesAlertes = new Set((await tous<{ livre_id: string }>("SELECT livre_id FROM alertes WHERE client_id = ?", session.cid).catch(() => [])).map((x) => x.livre_id));
+  const arrives = (await tous<{ livre_id: string }>("SELECT livre_id FROM alertes WHERE client_id = ? AND vu = 0", session.cid).catch(() => [])).map((x) => livres.find((l) => l.id === x.livre_id)).filter((l): l is NonNullable<typeof l> => !!l && l.publie);
+  const motDuMois = (await tous<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'mot_du_mois'").catch(() => []))[0]?.valeur || "";
+  const finMois = (() => { const n = new Date(); return Math.ceil((new Date(n.getFullYear(), n.getMonth() + 1, 1).getTime() - n.getTime()) / 864e5); })();
   const enCours = progs
     .filter((p) => !p.termine && p.pourcentage > 0)
     .map((p) => ({ p, l: livres.find((l) => l.id === p.livre_id) }))
@@ -76,6 +82,29 @@ export default async function Accueil() {
         </header>
 
         {session.visiteur && <BandeauVisiteur />}
+
+        {arrives.length > 0 && (
+          <section className="arrives">
+            <ArrivesVu ids={arrives.map((l) => l.id)} />
+            <div><div className="eyebrow">🔔 Ils sont arrivés !</div><h2>{arrives.length > 1 ? "Les livres que vous attendiez sont là" : "Le livre que vous attendiez est là"}</h2></div>
+            <div className="arrives-liste">{arrives.map((l) => <Link key={l.id} href={`/livre/${l.slug}`}><Couverture livre={l} /></Link>)}</div>
+          </section>
+        )}
+
+        {motDuMois && (
+          <section className="mot-du-mois">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/apprendre/mascotte.webp" alt="" />
+            <div><div className="eyebrow">Le mot du mois</div><p>{motDuMois}</p><small>Kwélafé</small></div>
+          </section>
+        )}
+
+        {mystere && (
+          <Link href={`/livre/${mystere.slug}`} className="mystere-mois">
+            <Couverture livre={mystere} />
+            <div><div className="eyebrow">🕵️ Le mystère du mois</div><h2>{mystere.titre}</h2><p>Un nouveau mystère arrive dans <b>{finMois} jour{finMois > 1 ? "s" : ""}</b>.</p></div>
+          </Link>
+        )}
 
         <nav className="raccourcis" aria-label="Accès rapides">
           <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>📚</span>Ma bibliothèque</Link>
@@ -140,9 +169,12 @@ export default async function Accueil() {
             <div className="bloc-editorial petit"><div className="eyebrow">Ça arrive</div><h2>Bientôt dans l'app</h2><p className="texte-doux">Votre bibliothèque grandit chaque mois. Voici les prochains livres.</p></div>
             <Carrousel libelle="Bientôt dans l'app"><div className="rangee-bientot">
               {bientot.map((l) => (
-                <div key={l.id} className="bientot" aria-label={`${l.titre}, bientôt disponible`}>
-                  <Couverture livre={l} />
-                  <span className="badge-bientot">Bientôt</span>
+                <div key={l.id} className="bientot-carte">
+                  <div className="bientot" aria-label={`${l.titre}, bientôt disponible`}>
+                    <Couverture livre={l} />
+                    <span className="badge-bientot">{l.sortie_le ? new Date(l.sortie_le + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "Bientôt"}</span>
+                  </div>
+                  <PrevenirMoi livre={l.id} deja={mesAlertes.has(l.id)} />
                 </div>
               ))}
             </div></Carrousel>

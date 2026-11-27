@@ -22,6 +22,9 @@ export type Manifeste =
   | { type: "web"; entree: string; pages?: number };
 
 export type Livre = {
+  publie_le?: string | null;
+  sortie_le?: string | null;
+  bientot?: number;
   id: string;
   slug: string;
   titre: string;

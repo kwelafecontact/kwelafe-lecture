@@ -92,6 +92,8 @@ export default async function Compte() {
           <p className="texte-doux" style={{ fontSize: 14, marginTop: 10 }}>Objectif conseillé : 15 minutes par jour. Lis un peu chaque jour pour faire grandir ta série 🔥</p>
         </section>
 
+        <Link href="/compte/bilan" className="lien-bilan">📊 <span><b>Mon bilan Kwélafé</b><small>Livres lus, temps de lecture, passeport péi</small></span> ›</Link>
+
         <section className="panneau">
           <h2>Mon abonnement</h2>
           {abonne ? (
@@ -101,9 +103,13 @@ export default async function Compte() {
                 <p style={{ marginTop: 10 }}>Abonnement cadeau valable jusqu'au <b>{dateFr(client.cadeau_jusqu!)}</b>.</p>
               )}
               {client.abonne && (
-                <p style={{ marginTop: 14 }}>
-                  <a className="btn secondaire" href={`${config.shopUrl}/account`}>Gérer mon abonnement</a>
-                </p>
+                <div className="avant-partir">
+                  <p><b>Avant de changer quoi que ce soit</b>, jetez un œil à tout ce que vous avez déjà lu et appris, et aux livres qui arrivent bientôt.</p>
+                  <p style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Link className="btn" href="/compte/bilan">📊 Voir mon bilan</Link>
+                    <a className="btn secondaire" href={`${config.shopUrl}/account`}>Gérer mon abonnement</a>
+                  </p>
+                </div>
               )}
             </>
           ) : (

@@ -1158,3 +1158,31 @@ html[data-couleur="vanille"]{--lave:#7a5230;--lave-fonce:#5e3f24}
 .rangee-bientot{display:flex;gap:14px}
 .bientot{position:relative;flex:0 0 130px;filter:grayscale(1);opacity:.6}
 .badge-bientot{position:absolute;top:8px;left:8px;background:#1a1a1a;color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;filter:none}
+.badge-nouveau{position:absolute;top:8px;right:8px;z-index:2;background:var(--lave);color:#fff;font-size:11px;font-weight:900;padding:3px 9px;border-radius:999px;letter-spacing:.03em;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.bientot-carte{flex:0 0 130px;display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.bientot-carte .bientot{flex:none}
+.prevenir{border:2px solid #ddd;background:#fff;border-radius:999px;padding:6px 8px;font-size:12px;font-weight:800;cursor:pointer}
+.prevenir.on{background:#fff4d6;border-color:#f2b705}
+.arrives{margin:18px 0;padding:18px;border-radius:24px;background:linear-gradient(135deg,#fff4d6,#ffe3c2);display:grid;gap:12px}
+.arrives h2{font-family:var(--titre);margin:4px 0 0}
+.arrives-liste{display:flex;gap:12px;overflow-x:auto}.arrives-liste a{flex:0 0 110px}
+.mot-du-mois{display:flex;gap:14px;align-items:center;margin:18px 0;padding:16px 18px;border-radius:24px;background:#fff;box-shadow:var(--ombre);border-left:6px solid var(--lave)}
+.mot-du-mois img{width:64px;height:64px;border-radius:50%;object-fit:cover}
+.mot-du-mois p{margin:4px 0;font-size:17px;line-height:1.5}.mot-du-mois small{color:var(--doux);font-weight:800}
+.mystere-mois{display:flex;gap:16px;align-items:center;margin:18px 0;padding:16px;border-radius:24px;background:linear-gradient(135deg,#2a1450,#5a2a8a);color:#fff;text-decoration:none}
+.mystere-mois .couv{flex:0 0 90px}.mystere-mois .eyebrow{color:#e0c3ff}.mystere-mois h2{color:#fff;font-family:var(--titre);margin:4px 0}
+.mystere-mois p{margin:0;opacity:.92}
+.bilan-hero{padding:26px 22px;border-radius:26px;background:linear-gradient(135deg,var(--lave),#f08a24);color:#fff;margin-bottom:16px}
+.bilan-hero h1{color:#fff;font-size:30px;margin:6px 0}.bilan-hero .eyebrow{color:rgba(255,255,255,.9)}.bilan-hero p{margin:0;opacity:.95}
+.bilan-chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.bilan-chiffres div{background:#fff;border-radius:20px;padding:16px;text-align:center;box-shadow:var(--ombre)}
+.bilan-chiffres b{display:block;font-family:var(--titre);font-size:34px;color:var(--lave)}.bilan-chiffres small{font-size:16px}
+.bilan-chiffres span{color:var(--doux);font-weight:700;font-size:14px}
+.passeport{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.tampon{border:3px dashed #ccc;border-radius:50%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;filter:grayscale(1);opacity:.55}
+.tampon.ok{border-color:var(--c);color:var(--c);filter:none;opacity:1;transform:rotate(-6deg);background:color-mix(in srgb,var(--c) 8%,#fff)}
+.tampon span{font-size:30px}.tampon b{font-size:12px;line-height:1.2}.tampon small{font-size:11px}
+.bilan-partage{margin:22px 0;padding:18px;border-radius:22px;background:#fff4d6;text-align:center}
+.avant-partir{margin-top:12px;padding:14px;border-radius:16px;background:#f6f2ea}
+.lien-bilan{display:flex;align-items:center;gap:12px;padding:16px;border-radius:20px;background:#fff;box-shadow:var(--ombre);margin-bottom:14px;text-decoration:none;font-size:24px}
+.lien-bilan span{flex:1;display:flex;flex-direction:column;font-size:16px}.lien-bilan small{color:var(--doux)}

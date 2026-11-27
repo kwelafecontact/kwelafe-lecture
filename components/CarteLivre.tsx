@@ -4,7 +4,8 @@ import type { Livre } from "@/lib/donnees";
 import { formatDe, infoFormat } from "@/lib/formats";
 import { collectionDe } from "@/lib/organisation";
 
-export function Couverture({ livre, verrouille }: { livre: Pick<Livre, "titre" | "couverture">; verrouille?: boolean }) {
+export function Couverture({ livre, verrouille }: { livre: Pick<Livre, "titre" | "couverture"> & { publie_le?: string | null }; verrouille?: boolean }) {
+  const nouveau = !!livre.publie_le && Date.now() - Date.parse(livre.publie_le) < 14 * 864e5;
   const src = urlCouverture(livre.couverture);
   const t = collectionDe(livre.titre)?.tome || 0;
   return (
@@ -16,6 +17,7 @@ export function Couverture({ livre, verrouille }: { livre: Pick<Livre, "titre" |
       ) : (
         <div className="sans-image">{livre.titre}</div>
       )}
+      {nouveau && <span className="badge-nouveau">Nouveau</span>}
       {verrouille && (
         <div className="verrou" aria-label="Non inclus">
           <span>🔒</span>

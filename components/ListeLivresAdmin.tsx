@@ -1,6 +1,7 @@
 "use client";
 // Espace éditeur : les livres rangés par format (onglets), avec recherche et filtre par univers.
 import { useMemo, useState } from "react";
+import SortieAdmin from "./SortieAdmin";
 import Link from "next/link";
 import { UNIVERS } from "@/lib/config";
 import EditionLivre from "./EditionLivre";
@@ -71,6 +72,7 @@ export default function ListeLivresAdmin({ livres }: { livres: LigneAdmin[] }) {
                 </div>
                 <Link className="lien cla-voir" href={`/lire/${l.slug}`}>Prévisualiser ›</Link>
                 {!l.publie && <BasculeAdmin id={l.id} champ="bientot" valeur={!!(l as any).bientot} libelle="Bientôt (grisé)" />}
+                {!l.publie && <SortieAdmin id={l.id} valeur={(l as any).sortie_le} />}
                 {!l.publie && <SupprimerBrouillon id={l.id} titre={l.titre} />}
               </div>
             );

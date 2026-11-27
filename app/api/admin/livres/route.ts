@@ -34,9 +34,15 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   if (!(await sessionAdmin())) return NextResponse.json({}, { status: 403 });
   const { id, champ, valeur } = await req.json();
+  if (champ === "sortie_le") {
+    const d = typeof valeur === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valeur) ? valeur : null;
+    await executer("UPDATE livres SET sortie_le = ? WHERE id = ?", d, id);
+    return NextResponse.json({ ok: true });
+  }
   if (!["publie", "mystere_du_mois", "inclus_abonnement", "gratuit", "bientot"].includes(champ)) return NextResponse.json({}, { status: 400 });
   if (champ === "mystere_du_mois" && valeur) await executer("UPDATE livres SET mystere_du_mois = 0 WHERE id <> ?", id);
   await executer(`UPDATE livres SET ${champ} = ? WHERE id = ?`, valeur ? 1 : 0, id);
+  if (champ === "publie" && valeur) await executer("UPDATE livres SET publie_le = ?, bientot = 0 WHERE id = ? AND publie_le IS NULL", new Date().toISOString(), id);
   return NextResponse.json({ ok: true });
 }
 
