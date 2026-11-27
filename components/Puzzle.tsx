@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { fx, preparerFx } from "@/lib/kwfx";
 
 const IMAGES = [
-  { src: "/visuels/coin-enfants.webp", titre: "Les enfants lisent" },
+  { src: "/visuels/coin-enfants.webp?v=2", titre: "Les enfants lisent" },
   { src: "/visuels/accueil-reunion.webp", titre: "Paysage de l'île" },
-  { src: "/visuels/jeux-famille.webp", titre: "En famille" },
+  { src: "/visuels/jeux-famille.webp?v=2", titre: "En famille" },
   { src: "/apprendre/mascotte.webp", titre: "Kwélafé" },
 ];
 
