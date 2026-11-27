@@ -17,6 +17,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Presse les fruits péi et sers chaque client avant qu'il parte.", emoji: "🍹", fond: "linear-gradient(135deg,#ffb21e,#e8283a 55%,#2a8a4a)" },
   { id: "marche-des-jus-v2", titre: "Le marché des jus v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🍹", fond: "linear-gradient(135deg,#5fc84a,#ffb21e 50%,#ff5a2a)" },
   { id: "bouclier-volcan", titre: "Bouclier volcan", accroche: "Tranche les bombes de lave et protège les randonneurs de l'Enclos.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
+  { id: "bouclier-volcan-v2", titre: "Bouclier volcan v2", accroche: "Deux modes : balade tranquille ou éruption majeure avec bombe-mère toutes les 5 vagues.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
   { id: "kass-koko", titre: "Kass Koko", accroche: "Casse les noix de coco au bon moment sur la plage de l'Ouest.", emoji: "🥥", fond: "linear-gradient(135deg,#3ac8e8,#f4e2b0 55%,#2a8a3a)" },
   { id: "route-littoral", titre: "Route du Littoral", accroche: "Libère les voitures coincées entre la falaise et l'océan.", emoji: "🚗", fond: "linear-gradient(135deg,#6a655d,#1f8fc4)" },
   { id: "kar-pei", titre: "Kar Péi", accroche: "Fais monter chaque voyageur dans le bon car jaune.", emoji: "🚌", fond: "linear-gradient(135deg,#ffd84a,#e0a000)" },
