@@ -690,6 +690,171 @@
         "moitie_2": "moitie_B"
       },
       "poids_ko": 505
+    },
+    {
+      "id": "carotte",
+      "nom": "Carotte",
+      "fichier": "carotte.glb",
+      "taille_reelle_m": 0.16,
+      "couleur_jus": "#F28C28",
+      "clearcoat": 0.2,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 221
+    },
+    {
+      "id": "chou-blanc",
+      "nom": "Chou blanc",
+      "fichier": "chou-blanc.glb",
+      "taille_reelle_m": 0.18,
+      "couleur_jus": "#E6EFC8",
+      "clearcoat": 0.15,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 387
+    },
+    {
+      "id": "haricot-vert",
+      "nom": "Haricot vert",
+      "fichier": "haricot-vert.glb",
+      "taille_reelle_m": 0.12,
+      "couleur_jus": "#8CBF5A",
+      "clearcoat": 0.3,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 257
+    },
+    {
+      "id": "concombre",
+      "nom": "Concombre",
+      "fichier": "concombre.glb",
+      "taille_reelle_m": 0.2,
+      "couleur_jus": "#CFE6A8",
+      "clearcoat": 0.6,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 341
+    },
+    {
+      "id": "citron-vert",
+      "nom": "Citron vert",
+      "fichier": "citron-vert.glb",
+      "taille_reelle_m": 0.055,
+      "couleur_jus": "#C8E06A",
+      "clearcoat": 0.5,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 258
+    },
+    {
+      "id": "poivron-vert",
+      "nom": "Poivron vert",
+      "fichier": "poivron-vert.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#9CCB5A",
+      "clearcoat": 0.9,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 328
+    },
+    {
+      "id": "poivron-rouge",
+      "nom": "Poivron rouge",
+      "fichier": "poivron-rouge.glb",
+      "taille_reelle_m": 0.1,
+      "couleur_jus": "#E0301E",
+      "clearcoat": 0.9,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 337
+    },
+    {
+      "id": "piment-vert",
+      "nom": "Piment vert",
+      "fichier": "piment-vert.glb",
+      "taille_reelle_m": 0.09,
+      "couleur_jus": "#8DC63F",
+      "clearcoat": 0.9,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 237
+    },
+    {
+      "id": "radis",
+      "nom": "Radis",
+      "fichier": "radis.glb",
+      "taille_reelle_m": 0.035,
+      "couleur_jus": "#F7EDEE",
+      "clearcoat": 0.5,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 207
+    },
+    {
+      "id": "betterave",
+      "nom": "Betterave",
+      "fichier": "betterave.glb",
+      "taille_reelle_m": 0.08,
+      "couleur_jus": "#8E1240",
+      "clearcoat": 0.2,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 217
+    },
+    {
+      "id": "chou-rouge",
+      "nom": "Chou rouge",
+      "fichier": "chou-rouge.glb",
+      "taille_reelle_m": 0.16,
+      "couleur_jus": "#7A2A7A",
+      "clearcoat": 0.15,
+      "sheen": 0,
+      "noeuds": {
+        "entier": "entier",
+        "moitie_1": "moitie_A",
+        "moitie_2": "moitie_B"
+      },
+      "poids_ko": 377
     }
   ],
   "compression": "meshopt (MeshoptDecoder requis dans GLTFLoader)"
