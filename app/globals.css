@@ -1038,8 +1038,8 @@ body { background: var(--ivoire); }
 .ce-gros.secondaire{background:#fff;color:var(--texte);box-shadow:0 6px 0 #e5e0d8;border:2px solid #e5e0d8}
 .ce-fin{text-align:center;padding:20px 0}.ce-fin-etoiles{font-size:60px}
 /* Jeux : bandeau illustré + réponses façon Kahoot */
-.entete-jeux{min-height:210px;display:flex;align-items:flex-end;border-radius:26px;padding:22px;color:#fff;background:linear-gradient(90deg,rgba(27,42,74,.92) 0%,rgba(27,42,74,.7) 40%,rgba(27,42,74,0) 75%),url(/visuels/jeux-famille.webp?v=2) center right/cover no-repeat;box-shadow:var(--ombre)}
-@media(max-width:700px){.entete-jeux{background:linear-gradient(180deg,rgba(27,42,74,.15) 0%,rgba(27,42,74,.9) 65%),url(/visuels/jeux-famille.webp?v=2) 70% top/cover no-repeat;min-height:260px}}
+.entete-jeux{min-height:210px;display:flex;align-items:flex-end;border-radius:26px;padding:22px;color:#fff;background:linear-gradient(90deg,rgba(27,42,74,.92) 0%,rgba(27,42,74,.7) 40%,rgba(27,42,74,0) 75%),url(/visuels/jeux-famille.webp?v=3) center right/cover no-repeat;box-shadow:var(--ombre)}
+@media(max-width:700px){.entete-jeux{background:linear-gradient(180deg,rgba(27,42,74,.15) 0%,rgba(27,42,74,.9) 65%),url(/visuels/jeux-famille.webp?v=3) 70% top/cover no-repeat;min-height:260px}}
 .entete-jeux h1,.entete-jeux .sur-titre,.entete-jeux p{color:#fff}.entete-jeux p{margin:6px 0 0;max-width:420px;opacity:.92}
 .quiz-reponses{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:520px){.quiz-reponses{grid-template-columns:1fr}}
