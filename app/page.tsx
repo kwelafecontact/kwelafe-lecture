@@ -12,6 +12,7 @@ import { UNIVERS, config } from "@/lib/config";
 import { FORMATS, formatDe, sansDoublon } from "@/lib/formats";
 import { leger } from "@/lib/leger";
 import { tous, urlCouverture } from "@/lib/cf";
+import { livresBientot } from "@/lib/donnees";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Bibliothèque · Kwélafé" };
@@ -24,6 +25,7 @@ function salut() {
 export default async function Accueil() {
   const { session, livres, progs, prog, acces, favoris, abonne } = await contexte();
   const stats = await statistiques(session.cid);
+  const bientot = await livresBientot();
   const enCours = progs
     .filter((p) => !p.termine && p.pourcentage > 0)
     .map((p) => ({ p, l: livres.find((l) => l.id === p.livre_id) }))
@@ -128,6 +130,20 @@ export default async function Accueil() {
                   <span className="rang" aria-hidden>{k + 1}</span>
                   <Couverture livre={l} verrouille={!acces.get(l.id)} />
                 </Link>
+              ))}
+            </div></Carrousel>
+          </section>
+        )}
+
+        {bientot.length > 0 && (
+          <section className="section">
+            <div className="bloc-editorial petit"><div className="eyebrow">Ça arrive</div><h2>Bientôt dans l'app</h2><p className="texte-doux">Votre bibliothèque grandit chaque mois. Voici les prochains livres.</p></div>
+            <Carrousel libelle="Bientôt dans l'app"><div className="rangee-bientot">
+              {bientot.map((l) => (
+                <div key={l.id} className="bientot" aria-label={`${l.titre}, bientôt disponible`}>
+                  <Couverture livre={l} />
+                  <span className="badge-bientot">Bientôt</span>
+                </div>
               ))}
             </div></Carrousel>
           </section>

@@ -134,6 +134,10 @@ export async function livresPublies(): Promise<Livre[]> {
   return (await tous("SELECT * FROM livres WHERE publie = 1 ORDER BY cree_le DESC")).map(versLivre);
 }
 
+export async function livresBientot(): Promise<Livre[]> {
+  try { return (await tous("SELECT * FROM livres WHERE publie = 0 AND bientot = 1 ORDER BY cree_le DESC")).map(versLivre); } catch { return []; }
+}
+
 export async function tousLesLivres(): Promise<Livre[]> {
   return (await tous("SELECT * FROM livres ORDER BY cree_le DESC")).map(versLivre);
 }

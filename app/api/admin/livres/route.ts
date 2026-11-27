@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   if (!(await sessionAdmin())) return NextResponse.json({}, { status: 403 });
   const { id, champ, valeur } = await req.json();
-  if (!["publie", "mystere_du_mois", "inclus_abonnement", "gratuit"].includes(champ)) return NextResponse.json({}, { status: 400 });
+  if (!["publie", "mystere_du_mois", "inclus_abonnement", "gratuit", "bientot"].includes(champ)) return NextResponse.json({}, { status: 400 });
   if (champ === "mystere_du_mois" && valeur) await executer("UPDATE livres SET mystere_du_mois = 0 WHERE id <> ?", id);
   await executer(`UPDATE livres SET ${champ} = ? WHERE id = ?`, valeur ? 1 : 0, id);
   return NextResponse.json({ ok: true });

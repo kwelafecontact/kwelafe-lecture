@@ -1038,8 +1038,8 @@ body { background: var(--ivoire); }
 .ce-gros.secondaire{background:#fff;color:var(--texte);box-shadow:0 6px 0 #e5e0d8;border:2px solid #e5e0d8}
 .ce-fin{text-align:center;padding:20px 0}.ce-fin-etoiles{font-size:60px}
 /* Jeux : bandeau illustré + réponses façon Kahoot */
-.entete-jeux{min-height:210px;display:flex;align-items:flex-end;border-radius:26px;padding:22px;color:#fff;background:linear-gradient(90deg,rgba(27,42,74,.92) 0%,rgba(27,42,74,.7) 40%,rgba(27,42,74,0) 75%),url(/visuels/jeux-famille.webp?v=3) center right/cover no-repeat;box-shadow:var(--ombre)}
-@media(max-width:700px){.entete-jeux{background:linear-gradient(180deg,rgba(27,42,74,.15) 0%,rgba(27,42,74,.9) 65%),url(/visuels/jeux-famille.webp?v=3) 70% top/cover no-repeat;min-height:260px}}
+.entete-jeux{min-height:210px;display:flex;align-items:flex-end;border-radius:26px;padding:22px;color:#fff;background:linear-gradient(90deg,rgba(27,42,74,.92) 0%,rgba(27,42,74,.7) 40%,rgba(27,42,74,0) 75%),url(/visuels/jeux-famille.webp?v=4) center right/cover no-repeat;box-shadow:var(--ombre)}
+@media(max-width:700px){.entete-jeux{background:linear-gradient(180deg,rgba(27,42,74,.15) 0%,rgba(27,42,74,.9) 65%),url(/visuels/jeux-famille.webp?v=4) 70% top/cover no-repeat;min-height:260px}}
 .entete-jeux h1,.entete-jeux .sur-titre,.entete-jeux p{color:#fff}.entete-jeux p{margin:6px 0 0;max-width:420px;opacity:.92}
 .quiz-reponses{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:520px){.quiz-reponses{grid-template-columns:1fr}}
@@ -1155,3 +1155,6 @@ html[data-couleur="lagon"]{--lave:#0f7c99;--lave-fonce:#0a5f76}
 html[data-couleur="cirques"]{--lave:#2f7d4f;--lave-fonce:#22603b}
 html[data-couleur="flamboyant"]{--lave:#d9480f;--lave-fonce:#b23a0b}
 html[data-couleur="vanille"]{--lave:#7a5230;--lave-fonce:#5e3f24}
+.rangee-bientot{display:flex;gap:14px}
+.bientot{position:relative;flex:0 0 130px;filter:grayscale(1);opacity:.6}
+.badge-bientot{position:absolute;top:8px;left:8px;background:#1a1a1a;color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;filter:none}

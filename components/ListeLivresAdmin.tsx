@@ -70,6 +70,7 @@ export default function ListeLivresAdmin({ livres }: { livres: LigneAdmin[] }) {
                   <BasculeAdmin id={l.id} champ="mystere_du_mois" valeur={l.mystere_du_mois} libelle="Mystère du mois" />
                 </div>
                 <Link className="lien cla-voir" href={`/lire/${l.slug}`}>Prévisualiser ›</Link>
+                {!l.publie && <BasculeAdmin id={l.id} champ="bientot" valeur={!!(l as any).bientot} libelle="Bientôt (grisé)" />}
                 {!l.publie && <SupprimerBrouillon id={l.id} titre={l.titre} />}
               </div>
             );
