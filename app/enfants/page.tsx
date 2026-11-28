@@ -36,15 +36,15 @@ export default async function CoinEnfants() {
         </header>
 
         <nav className="enf-portes">
-          <a href="#lire" style={{ ["--c" as any]: "#f2b705" }}><span>📚</span>Lire</a>
-          <Link href="/enfants/zistoir" style={{ ["--c" as any]: "#7a2e8f" }}><span>✨</span>Zistoir</Link>
-          <a href="#jouer" style={{ ["--c" as any]: "#2e9d4f" }}><span>🎲</span>Jouer</a>
-          <Link href="/jeux/famille" style={{ ["--c" as any]: "#d6332a" }}><span>👨‍👩‍👧</span>En famille</Link>
-          <Link href="/enfants/creole" style={{ ["--c" as any]: "#1f6fb2" }}><span>🐦</span>Créole</Link>
-          <Link href="/enfants/apprendre" style={{ ["--c" as any]: "#1f8a7a" }}><span>🌋</span>Apprendre</Link>
-          <Link href="/enfants/coloriage" style={{ ["--c" as any]: "#f08a24" }}><span>🖍️</span>Colorier</Link>
-          <Link href="/enfants/puzzle" style={{ ["--c" as any]: "#9d4edd" }}><span>🧩</span>Puzzle</Link>
-          <Link href="/decouvrir?enfants=1" style={{ ["--c" as any]: "#0f7c99" }}><span>🎬</span>Vidéos</Link>
+          <a href="#lire" style={{ ["--c" as any]: "#f2b705" }}><img src="/kwelafe/portes/porte-lire.webp" alt="" width={72} height={72} />Lire</a>
+          <Link href="/enfants/zistoir" style={{ ["--c" as any]: "#7a2e8f" }}><img src="/kwelafe/portes/porte-zistoir.webp" alt="" width={72} height={72} />Zistoir</Link>
+          <a href="#jouer" style={{ ["--c" as any]: "#2e9d4f" }}><img src="/kwelafe/portes/porte-jouer.webp" alt="" width={72} height={72} />Jouer</a>
+          <Link href="/jeux/famille" style={{ ["--c" as any]: "#d6332a" }}><img src="/kwelafe/portes/porte-famille.webp" alt="" width={72} height={72} />En famille</Link>
+          <Link href="/enfants/creole" style={{ ["--c" as any]: "#1f6fb2" }}><img src="/kwelafe/portes/porte-creole.webp" alt="" width={72} height={72} />Créole</Link>
+          <Link href="/enfants/apprendre" style={{ ["--c" as any]: "#1f8a7a" }}><img src="/kwelafe/portes/porte-apprendre.webp" alt="" width={72} height={72} />Apprendre</Link>
+          <Link href="/enfants/coloriage" style={{ ["--c" as any]: "#f08a24" }}><img src="/kwelafe/portes/porte-colorier.webp" alt="" width={72} height={72} />Colorier</Link>
+          <Link href="/enfants/puzzle" style={{ ["--c" as any]: "#9d4edd" }}><img src="/kwelafe/portes/porte-puzzle.webp" alt="" width={72} height={72} />Puzzle</Link>
+          <Link href="/decouvrir?enfants=1" style={{ ["--c" as any]: "#0f7c99" }}><img src="/kwelafe/portes/porte-videos.webp" alt="" width={72} height={72} />Vidéos</Link>
         </nav>
 
         <div id="lire" />

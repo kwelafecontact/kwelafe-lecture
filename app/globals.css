@@ -876,8 +876,9 @@ body { background: var(--ivoire); }
 .hero-enfants p{max-width:520px;margin:0;font-size:16px;opacity:.95}
 .enf-bulles{position:absolute;right:16px;bottom:10px;font-size:26px;opacity:.85;letter-spacing:4px}
 .enf-portes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}
-.enf-portes a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 4px;border-radius:20px;background:var(--c);color:#fff;font-weight:800;font-size:14px;text-decoration:none;box-shadow:var(--ombre)}
+.enf-portes a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px 14px;border-radius:20px;background:var(--c);color:#fff;font-weight:800;font-size:14px;text-decoration:none;box-shadow:var(--ombre)}
 .enf-portes a span{font-size:28px}
+.enf-portes a img{width:72px;height:72px;display:block;object-fit:contain}
 .enf-titre{font-family:var(--titre);color:#24402f}
 .enf-apprendre{background:#e8f4fb;border-radius:24px;padding:22px}
 .enf-apprendre h2{font-family:var(--titre);font-size:30px;color:var(--bleu);margin:6px 0}
