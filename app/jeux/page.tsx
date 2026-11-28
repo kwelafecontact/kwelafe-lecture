@@ -72,22 +72,30 @@ export default async function PageJeux() {
           <div className="jeux-grille">
             {JEUX_3D.map((j) => {
               const ouvert = acces || jeuGratuit(j.id, true);
-              const contenu = (
+              const etiquette = ouvert ? (acces ? "Jouer" : "Gratuit · Jouer") : "Abonnés";
+              const contenu = j.image ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="jeu-capture" src={j.image} alt="" width={720} height={480} loading="lazy" />
+                  <div className="jeu-bandeau">
+                    <h3>{j.titre}</h3>
+                    <span className="jeu-etiquette">{etiquette}</span>
+                  </div>
+                </>
+              ) : (
                 <>
                   <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
-                    {j.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className="jeu-capture" src={j.image} alt="" width={720} height={480} loading="lazy" />
-                    ) : <span className="jeu-emoji">{j.emoji}</span>}
+                    <span className="jeu-emoji">{j.emoji}</span>
                   </div>
                   <div className="jeu-infos">
                     <h3>{j.titre}</h3>
                     <p className="texte-doux">{j.accroche}</p>
-                    <span className="jeu-etiquette">{ouvert ? (acces ? "Jouer" : "Gratuit · Jouer") : "Abonnés"}</span>
+                    <span className="jeu-etiquette">{etiquette}</span>
                   </div>
                 </>
               );
-              return ouvert ? <Link key={j.id} href={`/jeux/3d/${j.id}`} className="jeu-carte">{contenu}</Link> : <div key={j.id} className="jeu-carte inactive">{contenu}</div>;
+              const classe = "jeu-carte" + (j.image ? " jeu-carte-capture" : "");
+              return ouvert ? <Link key={j.id} href={`/jeux/3d/${j.id}`} className={classe} aria-label={`${j.titre} : ${j.accroche}`}>{contenu}</Link> : <div key={j.id} className={classe + " inactive"}>{contenu}</div>;
             })}
           </div>
         </section>
