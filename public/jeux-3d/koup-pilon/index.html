@@ -153,7 +153,7 @@ const RECETTES = [
   { nom: 'Rougail poisson à la cive', couper: { tomate: [3, 'des'], oignon: [1, 'emince'], cive: [1, 'fin'], gingembre: [1, 'morceaux'] }, piler: ['ail', 'gingembre', 'piment', 'sel'], bol: ['tomate', 'oignon', 'cive'],
     fait: "La cive, c'est l'oignon vert. Hachée fin, elle parfume le rougail de poisson au dernier moment." },
 ];
-const NOMS = { tomate: ['tomate', 'tomates', 'la'], oignon: ['oignon', 'oignons', "l'"], ail: ["gousse d'ail", "gousses d'ail", 'la'], piment: ['piment', 'piments', 'le'], gingembre: ['gingembre', 'gingembre', 'le'],
+const NOMS = { tomate: ['tomate', 'tomates', 'la'], oignon: ['oignon', 'oignons', "l'"], ail: ["ail", "têtes d'ail", "l'"], piment: ['piment', 'piments', 'le'], gingembre: ['gingembre', 'gingembre', 'le'],
   safran: ['safran péi', 'safran péi', 'le'], sel: ['gros sel', 'gros sel', 'le'], thym: ['thym', 'thym', 'le'], combava: ['combava', 'combavas', 'le'], cive: ['cive', 'cives', 'la'], carotte: ['carotte', 'carottes', 'la'],
   chou: ['chou', 'choux', 'le'], haricot: ['haricot vert', 'haricots verts', "l'"], mangue: ['mangue verte', 'mangues vertes', 'la'], avocat: ['avocat', 'avocats', "l'"], citron: ['citron galet', 'citrons galets', 'le'],
   concombre: ['concombre', 'concombres', 'le'], chouchou: ['chouchou', 'chouchous', 'le'], jacque: ["ti'jacque", "ti'jacques", 'le'] };
@@ -163,6 +163,21 @@ const liste = arr => { const u = [...new Set(arr)].map(a => NOMS[a][0]); return 
 const TAILLE = { tomate: [7, 7], oignon: [7.5, 7.2], carotte: [17, 2.6], gingembre: [9, 4.5], ail: [3.2, 1.8], piment: [6.5, 1.3], combava: [4.8, 4.8], safran: [6, 1.6], cive: [20, 1.1], sel: [2.6, 2.6],
   avocat: [10, 6.6], mangue: [10, 7], chou: [12, 11.4], haricot: [12, 0.95], thym: [9, 1.4], citron: [4.6, 4.6], concombre: [18, 4.4], chouchou: [10, 7.4], jacque: [12, 9.5] };
 const JUTEUX = { tomate: 0.35, citron: 0.3, concombre: 0.22, combava: 0.2, mangue: 0.15, avocat: 0.12 }; // petites giclées sur les aliments juteux
+// Légumes des autres jeux du site : rendus vus du dessus des modèles 3D Blender (Koup Koup 2 et 3, Koup Rougail),
+// avec leur coupe (moitié du modèle vue côté chair). Longueur sur la planche en cm.
+const LONG = { tomate: 7.5, oignon: 7.5, ail: 5, piment: 7, gingembre: 9.5, safran: 7, combava: 5.2, cive: 20, carotte: 17, avocat: 11, mangue: 11,
+  chou: 13, haricot: 12, thym: 10, citron: 4.8, concombre: 18, chouchou: 11, jacque: 13 };
+const NOM_ALIM = { ail: 'Ail', safran: 'Safran péi', jacque: "Ti'jacque", haricot: 'Haricot vert', citron: 'Citron galet', mangue: 'Mangue verte', chou: 'Chou blanc' };
+let LEGUMES = null; // aliments en image, prêts pour la cuisine KwFX
+const legumesPrets = fetch('legumes/legumes.json').then(r => r.json()).then(J => {
+  LEGUMES = {};
+  Object.entries(J).forEach(([k, v]) => {
+    const img = new Image(), imgCoupe = new Image(); img.src = 'legumes/' + k + '.webp'; imgCoupe.src = 'legumes/' + k + '-coupe.webp';
+    const l = LONG[k] || 8, a = { img, imgCoupe, contour: v.contour, l, h: +(l * v.ratio).toFixed(2), peau: v.peau, peau2: v.peau, chair: v.chair };
+    if (NOM_ALIM[k]) a.nom = NOM_ALIM[k];
+    LEGUMES[k] = a; TAILLE[k] = [l, a.h];
+  });
+}).catch(() => { LEGUMES = {}; });
 const RONDS = new Set(['tomate', 'oignon', 'combava', 'citron', 'chou', 'jacque']);
 const COUPES = {
   des: { k: 8, txt: (a, n) => `Coupe ${nom1(a, n)} en dés (au moins ${n * 8} morceaux).`, ok: (r, n) => r.morceaux >= n * 8 && r.tailleMoyenne < 6 },
@@ -275,7 +290,7 @@ $('bHasard').addEventListener('click', () => lancerRecette(Math.floor(Math.rando
 function creerCuisine() {
   if (cu) return;
   const portrait = innerHeight > innerWidth;
-  cu = fx.cuisine($('zone'), { hauteur: portrait ? 'max(420px, min(calc(100dvh - 150px), calc((100vw - 20px) * 1.08 + 90px)))' : 'max(420px, min(calc(100dvh - 130px), 640px))' });
+  cu = fx.cuisine($('zone'), { aliments: LEGUMES || {}, hauteur: portrait ? 'max(420px, min(calc(100dvh - 150px), calc((100vw - 20px) * 1.08 + 90px)))' : 'max(420px, min(calc(100dvh - 130px), 640px))' });
   // boutons du jeu ajoutés à la barre d'outils de la cuisine
   const barre = $('zone').querySelector('.kwfx-cuisine').children[1];
   const bt = (txt, f, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'zone-interactive ' + (cls || ''); b.textContent = txt; b.style.cssText = 'min-height:44px;padding:8px 14px;border-radius:12px;border:0;font:800 14px system-ui,sans-serif;cursor:pointer;background:#7a5a3a;color:#fff8ee'; b.addEventListener('click', f); barre.appendChild(b); return b; };
@@ -317,6 +332,7 @@ function action() {
 function lancerRecette(i, recommencer) {
   $('fiche').classList.add('cache');
   if (!fx) return;
+  if (!LEGUMES) { legumesPrets.then(() => lancerRecette(i, recommencer)); return; }
   montrer('jeu'); creerCuisine();
   R = RECETTES[i]; R.idx = i; R.k = versKwfx(R); if (partie) partie.coupes = 0;
   cu.recette(R.k); serieFine = 0;

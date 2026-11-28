@@ -93,7 +93,7 @@
  *
  * Nouveautés v3.9 (cuisine ouverte) : 9 aliments de plus (avocat, mangue, chou, haricot, thym, citron, concombre,
  *   chouchou, jacque), cu.recette({ nom, titre, info, garde, poser, etapes:[{ texte, verif(r, api), avant }], score, fin }),
- *   cu.vider(), option aliments, évènement coupe avec x, y et couleur.
+ *   cu.vider(), option aliments (fusionnée ; img/imgCoupe/contour = aliments en image), évènement coupe avec x, y et couleur.
  * Nouveautés v3.8 (cuisine : découpe précise, morceaux, bol, pilon) :
  *   const cu = fx.cuisine(el, { recette: 'rougail' | 'pimentPile' | 'libre' }) ; cu.sur('fini', d => fx.finPartie(d.qualite))
  *   cu.ajouter('carotte') ; cu.guides('carotte', { ecart: 1 }) ; cu.prevoir(x1,y1,x2,y2) ; cu.couper(x1,y1,x2,y2)   (cm sur la planche 40×26)
@@ -5192,7 +5192,8 @@
   function longueurP(p) { var best = 0, ang = 0; for (var i = 0; i < p.length; i++) for (var j = i + 1; j < p.length; j++) { var d = Math.hypot(p[i][0] - p[j][0], p[i][1] - p[j][1]); if (d > best) { best = d; ang = Math.atan2(p[j][1] - p[i][1], p[j][0] - p[i][0]); } } return { l: best, a: ang }; }
   function formeAliment(A, cx, cy, rot) {
     var pts = [], n, i, t, r, L = A.l / 2, H = A.h / 2;
-    if (A.forme === 'rond') { n = 30; for (i = 0; i < n; i++) { t = i / n * 6.283; r = 1 + 0.035 * Math.sin(t * 3 + cx) + (A.bosses ? 0.05 * Math.sin(t * 11) : 0); pts.push([Math.cos(t) * L * r, Math.sin(t) * H * r]); } }
+    if (A.contour) pts = A.contour.map(function (q) { return [q[0] * A.l, q[1] * A.h]; });
+    else if (A.forme === 'rond') { n = 30; for (i = 0; i < n; i++) { t = i / n * 6.283; r = 1 + 0.035 * Math.sin(t * 3 + cx) + (A.bosses ? 0.05 * Math.sin(t * 11) : 0); pts.push([Math.cos(t) * L * r, Math.sin(t) * H * r]); } }
     else if (A.forme === 'poire') { n = 32; for (i = 0; i < n; i++) { t = i / n * 6.283; var px0 = Math.cos(t), wp = 0.52 + 0.48 * Math.pow((px0 + 1) / 2, 0.7), rb = A.bosses ? 1 + 0.04 * Math.sin(t * 5) : 1; pts.push([px0 * L * rb, Math.sin(t) * H * wp * rb]); } }
     else if (A.forme === 'long') { n = 26; for (i = 0; i < n; i++) { t = i / n * 6.283; var x = Math.cos(t), w = A.motif === 'tige' || A.uniforme ? 1 : 0.35 + 0.65 * (x + 1) / 2; pts.push([x * L, Math.sin(t) * H * w * (1 - 0.15 * Math.pow(Math.abs(x), 6))]); } }
     else if (A.forme === 'patte') { var lob = [[-1, 0.1, 0.55], [-0.25, -0.35, 0.6], [0.45, 0.2, 0.55], [0.85, -0.45, 0.35], [0.1, 0.55, 0.38]]; n = 40; for (i = 0; i < n; i++) { t = i / n * 6.283; var bx = Math.cos(t), by = Math.sin(t), best = 0.3; lob.forEach(function (q) { var dx = bx * 1.1 - q[0], dy = by * 0.9 - q[1]; best = Math.max(best, q[2] * 1.6 - Math.hypot(dx, dy) * 0.4); }); pts.push([bx * L * (0.75 + 0.3 * best), by * H * (0.6 + 0.5 * best)]); } }
@@ -5206,7 +5207,7 @@
 
   Directeur.prototype.cuisine = function (el, o) {
     o = o || {}; var self = this, _kwVie = this._vie;
-    if (o.aliments) for (var na in o.aliments) ALIMENTS[na] = o.aliments[na];
+    if (o.aliments) for (var na in o.aliments) { var base = ALIMENTS[na] || {}, nv2 = {}, kk; for (kk in base) nv2[kk] = base[kk]; for (kk in o.aliments[na]) nv2[kk] = o.aliments[na][kk]; ALIMENTS[na] = nv2; }
     el = el || this.conteneur; if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
     var racine = document.createElement('div'); racine.className = 'kwfx-cuisine'; racine.style.cssText = 'position:relative;width:100%;font:600 14px/1.35 system-ui,-apple-system,sans-serif;color:#2a1f17';
     var scene = document.createElement('div'); scene.style.cssText = 'position:relative;width:100%;height:' + (o.hauteur || 'clamp(420px,56vw,560px)') + ';border-radius:16px;overflow:hidden;background:#d9c3a0;touch-action:none;user-select:none;-webkit-user-select:none';
@@ -5296,7 +5297,13 @@
       if (ombre) { x.save(); x.translate(3, 4); cheminP(x, P, ox, oy, k); x.fillStyle = 'rgba(40,20,5,.22)'; x.fill(); x.restore(); }
       cheminP(x, P, ox, oy, k);
       var c = centreP(P.pts), cX = ox + c[0] * k, cY = oy + c[1] * k, Ox = ox + P.ox * k, Oy = oy + P.oy * k, cm = k;
-      if (P.entier) {
+      var imgOk = function (im) { return im && im.complete && im.naturalWidth > 0; };
+      if (P.entier && imgOk(A.img)) { x.save(); x.translate(Ox, Oy); x.rotate(P.rot); x.drawImage(A.img, -A.l * cm / 2, -A.h * cm / 2, A.l * cm, A.h * cm); x.restore(); }
+      else if (!P.entier && imgOk(A.imgCoupe)) {
+        x.fillStyle = A.chair; x.fill(); x.save(); x.clip(); x.translate(Ox, Oy); x.rotate(P.rot); x.drawImage(A.imgCoupe, -A.l * cm / 2, -A.h * cm / 2, A.l * cm, A.h * cm); x.restore();
+        x.lineJoin = 'round'; for (var e2 = 0, n2 = P.pts.length; e2 < n2; e2++) { var r1 = P.pts[e2], r2 = P.pts[(e2 + 1) % n2]; if (!P.fl[e2]) continue; x.beginPath(); x.moveTo(ox + r1[0] * k, oy + r1[1] * k); x.lineTo(ox + r2[0] * k, oy + r2[1] * k); x.strokeStyle = 'rgba(255,255,255,.5)'; x.lineWidth = 1; x.stroke(); }
+      }
+      else if (P.entier) {
         var g = x.createRadialGradient(cX - P.A.l * cm * 0.15, cY - P.A.h * cm * 0.2, 1, cX, cY, Math.max(A.l, A.h) * cm * 0.6); g.addColorStop(0, A.peau2); g.addColorStop(1, A.peau); x.fillStyle = g; x.fill();
         x.save(); x.clip();
         if (P.al === 'oignon') { x.strokeStyle = 'rgba(120,60,20,.35)'; x.lineWidth = 1; for (var i = -3; i <= 3; i++) { x.beginPath(); x.ellipse(Ox, Oy, Math.abs(i) * A.l * cm * 0.13 + 2, A.h * cm * 0.55, P.rot, 0, 6.283); x.stroke(); } }
