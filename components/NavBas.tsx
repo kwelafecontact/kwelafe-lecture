@@ -2,21 +2,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Icone from "./Icones";
 
 const ONGLETS_PUBLIC = [
-  { href: "/", ico: "🏠", nom: "Accueil", c: "#d6332a" },
-  { href: "/catalogue", ico: "📚", nom: "Ma bibliothèque", c: "#2e9d4f" },
-  { href: "/livres", ico: "📖", nom: "Mes lectures", c: "#1f6fb2" },
-  { href: "/jeux", ico: "🎮", nom: "Jeux", c: "#e8a200" },
-  { href: "/compte", ico: "👤", nom: "Mon compte", c: "#4b3a78" },
+  { href: "/", ico: "accueil", nom: "Accueil", c: "#d6332a" },
+  { href: "/catalogue", ico: "biblio", nom: "Ma bibliothèque", c: "#2e9d4f" },
+  { href: "/livres", ico: "lectures", nom: "Mes lectures", c: "#1f6fb2" },
+  { href: "/jeux", ico: "jeux", nom: "Jeux", c: "#e8a200" },
+  { href: "/compte", ico: "compte", nom: "Mon compte", c: "#4b3a78" },
 ];
 
 const ONGLETS_ELEVE = [
-  { href: "/classe", ico: "🎒", nom: "Ma classe", c: "#2e9d4f" },
-  { href: "/catalogue", ico: "📚", nom: "Livres", c: "#1f6fb2" },
-  { href: "/ecole", ico: "✏️", nom: "Apprendre", c: "#4b3a78" },
-  { href: "/ecole/jeux", ico: "🎮", nom: "Jeux", c: "#e8a200" },
-  { href: "/compte", ico: "👤", nom: "Moi", c: "#d6332a" },
+  { href: "/classe", ico: "classe", nom: "Ma classe", c: "#2e9d4f" },
+  { href: "/catalogue", ico: "biblio", nom: "Livres", c: "#1f6fb2" },
+  { href: "/ecole", ico: "apprendre", nom: "Apprendre", c: "#4b3a78" },
+  { href: "/ecole/jeux", ico: "jeux", nom: "Jeux", c: "#e8a200" },
+  { href: "/compte", ico: "compte", nom: "Moi", c: "#d6332a" },
 ];
 
 export default function NavBas() {
@@ -32,7 +33,7 @@ export default function NavBas() {
           return (
             <li key={o.href}>
               <Link href={o.href} className={actif ? "actif" : ""} style={{ ["--c" as any]: o.c }} aria-current={actif ? "page" : undefined}>
-                <span className="ico" aria-hidden>{o.ico}</span>
+                <span className="ico"><Icone nom={o.ico} taille={24} /></span>
                 {o.nom}
               </Link>
             </li>
