@@ -98,7 +98,14 @@
   .savoir span { font-weight:600; font-size:clamp(14px, 3.6vw, 17px); line-height:1.3; }
   .niveau { position:fixed; left:50%; top:max(140px, calc(env(safe-area-inset-top) + 124px)); transform:translateX(-50%); font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#f6ecd2; text-shadow:0 2px 0 #1a3010, 0 0 10px rgba(0,0,0,.5); pointer-events:none; opacity:0; transition:opacity .3s; }
   .niveau.on { opacity:1; }
-  .panier { font-weight:800; font-size:15px; margin-top:4px; text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  .panier { display:flex; flex-direction:column; gap:6px; align-items:flex-end; font-weight:800; text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  .panier .chip { display:flex; align-items:center; gap:6px; padding:4px 12px 4px 6px; border-radius:999px; background:rgba(10,14,6,.62); border:1.5px solid rgba(255,230,160,.35); }
+  .panier .chip img { width:34px; height:34px; object-fit:contain; }
+  .panier .chip b { font-family:"Bangers", sans-serif; letter-spacing:.04em; font-size:22px; color:#ffe27a; min-width:44px; text-align:right; }
+  .panier .chip span { font-size:13px; opacity:.85; }
+  .panier .chip.saute { animation:saute .35s ease-out; }
+  img.verte { filter:sepia(1) hue-rotate(45deg) saturate(3) brightness(1.15); }
+  .vole { position:fixed; z-index:25; width:46px; height:46px; pointer-events:none; object-fit:contain; transition:transform .75s cubic-bezier(.5,-0.3,.6,1), opacity .2s .65s; filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
   .panneau { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.92); width:min(90vw, 480px); max-height:78vh; overflow:auto; padding:18px 20px 20px; border-radius:22px; background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .3s cubic-bezier(.2,1.4,.4,1); z-index:18; text-align:center; }
   #btnFin { left:max(130px, calc(env(safe-area-inset-left) + 130px)); }
   @media (max-width:640px) { .vies img { width:48px; height:48px; } .haut { top:max(70px, calc(env(safe-area-inset-top) + 58px)); } .hud { top:max(150px, calc(env(safe-area-inset-top) + 136px)); } }
@@ -157,8 +164,8 @@
 <canvas id="gl"></canvas>
 
 <div class="hud" id="hud">
-  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div><div class="panier" id="panier"></div></div>
-  <div></div>
+  <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
+  <div class="panier" id="panier"><div class="chip" id="pVert"><img src="icones/gousses.webp" alt="" class="verte"><b id="nVert">0 g</b><span>verte</span></div><div class="chip" id="pNoir"><img src="icones/gousses.webp" alt=""><b id="nNoir">0 g</b><span>noire</span></div></div>
 </div>
 <div class="haut" id="haut"><div class="vies" id="vies"></div><div class="jourHeure"><span class="niveauHud" id="niveau">Jour 1</span><span class="heureHud" id="heure"></span></div></div>
 <div class="bandeau" id="bandeau"></div>
@@ -596,7 +603,16 @@ function heureTexte(k) { const m = Math.round((6 + 6 * k) * 4) / 4, h = Math.flo
 function midi() { for (const f of fleurs) if (f.vivant && f.etat === 'ouvre' && !f.boss) fermer(f); bandeau('Midi : les fleurs se referment. Place à l\'échaudage', 2.4); }
 function ambiancer() { renderer.toneMappingExposure = calme() ? 0.92 : 0.85; bloom.strength = calme() ? 0.28 : 0.22; }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = calme() ? '' : 'Record : ' + Math.max(record, score); majPanier(); }
-function majPanier() { $('panier').textContent = `🟢 ${vert} g de vanille verte · 🟤 ${Math.round(noireGagnee)} g noire`; }
+// les compteurs affichent ce qui est arrivé dans le panier : la gousse cueillie s'envole d'abord jusqu'au compteur
+let affVert = 0, affNoire = 0;
+function majPanier() { $('nVert').textContent = Math.round(affVert) + ' g'; $('nNoir').textContent = Math.round(affNoire) + ' g'; }
+function voler(type, g, x, y) {
+  const cible = $(type === 'verte' ? 'pVert' : 'pNoir'), r = cible.getBoundingClientRect(), e = document.createElement('img');
+  e.src = 'icones/gousses.webp'; e.className = 'vole' + (type === 'verte' ? ' verte' : ''); e.style.left = (x - 23) + 'px'; e.style.top = (y - 23) + 'px';
+  document.body.appendChild(e);
+  requestAnimationFrame(() => requestAnimationFrame(() => { e.style.transform = `translate(${r.left + 20 - x}px, ${r.top + r.height / 2 - y}px) scale(0.7) rotate(${type === 'verte' ? 200 : -160}deg)`; e.style.opacity = '0'; }));
+  setTimeout(() => { e.remove(); if (type === 'verte') affVert += g; else affNoire += g; majPanier(); cible.classList.remove('saute'); void cible.offsetWidth; cible.classList.add('saute'); jouer('cueille', 0.25, 1.4); }, 760);
+}
 function majVies() { if (calme()) { $('vies').innerHTML = `<div class="temps" style="color:#ffd24a;text-shadow:0 3px 0 #8a5a00">★ ${etoilesC}</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<img src="icones/fleur.webp" alt="" class="${i >= vies ? 'perdue' : ''}">`).join(''); }
 function majNiveau() { $('niveau').textContent = 'Jour ' + niveau; const e = $('niveau'); e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
 function perdreVie() { if (etat !== 'jeu' || calme()) return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
@@ -707,7 +723,7 @@ function majPrepa(dt) {
 }
 function finPrepa(q) {
   const p = prepa; if (!p || p.fini) return; p.fini = true;
-  const bonus = dernierGain * 0.3 * q, pts = Math.round(40 * q); noireGagnee += bonus; score += pts; majScore(); majPanier();
+  const bonus = dernierGain * 0.3 * q, pts = Math.round(40 * q); noireGagnee += bonus; score += pts; majScore(); if (bonus > 0.05) voler('noire', bonus, innerWidth / 2, innerHeight * 0.5);
   const nom = { etuvage: 'Étuvage', sechage: 'Séchage', tri: 'Tri' }[p.type], note = q >= 0.8 ? 'parfait' : q >= 0.5 ? 'réussi' : 'à revoir';
   bandeau(`${nom} ${note} : +${pts} points, +${bonus.toFixed(1)} g de vanille noire`, 2.6);
   if (q >= 0.5) { son.bonus(); if (fx) { fx.joue('poussiereOr', { x: innerWidth / 2, y: innerHeight * 0.45, intensite: 0.5 + 0.5 * q }); fx.evenement('bonne', { x: innerWidth / 2, y: innerHeight * 0.45, points: pts, couleur: '#c8a050' }); } }
@@ -719,14 +735,14 @@ function arreterJauge() {
   if (!jauge || jauge.fini) return; jauge.fini = true;
   const pos = 0.5 - 0.5 * Math.cos(jauge.t * jauge.v * Math.PI), ok = pos >= jauge.debut && pos <= jauge.debut + jauge.largeur;
   const ratio = (ok ? 1.15 : 0.85) * (1 + save.amelio.malle * 0.1) / 4.6; // 4,2 à 5 kg de vert pour 1 kg de noire
-  const gain = vertJour * ratio; noireGagnee += gain; vertJour = 0; majPanier(); dernierGain = gain;
+  const gain = vertJour * ratio; noireGagnee += gain; vertJour = 0; dernierGain = gain; voler('noire', gain, innerWidth / 2, innerHeight * 0.46);
   prepa = { attente: true }; setTimeout(apresPause(() => { if (etat === 'jeu' && phase === 'accalmie') lancerPrepa(); else prepa = null; }), 1500);
   if (ok) { score += 40; majScore(); son.mariage(true); bandeau(`Échaudage réussi ! +${gain.toFixed(1)} g de vanille noire`, 2.4); } else { son.rate(); bandeau(`Eau ${pos < jauge.debut ? 'trop froide' : 'trop chaude'}… +${gain.toFixed(1)} g de vanille noire`, 2.4); }
   setTimeout(() => $('jauge').classList.remove('on'), 500);
 }
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; maries = 0; etoilesC = 0; $('faitBulle').classList.remove('on'); $('btnFin').style.display = calme() ? '' : 'none'; ambiancer(); musique(calme() ? 'musique-calme' : 'musique-intense'); vitesseMusique(); score = 0; vies = 3; temps = 0; prochain = 0.6; prochaineTache = 14; niveau = 1; serie = 0;
-  phase = 'actif'; phaseT = 0; charge = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0; vert = 0; vertJour = 0; noireGagnee = 0; stats = {}; prepa = null; $('prepa').classList.remove('on');
+  phase = 'actif'; phaseT = 0; charge = 0; ralentis = 0; frenesies = 0; ralenti = 0; frenesie = 0; vert = 0; vertJour = 0; noireGagnee = 0; affVert = 0; affNoire = 0; stats = {}; prepa = null; $('prepa').classList.remove('on');
   record = calme() ? 0 : save.record;
   vider(); construireVanilleraie();
   majScore(); majVies(); majNiveau(); majBonus(); $('bonus').classList.add('on'); aideTrop = 0;
@@ -768,8 +784,7 @@ function marier(f, parfait) {
   if (parfait) compter('parfaits'); if (f.or) compter('or');
   son.mariage(parfait || f.or);
   const wp = f.obj.getWorldPosition(new THREE.Vector3());
-  grain(wp, f.or ? [1, 0.8, 0.2] : [1, 0.95, 0.55], f.or ? 110 : 70, f.or ? 3.2 : 2.6, f.or ? 90 : 75);   // gerbe large : elle dépasse du doigt
-  for (const [r0, d] of [[0.28, 0], [0.42, 0.1]]) setTimeout(() => { const a2 = new THREE.Mesh(new THREE.RingGeometry(r0, r0 + 0.09, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2, 0.95, 0.35), transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); a2.position.copy(wp); a2.position.z += 0.5; a2.renderOrder = 10; a2.userData.grand = true; scene.add(a2); anneaux.push({ m: a2, t: 0, grand: true }); }, d * 1000);
+  grain(wp, f.or ? [1, 0.8, 0.2] : [1, 0.95, 0.55], f.or ? 70 : 34, f.or ? 1.8 : 1.2, f.or ? 70 : 50);
   const an = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.26, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.0, 0.55), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
   an.position.copy(wp); an.position.z += 0.4; an.renderOrder = 10; scene.add(an); anneaux.push({ m: an, t: 0 });
   const audessus = wp.clone().add(new THREE.Vector3(0, 1.5, 0));   // textes au-dessus du doigt
@@ -777,7 +792,7 @@ function marier(f, parfait) {
   if (f.or) setTimeout(() => popup('Fleur d\'or !', wp.clone().add(new THREE.Vector3(0, 2.3, 0)), 'chaine'), 100);
   else if (parfait) setTimeout(() => popup('Mariage parfait !', wp.clone().add(new THREE.Vector3(0, 2.3, 0)), 'chaine'), 100);
   if (serie % 8 === 0) { if (serie % 16 === 0) { frenesies = Math.min(3, frenesies + 1); bandeau('Série de ' + serie + ' ! Bonus points doublés ✨'); } else { ralentis = Math.min(3, ralentis + 1); bandeau('Série de ' + serie + ' ! Bonus ombre fraîche ⏳'); } son.combo(); majBonus(); }
-  if (fx) { const s0 = fxEcran(wp); fx.evenement('bonne', { x: s0.x, y: s0.y, points: pts, couleur: f.or ? '#ffd24a' : '#f4e7a0' }); fx.joue('etincelles', { x: s0.x, y: s0.y, intensite: 1 }); fx.joue('anneau', { x: s0.x, y: s0.y, intensite: parfait ? 1 : 0.7 }); if (parfait) fx.joue('etoiles', { x: s0.x, y: s0.y, intensite: 1 }); if (f.or) fx.joue('poussiereOr', { x: s0.x, y: s0.y, intensite: 0.8 }); if (serie % 8 === 0) fx.evenement('combo', { n: serie, x: s0.x, y: s0.y }); }
+  if (fx) { const s0 = fxEcran(wp); fx.evenement('bonne', { x: s0.x, y: s0.y, points: pts, couleur: f.or ? '#ffd24a' : '#f4e7a0' }); fx.joue('etoiles', { x: s0.x, y: s0.y, intensite: 1 }); fx.joue('etoiles', { x: s0.x, y: s0.y - 30, intensite: parfait || f.or ? 1 : 0.7 }); fx.joue('etincelles', { x: s0.x, y: s0.y, intensite: 0.9 }); /* gerbe d'étoiles large : elle dépasse du doigt */ if (f.or) fx.joue('poussiereOr', { x: s0.x, y: s0.y, intensite: 0.8 }); if (serie % 8 === 0) fx.evenement('combo', { n: serie, x: s0.x, y: s0.y }); }
   fermer(f); f.marie = true; pousserGousse(f);
   maries++; if (calme() && Math.floor(maries / 10) > etoilesC) { etoilesC = Math.floor(maries / 10); bandeau('★ Une étoile de plus !', 1.6); son.bonus(); majVies(); }
 }
@@ -795,6 +810,7 @@ function cueillir(g) {
   grain(wp, g.etat === 'serin' ? [1, 0.9, 0.3] : [0.6, 0.9, 0.4], g.etat === 'serin' ? 30 : 12, 1, 50);
   popup(`+${pts} · ${poids} g`, wp, 'pts', g.etat === 'serin' ? '#ffe27a' : '#cfe8b0');
   if (g.etat === 'serin') setTimeout(() => popup(txt, wp.clone().add(new THREE.Vector3(0, -0.8, 0)), 'chaine'), 80); else popup(txt, wp.clone().add(new THREE.Vector3(0, 0.9, 0)), 'aie');
+  { const s0 = toScreen(wp); voler('verte', poids, s0.x, s0.y); }
   if (fx) { const s0 = fxEcran(wp); if (g.etat === 'serin' && !g.maigre) fx.evenement('bonne', { x: s0.x, y: s0.y, points: pts, couleur: '#f2d040' }); else fx.evenement('presque', { x: s0.x, y: s0.y }); }
   g.etat = 'cueillie'; g.t = 0;
 }
