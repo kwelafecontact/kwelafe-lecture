@@ -15,6 +15,8 @@ export type Resultat = { mode: Mode; score: number; coupes: Record<string, numbe
 export type Rappels = {
   etat: (e: { score: number; vies: number; temps: number | null; combo: number }) => void;
   fin: (r: Resultat) => void;
+  /** Événements péi (refonte KwFX v4.1) : alizé, réveil du volcan, lave d'or, combo. Coordonnées écran. */
+  pei?: (type: "alize" | "volcan" | "volcanFin" | "laveOr" | "combo" | "coupe", x: number, y: number, n: number) => void;
   decouverte?: (id: string) => void;
   /** L'application est passée en arrière-plan pendant la partie : l'interface affiche la pause. */
   interruption?: (raison: string) => void;
@@ -115,6 +117,8 @@ export class MoteurKoupKoup {
   // Partie
   private etat: "menu" | "jeu" | "fin" = "menu";
   private mode: Mode = "classique";
+  // Inventions péi (mode « Mi rode problèm ») : l'alizé dévie les fruits, le réveil du volcan change la lave en or
+  private vent = 0; private ventCible = 0; private ventDans = 9; private volcanT = 0; private volcanDans = 28;
   private score = 0;
   private vies = VIES;
   private tempsJeu = 0;
@@ -394,6 +398,7 @@ export class MoteurKoupKoup {
     this.coupes = {};
     this.meilleurCombo = 0;
     this.ralenti = 0;
+    this.vent = 0; this.ventCible = 0; this.ventDans = 9; this.volcanT = 0; this.volcanDans = 28;
     this.envoyerEtat();
   }
 
@@ -543,6 +548,12 @@ export class MoteurKoupKoup {
     this.retirerFruit(f);
 
     if (f.def.special === "lave") {
+      if (this.volcanT > 0) {
+        // Réveil du volcan : pendant quelques secondes, la lave se coupe et vaut de l'or
+        const c = this.ecran(pos); this.score += 5; this.envoyerEtat();
+        this.bulle("Lave d'or !", "+5", c.x, c.y, "#ffd23f", 34); this.rappels.pei?.("laveOr", c.x, c.y, 5);
+        return;
+      }
       this.exploser(pos);
       return;
     }
@@ -652,6 +663,7 @@ export class MoteurKoupKoup {
     if (n < 3) return;
     this.meilleurCombo = Math.max(this.meilleurCombo, n);
     const c = this.ecran(this.comboPos);
+    this.rappels.pei?.("combo", c.x, c.y, n);
     const mots = ["Lé bon !", "Gayar !", "Gayar gayar !"];
     this.bulle(`Combo x${n}`, `${mots[Math.min(2, n - 3)]}  +${n}`, c.x, c.y - 40, "#ffe066", 40);
     this.sons.combo(n);
@@ -1103,6 +1115,12 @@ export class MoteurKoupKoup {
     if (this.etat === "jeu") {
       const avant = Math.ceil(DUREE_ZEN - this.tempsJeu);
       this.tempsJeu += dt;
+      if (this.mode === "classique") {
+        if ((this.ventDans -= dt) <= 0) { this.ventDans = 8 + this.rnd() * 6; this.ventCible = this.rnd() < 0.3 ? 0 : (this.rnd() < 0.5 ? -1 : 1) * (0.5 + this.rnd() * 0.5); if (this.ventCible) this.rappels.pei?.("alize", this.ventCible > 0 ? 0 : this.largeur, this.hauteur * 0.4, this.ventCible); }
+        this.vent += (this.ventCible - this.vent) * Math.min(1, dt * 1.5);
+        if (this.volcanT > 0) { this.volcanT -= dt; if (this.volcanT <= 0) this.rappels.pei?.("volcanFin", this.largeur / 2, this.hauteur / 2, 0); }
+        else if ((this.volcanDans -= dt) <= 0) { this.volcanDans = 30 + this.rnd() * 12; this.volcanT = 7; this.bulle("Le volcan se réveille !", "La lave vaut de l'or", this.largeur / 2, this.hauteur * 0.3, "#ff8a3c", 34); this.rappels.pei?.("volcan", this.largeur / 2, this.hauteur * 0.8, 7); }
+      }
       if (this.mode === "zen") {
         const apres = Math.ceil(DUREE_ZEN - this.tempsJeu);
         if (apres !== avant) this.envoyerEtat();
@@ -1149,7 +1167,7 @@ export class MoteurKoupKoup {
     const limite = -this.demiH - 2.6;
     for (const f of [...this.fruits]) {
       if (f.def.id === "vanille") { f.vel.y -= GRAVITE * 0.45 * dt; f.vel.y = Math.max(f.vel.y, -9); }
-      else f.vel.y -= GRAVITE * dt;
+      else { f.vel.y -= GRAVITE * dt; if (this.mode === "classique" && f.monte) f.vel.x += this.vent * 3.2 * dt; }
       f.groupe.position.addScaledVector(f.vel, dt);
       tourner(f.groupe, f.rot, dt);
       if (f.groupe.position.y > -this.demiH) f.monte = true;

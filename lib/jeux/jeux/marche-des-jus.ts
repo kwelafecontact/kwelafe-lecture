@@ -1,250 +1,225 @@
-// Le marché des jus : le client commande un jus, on met les bons fruits dans le blender.
+// Le marché des jus (refonte KwFX v4.1) : fruits au blender, puis on TIENT le bouton MIXER et on lâche dans la zone verte.
+// Inventions péi : la brume des Hauts cache la commande (on l'essuie du doigt), le koudmin du voisin prépare un jus entier.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, texteContour, arrondi, melanger } from "../commun/moteur2d";
-import { FRUITS_MARCHE, photosJus, couleurDe } from "../commun/photos";
-import { personnage, bulle, jauge, dessinerBouton, cagette, dans, vers, type Bouton } from "../commun/dessins";
+import { photosJus, couleurDe, photo } from "../commun/photos";
+import { personnage, bulle, jauge, cagette, dans } from "../commun/dessins";
+import { Combo, Choix, Pouvoir, Guide, nappeBrume, bouton, dansBtn, marge, type Btn } from "../commun/outils-pei";
 
 const JUTEUX = photosJus();
-const NOUVEAUX_JUS = FRUITS_MARCHE.filter((id) => JUTEUX.includes(id));
-
-type Volant = { id: string; x: number; y: number; t: number; x0: number; y0: number; x1: number; y1: number };
+type Volant = { id: string; t: number; x0: number; y0: number };
 
 class MarcheDesJus implements Jeu {
-  L: number; H: number;
-  temps = 0;
-  score = 0;
-  coeurs = 3;
-  servis = 0;
-  objectif: number;
-  etal: string[];
-  recette: string[] = [];
-  dansBlender: string[] = [];
-  patience = 1;
-  dureePatience: number;
-  client = 0;
-  arrivee = 0;            // animation d'arrivée du client (0 → 1)
-  mixage = 0;             // > 0 pendant le mixage
-  verre = 0;              // > 0 : le verre part vers le client
-  volants: Volant[] = [];
+  L: number; H: number; temps = 0; score = 0; fini = false;
+  pb: boolean;
+  etal: string[]; zones: { id: string; x: number; y: number; w: number; h: number }[] = [];
+  recette: string[] = []; dedans: string[] = []; volants: Volant[] = [];
+  client = 0; arrivee = 0; servis = 0; objectif: number; departs = 0; parfaits = 0; suite = 0; defiFait = false;
+  patience = 1; dureePatience: number;
+  tient = false; niveauJauge = 0; zone: [number, number]; double = false; verre = 0; verreOk = 0;
+  brume = 0; brumeDans = 2.4; essuie = 0;
+  or: { i: number; t: number } | null = null; prochainOr = 14;
   secoue: Record<number, number> = {};
-  btn: Bouton = { x: 0, y: 0, w: 160, h: 56, texte: "MIXER", actif: false, appui: 0, couleur: "#e8572a" };
-  zones: { id: string; x: number; y: number; w: number; h: number }[] = [];
-  niveau: number;
-  fini = false;
+  combo: Combo; choix: Choix; koudmin: Pouvoir; guide: Guide; choixFait = false; auto = 0;
+  btnMix: Btn = { x: 0, y: 0, w: 0, h: 0 }; btnDouble: Btn = { x: 0, y: 0, w: 0, h: 0 };
 
-  constructor(private c: Contexte, niveau: number) {
-    this.L = c.L; this.H = c.H; this.niveau = niveau;
-    this.objectif = 4 + Math.floor(niveau / 3);
-    this.dureePatience = Math.max(9, 22 - niveau * 0.45);
-    const nbEtal = niveau <= 5 ? 6 : niveau <= 15 ? 9 : 12;
-    const nouveaux = melanger(NOUVEAUX_JUS, c.rnd).slice(0, Math.ceil(nbEtal / 2));
-    this.etal = melanger([...nouveaux, ...melanger(JUTEUX.filter((id) => !nouveaux.includes(id)), c.rnd).slice(0, nbEtal - nouveaux.length)], c.rnd);
-    this.disposer();
-    this.nouveauClient();
-    this.envoyerHud();
+  constructor(private c: Contexte) {
+    this.L = c.L; this.H = c.H; this.pb = c.mode === "probleme";
+    const n = c.niveau;
+    this.objectif = this.pb ? 6 + Math.floor(n / 4) : 5;
+    this.dureePatience = Math.max(11, 24 - n * 0.4);
+    this.zone = this.pb ? [0.68, 0.84] : [0.5, 0.9];
+    const nb = n <= 4 ? 6 : 9;
+    this.etal = melanger(JUTEUX, c.rnd).slice(0, nb);
+    this.combo = new Combo(c); this.choix = new Choix(c); this.koudmin = new Pouvoir(c, "🤝", "Koudmin"); this.guide = new Guide(n === 1);
+    this.koudmin.place = (L, H) => ({ x: Math.max(marge(L, H) + 40, this.blender.x - this.blender.t * 0.62 - 86), y: this.btnMix.y + this.btnMix.h / 2 });
+    this.disposer(); this.nouveauClient(); this.hud();
   }
-
-  tailleRecette() {
-    const n = this.niveau;
-    const max = n <= 4 ? 1 : n <= 10 ? 2 : n <= 18 ? 3 : 4;
-    return 1 + Math.floor(this.c.rnd() * max);
+  hud() {
+    const coeurs = this.pb ? " · " + "🧡".repeat(3 - this.departs) : "";
+    this.c.hud({ score: this.score, objectif: `${this.servis}/${this.objectif} jus${coeurs}`, info: this.defiFait ? "Défi réussi : 3 jus parfaits d'affilée" : `Défi : 3 jus parfaits d'affilée (${Math.min(3, this.suite)}/3)` });
   }
+  redim(L: number, H: number) { this.L = L; this.H = H; this.disposer(); }
+  disposer() {
+    const { L, H } = this, m = marge(L, H), n = this.etal.length, cols = 3, lg = Math.ceil(n / cols);
+    const zoneH = Math.min(H * 0.36, lg * 112), cw = Math.min((L - m * 2) / cols, 132), ch = zoneH / lg, x0 = (L - cw * cols) / 2, y0 = H - zoneH - m - 4;
+    this.zones = this.etal.map((id, i) => ({ id, x: x0 + (i % cols) * cw + 5, y: y0 + Math.floor(i / cols) * ch + 5, w: cw - 10, h: ch - 10 }));
+    const bw = Math.min(L * 0.44, 200), bh = Math.max(58, Math.min(70, H * 0.085));
+    this.btnMix = { x: L / 2 + 6, y: y0 - bh - 14, w: bw, h: bh };
+    this.btnDouble = { x: L / 2 + 6, y: y0 - bh * 2 - 22, w: bw * 0.55, h: bh * 0.7 };
+  }
+  get blender() { const t = Math.min(this.L * 0.3, this.H * 0.2, 150); return { x: this.L / 2 - t * 0.62 - 10, y: this.btnMix.y + this.btnMix.h - t * 0.5, t }; }
+  get bulleR() { const w = Math.min(this.L * 0.56, 300), h = Math.min(this.H * 0.13, 104); return { x: this.L * 0.4, y: Math.max(134, this.H * 0.165), w, h }; }
 
   nouveauClient() {
-    const k = Math.min(this.tailleRecette(), this.etal.length);
-    this.recette = melanger(this.etal, this.c.rnd).slice(0, k).sort();
-    this.dansBlender = [];
-    this.patience = 1;
-    this.client = Math.floor(this.c.rnd() * 1000);
-    this.arrivee = 0;
+    const n = this.c.niveau, max = this.pb ? (n <= 3 ? 2 : 3) : n <= 2 ? 1 : n <= 8 ? 2 : 3;
+    this.recette = melanger(this.etal, this.c.rnd).slice(0, 1 + Math.floor(this.c.rnd() * max));
+    this.dedans = []; this.patience = 1; this.client = Math.floor(this.c.rnd() * 1000); this.arrivee = 0; this.niveauJauge = 0; this.double = false;
+    this.brume = 0; this.brumeDans = 2.6; this.essuie = 0; this.auto = 0;
+    const z = this.zones.find((q) => q.id === this.recette[0]);
+    if (z) this.guide.dire("fruit", "Regarde la bulle, puis touche le même fruit sur ton étal.", { x: z.x + z.w / 2, y: z.y + z.h / 2 });
   }
-
-  redim(L: number, H: number) { this.L = L; this.H = H; this.disposer(); }
-
-  disposer() {
-    const { L, H } = this;
-    const n = this.etal.length, cols = n <= 6 ? 3 : n <= 9 ? 3 : 4, lignes = Math.ceil(n / cols);
-    const zoneH = H * 0.36, cw = Math.min((L * 0.92) / cols, 130), ch = Math.min(zoneH / lignes, 110);
-    const x0 = (L - cw * cols) / 2, y0 = H - zoneH - 16;
-    this.zones = this.etal.map((id, i) => ({ id, x: x0 + (i % cols) * cw + 5, y: y0 + Math.floor(i / cols) * ch + 5, w: cw - 10, h: ch - 10 }));
-    this.btn.x = L / 2 - this.btn.w / 2; this.btn.y = y0 - 70;
-  }
-
-  get blender() { return { x: this.L * 0.68, y: this.H * 0.43, w: Math.min(this.L * 0.2, 120), h: Math.min(this.H * 0.2, 150) }; }
-
-  envoyerHud() {
-    this.c.hud({ score: this.score, objectif: `${this.servis}/${this.objectif} jus`, info: "❤".repeat(this.coeurs) + "♡".repeat(3 - this.coeurs) });
-  }
+  get pret() { return this.dedans.length === this.recette.length && this.volants.length === 0; }
 
   down(x: number, y: number) {
-    if (this.fini) return;
-    if (this.btn.actif && dans(x, y, this.btn)) { this.btn.appui = 1; this.mixer(); return; }
-    if (this.mixage > 0 || this.verre > 0) return;
-    const z = this.zones.find((z) => dans(x, y, z));
-    if (!z) return;
-    const manque = this.recette.filter((r) => !this.dansBlender.includes(r));
-    if (manque.includes(z.id) && !this.volants.some((v) => v.id === z.id)) {
-      const b = this.blender;
-      this.volants.push({ id: z.id, x: z.x + z.w / 2, y: z.y + z.h / 2, t: 0, x0: z.x + z.w / 2, y0: z.y + z.h / 2, x1: b.x + b.w / 2, y1: b.y + b.h * 0.3 });
-      this.c.sons.swoosh();
+    if (this.fini || this.choix.down(x, y, this.L, this.H)) return;
+    if (this.verre > 0) return;
+    if (this.koudmin.down(x, y, this.L, this.H)) { this.lancerKoudmin(); return; }
+    if (this.or) { const z = this.zones[this.or.i]; if (dans(x, y, z)) { this.or = null; this.score += 50; this.c.kw.ev("pepite", x, y); this.c.fx.texte("Letchi d'or +50", x, y - 30, "#FFD23F", 22); this.hud(); return; } }
+    if (this.pb && this.pret && dansBtn(x, y, this.btnDouble)) { this.double = !this.double; this.c.kw.ev("clic", x, y); return; }
+    if (dansBtn(x, y, this.btnMix)) {
+      if (this.pret) { this.tient = true; this.guide.fait(); this.c.kw.son("mixeur"); } else this.c.kw.ev("clic", x, y);
+      return;
+    }
+    if (this.pb && dans(x, y, this.bulleR) && this.brume > 0.5) { this.essuyer(); return; }
+    const i = this.zones.findIndex((z) => dans(x, y, z)); if (i < 0) return;
+    const id = this.zones[i].id;
+    const manque = this.recette.filter((r) => !this.dedans.includes(r) && !this.volants.some((v) => v.id === r));
+    if (manque.includes(id)) {
+      const z = this.zones[i];
+      this.volants.push({ id, t: 0, x0: z.x + z.w / 2, y0: z.y + z.h / 2 });
+      this.c.kw.ev("clic", x, y); this.guide.fait("fruit");
     } else {
-      this.c.sons.mauvais();
-      this.secoue[this.zones.indexOf(z)] = 0.4;
-      this.patience = Math.max(0, this.patience - 0.12);
-      this.c.fx.texte("Pa sa !", z.x + z.w / 2, z.y, "#ff6a5a", 26);
+      this.secoue[i] = 0.4;
+      if (this.pb) { this.patience -= 0.12; this.combo.rate(x, y); } else this.combo.presque(x, y, "Pas celui-là");
     }
   }
-  up() { this.btn.appui = 0; }
+  move(x: number, y: number) { if (this.pb && this.brume > 0.5 && dans(x, y, this.bulleR)) this.essuyer(); }
+  essuyer() { if (this.essuie > 0) return; this.essuie = 1.3; this.patience -= 0.07; this.c.kw.joue("brumePei", this.bulleR.x + this.bulleR.w / 2, this.bulleR.y + this.bulleR.h / 2, { intensite: 0.5 }); this.c.kw.son("vent"); }
+  up() { if (this.tient) { this.tient = false; this.lacher(); } }
 
-  mixer() {
-    if (this.dansBlender.length < this.recette.length || this.mixage > 0) return;
-    this.mixage = 0.9;
-    this.c.sons.mixeur();
-    this.btn.actif = false;
+  lancerKoudmin() {
+    this.dedans = this.recette.slice(); this.volants = []; this.auto = 1;
+    const b = this.blender; this.c.kw.joue("koudminPei", b.x, b.y, { intensite: 0.8 }); this.c.kw.banniere("Koudmin ! Le voisin t'aide", 0.6);
   }
-
-  couleurJus() {
-    const cs = this.dansBlender.map((id) => couleurDe(id));
-    if (!cs.length) return "#ffffff";
-    let r = 0, g = 0, b = 0;
-    for (const c of cs) { const n = parseInt(c.slice(1), 16); r += n >> 16; g += (n >> 8) & 255; b += n & 255; }
-    return `rgb(${Math.round(r / cs.length)},${Math.round(g / cs.length)},${Math.round(b / cs.length)})`;
+  lacher(auto = false) {
+    let [a, b] = this.zone; if (this.double) { const mi = (a + b) / 2, d = (b - a) / 4; a = mi - d; b = mi + d; }
+    const v = this.niveauJauge, B = this.blender, cx = B.x, cy = B.y - B.t * 0.2, coul = couleurDe(this.recette[0]);
+    if (!this.pb && v < a && !auto) { this.guide.dire("tiens", "Tiens le bouton MIXER plus longtemps, lâche dans le vert."); return; }
+    const ok = auto || (v >= a && v <= b), presque = !ok && (v > b ? v - b : a - v) < 0.1;
+    let gain = 0;
+    if (ok) {
+      gain = this.combo.bon(cx, cy, (40 + this.recette.length * 20) * (this.double ? 2 : 1), coul);
+      this.parfaits++; this.suite++; this.koudmin.ajouter(0.34); this.verreOk = 1;
+      this.c.kw.joue("jus", cx, cy, { couleur: coul, intensite: 0.8 });
+      if (this.suite === 3 && !this.defiFait) { this.defiFait = true; gain += 100; this.c.kw.banniere("Défi réussi ! +100", 0.7); }
+    } else if (presque || !this.pb) {
+      this.combo.presque(cx, cy, v > b ? "Ça déborde un peu !" : "Presque !"); gain = 20; this.suite = 0; this.combo.n = 0; this.verreOk = 0.5;
+      this.c.kw.joue("jus", cx, cy, { couleur: coul, intensite: 0.4 });
+    } else { this.combo.rate(cx, cy); this.suite = 0; this.verreOk = 0; this.departs++; }
+    this.score += gain; this.verre = 1; this.hud();
+  }
+  suivant() {
+    if (this.verreOk > 0) this.servis++;
+    this.hud();
+    if (this.servis >= this.objectif) return this.finir(true);
+    if (this.pb && this.departs >= 3) return this.finir(false);
+    if (!this.choixFait && this.servis === 3) {
+      this.choixFait = true;
+      this.choix.proposer([{ id: "zone", ic: "🟢", nom: "Zone verte plus large", txt: "Plus facile de réussir un jus parfait." }, { id: "koudmin", ic: "🤝", nom: "Koudmin tout de suite", txt: "Le voisin prépare un jus entier." }],
+        (id) => { if (id === "zone") this.zone = [this.zone[0] - 0.07, this.zone[1] + 0.05]; else this.koudmin.ajouter(1); });
+    }
+    this.c.kw.joue("etoiles", this.L * 0.2, this.bulleR.y + this.bulleR.h * 0.5, { intensite: 0.4 });
+    this.nouveauClient();
+  }
+  finir(gagne: boolean) {
+    this.fini = true;
+    const r = this.parfaits / Math.max(1, this.objectif);
+    this.c.fin({ gagne, score: this.score, etoiles: !gagne ? 0 : r >= 0.8 ? 3 : r >= 0.5 ? 2 : 1, lignes: [`${this.parfaits} jus parfaits · meilleure série ${this.combo.meilleur}`] });
   }
 
   maj(dt: number) {
-    if (this.fini) return;
-    this.temps += dt;
-    this.arrivee = Math.min(1, this.arrivee + dt * 2);
+    this.choix.maj(dt); if (this.choix.ouvert || this.fini) return;
+    this.temps += dt; this.arrivee = Math.min(1, this.arrivee + dt * 2.2); this.combo.maj(dt); this.koudmin.maj(dt);
     for (const k in this.secoue) this.secoue[k] = Math.max(0, this.secoue[k] - dt);
-    // fruits qui volent vers le blender
-    for (const v of this.volants) {
-      v.t = Math.min(1, v.t + dt * 2.4);
-      const e = v.t * v.t * (3 - 2 * v.t);
-      v.x = v.x0 + (v.x1 - v.x0) * e;
-      v.y = v.y0 + (v.y1 - v.y0) * e - Math.sin(Math.PI * v.t) * this.H * 0.18;
-      if (v.t >= 1) {
-        this.dansBlender.push(v.id);
-        this.c.sons.plouf();
-        this.c.fx.gerbe(v.x1, v.y1 + 20, couleurDe(v.id), 14, 200, 2);
-      }
-    }
+    for (const v of this.volants) v.t += dt * 3.2;
+    const arr = this.volants.filter((v) => v.t >= 1);
+    for (const v of arr) { this.dedans.push(v.id); const B = this.blender; this.c.kw.joue("jus", B.x, B.y - B.t * 0.1, { couleur: couleurDe(v.id), intensite: 0.35 }); this.c.kw.son("bulles"); }
     this.volants = this.volants.filter((v) => v.t < 1);
-    this.btn.actif = this.dansBlender.length === this.recette.length && this.mixage <= 0 && this.verre <= 0;
-
-    if (this.mixage > 0) {
-      this.mixage -= dt;
-      if (this.mixage <= 0) { this.verre = 0.8; }
-    } else if (this.verre > 0) {
-      this.verre -= dt;
-      if (this.verre <= 0) this.servir();
-    } else if (this.arrivee >= 1) {
-      this.patience -= dt / this.dureePatience;
-      if (this.patience <= 0) {
-        this.coeurs--;
-        this.c.sons.mauvais();
-        this.c.fx.secouer(0.3);
-        this.c.fx.texte("Le client est parti…", this.L / 2, this.H * 0.3, "#ff7a6a", 26);
-        if (this.coeurs <= 0) return this.terminer(false);
-        this.nouveauClient();
-        this.envoyerHud();
-      }
+    if (this.pret && !this.tient && this.verre <= 0) this.guide.dire("mix", "Tiens le bouton MIXER et lâche quand la jauge est dans le vert.", { x: this.btnMix.x + this.btnMix.w / 2, y: this.btnMix.y + this.btnMix.h / 2 });
+    if (this.auto > 0 && this.verre <= 0) { this.niveauJauge = Math.min((this.zone[0] + this.zone[1]) / 2, this.niveauJauge + dt * 1.4); if (this.niveauJauge >= (this.zone[0] + this.zone[1]) / 2 - 0.001) { this.auto = 0; this.lacher(true); } }
+    if (this.tient) {
+      this.niveauJauge += dt * (this.pb ? 0.62 + this.c.niveau * 0.012 : 0.42);
+      if (this.niveauJauge >= 1.05) { this.tient = false; this.niveauJauge = 1.05; this.lacher(); }
     }
-  }
-
-  servir() {
-    const bonus = Math.round(this.patience * 20);
-    const gain = 10 * this.recette.length + bonus;
-    this.score += gain;
-    this.servis++;
-    this.c.sons.piece();
-    this.c.fx.etoiles(this.L * 0.25, this.H * 0.2, 18);
-    this.c.fx.texte(`+${gain}`, this.L * 0.25, this.H * 0.12, "#ffe066", 34);
-    if (this.patience > 0.6) this.c.fx.texte("Lé bon !", this.L * 0.5, this.H * 0.3, "#9cff9c", 30);
-    this.envoyerHud();
-    if (this.servis >= this.objectif) return this.terminer(true);
-    this.nouveauClient();
-  }
-
-  terminer(gagne: boolean) {
-    this.fini = true;
-    this.c.fin({ gagne, score: this.score, etoiles: gagne ? this.coeurs : 0 });
+    if (this.verre > 0) { this.verre -= dt * 1.1; if (this.verre <= 0) { this.verre = 0; this.suivant(); } return; }
+    if (this.pb) {
+      this.patience -= dt / this.dureePatience;
+      this.essuie = Math.max(0, this.essuie - dt);
+      this.brumeDans -= dt;
+      const cible = this.brumeDans <= 0 && this.essuie <= 0 ? 1 : 0;
+      this.brume += (cible - this.brume) * Math.min(1, dt * 3);
+      if (this.patience <= 0) { this.departs++; this.suite = 0; this.combo.n = 0; this.verreOk = 0; this.verre = 0.6; this.c.kw.ev("presque", this.L * 0.2, this.H * 0.22); this.c.fx.texte("Le client reviendra", this.L / 2, this.H * 0.3, "#fff", 20); this.hud(); }
+    }
+    this.prochainOr -= dt;
+    if (this.or) { this.or.t -= dt; if (this.or.t <= 0) this.or = null; }
+    else if (this.prochainOr <= 0) { this.prochainOr = 16 + this.c.rnd() * 10; this.or = { i: Math.floor(this.c.rnd() * this.zones.length), t: 3 }; this.c.kw.son("eclat"); }
   }
 
   dessiner(ctx: CanvasRenderingContext2D) {
-    const { L, H } = this;
-    // étal en bois
-    ctx.fillStyle = "#6e4426"; ctx.fillRect(0, H * 0.6, L, H * 0.4);
-    ctx.fillStyle = "#845430"; for (let i = 0; i < 6; i++) ctx.fillRect(0, H * 0.6 + i * H * 0.07, L, 3);
-    // auvent rayé
-    for (let i = 0; i < 12; i++) { ctx.fillStyle = i % 2 ? "#fff3e0" : "#e84a3a"; ctx.beginPath(); const w = L / 12; ctx.moveTo(i * w, 0); ctx.lineTo((i + 1) * w, 0); ctx.lineTo((i + 1) * w, 40); ctx.arc(i * w + w / 2, 40, w / 2, 0, Math.PI); ctx.fill(); }
-
-    // client
-    const cx = L * 0.2 - (1 - this.arrivee) * L * 0.4, cy = H * 0.3, t = Math.min(L, H) * 0.2;
-    personnage(ctx, cx, cy, t, this.client, this.patience, this.temps);
-    // bulle de commande
-    const bw = Math.max(160, this.recette.length * 64 + 30), bx = cx + t * 0.35, by = cy - t * 0.95;
-    if (this.arrivee > 0.6) {
-      bulle(ctx, bx, by, bw, 92);
-      ctx.fillStyle = "#3a2414"; ctx.font = "700 14px Nunito, sans-serif"; ctx.textAlign = "left";
-      ctx.fillText(this.recette.length > 1 ? "Un jus mélangé, s'il te plaît !" : "Un jus, s'il te plaît !", bx + 14, by + 20);
-      this.recette.forEach((id, i) => {
-        const ok = this.dansBlender.includes(id);
-        sprite(ctx, this.c.img(id), bx + 40 + i * 64, by + 58, 52, 0, ok ? 0.35 : 1, false);
-        if (ok) texteContour(ctx, "✓", bx + 40 + i * 64, by + 58, 30, "#4cd47a");
-      });
-      jauge(ctx, bx + 14, by + 100, bw - 28, 10, this.patience);
-    }
-
-    // blender
-    const b = this.blender;
-    const vib = this.mixage > 0 ? Math.sin(this.temps * 80) * 3 : 0;
-    ctx.save(); ctx.translate(vib, 0);
-    ctx.fillStyle = "rgba(220,240,255,0.35)"; ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 3;
-    arrondi(ctx, b.x, b.y, b.w, b.h, 14); ctx.fill(); ctx.stroke();
-    const remplissage = this.mixage > 0 || this.verre > 0 ? 0.75 : this.dansBlender.length / Math.max(1, this.recette.length) * 0.5;
-    if (remplissage > 0) {
-      ctx.fillStyle = this.couleurJus();
-      ctx.globalAlpha = 0.85;
-      const hh = b.h * remplissage;
-      arrondi(ctx, b.x + 4, b.y + b.h - hh - 4, b.w - 8, hh, 10); ctx.fill();
-      ctx.globalAlpha = 1;
-      if (this.mixage > 0) { ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(b.x + b.w / 2, b.y + b.h - hh / 2, (this.temps * 120 + i * 15) % 40, 0, Math.PI); ctx.stroke(); } }
-    }
-    this.dansBlender.forEach((id, i) => { if (this.mixage <= 0 && this.verre <= 0) sprite(ctx, this.c.img(id), b.x + b.w / 2 + (i - (this.dansBlender.length - 1) / 2) * 22, b.y + b.h * 0.7, 40, i, 1, false); });
-    ctx.fillStyle = "#3a3a44"; arrondi(ctx, b.x - 10, b.y + b.h, b.w + 20, 38, 10); ctx.fill();
-    ctx.fillStyle = this.mixage > 0 ? "#4cd47a" : "#ff5a4a"; ctx.beginPath(); ctx.arc(b.x + b.w / 2, b.y + b.h + 19, 7, 0, 7); ctx.fill();
+    const { L, H } = this, R = this.bulleR, B = this.blender;
+    // client et commande
+    const cx = L * 0.2, cy = R.y + R.h * 0.95, ct = Math.min(L * 0.3, H * 0.2, 150);
+    ctx.save(); ctx.translate((1 - this.arrivee) * -L * 0.4 + (this.verre > 0 && this.verreOk <= 0 ? (1 - this.verre) * -L * 0.5 : 0), 0);
+    personnage(ctx, cx, cy, ct, this.client, this.pb ? this.patience : 1, this.temps);
     ctx.restore();
-
-    // verre qui part vers le client
-    if (this.verre > 0) {
-      const k = 1 - this.verre / 0.8;
-      const gx = b.x + b.w / 2 + (cx + t * 0.5 - b.x - b.w / 2) * k, gy = b.y + b.h * 0.5 - Math.sin(Math.PI * k) * 60;
-      ctx.fillStyle = "rgba(255,255,255,0.6)"; arrondi(ctx, gx - 18, gy - 28, 36, 56, 6); ctx.fill();
-      ctx.fillStyle = this.couleurJus(); arrondi(ctx, gx - 15, gy - 14, 30, 39, 5); ctx.fill();
-      ctx.strokeStyle = "#ff5a8a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(gx + 6, gy - 40); ctx.lineTo(gx + 2, gy - 4); ctx.stroke();
+    if (this.arrivee > 0.6) {
+      bulle(ctx, R.x, R.y, R.w, R.h);
+      const t = Math.min(R.h * 0.72, R.w / this.recette.length - 10);
+      this.recette.forEach((id, i) => {
+        const x = R.x + R.w / 2 + (i - (this.recette.length - 1) / 2) * (t + 8), fait = this.dedans.includes(id);
+        sprite(ctx, this.c.img(id), x, R.y + R.h / 2, t, 0, fait ? 0.35 : 1);
+        if (fait) texteContour(ctx, "✓", x, R.y + R.h / 2, t * 0.6, "#3aa85a");
+      });
+      nappeBrume(ctx, R.x - 6, R.y - 6, R.w + 12, R.h + 12, this.temps, this.brume);
+      if (this.brume > 0.6) texteContour(ctx, "Essuie la brume", R.x + R.w / 2, R.y + R.h / 2, 15, "#5A7A8A");
+      if (this.pb) jauge(ctx, R.x, R.y + R.h + 10, R.w, 12, Math.max(0, this.patience));
     }
-
-    // étal
+    // blender
+    const bw = B.t * 0.62, bh = B.t, bx = B.x - bw / 2, by = B.y - bh * 0.62, vib = this.tient ? Math.sin(this.temps * 60) * 2 : 0;
+    ctx.save(); ctx.translate(vib, 0);
+    ctx.fillStyle = "#5A3A22"; arrondi(ctx, bx - 6, by + bh * 0.86, bw + 12, bh * 0.2, 8); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw * 0.86, by + bh * 0.86); ctx.lineTo(bx + bw * 0.14, by + bh * 0.86); ctx.closePath(); ctx.fill(); ctx.stroke();
+    if (this.dedans.length) {
+      const k = this.dedans.length / this.recette.length * 0.75, yy = by + bh * 0.86 * (1 - k);
+      ctx.save(); ctx.clip(); ctx.fillStyle = couleurDe(this.dedans[this.dedans.length - 1]); ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.moveTo(bx, by + bh); for (let x = bx; x <= bx + bw; x += 6) ctx.lineTo(x, yy + Math.sin(x * 0.2 + this.temps * (this.tient ? 30 : 4)) * (this.tient ? 6 : 2)); ctx.lineTo(bx + bw, by + bh); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+    for (const v of this.volants) { const e = v.t * v.t * (3 - 2 * v.t); sprite(ctx, this.c.img(v.id), v.x0 + (B.x - v.x0) * e, v.y0 + (by - v.y0) * e - Math.sin(e * Math.PI) * 70, 56, e * 5); }
+    // jauge de mixage (verticale, à gauche du blender)
+    if (this.pret || this.verre > 0 || this.niveauJauge > 0) {
+      let [a, b] = this.zone; if (this.double) { const mi = (a + b) / 2, d = (b - a) / 4; a = mi - d; b = mi + d; }
+      const jx = bx - 30, jy = by, jw = 18, jh = bh * 0.86;
+      ctx.fillStyle = "rgba(40,20,10,0.7)"; arrondi(ctx, jx, jy, jw, jh, 9); ctx.fill();
+      ctx.fillStyle = "#3aa85a"; ctx.fillRect(jx, jy + jh * (1 - b), jw, jh * (b - a));
+      ctx.fillStyle = "#FFE066"; const hh = jh * Math.min(1, this.niveauJauge); arrondi(ctx, jx + 4, jy + jh - hh, jw - 8, Math.max(4, hh), 4); ctx.fill();
+    }
+    bouton(ctx, this.btnMix, this.tient ? "LÂCHE !" : "MIXER", "#E8572A", this.tient ? 1 : 0, this.pret && this.verre <= 0);
+    if (this.pb && this.pret && this.verre <= 0) bouton(ctx, this.btnDouble, this.double ? "×2 ✓" : "Double ×2", this.double ? "#3aa85a" : "#7A4A2A");
+    if (this.verre > 0 && this.verreOk > 0) { const e = 1 - this.verre; sprite(ctx, this.c.img(this.recette[0] + "-coupe") || this.c.img(this.recette[0]), B.x + (cx - B.x) * e, by + (cy - ct * 0.5 - by) * e - Math.sin(e * Math.PI) * 60, 54, 0, 1); }
+    // étal (zone du pouce)
     this.zones.forEach((z, i) => {
-      const dx = this.secoue[i] ? Math.sin(this.temps * 60) * 6 * this.secoue[i] : 0;
-      const voulu = this.recette.includes(z.id) && !this.dansBlender.includes(z.id) && this.niveau <= 3;
-      cagette(ctx, z.x + dx, z.y, z.w, z.h, voulu ? 0.5 + 0.5 * Math.sin(this.temps * 6) : 0);
-      const s = Math.min(z.w, z.h) * 0.95;
-      sprite(ctx, this.c.img(z.id), z.x + z.w / 2 + dx, z.y + z.h * 0.42, s);
+      const s = this.secoue[i] ? Math.sin(this.secoue[i] * 50) * 5 : 0, or = this.or && this.or.i === i;
+      cagette(ctx, z.x + s, z.y, z.w, z.h, or ? 1 : 0);
+      sprite(ctx, this.c.img(or ? "letchi-or" : z.id), z.x + z.w / 2 + s, z.y + z.h * 0.46, Math.min(z.w, z.h) * 0.74, 0, this.dedans.includes(z.id) ? 0.45 : 1);
+      const nom = photo(z.id)?.nom; if (nom && !or) texteContour(ctx, nom, z.x + z.w / 2 + s, z.y + z.h - 11, Math.min(13, z.w * 0.13), "#fff");
     });
-    for (const v of this.volants) sprite(ctx, this.c.img(v.id), v.x, v.y, 60, v.t * 6);
-    dessinerBouton(ctx, this.btn, this.temps);
+    this.combo.dessiner(ctx, L * 0.2, this.bulleR.y - 6);
+    this.koudmin.dessiner(ctx, L, H, this.temps);
+    this.guide.dessiner(ctx, L, H, this.temps, this.btnMix.y - 150 > R.y + R.h ? R.y + R.h + 30 : undefined);
+    this.choix.dessiner(ctx, L, H);
   }
 }
 
 const def: DefJeu = {
-  id: "marche-des-jus",
-  titre: "Le marché des jus",
-  accroche: "Au marché forain, les clients attendent leur jus. Sois rapide !",
-  regles: ["Regarde la bulle : elle montre les fruits du jus.", "Touche les bons fruits pour les jeter dans le blender.", "Appuie sur MIXER, puis sers le client avant qu'il perde patience.", "Trois clients partis, et la partie s'arrête."],
-  niveaux: 30,
-  theme: THEMES.marche,
-  visuels: "photos",
-  creer: (c, n) => new MarcheDesJus(c, n),
+  id: "marche-des-jus", titre: "Le marché des jus", accroche: "Mixe le jus parfait pour chaque client du marché forain.",
+  regles: [], niveaux: 30, theme: THEMES.marche, visuels: "photos",
+  modes: {
+    trankil: ["Touche les fruits de la bulle : ils sautent dans le blender.", "Tiens MIXER et lâche quand la jauge est dans le vert.", "Aucune hâte : le client attend, le voisin te donne un koudmin."],
+    probleme: ["La brume des Hauts cache la commande : essuie-la, mais ça coûte de la patience.", "Zone verte étroite. Tente « Double ×2 » pour gagner plus.", "Trois clients repartis et la partie s'arrête."],
+  },
+  decor: { lieu: "marche", heure: "jour" }, themeFx: "fruits",
+  creer: (c) => new MarcheDesJus(c),
 };
 export default def;
-

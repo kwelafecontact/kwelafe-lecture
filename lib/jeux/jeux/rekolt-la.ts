@@ -4,6 +4,7 @@
 import { type Contexte, type DefJeu, type Jeu, type Progression, THEMES, sprite, etoilesPour, texteContour, arrondi } from "../commun/moteur2d";
 import { PHOTOS } from "../commun/photos";
 import { guepe } from "../commun/dessins";
+import { nappeBrume } from "../commun/outils-pei";
 // fruits péi du jardin, dans l'ordre où ils apparaissent avec les niveaux
 const PEI = ["letchi", "mangue", "goyavier", "papaye", "longani", "goyave", "mandarine", "grenadine", "coco"];
 const A_CUEILLIR = PEI.map((id) => PHOTOS.find((p) => p.id === id)).filter((p): p is (typeof PHOTOS)[number] => !!p);
@@ -88,17 +89,23 @@ class Rekolt implements Jeu {
   pousse = 0;               // après un bon arrosage, les buissons donnent plus
   gantsUtilises = false;
   stats: Record<string, number> = {}; grainesPartie = 0;
+  // refonte KwFX v4.1 : deux modes, brume des Hauts et cueillette aux lucioles
+  pb: boolean;
+  brume: { rang: number; t: number } | null = null; brumeDans = 9;
+  veillee = false;
 
   constructor(private c: Contexte, private niveau: number) {
-    this.L = c.L; this.H = c.H;
+    this.L = c.L; this.H = c.H; this.pb = c.mode === "probleme";
     this.objectif = 300 + niveau * 60;
+    if (!this.pb) { this.duree = 99999; this.objectif = 240 + niveau * 40; }
     charger();
     this.c.sons.prechargerFichiers(["cueille-1", "cueille-2", "guepe", "gate", "merle", "vol", "arrosoir", "or", "trio"].map((n) => SONS + n + ".mp3"));
     this.hud();
   }
   son(n: string, vol = 1, vit = 1) { return this.c.sons.fichier(SONS + n + ".mp3", vol, vit * (0.95 + this.c.rnd() * 0.1)); }
   redim(L: number, H: number) { this.L = L; this.H = H; }
-  hud() { this.c.hud({ score: this.score, objectif: `objectif ${this.objectif}`, temps: Math.max(0, this.duree - this.temps), info: "❤".repeat(this.coeurs) + "♡".repeat(3 - this.coeurs) + (this.phase === "arrosage" ? " · Arrosage" : "") }); }
+  hud() { this.c.hud({ score: this.score, objectif: `objectif ${this.objectif}`, temps: this.pb ? Math.max(0, this.duree - this.temps) : null, info: (this.pb ? "🧡".repeat(this.coeurs) + "🤍".repeat(3 - this.coeurs) : this.brume ? "Brume des Hauts : fruits ×2" : "Trois fruits pareils : trio") + (this.phase === "arrosage" ? " · Arrosage" : "") }); }
+  dansBrume(trou: number) { return !!this.brume && Math.floor(trou / 3) === this.brume.rang; }
   compter(type: string, n = 1) {
     this.stats[type] = (this.stats[type] || 0) + n;
     const d = defiDuJour();
@@ -143,6 +150,7 @@ class Rekolt implements Jeu {
     if (s.type === "guepe") {
       if (save.amelio.gants && !this.gantsUtilises) { this.gantsUtilises = true; this.c.fx.texte("Les gants te protègent !", p.x, p.y, "#9cf0ff", 22); this.son("guepe", 0.5); return; }
       this.coeurs--; this.serie = 0; if (!this.son("guepe", 0.9)) this.c.sons.mauvais(); this.c.fx.secouer(0.35); this.c.fx.eclair("255,80,60", 0.4);
+      this.c.kw.joue("impact", p.x, p.y, { intensite: 0.5 });
       this.c.fx.texte("Aïe ! Piqûre !", p.x, p.y, "#ff8a7a", 26);
       if (this.coeurs <= 0) this.terminer(false);
     } else if (s.type === "gate") {
@@ -150,8 +158,12 @@ class Rekolt implements Jeu {
     } else {
       this.serie++; this.compter("fruits");
       const or = s.type === "or";
-      const gain = (or ? 40 : 10) + Math.min(this.serie, 10) * 2;
+      const voile = this.dansBrume(s.trou);
+      const gain = ((or ? 40 : 10) + Math.min(this.serie, 10) * 2) * (voile ? 2 : 1);
       this.score += gain;
+      this.c.kw.joue(or ? "poussiereOr" : "feuilles", p.x, p.y, { intensite: or ? 0.7 : 0.4 }); this.c.kw.eclat(p.x, p.y, or ? "#FFD23F" : "#D8FF6A", p.t * 0.9, 420);
+      if (voile) this.c.fx.texte("Dans la brume ×2", p.x, p.y - 46, "#EAF2F5", 16);
+      if (this.serie === 8 || this.serie === 16) this.c.kw.comboMax(p.x, p.y, this.serie === 8 ? "POKk !" : "OTÉ !");
       if (or) { this.compter("dores"); if (!this.son("or", 0.8)) this.c.sons.piece(); } else if (!this.son(this.c.rnd() < 0.5 ? "cueille-1" : "cueille-2", 0.75, 1 + Math.min(this.serie, 10) * 0.02)) this.c.sons.pop(Math.min(this.serie, 8));
       this.c.fx.gerbe(p.x, p.y, or ? "#ffe066" : "#9cff6a", 14, 220, or ? 1 : 0);
       this.c.fx.texte(`+${gain}`, p.x, p.y - 20, "#ffe066", 24);
@@ -161,6 +173,7 @@ class Rekolt implements Jeu {
         const bonus = Math.round(60 * (1 + save.amelio.panier * 0.25)); this.score += bonus; this.grainesPartie++; this.compter("trios"); this.derniers = [];
         this.c.fx.texte(`Trio ! +${bonus} · +1 🌱`, this.L / 2, this.H * 0.24, "#9cff9c", 30); this.c.fx.etoiles(p.x, p.y, 20);
         if (!this.son("trio", 0.85)) this.c.sons.combo(3);
+        this.c.kw.joue("koudminPei", p.x, p.y, { intensite: 0.7 }); this.c.kw.onoma("VLAP !", p.x, p.y - 30, 0.6);
       }
     }
     this.hud();
@@ -170,6 +183,7 @@ class Rekolt implements Jeu {
     this.score += 15; this.grainesPartie += 0.5; this.compter("merles");
     if (!this.son("merle", 0.85)) this.c.sons.pop(5);
     this.c.fx.texte("Ouste le merle ! +15", p.x, p.y - 10, "#c8f0ff", 22); this.c.fx.gerbe(p.x, p.y, "#6a4a2a", 8, 260, 0);
+    this.c.kw.joue("plumes", p.x, p.y, { intensite: 0.7 }); this.c.kw.joue("lignes", p.x, p.y, { intensite: 0.5 });
     this.hud();
   }
 
@@ -211,22 +225,29 @@ class Rekolt implements Jeu {
     }
     const avant = Math.ceil(this.duree - this.temps);
     this.temps += dt;
+    // brume des Hauts : elle se pose sur une rangée de buissons, on cueille à l'aveugle pour le double
+    if (this.brume) { this.brume.t -= dt; if (this.brume.t <= 0) { this.brume = null; this.hud(); } }
+    else if ((this.brumeDans -= dt) <= 0 && this.phase === "jeu") { this.brumeDans = 12 + this.c.rnd() * 6; this.brume = { rang: Math.floor(this.c.rnd() * 3), t: 6 }; const q = this.trous()[this.brume.rang * 3 + 1]; this.c.kw.joue("brumePei", q.x, q.y, { intensite: 0.8 }); this.c.kw.son("vent"); this.c.fx.texte("La brume des Hauts descend", this.L / 2, this.H * 0.2, "#EAF2F5", 22); this.hud(); }
+    // mode problèm : la veillée tombe aux deux tiers, chaque fruit qui sort allume une luciole un court instant
+    if (this.pb && !this.veillee && this.temps > this.duree * 0.62) { this.veillee = true; this.c.nuit(0.74, 2500); this.c.kw.lucioles(18); this.c.fx.texte("La nuit tombe : suis les lucioles", this.L / 2, this.H * 0.2, "#D8FF6A", 22); }
+    if (!this.pb && this.score >= this.objectif && this.phase === "jeu") { this.terminer(true); return; }
     if (Math.ceil(this.duree - this.temps) !== avant) this.hud();
     if (this.temps >= this.duree) { this.terminer(this.score >= this.objectif); return; }
     if (this.phase === "pluie") { if (this.phaseT > 2.2) this.lancerArrosage(); }
-    else if (!this.pauseFaite && this.temps > this.duree / 2) { this.pauseFaite = true; this.lancerPluie(); }
+    else if (!this.pauseFaite && (this.pb ? this.temps > this.duree / 2 : this.score > this.objectif / 2)) { this.pauseFaite = true; this.lancerPluie(); }
     else {
       this.prochain -= dt;
       if (this.prochain <= 0) {
         const libres = Array.from({ length: 9 }, (_, i) => i).filter((i) => !this.sorties.some((s) => s.trou === i));
         if (libres.length) {
           const trou = libres[Math.floor(this.c.rnd() * libres.length)];
-          const r = this.c.rnd(), pg = Math.min(0.28, 0.1 + this.niveau * 0.009), pm = this.niveau >= 2 ? Math.max(0.04, 0.12 - save.amelio.epouvantail * 0.035) : 0;
+          const r = this.c.rnd(), pg = this.pb ? Math.min(0.28, 0.1 + this.niveau * 0.009) : -0.1, pm = this.niveau >= 2 ? Math.max(0.04, 0.12 - save.amelio.epouvantail * 0.035) : 0;
           const type: Sortie["type"] = r < pg ? "guepe" : r < pg + 0.1 ? "gate" : r < pg + 0.1 + pm ? "merle" : r > 0.97 - this.pousse * 0.05 ? "or" : "fruit";
           // peu de variétés à la fois pour que les trios soient possibles
           const choix = A_CUEILLIR.slice(0, 3 + Math.min(4, Math.floor(this.niveau / 3)));
           const max = type === "merle" ? 2.2 : Math.max(0.7, 1.6 - this.niveau * 0.04);
           this.sorties.push({ trou, type, id: type === "or" ? "letchi" : choix[Math.floor(this.c.rnd() * choix.length)].id, vie: max, max, touche: 0 });
+          if (this.veillee) { const q = this.trous()[trou]; this.c.kw.eclat(q.x, q.y - q.t * 0.3, type === "guepe" ? "#FFB070" : "#D8FF6A", q.t * 0.8, 650); }
         }
         this.prochain = Math.max(0.26, 0.85 - this.niveau * 0.025) * (0.6 + this.c.rnd() * 0.8) * (this.pousse ? 0.8 : 1);
       }
@@ -287,6 +308,7 @@ class Rekolt implements Jeu {
       if (im && im.naturalWidth) { ctx.save(); ctx.translate(p.x, p.y + p.t * 0.34); ctx.rotate(Math.sin(this.temps * 1.6 + i) * 0.015); ctx.drawImage(im, -bw / 2, -bh, bw, bh); ctx.restore(); }
       if (this.pousse && Math.sin(this.temps * 5 + i) > 0.7) { ctx.fillStyle = "rgba(255,255,200,0.9)"; ctx.beginPath(); ctx.arc(p.x + Math.cos(this.temps + i) * bw * 0.3, p.y - p.t * 0.05, 2.5, 0, 7); ctx.fill(); }
     });
+    if (this.brume) { const q = tr[this.brume.rang * 3], k = Math.min(1, this.brume.t, (6 - this.brume.t) * 2); nappeBrume(ctx, -20, q.y - q.t * 0.72, this.L + 40, q.t * 1.08, this.temps, 0.82 * Math.max(0, k)); }
     // panier des trois derniers fruits (pour viser le trio)
     const pw = 150, px = this.L / 2 - pw / 2, py = Math.max(96, tr[0].y - tr[0].t * 0.75 - 50);
     ctx.save(); ctx.fillStyle = "rgba(255,248,230,0.88)"; arrondi(ctx, px, py, pw, 46, 14); ctx.fill(); ctx.strokeStyle = "#a8742a"; ctx.lineWidth = 2; arrondi(ctx, px, py, pw, 46, 14); ctx.stroke(); ctx.restore();
@@ -324,6 +346,11 @@ const def: DefJeu = {
     "Évite les guêpes (une piqûre = un cœur) et les fruits gâtés.",
     "À mi-niveau : pluie de letchis dorés, puis l'arrosoir. Garde le doigt appuyé et lâche dans la zone verte.",
   ],
+  modes: {
+    trankil: ["Touche les fruits qui sortent des buissons. Trois pareils d'affilée : trio !", "Glisse le doigt sur le merle de Maurice pour le chasser.", "Ni guêpes ni chrono. Dans la brume des Hauts, les fruits comptent double."],
+    probleme: ["Guêpes et fruits gâtés se mêlent aux fruits : une piqûre coûte un cœur.", "Dans la brume, on cueille à l'aveugle : double gain, double risque.", "La nuit tombe : chaque sortie allume une luciole un court instant."],
+  },
+  themeFx: "flore",
   niveaux: 20,
   theme: THEMES.jardin,
   visuels: "photos",

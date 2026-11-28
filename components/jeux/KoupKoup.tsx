@@ -1,4 +1,5 @@
 "use client";
+import { Kw, NOMS_MODE } from "@/lib/jeux/commun/pei";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { MoteurKoupKoup, Mode, Resultat, InstantaneKK } from "@/lib/jeux/koupkoup/moteur";
@@ -34,6 +35,7 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
   const phaseRef = useRef<Phase>("chargement");
   phaseRef.current = phase;
   const modeRef = useRef<Mode>("classique");
+  const kw = useRef<Kw | null>(null);
   const donneesRef = useRef(donnees);
   donneesRef.current = donnees;
   const recordRef = useRef(record);
@@ -89,7 +91,16 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
         if (annule || !scene.current) return;
         const m = new MoteurKoupKoup(scene.current, {
           etat: (e) => setHud({ score: e.score, vies: e.vies, temps: e.temps }),
-          fin: (r) => finPartie(r),
+          fin: (r) => { const k = kw.current; if (k) { k.eclairage(0); k.ev(r.score > recordRef.current ? "victoire" : "niveau"); k.finPartie(r.score); } finPartie(r); },
+          // Inventions péi : KwFX met en scène l'alizé, le réveil du volcan, la lave d'or et les combos
+          pei: (type, x, y, n) => {
+            const k = kw.current; if (!k) return;
+            if (type === "alize") { k.joue("alizePei", x, y, { intensite: Math.abs(n) }); k.son("vent"); k.banniere(n > 0 ? "L'alizé pousse vers la droite ➜" : "⬅ L'alizé pousse vers la gauche", 0.4); }
+            else if (type === "volcan") { k.eclairage(0.4, 900); k.plan([{ outil: "son", nom: "volcan" }, { outil: "joue", nom: "secousse", intensite: 0.6 }, { outil: "joue", nom: "lavePei", x, y, intensite: 0.9 }, { outil: "attendre", ms: 350 }, { outil: "joue", nom: "eruption", x, y, intensite: 0.8 }]); }
+            else if (type === "volcanFin") k.eclairage(0, 1500);
+            else if (type === "laveOr") k.ev("pepite", x, y);
+            else if (type === "combo") { if (n >= 5) k.comboMax(x, y, n >= 7 ? "OTÉ !" : "VLAP !"); else k.ev("combo", x, y, { n }); }
+          },
           // Arrière-plan, verrouillage ou perte graphique : l'écran de pause s'affiche
           interruption: () => { if (phaseRef.current === "jeu") setPhase("pause"); },
           secours: () => setPhase("graphique"),
@@ -97,7 +108,8 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
           sauvegarde: (p) => { if (p) modifierLocal<Donnees>("koup-koup", (l) => ({ ...l, partie: { niveau: 1, etat: p, t: Date.now() } })); },
         });
         moteur.current = m;
-        try { if (localStorage.getItem("kk-son") === "0") m.setSon(false); } catch { /* rien */ }
+        kw.current = new Kw(scene.current, "koup-koup", "fruits", true);
+        try { if (localStorage.getItem("kk-son") === "0") { m.setSon(false); kw.current.activerSons(false); } } catch { /* rien */ }
         setPhase("menu");
       } catch (err) {
         console.error(err);
@@ -108,6 +120,7 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
       annule = true;
       moteur.current?.detruire();
       moteur.current = null;
+      kw.current?.detruire(); kw.current = null;
     };
   }, [finPartie, generation]);
 
@@ -117,6 +130,7 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
     setReprise(null);
     setHud({ score: 0, vies: 3, temps: mode === "zen" ? 90 : null });
     moteur.current?.demarrer(mode);
+    kw.current?.preparer(mode === "zen" ? "trankil" : "probleme", 0).then(() => kw.current?.ev("debut"));
     setPhase("jeu");
   };
   const reprendrePartie = () => {
@@ -136,7 +150,7 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
   const basculerSon = () => {
     const v = !son;
     setSon(v);
-    moteur.current?.setSon(v);
+    moteur.current?.setSon(v); kw.current?.activerSons(v);
     try { localStorage.setItem("kk-son", v ? "1" : "0"); } catch { /* rien */ }
   };
 
@@ -202,11 +216,15 @@ export default function KoupKoup({ recordInitial, donneesInitiales }: { recordIn
             <p className="kk-accroche">Coupe les fruits péi d'un geste, fais gicler le jus… et surtout, ne touche pas la lave !</p>
             <div className="kk-boutons">
               {reprise && <button className="btn" onClick={reprendrePartie}>Reprendre ma partie · {reprise.score} pts</button>}
-              <button className={reprise ? "btn secondaire" : "btn"} onClick={() => jouer("classique")}>Classique · 3 vies</button>
-              <button className="btn secondaire" onClick={() => jouer("zen")}>Zen · 90 secondes</button>
+              <button className={reprise ? "btn secondaire" : "btn"} onClick={() => jouer("zen")}>🌴 {NOMS_MODE.trankil}</button>
+              <button className="btn secondaire" onClick={() => jouer("classique")}>🌋 {NOMS_MODE.probleme}</button>
               <button className="btn secondaire" onClick={() => setPanierOuvert(true)}>Mon panier ({decouverts}/{A_DECOUVRIR.length})</button>
             </div>
-            <p className="kk-astuce">Astuce : coupe 3 fruits d'un seul geste pour un combo. Le letchi doré ralentit le temps.</p>
+            <ul className="kw-regles" style={{ marginTop: 14 }}>
+              <li>🌴 Trankil : 90 secondes, pas de lave, pas de vies. Coupe 3 fruits d'un geste pour un combo.</li>
+              <li>🌋 Problèm : 3 vies. L'alizé dévie les fruits en l'air, vise en avance.</li>
+              <li>🌋 Quand le volcan se réveille, la lave se coupe et vaut de l'or pendant 7 secondes.</li>
+            </ul>
           </div>
         </div>
       )}
