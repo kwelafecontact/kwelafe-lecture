@@ -13,7 +13,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "tap-tap-moustik-v2", titre: "Tap Tap Moustik v2", accroche: "Chasse les moustiques tigres, vide les gîtes et protège les abeilles.", emoji: "🦟", fond: "linear-gradient(135deg,#5aa83a,#ffd24a 55%,#e84a8a)" },
   { id: "bichik-rush-v2", titre: "Bichik Rush v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🐟", fond: "linear-gradient(135deg,#ff9a6a,#3ab4d8 55%,#1a5a8a)" },
   { id: "marche-des-jus-v2", titre: "Le marché des jus v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🍹", fond: "linear-gradient(135deg,#5fc84a,#ffb21e 50%,#ff5a2a)" },
-  { id: "bouclier-volcan-v2", titre: "Bouclier volcan v2", accroche: "Deux modes : balade tranquille ou éruption majeure avec bombe-mère toutes les 5 vagues.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
+  { id: "bouclier-volcan-v2", titre: "Bouclier volcan v2", image: "/jeux-3d/bouclier-volcan-v2/vignette.webp", accroche: "Deux modes : balade tranquille ou éruption majeure avec bombe-mère toutes les 5 vagues.", emoji: "🌋", fond: "linear-gradient(135deg,#5a2a6a,#ff6a1a 55%,#2a1a14)" },
   { id: "kass-koko-v2", titre: "Kass Koko v2", accroche: "Deux modes : plage tranquille ou coco géant à briser toutes les 5 vagues.", emoji: "🥥", fond: "linear-gradient(135deg,#3ac8e8,#f4e2b0 55%,#2a8a3a)" },
   { id: "route-littoral", titre: "Route du Littoral", accroche: "Libère les voitures coincées entre la falaise et l'océan.", emoji: "🚗", fond: "linear-gradient(135deg,#6a655d,#1f8fc4)" },
   { id: "kar-pei", titre: "Kar Péi", accroche: "Fais monter chaque voyageur dans le bon car jaune.", emoji: "🚌", fond: "linear-gradient(135deg,#ffd84a,#e0a000)" },
