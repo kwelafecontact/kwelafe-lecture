@@ -982,6 +982,12 @@ let ambiance = 0;
 function boucle() {
   let dt = Math.min(horloge.getDelta(), 0.05);
   if (enPause) { composer.render(); requestAnimationFrame(boucle); return; }
+  // pendant un mini-jeu (échaudage, étuvage, séchage, tri), la vanilleraie est en pause : seul le mini-jeu avance
+  if (etat === 'jeu' && (prepa || (jauge && !jauge.fini))) {
+    if (jauge && !jauge.fini) { jauge.t += dt; $('jAig').style.left = (50 - 50 * Math.cos(jauge.t * jauge.v * Math.PI)) + '%'; if (jauge.t > 4) arreterJauge(); }
+    if (prepa && !prepa.attente) majPrepa(dt);
+    composer.render(); requestAnimationFrame(boucle); return;
+  }
   if (arret > 0) { arret -= dt; dt *= 0.05; }   // arrêt sur image demandé par KwFX
   matP.uniforms.echelle.value = H * renderer.getPixelRatio() / viewH * 0.03;
   if (etat === 'jeu') {
