@@ -8,7 +8,7 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "observability": { "enabled": true },
   "workers_dev": true,
-  "preview_urls": false,
+  "preview_urls": true, // adresses de préproduction des branches (la production ne change pas)
 
   // Base de données (D1) : catalogue, clients, progression, codes cadeaux
   "d1_databases": [
