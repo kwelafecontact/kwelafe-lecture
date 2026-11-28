@@ -1,11 +1,54 @@
 // Le marché des jus (refonte KwFX v4.1) : fruits au blender, puis on TIENT le bouton MIXER et on lâche dans la zone verte.
+// Visuels : aquarelles ElevenLabs (nov. 2026). Les fruits sont repeints d'après les photos des planches de KWélafé,
+// pour garder la forme exacte de chaque fruit péi. Fichiers dans public/jeux/marche-des-jus/.
 // Inventions péi : la brume des Hauts cache la commande (on l'essuie du doigt), le koudmin du voisin prépare un jus entier.
 import { type Contexte, type DefJeu, type Jeu, THEMES, sprite, texteContour, arrondi, melanger } from "../commun/moteur2d";
 import { photosJus, couleurDe, photo } from "../commun/photos";
-import { personnage, bulle, jauge, cagette, dans } from "../commun/dessins";
+import { bulle, jauge, dans } from "../commun/dessins";
 import { Combo, Choix, Pouvoir, Guide, nappeBrume, bouton, dansBtn, marge, type Btn } from "../commun/outils-pei";
 
-const JUTEUX = photosJus();
+// Un seul visuel par nom de fruit : certaines planches montrent deux fois le même fruit (deux « Abiu », deux « Safou »…),
+// ce qui donnait deux cagettes au même nom sur l'étal. On garde la fiche nommée, pas le doublon « photo-… ».
+const JUTEUX = (() => {
+  const tous = photosJus(), vus = new Set<string>();
+  const tri = [...tous.filter((id) => !id.startsWith("photo-")), ...tous.filter((id) => id.startsWith("photo-"))];
+  return tri.filter((id) => { const n = photo(id)?.nom ?? id; if (vus.has(n)) return false; vus.add(n); return true; });
+})();
+
+const BASE = "/jeux/marche-des-jus/";
+const NB_CLIENTS = 6;
+/** Aquarelles du jeu : fruits, clients du marché, blender, verre, cagette, letchi d'or. */
+const IMAGES: Record<string, string> = {
+  "mdj:blender": BASE + "blender.webp", "mdj:verre": BASE + "verre.webp", "mdj:cagette": BASE + "cagette.webp", "mdj:letchi-or": BASE + "letchi-or.webp",
+};
+for (const id of JUTEUX) IMAGES["mdj:" + id] = `${BASE}fruits/${id}.webp`;
+for (let i = 1; i <= NB_CLIENTS; i++) IMAGES["mdj:client-" + i] = `${BASE}client-${i}.webp`;
+
+const prete = (im?: HTMLImageElement): im is HTMLImageElement => !!im && im.complete && im.naturalWidth > 0;
+/** Dessine une image à la hauteur voulue, centrée en x, posée sur la ligne « bas ». */
+function poser(ctx: CanvasRenderingContext2D, im: HTMLImageElement | HTMLCanvasElement | undefined, cx: number, bas: number, h: number, alpha = 1) {
+  if (!im) return;
+  const lw = im instanceof HTMLImageElement ? im.naturalWidth : im.width, lh = im instanceof HTMLImageElement ? im.naturalHeight : im.height;
+  if (!lw || !lh) return;
+  const w = h * lw / lh;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.drawImage(im, cx - w / 2, bas - h, w, h); ctx.restore();
+}
+/** Verre de jus : l'aquarelle du verre (jus blanc) teintée à la couleur du fruit, gardée en mémoire par couleur. */
+const verres = new Map<string, HTMLCanvasElement>();
+function verreTeinte(im: HTMLImageElement | undefined, couleur: string): HTMLCanvasElement | undefined {
+  if (!prete(im)) return undefined;
+  let c = verres.get(couleur); if (c) return c;
+  c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const x = c.getContext("2d"); if (!x) return undefined;
+  x.drawImage(im, 0, 0);
+  // couleur du jus éclaircie (un jus est plus clair que la peau du fruit), pour garder les reflets du verre
+  const n = parseInt(couleur.replace("#", ""), 16), cl = (v: number) => Math.round(v + (255 - v) * 0.38);
+  x.globalCompositeOperation = "multiply"; x.fillStyle = `rgb(${cl((n >> 16) & 255)},${cl((n >> 8) & 255)},${cl(n & 255)})`; x.fillRect(0, 0, c.width, c.height);
+  x.globalAlpha = 1; x.globalCompositeOperation = "destination-in"; x.drawImage(im, 0, 0);
+  verres.set(couleur, c); return c;
+}
+// Intérieur du bol du blender, en fractions de l'image (haut gauche, haut droit, bas droit, bas gauche).
+const BOL = { hx0: 0.12, hx1: 0.77, haut: 0.14, bx0: 0.22, bx1: 0.66, bas: 0.57 };
 type Volant = { id: string; t: number; x0: number; y0: number };
 
 class MarcheDesJus implements Jeu {
@@ -160,14 +203,16 @@ class MarcheDesJus implements Jeu {
     // client et commande
     const cx = L * 0.2, cy = R.y + R.h * 0.95, ct = Math.min(L * 0.3, H * 0.2, 150);
     ctx.save(); ctx.translate((1 - this.arrivee) * -L * 0.4 + (this.verre > 0 && this.verreOk <= 0 ? (1 - this.verre) * -L * 0.5 : 0), 0);
-    personnage(ctx, cx, cy, ct, this.client, this.pb ? this.patience : 1, this.temps);
+    // client du marché (aquarelle) : léger balancement, il s'agite quand la patience s'épuise
+    const presse = this.pb && this.patience < 0.3 ? Math.sin(this.temps * 22) * 2.5 : 0;
+    poser(ctx, this.c.img("mdj:client-" + (1 + this.client % NB_CLIENTS)), cx + presse, cy + ct * 1.05 + Math.sin(this.temps * 2 + this.client) * ct * 0.02, ct * 1.75);
     ctx.restore();
     if (this.arrivee > 0.6) {
       bulle(ctx, R.x, R.y, R.w, R.h);
       const t = Math.min(R.h * 0.72, R.w / this.recette.length - 10);
       this.recette.forEach((id, i) => {
         const x = R.x + R.w / 2 + (i - (this.recette.length - 1) / 2) * (t + 8), fait = this.dedans.includes(id);
-        sprite(ctx, this.c.img(id), x, R.y + R.h / 2, t, 0, fait ? 0.35 : 1);
+        sprite(ctx, this.c.img("mdj:" + id), x, R.y + R.h / 2, t, 0, fait ? 0.35 : 1);
         if (fait) texteContour(ctx, "✓", x, R.y + R.h / 2, t * 0.6, "#3aa85a");
       });
       nappeBrume(ctx, R.x - 6, R.y - 6, R.w + 12, R.h + 12, this.temps, this.brume);
@@ -176,33 +221,44 @@ class MarcheDesJus implements Jeu {
     }
     // blender
     const bw = B.t * 0.62, bh = B.t, bx = B.x - bw / 2, by = B.y - bh * 0.62, vib = this.tient ? Math.sin(this.temps * 60) * 2 : 0;
+    const imB = this.c.img("mdj:blender"), ih = bh * 1.22, iw = prete(imB) ? ih * imB.naturalWidth / imB.naturalHeight : bw, ix = B.x - iw / 2, iy = by + bh * 1.06 - ih;
     ctx.save(); ctx.translate(vib, 0);
-    ctx.fillStyle = "#5A3A22"; arrondi(ctx, bx - 6, by + bh * 0.86, bw + 12, bh * 0.2, 8); ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw * 0.86, by + bh * 0.86); ctx.lineTo(bx + bw * 0.14, by + bh * 0.86); ctx.closePath(); ctx.fill(); ctx.stroke();
+    poser(ctx, imB, B.x, iy + ih, ih);
     if (this.dedans.length) {
-      const k = this.dedans.length / this.recette.length * 0.75, yy = by + bh * 0.86 * (1 - k);
-      ctx.save(); ctx.clip(); ctx.fillStyle = couleurDe(this.dedans[this.dedans.length - 1]); ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.moveTo(bx, by + bh); for (let x = bx; x <= bx + bw; x += 6) ctx.lineTo(x, yy + Math.sin(x * 0.2 + this.temps * (this.tient ? 30 : 4)) * (this.tient ? 6 : 2)); ctx.lineTo(bx + bw, by + bh); ctx.closePath(); ctx.fill(); ctx.restore();
+      // jus dans le bol : monte avec chaque fruit, s'agite quand on mixe
+      const k = this.dedans.length / this.recette.length * 0.75, haut = iy + ih * BOL.haut, bas = iy + ih * BOL.bas, yy = bas - (bas - haut) * k;
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(ix + iw * BOL.hx0, haut); ctx.lineTo(ix + iw * BOL.hx1, haut); ctx.lineTo(ix + iw * BOL.bx1, bas); ctx.lineTo(ix + iw * BOL.bx0, bas); ctx.closePath(); ctx.clip();
+      ctx.fillStyle = couleurDe(this.dedans[this.dedans.length - 1]); ctx.globalAlpha = 0.78;
+      ctx.beginPath(); ctx.moveTo(ix, bas + 4); for (let x = ix; x <= ix + iw; x += 6) ctx.lineTo(x, yy + Math.sin(x * 0.2 + this.temps * (this.tient ? 30 : 4)) * (this.tient ? 6 : 2)); ctx.lineTo(ix + iw, bas + 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      poser(ctx, imB, B.x, iy + ih, ih, 0.28);   // reflets du verre par-dessus le jus
     }
     ctx.restore();
-    for (const v of this.volants) { const e = v.t * v.t * (3 - 2 * v.t); sprite(ctx, this.c.img(v.id), v.x0 + (B.x - v.x0) * e, v.y0 + (by - v.y0) * e - Math.sin(e * Math.PI) * 70, 56, e * 5); }
+    for (const v of this.volants) { const e = v.t * v.t * (3 - 2 * v.t); sprite(ctx, this.c.img("mdj:" + v.id), v.x0 + (B.x - v.x0) * e, v.y0 + (by - v.y0) * e - Math.sin(e * Math.PI) * 70, 56, e * 5); }
     // jauge de mixage (verticale, à gauche du blender)
     if (this.pret || this.verre > 0 || this.niveauJauge > 0) {
       let [a, b] = this.zone; if (this.double) { const mi = (a + b) / 2, d = (b - a) / 4; a = mi - d; b = mi + d; }
-      const jx = bx - 30, jy = by, jw = 18, jh = bh * 0.86;
+      const jx = Math.min(bx, ix) - 28, jy = by, jw = 18, jh = bh * 0.86;
       ctx.fillStyle = "rgba(40,20,10,0.7)"; arrondi(ctx, jx, jy, jw, jh, 9); ctx.fill();
       ctx.fillStyle = "#3aa85a"; ctx.fillRect(jx, jy + jh * (1 - b), jw, jh * (b - a));
       ctx.fillStyle = "#FFE066"; const hh = jh * Math.min(1, this.niveauJauge); arrondi(ctx, jx + 4, jy + jh - hh, jw - 8, Math.max(4, hh), 4); ctx.fill();
     }
     bouton(ctx, this.btnMix, this.tient ? "LÂCHE !" : "MIXER", "#E8572A", this.tient ? 1 : 0, this.pret && this.verre <= 0);
     if (this.pb && this.pret && this.verre <= 0) bouton(ctx, this.btnDouble, this.double ? "×2 ✓" : "Double ×2", this.double ? "#3aa85a" : "#7A4A2A");
-    if (this.verre > 0 && this.verreOk > 0) { const e = 1 - this.verre; sprite(ctx, this.c.img(this.recette[0] + "-coupe") || this.c.img(this.recette[0]), B.x + (cx - B.x) * e, by + (cy - ct * 0.5 - by) * e - Math.sin(e * Math.PI) * 60, 54, 0, 1); }
+    if (this.verre > 0 && this.verreOk > 0) {
+      // le verre de jus, à la couleur du fruit, part du blender vers le client
+      const e = 1 - this.verre, hv = Math.max(64, ct * 0.62), yv = cy + ct * 0.55;
+      poser(ctx, verreTeinte(this.c.img("mdj:verre"), couleurDe(this.recette[0])), B.x + (cx - B.x) * e, by + (yv - by) * e - Math.sin(e * Math.PI) * 60 + hv / 2, hv);
+    }
     // étal (zone du pouce)
     this.zones.forEach((z, i) => {
       const s = this.secoue[i] ? Math.sin(this.secoue[i] * 50) * 5 : 0, or = this.or && this.or.i === i;
-      cagette(ctx, z.x + s, z.y, z.w, z.h, or ? 1 : 0);
-      sprite(ctx, this.c.img(or ? "letchi-or" : z.id), z.x + z.w / 2 + s, z.y + z.h * 0.46, Math.min(z.w, z.h) * 0.74, 0, this.dedans.includes(z.id) ? 0.45 : 1);
+      // cagette en bois (aquarelle), le fruit posé dedans
+      const cw = Math.min(z.w * 1.04, z.h * 1.2), chh = cw * 0.7475, mx = z.x + z.w / 2 + s, pied = z.y + z.h + 2;
+      if (or) { ctx.save(); ctx.shadowColor = "rgba(255,220,90,0.95)"; ctx.shadowBlur = 22; poser(ctx, this.c.img("mdj:cagette"), mx, pied, chh); ctx.restore(); }
+      else poser(ctx, this.c.img("mdj:cagette"), mx, pied, chh);
+      sprite(ctx, this.c.img(or ? "mdj:letchi-or" : "mdj:" + z.id), mx, pied - chh * 0.66, Math.min(z.w, z.h) * 0.72, 0, this.dedans.includes(z.id) ? 0.45 : 1);
       const nom = photo(z.id)?.nom; if (nom && !or) texteContour(ctx, nom, z.x + z.w / 2 + s, z.y + z.h - 11, Math.min(13, z.w * 0.13), "#fff");
     });
     this.combo.dessiner(ctx, L * 0.2, this.bulleR.y - 6);
@@ -214,12 +270,12 @@ class MarcheDesJus implements Jeu {
 
 const def: DefJeu = {
   id: "marche-des-jus", titre: "Le marché des jus", accroche: "Mixe le jus parfait pour chaque client du marché forain.",
-  regles: [], niveaux: 30, theme: THEMES.marche, visuels: "photos",
+  regles: [], niveaux: 30, theme: THEMES.marche, images: IMAGES,
   modes: {
     trankil: ["Touche les fruits de la bulle : ils sautent dans le blender.", "Tiens MIXER et lâche quand la jauge est dans le vert.", "Aucune hâte : le client attend, le voisin te donne un koudmin."],
     probleme: ["La brume des Hauts cache la commande : essuie-la, mais ça coûte de la patience.", "Zone verte étroite. Tente « Double ×2 » pour gagner plus.", "Trois clients repartis et la partie s'arrête."],
   },
-  decor: { lieu: "marche", heure: "jour" }, themeFx: "fruits",
+  themeFx: "fruits",
   creer: (c) => new MarcheDesJus(c),
 };
 export default def;

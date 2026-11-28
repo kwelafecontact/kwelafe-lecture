@@ -15,7 +15,7 @@ export type FicheJeu = {
 
 export const CATALOGUE: FicheJeu[] = [
   { id: "koup-koup", titre: "Koup Koup", accroche: "Coupe les fruits péi en 3D et évite la lave.", vignette: "mangue-coupe", fond: "linear-gradient(135deg,#f39a12,#e8283a 55%,#6e2a5c)", serie: "fruits", troisD: true },
-  { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Prépare les jus que les clients commandent.", vignette: "ananas-coupe", fond: "linear-gradient(135deg,#ffcf8a,#e9845a)", serie: "fruits" },
+  { id: "marche-des-jus", titre: "Le marché des jus", accroche: "Prépare les jus que les clients commandent.", vignette: "ananas-coupe", image: "/jeux/marche-des-jus/fruits/mangue.webp", fond: "linear-gradient(135deg,#ffcf8a,#e9845a)", serie: "fruits" },
   { id: "fusion-pei", titre: "Fusion péi", accroche: "Fusionne les fruits, du goyavier au ti jacque géant.", vignette: "pasteque", fond: "linear-gradient(135deg,#8fe0ff,#2aa6c8)", serie: "fruits" },
   { id: "bazar-krush", titre: "Bazar Krush", accroche: "Aligne trois fruits identiques, enchaîne les cascades.", vignette: "letchi", fond: "linear-gradient(135deg,#bff0a8,#3f8a3a)", serie: "fruits" },
   { id: "2048-pei", titre: "2048 péi", accroche: "Fais glisser et grandir les fruits.", vignette: "papaye", fond: "linear-gradient(135deg,#ffb08a,#b04a6a)", serie: "fruits" },
