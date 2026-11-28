@@ -2,8 +2,6 @@
 export type Jeu3D = { id: string; titre: string; accroche: string; emoji: string; fond: string };
 
 export const JEUX_3D: Jeu3D[] = [
-  { id: "koup-koup", titre: "Koup Koup 2", accroche: "Coupe 32 fruits et légumes péi en vraie 3D.", emoji: "🥭", fond: "linear-gradient(135deg,#f39a12,#e8283a 55%,#6e2a5c)" },
-  { id: "koup-koup-3", titre: "Koup Koup 3", accroche: "39 fruits et légumes péi tout neufs, modélisés dans Blender.", emoji: "🍍", fond: "linear-gradient(135deg,#ffcf3a,#ff6a2a 55%,#2a8a4a)" },
   { id: "koup-koup-3-v2", titre: "Koup Koup 3 v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🍍", fond: "linear-gradient(135deg,#5fc84a,#ffcf3a 50%,#ff5a2a)" },
   { id: "koup-rougail", titre: "Koup Rougail", accroche: "Tranche les bons ingrédients du rougail et du cari.", emoji: "🍲", fond: "linear-gradient(135deg,#e8452c,#f6a31b 55%,#3f7a2a)" },
   { id: "koup-rougail-v2", titre: "Koup Rougail v2", accroche: "Cuisine les recettes péi : tranche les bons ingrédients avant que le plat brûle.", emoji: "🍲", fond: "linear-gradient(135deg,#e8452c,#f6a31b 55%,#8a3a10)" },
