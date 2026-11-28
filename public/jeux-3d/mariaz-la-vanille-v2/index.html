@@ -397,12 +397,12 @@ function construireVanilleraie() {
     // grappes : à gauche et à droite du tuteur, devant, à l'écart du bois
     for (let k = 0; k < 4; k++) {
       const t = 0.12 + k / 4 * 0.76, y = -viewH * 0.4 + t * viewH * 0.76, cote = (k + i) % 2 ? 1 : -1;
-      const pos = new THREE.Vector3(x + cote * (0.36 + 0.3 * ech), y, 0.25);
+      const pos = new THREE.Vector3(x + cote * (0.26 + 0.2 * ech), y, 0.25);
       const g = new THREE.Group(); g.position.copy(pos); g.scale.setScalar(ech); decor.add(g);
       // pédoncule qui part de la liane
       const tige = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.7, 8), matLiane); tige.position.set(-cote * 0.3, 0.06, -0.3); tige.rotation.z = cote * 1.2; tige.rotation.x = 0.5; tige.castShadow = true; g.add(tige);
       const boutons = []; for (let b = 0; b < 4; b++) { const bt = new THREE.Mesh(geoBouton, matBouton); bt.position.set(cote * (0.05 + b * 0.07), 0.18 + b * 0.08, -0.05); bt.rotation.z = -cote * (0.3 + b * 0.15); bt.castShadow = true; g.add(bt); boutons.push(bt); }
-      grappes.push({ g, pos, cote, tut: i, fleur: null, gousses: [], boutons });
+      grappes.push({ g, pos, cote, tut: i, fleur: null, gousses: [], boutons, hV: (y - (m.position.y - h / 2)) / h });   // hauteur relative sur l'image de la liane
     }
   }
 }
@@ -898,8 +898,8 @@ function boucle() {
   decor.rotation.y = Math.sin(tps / 4) * 0.008;
   prochainVent -= dt; if (prochainVent <= 0) { rafale(); prochainVent = rnd(9, 16); }
   vent += (ventCible - vent) * Math.min(1, dt * 1.6);
-  for (const l of lianes) { l.m.rotation.z = Math.sin(tps * 0.5 + l.ph) * 0.004; l.uVent.value = vent * (0.75 + 0.35 * Math.sin(tps * 2.4 + l.ph)) + 0.08 * Math.sin(tps * 0.7 + l.ph); }
-  for (const gr of grappes) gr.g.rotation.z = vent * (0.06 + 0.05 * Math.sin(tps * 2.8 + gr.pos.x * 1.7));
+  for (const l of lianes) { l.uVent.value = vent * (0.75 + 0.35 * Math.sin(tps * 2.4 + l.ph)) + 0.08 * Math.sin(tps * 0.7 + l.ph); }
+  for (const gr of grappes) { const l = lianes[gr.tut]; if (!l) continue; gr.g.position.x = gr.pos.x + l.uVent.value * gr.hV * gr.hV * 0.07 * l.m.scale.x; gr.g.rotation.z = vent * 0.03 * Math.sin(tps * 2.8 + gr.pos.x * 1.7); }
   if (vent > 0.2 && Math.random() < dt * 25 * vent) grain(new THREE.Vector3(-viewW * 0.55, rnd(-viewH / 2, viewH / 2), rnd(-1, 1)), [0.9, 0.95, 0.7], 1, 0.4, 22);
   for (const g of gousses) { const u = g.obj.material.userData; if (u.uSerin) { u.uSerin.value = g.pointe.material.opacity * g.pointe.scale.x; u.uTip.value.copy(g.pointe.material.color); } }
   camera.position.x = Math.sin(tps * 0.18) * 0.22; camera.position.y = Math.sin(tps * 0.13) * 0.1; camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
