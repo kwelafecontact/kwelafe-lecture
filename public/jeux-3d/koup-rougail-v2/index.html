@@ -175,7 +175,8 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
 
 <style>.defi{margin-top:10px;font:700 clamp(14px,3.6vw,17px)/1.35 "Baloo 2",system-ui,sans-serif;color:#ffe9b0;text-shadow:0 2px 0 rgba(58,26,0,.8);max-width:min(88vw,520px)}.defi b{color:#ffd23a}.defi:empty{display:none}</style>
 <script src="../commun/pixi.min.js"></script>
-<script src="../commun/kwelafe-fx.js"></script>
+<!-- KwFX v3.7 Stability (pilote). Retour arrière : remettre ../commun/kwelafe-fx.js (v2.3) -->
+<script src="../commun/kwelafe-fx-v3.7.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -917,7 +918,9 @@ const fx = window.KwFX ? KwFX.init({
   volume: sonCoupe ? 0 : S.fx,
   messages: true, messagesTypes: ['serie', 'record', 'victoire', 'defaite', 'encourage', 'niveau', 'pepite', 'debut'], echelleMessages: 0.55, hautMessages: innerHeight > innerWidth ? '68%' : '26%', // portrait : sous la carte du plat, pour ne pas cacher l'ardoise
   cibleScore: $('score'), zoneShake: glc, dprMax: MOBILE ? 1.5 : 2,
-  onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
+  onHitStop: ms => { arret = Math.max(arret, ms / 1000); },
+  // v3.7 : pause/reprise automatiques quand l'appli passe en arrière-plan ; ?kwfx=canvas impose le mode Canvas 2D (tests)
+  pauseAuto: true, rendu: new URLSearchParams(location.search).get('kwfx') === 'canvas' ? 'canvas' : 'auto'
 }) : null;
 let recordDepart = 0, recordFete = false;
 function majDefi() { if (!fx) return; const d = fx.defiDuJour(); $('defiMenu').innerHTML = '<b>Défi du jour :</b> ' + d.texte + (d.reussi ? ' ✓' : ''); }
@@ -1389,6 +1392,7 @@ let libere = false;
 function liberer() {
   if (libere) return; libere = true;
   perf.detruire();
+  if (fx) { try { fx.detruire(); } catch (e) {} } // KwFX v3.7 : libère ses calques, boucles, écouteurs et contextes
   [...prets].forEach(oublier);
   scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
   if (rocheMat.emissiveMap) rocheMat.emissiveMap.dispose();
@@ -1400,7 +1404,7 @@ function liberer() {
   journal('liberation', 'koup-rougail-v2');
 }
 window.kwelafeLiberer = liberer;
-window.kwelafeInfo = () => ({ ...renderer.info.memory, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
+window.kwelafeInfo = () => ({ ...renderer.info.memory, kwfx: fx ? fx.diagnostic() : null, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
 addEventListener('pagehide', e => { if (!e.persisted) liberer(); });
 perf.boucle(boucle);
 

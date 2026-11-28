@@ -8,7 +8,7 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "observability": { "enabled": true },
   "workers_dev": true,
-  "preview_urls": false,
+  "preview_urls": true, // adresses de préproduction des branches (la production ne change pas)
 
   // Base de données (D1) : catalogue, clients, progression, codes cadeaux
   "d1_databases": [
@@ -35,5 +35,27 @@
     "SHOPIFY_BOUTIQUE_ABONNEMENT_URL": "https://kwelafeproduction.com/products/abonnement-mensuel-kwelafe",
     "SHOPIFY_API_VERSION": "2026-10",
     "ABONNE_TAGS": "kwelafe-abonne,appstle_membership_active"
+  },
+
+  // Préproduction (« wrangler preview », lancé par Cloudflare sur les branches autres que main).
+  // Base et stockage séparés et vides : la base et les livres de production ne sont jamais touchés.
+  // Mêmes réglages que la production (accès et abonnements inchangés).
+  "previews": {
+    "vars": {
+      "APP_URL": "https://kwelafe-lecture.kwelafe-contact.workers.dev",
+      "DEMO_MODE": "0",
+      "ADMIN_EMAILS": "kwelafe.contact@gmail.com",
+      "SHOPIFY_SHOP_URL": "https://kwelafeproduction.com",
+      "SHOPIFY_STORE_DOMAIN": "hmsnue-1a.myshopify.com",
+      "SHOPIFY_SHOP_ID": "88696750417",
+      "SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID": "a39f7762-1bc3-4d95-9eba-86400c49f1ad",
+      "SHOPIFY_BOUTIQUE_ABONNEMENT_URL": "https://kwelafeproduction.com/products/abonnement-mensuel-kwelafe",
+      "SHOPIFY_API_VERSION": "2026-10",
+      "ABONNE_TAGS": "kwelafe-abonne,appstle_membership_active"
+    },
+    "d1_databases": [
+      { "binding": "DB", "database_name": "kwelafe-lecture-preview", "database_id": "53b2930c-157f-48ff-8261-1cf9c06214a8", "migrations_dir": "migrations" }
+    ],
+    "r2_buckets": [{ "binding": "LIVRES", "bucket_name": "kwelafe-livres-preview" }]
   }
 }
