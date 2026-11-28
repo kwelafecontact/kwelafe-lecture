@@ -199,13 +199,16 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
     window.addEventListener("focus", retourFocus);
     window.addEventListener("keydown", touche, true);
     window.addEventListener("keyup", touche, true);
-    window.addEventListener("beforeprint", () => masquer());
+    const avantImpression = () => masquer();
+    window.addEventListener("beforeprint", avantImpression);
     return () => {
       document.removeEventListener("visibilitychange", vis);
       window.removeEventListener("blur", perteFocus);
       window.removeEventListener("focus", retourFocus);
       window.removeEventListener("keydown", touche, true);
       window.removeEventListener("keyup", touche, true);
+      window.removeEventListener("beforeprint", avantImpression);
+      if (t) clearTimeout(t);
     };
   }, []);
 
@@ -297,9 +300,10 @@ export default function Lecteur({ livre, jetonInitial, positionInitiale, email, 
     };
     const t = setInterval(() => envoyer(), 20_000);
     const cacher = () => { if (document.visibilityState === "hidden") envoyer(true); };
+    const avantFermeture = () => envoyer(true);
     document.addEventListener("visibilitychange", cacher);
-    window.addEventListener("pagehide", () => envoyer(true));
-    return () => { clearInterval(t); document.removeEventListener("visibilitychange", cacher); envoyer(true); };
+    window.addEventListener("pagehide", avantFermeture);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", cacher); window.removeEventListener("pagehide", avantFermeture); envoyer(true); };
   }, []);
 
   /* ---------- Préchargement des pages PDF suivantes ---------- */
