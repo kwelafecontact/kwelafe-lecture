@@ -24,7 +24,7 @@ export default function FabriqueZistoir() {
         <h2>{e.titre}</h2>
         <div className="fz-cartes">
           {(e.liste as readonly Choix[]).map((c) => (
-            <button key={c.id} onClick={() => setChoix([...choix, c])}><span>{c.emoji}</span>{c.nom[0].toUpperCase() + c.nom.slice(1)}</button>
+            <button key={c.id} onClick={() => setChoix([...choix, c])}>{c.image ? <img src={c.image} alt="" /> : <span>{c.emoji}</span>}{c.nom[0].toUpperCase() + c.nom.slice(1)}</button>
           ))}
         </div>
         {etape > 0 && <button className="app-lien" onClick={() => setChoix(choix.slice(0, -1))}>← Revenir</button>}
