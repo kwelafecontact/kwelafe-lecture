@@ -1,6 +1,7 @@
 // Moteur commun des jeux 2D Kwélafé : boucle, dessin haute définition, effets, sons, images.
 import { toutesLesImages } from "./produits";
 import { PHOTOS } from "./photos";
+import { Kw, DecorPei, type Mode, type ConfigDecor } from "./pei";
 import { GestionnairePerf, dprCible, libererCanvas, reveillerAudio, endormirAudio, journal } from "@/public/jeux-3d/commun/performances";
 
 export type Resultat = { gagne: boolean; score: number; etoiles: number; lignes?: string[]; savoir?: { titre: string; texte: string } };
@@ -22,6 +23,10 @@ export type Contexte = {
   sons: SonsJeu;
   fx: Effets;
   rnd: () => number;
+  mode: Mode;               // « Mi vé zoué trankil » ou « Mi rode problèm »
+  niveau: number;
+  kw: Kw;                   // directeur d'effets KwFX v4.1
+  nuit: (n: number, duree?: number) => void;   // éclairage megaLumieres (0 jour, 1 nuit) + ciel du décor
   fin: (r: Resultat) => void;
   hud: (h: Hud) => void;
 };
@@ -46,6 +51,12 @@ export type DefJeu = {
   accroche: string;
   regles: string[];
   niveaux: number;          // 0 = partie sans fin (on bat son record)
+  /** Jeux refaits (KwFX v4.1) : règles en 3 lignes par mode, décor en plans, thème d'effets. */
+  modes?: Record<Mode, string[]>;
+  decor?: ConfigDecor;
+  themeFx?: string;
+  /** Nuit de départ selon le mode (0 à 1). */
+  nuit?: (mode: Mode, niveau: number) => number;
   theme: Theme;
   visuels?: "photos";       // images photo des planches de KWélafé à la place des rendus 3D
   images?: Record<string, string>;   // images propres au jeu (id → chemin), préchargées avec lui
@@ -256,6 +267,9 @@ export class Moteur2D {
   private perf: GestionnairePerf;
   private redessin = 0;
   private seed = Date.now() & 0xffff;
+  kw: Kw;
+  mode: Mode = "trankil";
+  private decorPei: DecorPei | null = null;
   private nuages = Array.from({ length: 6 }, (_, i) => ({ x: Math.random(), y: 0.05 + Math.random() * 0.25, s: 0.6 + Math.random() * 0.8, v: 0.004 + i * 0.002 }));
 
   constructor(
@@ -267,6 +281,8 @@ export class Moteur2D {
     this.cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block";
     conteneur.appendChild(this.cv);
     this.ctx = this.cv.getContext("2d")!;
+    this.kw = new Kw(conteneur, def.id, def.themeFx || "fruits");
+    if (def.decor) this.decorPei = new DecorPei(def.id, def.decor);
     // Résolution : 1,5 au plus sur iPhone, 2 ailleurs
     this.dpr = dprCible(2);
     this.perf = new GestionnairePerf({
@@ -276,7 +292,7 @@ export class Moteur2D {
         // Arrière-plan, verrouillage : la partie se met en pause ET l'écran de pause s'affiche
         // (avant, le moteur se figeait sans que l'interface le sache : jeu « bloqué »).
         if (this.jeu && !this.pause) { this.setPause(true); this.rappels.interruption?.(raison); }
-        this.sons.endormir();
+        this.sons.endormir(); this.kw.pause(true);
       },
       surReprise: () => {
         // Au retour, iOS a pu vider la mémoire du canvas : on la réalloue et on redessine.
@@ -306,20 +322,40 @@ export class Moteur2D {
 
   private rnd = () => { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; return this.seed / 4294967296; };
 
-  lancer(niveau: number) {
+  private appliquerNuit(n: number, duree?: number) {
+    this.kw.eclairage(n, duree);
+    if (this.def.modes) this.kw.ambiance(n >= 0.5 ? "veillee" : this.def.decor?.lieu === "lagon" || this.def.themeFx === "lagon" ? "lagon" : "jardin");
+    if (this.decorPei) this.decorPei.heure = n >= 0.5 ? "veillee" : n >= 0.2 ? "soir" : this.def.decor!.heure === "veillee" ? "soir" : this.def.decor!.heure;
+  }
+  lancer(niveau: number, mode: Mode = "trankil") {
     this.sons.reveiller();
+    this.mode = mode;
+    const refait = !!this.def.modes;
+    const nuit0 = this.def.nuit ? this.def.nuit(mode, niveau) : this.def.decor?.heure === "veillee" ? 0.6 : this.def.decor?.heure === "soir" ? 0.22 : 0;
+    if (refait) {
+      if (this.decorPei) this.decorPei.heure = this.def.decor!.heure;
+      this.kw.preparer(mode, nuit0).then(() => { if (this.jeu) { this.appliquerNuit(nuit0, 10); this.kw.ev("debut"); } });
+    }
     this.fx = new Effets();
     const c: Contexte = {
       L: this.L, H: this.H,
       img: (id) => (this.def.visuels === "photos" && cacheImages.get("photo:" + id)) || cacheImages.get(id),
-      sons: this.sons, fx: this.fx, rnd: this.rnd,
-      fin: (r) => { this.jeu = null; if (r.gagne) { this.sons.victoire(); this.fx.confettis(this.L); } else this.sons.defaite(); this.rappels.fin(r); },
+      sons: this.sons, fx: this.fx, rnd: this.rnd, mode, niveau, kw: this.kw,
+      nuit: (n, duree) => this.appliquerNuit(n, duree),
+      fin: (r) => {
+        this.jeu = null; this.kw.ambiance(null);
+        if (refait) { if (r.gagne) this.kw.victoire(this.L, this.H); else this.kw.ev("defaite"); const f = this.kw.finPartie(r.score); if (f?.defi?.nouveau) (r.lignes ||= []).push("Défi du jour réussi !"); }
+        else if (r.gagne) { this.sons.victoire(); this.fx.confettis(this.L); } else this.sons.defaite();
+        this.rappels.fin(r);
+      },
       hud: (h) => this.rappels.hud(h),
     };
     this.jeu = this.def.creer(c, niveau);
+    // Essais automatiques en local : le jeu en cours est visible pour le robot de test
+    if (typeof location !== "undefined" && (location.hostname === "127.0.0.1" || location.hostname === "localhost")) { (window as any).__kwJeu = this.jeu; (window as any).__kw = this.kw; }
   }
   arreter() { this.jeu = null; }
-  setPause(p: boolean) { this.pause = p; this.dernier = performance.now(); }
+  setPause(p: boolean) { this.pause = p; this.dernier = performance.now(); this.kw.pause(p); }
   get enPause() { return this.pause; }
   get partieEnCours() { return !!this.jeu; }
   /** Photo de la partie en cours (si le jeu sait la prendre). */
@@ -356,7 +392,7 @@ export class Moteur2D {
     now = performance.now();
     const dt = Math.max(0, Math.min(0.05, (now - this.dernier) / 1000));
     this.dernier = now;
-    if (!this.pause) { this.temps += dt; this.jeu?.maj(dt); this.fx.maj(dt); }
+    if (!this.pause) { this.temps += dt; if (!this.kw.fige()) this.jeu?.maj(dt); this.fx.maj(dt); }
     const ctx = this.ctx;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.decor(ctx);
@@ -370,6 +406,7 @@ export class Moteur2D {
   /** Décor tropical animé : ciel, soleil, nuages, pitons en silhouette, feuillage. */
   private decor(ctx: CanvasRenderingContext2D) {
     const { L, H } = this, th = this.def.theme;
+    if (this.decorPei) { this.decorPei.dessiner(ctx, L, H, this.temps); return; }
     const fond = cacheImages.get("fond:" + this.def.id);
     if (fond && fond.complete && fond.naturalWidth > 0) {
       // fond aquarelle : recadré pour couvrir l'écran, avec une très lente respiration
@@ -418,6 +455,7 @@ export class Moteur2D {
     this.jeu = null;
     this.fx = new Effets();
     this.sons.detruire();
+    this.kw.detruire();
     libererCanvas(this.cv);        // iOS : rend la mémoire du canvas tout de suite
     // Images propres à ce jeu (fond aquarelle, images spéciales, photos) : libérées en partant.
     // Les visuels de fruits communs à presque tous les jeux restent en cache.

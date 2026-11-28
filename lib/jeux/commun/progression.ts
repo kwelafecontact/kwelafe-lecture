@@ -3,7 +3,7 @@
 // une coupure réseau, un arrêt brutal de l'onglet par iOS ou un rechargement.
 import { sauvegarde, journal } from "@/public/jeux-3d/commun/performances";
 
-export type PartieEnCours = { niveau: number; etat: unknown; t: number };
+export type PartieEnCours = { niveau: number; etat: unknown; t: number; mode?: string };
 export type Local<D> = {
   donnees?: D;
   record?: number;

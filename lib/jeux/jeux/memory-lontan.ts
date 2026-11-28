@@ -1,6 +1,6 @@
 // Memory lontan : retrouver les paires d'objets d'autrefois (photos du livre « Les objets lontan », Kwélafé Production).
 import { type DefJeu, THEMES } from "../commun/moteur2d";
-import { Memory } from "./memory-pei";
+import { Memory, MODES_MEMORY } from "./memory-pei";
 import D from "../serie2/donnees";
 
 const IDS = D.objets.map((o) => o.id);
@@ -12,6 +12,8 @@ const def: DefJeu = {
   accroche: "Retrouve les paires d'objets d'autrefois : kalou, ferblan, lampe à pétrole…",
   regles: ["Retourne deux cartes à la fois.", "Si ce sont les mêmes objets lontan, la paire reste visible.", "Moins tu fais de coups, plus tu gagnes d'étoiles.", "À partir du niveau 8, le temps est compté."],
   niveaux: 20,
+  modes: MODES_MEMORY, decor: { lieu: "kaz", heure: "soir" }, themeFx: "lontan",
+  nuit: (mode) => (mode === "probleme" ? 0.72 : 0.12),
   theme: THEMES.marche,
   images: Object.fromEntries(IDS.map((id) => [id, `/jeux/lontan/${id}.webp`])),
   creer: (c, n) => new Memory(c, n, IDS, nom, 12),

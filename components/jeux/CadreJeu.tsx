@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { DefJeu, Hud, Resultat } from "@/lib/jeux/commun/moteur2d";
 import type { Moteur2D } from "@/lib/jeux/commun/moteur2d";
+import { NOMS_MODE, type Mode } from "@/lib/jeux/commun/pei";
 import { chargerJeu, fiche } from "@/lib/jeux/catalogue";
 import { lireLocal, modifierLocal, envoyerScore, renvoyerEnAttente, type PartieEnCours, type Local } from "@/lib/jeux/commun/progression";
 
@@ -29,10 +30,13 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
   const [record, setRecord] = useState(recordInitial || 0);
   const [son, setSon] = useState(true);
   const [reprise, setReprise] = useState<PartieEnCours | null>(null);
+  const [mode, setMode] = useState<Mode>("trankil");
   const [panneau, setPanneau] = useState<"boutique" | "carnet" | null>(null);
   const [, rafraichir] = useState(0);
-  const etat = useRef({ donnees, record, niveau, def });
-  etat.current = { donnees, record, niveau, def };
+  const etat = useRef({ donnees, record, niveau, def, mode });
+  etat.current = { donnees, record, niveau, def, mode };
+  /** Les étoiles du mode « Mi rode problèm » sont rangées à part (clé p1, p2…). */
+  const cleNiv = (n: number, m: Mode = mode) => (m === "probleme" ? "p" + n : String(n));
   const ecranRef = useRef<Ecran>("chargement");
   ecranRef.current = ecran;
   const f = fiche(id);
@@ -44,7 +48,7 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
         const [{ Moteur2D, precharger, FONDS_AQUARELLE, cheminFond }, d] = await Promise.all([import("@/lib/jeux/commun/moteur2d"), chargerJeu(id)]);
         await precharger(d?.visuels, { ...(d?.images || {}), ...(d && FONDS_AQUARELLE.has(d.id) ? { ["fond:" + d.id]: cheminFond(d.id) } : {}) });
         if (annule || !zone.current || !d) { if (!d) setEcran("erreur"); return; }
-        try { if (localStorage.getItem("kw-son") === "0") setSon(false); } catch { /* rien */ }
+        try { if (localStorage.getItem("kw-son") === "0") setSon(false); if (localStorage.getItem("kw-mode") === "probleme") setMode("probleme"); } catch { /* rien */ }
         // Progression locale : protège contre une coupure réseau ou un arrêt brutal de l'onglet
         const local: Local<Donnees> = await lireLocal<Donnees>(id).catch(() => ({}));
         if (annule || !zone.current) return;
@@ -63,7 +67,7 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
           // Sauvegarde régulière et à chaque interruption de la partie en cours
           sauvegarde: () => sauverPartie(),
         });
-        try { if (localStorage.getItem("kw-son") === "0") m.sons.actif = false; } catch { /* rien */ }
+        try { if (localStorage.getItem("kw-son") === "0") { m.sons.actif = false; m.kw.activerSons(false); } } catch { /* rien */ }
         moteur.current = m;
         setDef(d);
         setEcran("accueil");
@@ -82,14 +86,15 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
   function sauverPartie() {
     const m = moteur.current;
     if (!m || !m.partieEnCours) return;
-    const p: PartieEnCours = { niveau: etat.current.niveau, etat: m.instantane(), t: Date.now() };
+    const p: PartieEnCours = { niveau: etat.current.niveau, etat: m.instantane(), t: Date.now(), mode: etat.current.mode };
     modifierLocal<Donnees>(id, (l) => ({ ...l, partie: p }));
   }
 
   function terminer(r: Resultat) {
-    const { donnees: d, record: rec, niveau: n, def: df } = etat.current;
+    const { donnees: d, record: rec, niveau: n, def: df, mode: md } = etat.current;
     const etoiles = { ...(d.etoiles || {}) };
-    if (df && df.niveaux > 0 && r.gagne) etoiles[n] = Math.max(etoiles[n] || 0, r.etoiles);
+    const k = md === "probleme" ? "p" + n : String(n);
+    if (df && df.niveaux > 0 && r.gagne) etoiles[k] = Math.max(etoiles[k] || 0, r.etoiles);
     const nouveauRecord = r.score > rec;
     const suivantes: Donnees = { ...d, etoiles, record: Math.max(rec, r.score) };
     setDonnees(suivantes);
@@ -102,29 +107,31 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
     envoyerScore(id, r.score, suivantes).then((j) => { if (j && typeof j.record === "number") setRecord((x) => Math.max(x, j.record!)); });
   }
 
-  const jouer = (n: number, etatRepris?: unknown) => {
+  const choisirMode = (m: Mode) => { setMode(m); etat.current.mode = m; try { localStorage.setItem("kw-mode", m); } catch { /* rien */ } };
+  const jouer = (n: number, etatRepris?: unknown, m: Mode = etat.current.mode) => {
+    if (m !== etat.current.mode) choisirMode(m);
     etat.current.niveau = n;
     setNiveau(n); setRes(null); setHud({});
     moteur.current?.setPause(false);
-    moteur.current?.lancer(n);
+    moteur.current?.lancer(n, m);
     if (etatRepris != null) moteur.current?.restaurer(etatRepris);
     setReprise(null);
     setEcran("jeu");
     sauverPartie();
   };
-  const reprendrePartie = () => { if (reprise) jouer(reprise.niveau, reprise.etat); };
+  const reprendrePartie = () => { if (reprise) jouer(reprise.niveau, reprise.etat, reprise.mode === "probleme" ? "probleme" : "trankil"); };
   const basculerPause = () => {
     if (ecran === "jeu") { moteur.current?.setPause(true); setEcran("pause"); }
     else if (ecran === "pause") { moteur.current?.setPause(false); setEcran("jeu"); }
   };
   const basculerSon = () => {
     const v = !son; setSon(v);
-    if (moteur.current) moteur.current.sons.actif = v;
+    if (moteur.current) { moteur.current.sons.actif = v; moteur.current.kw.activerSons(v); }
     try { localStorage.setItem("kw-son", v ? "1" : "0"); } catch { /* rien */ }
   };
   const etoilesNiv = donnees.etoiles || {};
-  const debloque = (n: number) => n === 1 || (etoilesNiv[n - 1] || 0) > 0;
-  const totalEtoiles = Object.values(etoilesNiv).reduce((s, x) => s + x, 0);
+  const debloque = (n: number) => n === 1 || (etoilesNiv[cleNiv(n - 1)] || 0) > 0;
+  const totalEtoiles = def ? Array.from({ length: def.niveaux }, (_, i) => etoilesNiv[cleNiv(i + 1)] || 0).reduce((s, x) => s + x, 0) : 0;
 
   return (
     <div className="kk-ecran kw-jeu">
@@ -156,7 +163,17 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
           <div className="kk-panneau kk-menu">
             <div className="kk-titre kw-titre">{def.titre}</div>
             <p className="kk-accroche">{def.accroche}</p>
-            <ul className="kw-regles">{def.regles.map((r, i) => <li key={i}>{r}</li>)}</ul>
+            {def.modes && (
+              <div className="kw-modes">
+                {(["trankil", "probleme"] as Mode[]).map((m) => (
+                  <button key={m} className={`kw-mode ${m} ${mode === m ? "on" : ""}`} onClick={() => choisirMode(m)} aria-pressed={mode === m}>
+                    <b>{m === "trankil" ? "🌴" : "🌋"} {NOMS_MODE[m]}</b>
+                    <span>{m === "trankil" ? "Simple et apaisant" : "Exigeant et technique"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <ul className="kw-regles">{(def.modes ? def.modes[mode] : def.regles).map((r, i) => <li key={i}>{r}</li>)}</ul>
             <div className="kk-boutons">
               {reprise && (
                 <button className="btn" onClick={reprendrePartie}>
@@ -211,7 +228,7 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
               {Array.from({ length: def.niveaux }, (_, i) => i + 1).map((n) => (
                 <button key={n} className={`kw-niv ${debloque(n) ? "" : "verrou"}`} disabled={!debloque(n)} onClick={() => jouer(n)}>
                   <b>{debloque(n) ? n : "🔒"}</b>
-                  <span>{[1, 2, 3].map((k) => <i key={k} className={(etoilesNiv[n] || 0) >= k ? "on" : ""}>★</i>)}</span>
+                  <span>{[1, 2, 3].map((k) => <i key={k} className={(etoilesNiv[cleNiv(n)] || 0) >= k ? "on" : ""}>★</i>)}</span>
                 </button>
               ))}
             </div>
@@ -234,7 +251,7 @@ export default function CadreJeu({ id, recordInitial, donneesInitiales }: { id: 
             {def.niveaux > 0 && (
               <div className="kw-etoiles-fin">{[1, 2, 3].map((k) => <i key={k} className={res.etoiles >= k && res.gagne ? "on" : ""} style={{ animationDelay: `${k * 0.2}s` }}>★</i>)}</div>
             )}
-            <h2>{res.gagne ? (def.niveaux > 0 ? "Gagné !" : "Bien joué !") : "Presque !"}</h2>
+            <h2>{res.gagne ? (def.niveaux > 0 ? "Gagné !" : "Bien joué !") : "Presque ! On retente ?"}</h2>
             {res.nouveauRecord && <div className="kk-badge">Nouveau record !</div>}
             <div className="kk-gros-score">{res.score}</div>
             {res.lignes?.map((l, i) => <p key={i} style={{ margin: "4px 0", fontWeight: 700 }}>{l}</p>)}

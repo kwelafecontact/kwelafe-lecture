@@ -1,5 +1,6 @@
 // Fusion péi : on lâche des fruits dans la tante ; deux fruits identiques fusionnent en un plus gros.
 import { couleurDe } from "../commun/photos";
+import { traitsAlize } from "../commun/outils-pei";
 import { type Contexte, type DefJeu, type Jeu, type Progression, THEMES, sprite, texteContour, arrondi, etoilesPour } from "../commun/moteur2d";
 
 export const CHAINE = ["goyavier", "letchi", "longani", "mandarine", "goyave", "grenadine", "mangue", "papaye", "coco", "pasteque", "durian"];
@@ -95,8 +96,10 @@ class Fusion implements Jeu {
   accalmie = 0; pesee: { t: number; fini: boolean; ok: boolean } | null = null;
   stats: Record<string, number> = {}; sousPartie = 0;
 
+  // refonte KwFX v4.1 : deux modes ; en mode problèm, l'alizé pousse le fruit qui tombe et la marée fait flotter le bas de la tante
+  pb = false; vent = 0; ventCible = 0; ventDans = 7; maree = 0; mareeDans = 22; mareeT = 0; record = 0;
   constructor(private c: Contexte) {
-    this.L = c.L; this.H = c.H;
+    this.L = c.L; this.H = c.H; this.pb = c.mode === "probleme";
     this.disposer();
     this.actuel = this.tirer(); this.suivant = this.tirer();
     this.visee = this.boite.x + this.boite.w / 2;
@@ -205,7 +208,7 @@ class Fusion implements Jeu {
     this.actuel = this.suivant; this.actuelGate = this.suivantGate; this.actuelJoker = this.suivantJoker;
     this.suivant = this.tirer(); this.lacher++;
     // fruit gâté de temps en temps à partir du niveau 2, vanille magique juste avant le niveau suivant
-    this.suivantGate = this.niveau >= 2 && this.lacher % Math.max(4, 8 - this.niveau) === 0;
+    this.suivantGate = this.pb && this.niveau >= 2 && this.lacher % Math.max(4, 8 - this.niveau) === 0;
     this.suivantJoker = !this.suivantGate && this.jokerNiveau < this.niveau && this.score > this.niveau * PAR_NIVEAU - 90;
     if (this.suivantJoker) this.jokerNiveau = this.niveau;
     this.attente = 0.45;
@@ -263,7 +266,13 @@ class Fusion implements Jeu {
     this.charge = Math.min(RECHARGE, this.charge + dt);
     this.secoue = Math.max(0, this.secoue - dt);
     if (this.accalmie > 0) { this.accalmie -= dt; if (this.pesee && !this.pesee.fini) { this.pesee.t += dt; if (this.accalmie < 0.8) this.peser(); } if (this.accalmie <= 0) this.pesee = null; }
-    for (const c of this.commandes) c.t -= dt;
+    if (this.pb) {
+      for (const c of this.commandes) c.t -= dt;
+      if ((this.ventDans -= dt) <= 0) { this.ventDans = 7 + this.c.rnd() * 5; this.ventCible = this.c.rnd() < 0.25 ? 0 : (this.c.rnd() < 0.5 ? -1 : 1) * (0.4 + this.c.rnd() * 0.6); if (this.ventCible) { this.c.kw.joue("alizePei", this.ventCible > 0 ? this.boite.x : this.boite.x + this.boite.w, this.boite.y + 40, { intensite: Math.abs(this.ventCible) }); this.c.kw.son("vent"); } }
+      this.vent += (this.ventCible - this.vent) * Math.min(1, dt * 2);
+      if (this.mareeT > 0) { this.mareeT -= dt; this.maree += ((this.mareeT > 1 ? 0.38 : 0) - this.maree) * Math.min(1, dt * 1.6); }
+      else { this.maree = Math.max(0, this.maree - dt * 0.4); if ((this.mareeDans -= dt) <= 0) { this.mareeDans = 24 + this.c.rnd() * 10; this.mareeT = 6; this.c.kw.joue("mareePei", this.boite.x + this.boite.w / 2, this.boite.y + this.boite.h, { intensite: 0.9 }); this.c.kw.son("bulles"); this.c.kw.banniere("La marée monte : les fruits flottent", 0.5); } }
+    }
     if (this.commandes.some((c) => c.t <= 0)) { const parti = this.commandes.find((c) => c.t <= 0)!; this.c.fx.texte(`${parti.nom} s'en va…`, this.L / 2, this.boite.y - 30, "#ddd", 20); this.commandes = this.commandes.filter((c) => c.t > 0); this.placerCommandes(); this.prochaineCommande = 3; }
     if (this.commandes.length < (this.niveau >= 3 ? 2 : 1)) { this.prochaineCommande -= dt; if (this.prochaineCommande <= 0) { this.nouvelleCommande(); this.prochaineCommande = 8; } }
     if (this.chaineT > 0) { this.chaineT -= dt; if (this.chaineT <= 0) this.chaine = 0; }
@@ -271,7 +280,12 @@ class Fusion implements Jeu {
     const sous = 3, h = dt / sous;
     for (let s = 0; s < sous; s++) {
       for (const b of this.boules) {
-        b.vy += g * h; b.x += b.vx * h; b.y += b.vy * h;
+        b.vy += g * h;
+        if (this.pb) {
+          if (b.ne < 0.9) b.vx += this.vent * 520 * h;                                   // l'alizé dévie le fruit qui tombe
+          if (this.maree > 0.02 && b.y > B.y + B.h * (1 - this.maree)) { b.vy -= g * 1.5 * h; b.vy *= 0.985; b.vx += Math.sin(this.temps * 2 + b.y * 0.05) * 40 * h; }   // la marée le fait flotter
+        }
+        b.x += b.vx * h; b.y += b.vy * h;
         b.vx *= 0.995; b.ne += h;
         if (b.x - b.r < B.x) { b.x = B.x + b.r; b.vx = Math.abs(b.vx) * 0.3; }
         if (b.x + b.r > B.x + B.w) { b.x = B.x + B.w - b.r; b.vx = -Math.abs(b.vx) * 0.3; }
@@ -323,6 +337,9 @@ class Fusion implements Jeu {
     this.boules.push({ k, x, y, vx: (a.vx + b.vx) / 2, vy: Math.min(a.vy, b.vy) - 120, r, rot: 0, ne: 1, dessus: 0, gonfle: 1 });
     // chaîne : plusieurs fusions rapprochées multiplient les points
     this.chaine++; this.chaineT = 1.3;
+    this.c.kw.joue("jus", x, y, { couleur: couleurDe(CHAINE[k]), intensite: Math.min(0.9, 0.3 + k * 0.07) }); this.c.kw.eclat(x, y, couleurDe(CHAINE[k]), r * 3, 480);
+    if (this.chaine === 3) this.c.kw.comboMax(x, y, "POKk !"); else if (this.chaine === 5) this.c.kw.comboMax(x, y, "OTÉ !");
+    if (k > this.record) { this.record = k; if (k >= 5) { this.c.kw.ev("niveau", x, y); this.c.kw.onoma("VLAP !", x, y - r, 0.7); } }
     const mult = Math.min(5, this.chaine);
     const gain = (k + 1) * (k + 2) * mult;
     // onde de choc : les fruits voisins sont repoussés doucement
@@ -385,6 +402,23 @@ class Fusion implements Jeu {
     ctx.restore();
   }
 
+  /** Marée dans la tante et traits de vent (mode problèm). */
+  dessinerMeteo(ctx: CanvasRenderingContext2D) {
+    const B = this.boite;
+    if (this.maree > 0.01) {
+      const y = B.y + B.h * (1 - this.maree);
+      ctx.save(); ctx.beginPath(); ctx.rect(B.x, B.y, B.w, B.h); ctx.clip();
+      ctx.fillStyle = "rgba(31,163,196,0.34)"; ctx.beginPath(); ctx.moveTo(B.x, B.y + B.h);
+      for (let x = B.x; x <= B.x + B.w; x += 10) ctx.lineTo(x, y + Math.sin(x * 0.05 + this.temps * 3) * 5);
+      ctx.lineTo(B.x + B.w, B.y + B.h); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 2; ctx.beginPath(); for (let x = B.x; x <= B.x + B.w; x += 10) ctx.lineTo(x, y + Math.sin(x * 0.05 + this.temps * 3) * 5); ctx.stroke();
+      ctx.restore();
+    }
+    if (Math.abs(this.vent) > 0.08) {
+      traitsAlize(ctx, this.L, this.H, this.temps, this.vent, (B.y - 30) / this.H, (B.y + B.h * 0.5) / this.H);
+      texteContour(ctx, this.vent > 0 ? "Alizé ➜" : "⬅ Alizé", B.x + B.w / 2, B.y + 16, 15, "#fff");
+    }
+  }
   dessinerVanille(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rot: number) {
     ctx.save(); const hg = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 1.6); hg.addColorStop(0, "rgba(240,210,255,0.7)"); hg.addColorStop(1, "rgba(240,210,255,0)"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     sprite(ctx, this.c.img("vanille"), x, y, r * 2.4, rot + Math.sin(this.temps * 3) * 0.15);
@@ -493,6 +527,7 @@ class Fusion implements Jeu {
       sprite(ctx, this.c.img(id), x, y, t * (i === plus ? 1.1 : 0.92), 0, i <= plus ? 1 : 0.5, false);
       if (i < CHAINE.length - 1 && col < pr - 1) { ctx.fillStyle = "rgba(120,70,20,0.5)"; ctx.font = "700 10px system-ui"; ctx.textAlign = "center"; ctx.fillText("›", x + t / 2, y + 4); }
     });
+    if (this.pb) this.dessinerMeteo(ctx);
   }
 }
 
@@ -525,6 +560,11 @@ const def: DefJeu = {
     "Fruits gâtés : ils ne fusionnent pas. Fais une fusion juste à côté pour les jeter. La vanille magique fait grandir le fruit qu'elle touche.",
     "Entre deux niveaux, pèse les fruits sur la balance : touche quand l'aiguille est dans le vert. Si un fruit reste au-dessus de la ligne, c'est fini.",
   ],
+  modes: {
+    trankil: ["Glisse le doigt pour viser, lâche pour faire tomber le fruit.", "Deux fruits pareils qui se touchent fusionnent en un plus gros.", "Ni vent ni fruits gâtés : les clients attendent sans s'en aller."],
+    probleme: ["L'alizé pousse le fruit qui tombe : vise en avance, du côté d'où vient le vent.", "Quand la marée monte, les fruits du fond flottent : glisse un fruit dessous.", "Fruits gâtés et clients pressés. Un fruit au-dessus de la ligne, et c'est fini."],
+  },
+  themeFx: "lagon",
   niveaux: 0,
   theme: THEMES.lagon,
   visuels: "photos",
