@@ -78,14 +78,14 @@
   .fiche p { font-size:clamp(16px, 4vw, 19px); line-height:1.35; margin:10px 0 16px; font-weight:600; }
   .fiche .btn { font-size:18px; padding:12px 26px; }
   .pop.pts { color:#fff7c8; }
-  .bonus { position:fixed; right:max(46px, calc(env(safe-area-inset-right) + 46px)); top:50%; transform:translateY(-50%); display:none; flex-direction:column; gap:14px; z-index:6; }
+  .bonus { position:fixed; right:max(30px, calc(env(safe-area-inset-right) + 30px)); bottom:max(76px, calc(env(safe-area-inset-bottom) + 70px)); display:none; flex-direction:column; gap:14px; z-index:6; }
   .bonus.on { display:flex; }
   .bbtn { position:relative; width:64px; height:64px; border-radius:50%; border:3px solid #fff; background:rgba(40,10,0,.6); color:#fff; font-size:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .bbtn .rempli { position:absolute; left:0; right:0; bottom:0; height:0; background:rgba(90,180,255,.55); z-index:-1; }
   .bbtn.pret { animation:pret .7s ease-in-out infinite alternate; }
   .bbtn.vide { opacity:.38; }
   .bbtn .nb { position:absolute; right:-2px; bottom:-2px; min-width:22px; height:22px; border-radius:11px; background:#ffd24a; color:#5a1a00; font:700 14px/22px system-ui; text-align:center; }
-  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(40px, calc(env(safe-area-inset-right) + 40px)); } }
+  @media (max-width:500px) { .bbtn { width:54px; height:54px; font-size:24px; } .bonus { right:max(22px, calc(env(safe-area-inset-right) + 22px)); bottom:max(64px, calc(env(safe-area-inset-bottom) + 58px)); gap:10px; } }
   @keyframes pret { from { box-shadow:0 0 6px #5ab4ff; } to { box-shadow:0 0 22px #9ad8ff, 0 0 4px #fff; transform:scale(1.06); } }
   .niveauHud { text-align:right; margin-top:6px; font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:clamp(18px, 4vw, 24px); color:#ffe23a; text-shadow:0 2px 0 #3a2a00, 0 0 12px rgba(255,200,60,.6); }
   .niveauHud.saute { animation:saute .5s; }
@@ -104,11 +104,23 @@
   .panier .chip b { font-family:"Bangers", sans-serif; letter-spacing:.04em; font-size:22px; color:#ffe27a; min-width:44px; text-align:right; }
   .panier .chip span { font-size:13px; opacity:.85; }
   .panier .chip.saute { animation:saute .35s ease-out; }
+  .legende { margin-top:2px; padding:6px 8px 6px; border-radius:14px; background:rgba(10,14,6,.62); border:1.5px solid rgba(255,230,160,.35); text-align:center; }
+  .lgT { font-size:11px; font-weight:800; color:#e8d49a; margin-bottom:3px; }
+  .lgL { display:flex; gap:8px; justify-content:center; }
+  .lg { display:flex; flex-direction:column; align-items:center; gap:3px; width:46px; font-size:11px; font-weight:800; line-height:1.05; }
+  .lg.bon span { color:#ffe27a; } .lg.bon .gs { animation:vibreLg 0.9s ease-in-out infinite; box-shadow:0 0 10px rgba(255,220,90,.55); }
+  @keyframes vibreLg { 0%,100% { transform:rotate(-4deg); } 50% { transform:rotate(4deg); } }
+  .gs { display:block; width:11px; height:44px; border-radius:6px 6px 40% 40% / 6px 6px 22% 22%; position:relative; box-shadow:inset -2px 0 3px rgba(0,0,0,.35), inset 2px 0 2px rgba(255,255,255,.25); }
+  .gs.tot { background:linear-gradient(#2c5812, #4a8a22); }
+  .gs.serin { background:linear-gradient(#3c7018 0%, #5a9a2a 55%, #d8b22a 78%, #f0c832 100%); }
+  .gs.tard { background:linear-gradient(#4a7a22 0%, #7a6a2a 40%, #3a200c 75%, #1e1006 100%); }
+  .gs.tard::after { content:""; position:absolute; left:4px; bottom:2px; width:2px; height:18px; background:#000; border-radius:1px; }
+  .gs::before { content:""; position:absolute; left:50%; bottom:-5px; width:7px; height:6px; margin-left:-3.5px; background:#5a3a18; clip-path:polygon(0 0, 100% 0, 80% 100%, 50% 40%, 20% 100%); }
   img.verte { filter:sepia(1) hue-rotate(45deg) saturate(3) brightness(1.15); }
   .vole { position:fixed; z-index:25; width:46px; height:46px; pointer-events:none; object-fit:contain; transition:transform .75s cubic-bezier(.5,-0.3,.6,1), opacity .2s .65s; filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
   .panneau { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.92); width:min(90vw, 480px); max-height:78vh; overflow:auto; padding:18px 20px 20px; border-radius:22px; background:linear-gradient(#f6ecd2, #e8d6a8); color:#3a2410; border:5px solid #7a4e24; box-shadow:0 14px 40px rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:all .3s cubic-bezier(.2,1.4,.4,1); z-index:18; text-align:center; }
   #btnFin { left:max(130px, calc(env(safe-area-inset-left) + 130px)); }
-  @media (max-width:640px) { .vies img { width:48px; height:48px; } .haut { top:max(70px, calc(env(safe-area-inset-top) + 58px)); } .hud { top:max(150px, calc(env(safe-area-inset-top) + 136px)); } }
+  @media (max-width:640px) { .vies img { width:48px; height:48px; } .haut { top:max(70px, calc(env(safe-area-inset-top) + 58px)); } .hud { top:max(178px, calc(env(safe-area-inset-top) + 164px)); } }
   .faitBulle { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(88vw, 480px); box-sizing:border-box; padding:12px 16px; border-radius:16px; background:rgba(10,30,10,.82); font-size:15px; line-height:1.35; font-weight:600; text-align:left; pointer-events:none; opacity:0; transition:opacity .5s; z-index:9; }
   .faitBulle.on { opacity:1; }
   #menu { justify-content:flex-start; overflow-y:auto; padding:70px 24px 96px; pointer-events:auto; background:radial-gradient(ellipse at 50% 45%, rgba(4,12,4,.55), rgba(4,12,4,.25) 75%); }
@@ -202,7 +214,7 @@
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div></div>
-  <div class="panier" id="panier"><div class="chip" id="pVert"><img src="icones/gousses.webp" alt="" class="verte"><b id="nVert">0 g</b><span>verte</span></div><div class="chip" id="pNoir"><img src="icones/gousses.webp" alt=""><b id="nNoir">0 g</b><span>noire</span></div></div>
+  <div class="panier" id="panier"><div class="chip" id="pVert"><img src="icones/gousses.webp" alt="" class="verte"><b id="nVert">0 g</b><span>verte</span></div><div class="chip" id="pNoir"><img src="icones/gousses.webp" alt=""><b id="nNoir">0 g</b><span>noire</span></div><div class="legende" aria-label="Quand cueillir la gousse"><div class="lgT">Quand cueillir ?</div><div class="lgL"><div class="lg"><i class="gs tot"></i><span>Trop tôt</span></div><div class="lg bon"><i class="gs serin"></i><span>Parfait</span></div><div class="lg"><i class="gs tard"></i><span>Trop tard</span></div></div></div></div>
 </div>
 <div class="haut" id="haut"><div class="vies" id="vies"></div><div class="jourHeure"><span class="niveauHud" id="niveau">Jour 1</span><span class="heureHud" id="heure"></span></div></div>
 <div class="bandeau" id="bandeau"></div>
