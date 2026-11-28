@@ -221,6 +221,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const $ = id => document.getElementById(id);
 const rnd = (a, b) => a + Math.random() * (b - a);
 const PARAMS = new URLSearchParams(location.search), TEST = PARAMS.has('test');
@@ -304,45 +305,67 @@ const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 
 // Ce qui ne bouge pas est illustré (photos ElevenLabs : sous-bois, lianes sur tuteurs) ; fleurs, boutons et gousses sont en 3D.
 // Vanilla planifolia : 3 sépales et 2 pétales cireux vert-jaune pâle, labelle jaune en trompette au bord frisé, colonne crème, long ovaire vert.
 const matLiane = new THREE.MeshStandardMaterial({ color: 0x22360e, roughness: 0.6 });
-const matTepale = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.55, sheen: 0.25, sheenRoughness: 0.6, sheenColor: new THREE.Color(0xfff6c0), clearcoat: 0.2, clearcoatRoughness: 0.5, emissive: 0x000000, side: THREE.DoubleSide });
-const matLabelle = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.48, sheen: 0.6, sheenColor: new THREE.Color(0xfff0a0), clearcoat: 0.2, emissive: 0x100c02, side: THREE.DoubleSide });
-const matColonne = new THREE.MeshPhysicalMaterial({ color: 0xf6f0d8, roughness: 0.5, sheen: 0.4 });
+const matTepale = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.5, sheen: 0.45, sheenRoughness: 0.45, sheenColor: new THREE.Color(0xf4f8c0), clearcoat: 0.35, clearcoatRoughness: 0.4, side: THREE.DoubleSide });   // cireux, charnu
+const matLabelle = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.55, sheen: 0.6, sheenColor: new THREE.Color(0xfff0a0), clearcoat: 0.15, side: THREE.DoubleSide });
+const matPoil = new THREE.MeshStandardMaterial({ color: 0xe0b02c, roughness: 0.7 }), matEcaille = new THREE.MeshStandardMaterial({ color: 0xee9e2a, roughness: 0.5 }), matPollen = new THREE.MeshStandardMaterial({ color: 0xffd23a, roughness: 0.4, emissive: 0x3a2400 });
+const matColonne = new THREE.MeshPhysicalMaterial({ color: 0xf8f4e6, roughness: 0.45, sheen: 0.5, clearcoat: 0.3 });
 const matOvaire = new THREE.MeshStandardMaterial({ color: 0x5f9a2c, roughness: 0.5 });
 const matBouton = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.45, clearcoat: 0.3 });
 const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc830, roughness: 0.25, metalness: 0.6, emissive: 0x6a4000, emissiveIntensity: 0.7, side: THREE.DoubleSide });
 const matFusa = new THREE.MeshStandardMaterial({ color: 0x4a2a0e, roughness: 0.9, emissive: 0x5a1c00, emissiveIntensity: 0.5 });
 
 // ---------------------------------------------------------------- géométries
-const lin = (r, g, b) => [r, g, b].map(c => Math.pow(Math.max(0, c), 2.2));   // couleurs de sommets données en sRGB
+const lin = (r, g, b) => [r, g, b].map(c => Math.pow(Math.max(0, Math.min(1, c)), 2.2));   // couleurs de sommets données en sRGB
 // tépale lancéolé, creusé en gouttière, pointe recourbée ; couleur : base verte, pointe crème, nervure médiane plus verte
-function geoTepaleF(larg, long) {
-  const s = new THREE.Shape(); s.moveTo(0, 0);
-  s.bezierCurveTo(larg * 0.9, long * 0.12, larg * 1.05, long * 0.62, 0, long);
-  s.bezierCurveTo(-larg * 1.05, long * 0.62, -larg * 0.9, long * 0.12, 0, 0);
-  const g = new THREE.ShapeGeometry(s, 24), p = g.attributes.position, col = [];
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), t = y / long, ax = Math.min(1, Math.abs(x) / (larg * 0.9));
-    p.setZ(i, -0.55 * ax * ax * larg + 0.16 * Math.pow(t, 2.4) * long - 0.05 * Math.sin(t * 3.1) * long);
-    const base = [0.44, 0.56, 0.2], bout = [0.76, 0.78, 0.4], k = Math.pow(t, 0.7), ner = (1 - ax) * 0.12 * (1 - t);
-    col.push(...lin(base[0] + (bout[0] - base[0]) * k - ner, base[1] + (bout[1] - base[1]) * k, base[2] + (bout[2] - base[2]) * k - ner));
+// ---- Fleur v3, d'après les flores botaniques : sépales oblancéolés charnus, pétales à carène dorsale, vert-jaune ;
+// labelle soudé à la colonne en tube, évasé en trompette, bord ondulé recourbé, vert-jaune puis jaune foncé au bout,
+// touffe d'écailles et lignes de poils charnus ; colonne blanche fine, barbue dessous ; pollinies jaunes.
+const mixC = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+function geoTepaleF(larg, long, carene) {
+  const seg = 24, lat = 8, pos = [], col = [], idx = [];
+  const base = [0.4, 0.58, 0.16], milieu = [0.6, 0.72, 0.26], bout = [0.76, 0.79, 0.36];
+  for (let face = 0; face < 2; face++) {
+    const o = pos.length / 3;
+    for (let i = 0; i <= seg; i++) {
+      const t = i / seg, demi = larg * Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.98 + 0.02)), 0.75) * (0.55 + 0.45 * t) * (t > 0.85 ? 1 - (t - 0.85) * 2.2 : 1);
+      for (let j = 0; j <= lat; j++) {
+        const u = j / lat * 2 - 1, x = u * demi, y = t * long;
+        let z = -0.5 * u * u * demi + 0.22 * Math.pow(t, 2.6) * long - 0.04 * Math.sin(t * 3) * long + 0.012 * Math.sin(u * 3 + t * 9) * long;
+        if (face === 1) z -= 0.018 * long * (1 - t * 0.6) * (1 - u * u * 0.7) + (carene ? 0.025 * long * Math.max(0, 1 - Math.abs(u) * 5) * (1 - t) : 0);
+        pos.push(x, y, z);
+        const ner = Math.max(0, 1 - Math.abs(u) * 6) * 0.07 * (1 - t), veines = 0.025 * Math.max(0, Math.cos(u * 14));
+        const c = t < 0.5 ? mixC(base, milieu, t * 2) : mixC(milieu, bout, (t - 0.5) * 2);
+        col.push(...lin(c[0] - ner - veines, c[1] - ner * 0.4 - veines * 0.5, c[2] - ner - veines));
+      }
+    }
+    for (let i = 0; i < seg; i++) for (let j = 0; j < lat; j++) { const q = o + i * (lat + 1) + j, r = q + lat + 1; if (face === 0) idx.push(q, r, q + 1, r, r + 1, q + 1); else idx.push(q, q + 1, r, r, q + 1, r + 1); }
   }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
 }
-const geoSepale = geoTepaleF(0.17, 1.0), geoPetale = geoTepaleF(0.15, 0.92);
-// labelle : trompette qui s'évase, bord frisé ; intérieur jaune d'or veiné, extérieur jaune pâle
+const geoSepale = geoTepaleF(0.135, 1.0, false), geoPetale = geoTepaleF(0.12, 0.92, true);
+const rLab = t => 0.055 + 0.045 * t + 0.13 * Math.pow(t, 3.4), L_LAB = 0.62;
 const geoLabelle = (() => {
-  const pts = []; for (let i = 0; i <= 20; i++) { const t = i / 20; pts.push(new THREE.Vector2(0.05 + 0.05 * t + 0.16 * Math.pow(t, 3), t * 0.5)); }
-  const g = new THREE.LatheGeometry(pts, 72); const p = g.attributes.position, col = [];
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x), t = y / 0.5;
-    if (t > 0.7) { const f = (t - 0.7) / 0.3, k = 1 + f * (0.13 * Math.sin(a * 19) + 0.07 * Math.sin(a * 37 + 1.3) + 0.04 * Math.sin(a * 61)); p.setX(i, x * k); p.setZ(i, z * k); p.setY(i, y - f * 0.05 * (1 + Math.sin(a * 19))); }
-    const raie = Math.pow(0.5 + 0.5 * Math.cos(a * 11), 3), fonce = Math.min(1, t * t * 0.9 + raie * 0.5 * t);
-    col.push(...lin(0.92, 0.8 - 0.2 * fonce, 0.3 - 0.25 * fonce));
-  }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+  const seg = 36, rad = 56, pos = [], col = [], idx = [], ouv = 0.55;   // fente dorsale où passe la colonne
+  for (let i = 0; i <= seg; i++) { const t = i / seg; for (let j = 0; j <= rad; j++) {
+    const a = -Math.PI / 2 + ouv / 2 + j / rad * (Math.PI * 2 - ouv); let r = rLab(t);
+    if (t > 0.72) { const f = (t - 0.72) / 0.28; r *= 1 + f * (0.12 * Math.sin(a * 9) + 0.06 * Math.sin(a * 17 + 1) + 0.035 * Math.sin(a * 31)); }
+    let x = Math.cos(a) * r, y = Math.sin(a) * r * 0.86, z = t * L_LAB;
+    if (t > 0.8) { const f = (t - 0.8) / 0.2; z -= f * f * 0.06; const k = 1 + f * 0.25; x *= k; y = y * k - f * f * 0.03; }
+    pos.push(x, y, z);
+    const veine = Math.pow(0.5 + 0.5 * Math.cos(a * 13), 6) * t, c = mixC([0.64, 0.75, 0.28], [0.95, 0.72, 0.13], Math.pow(t, 1.4));
+    col.push(...lin(c[0] - veine * 0.05, c[1] - veine * 0.12, c[2] - veine * 0.1));
+  } }
+  for (let i = 0; i < seg; i++) for (let j = 0; j < rad; j++) { const q = i * (rad + 1) + j, r = q + rad + 1; idx.push(q, r, q + 1, r, r + 1, q + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
 })();
-const geoColonne = new THREE.CylinderGeometry(0.03, 0.035, 0.42, 12);
-const geoAnthere = (() => { const g = new THREE.SphereGeometry(0.045, 12, 8); g.scale(1, 0.7, 1.2); return g; })();
+// ornements du labelle, fusionnés en une seule géométrie chacun (léger pour les téléphones)
+const geoEcailles = (() => { const l = []; for (let k = 0; k < 24; k++) { const e = new THREE.ConeGeometry(0.012, 0.05, 5); e.rotateX(-Math.PI / 2 - 0.5); e.rotateZ(Math.sin(k * 7.3) * 0.3); const a = -Math.PI / 2 + Math.sin(k * 3.7) * 0.45, t = 0.38 + ((k * 0.37) % 1) * 0.14, r = rLab(t); e.translate(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.55, t * L_LAB); l.push(e); } return mergeGeometries(l); })();
+const geoPoils = (() => { const l = []; for (let li = -2; li <= 2; li++) for (let k = 0; k < 9; k++) { const t = 0.5 + k * 0.05, a = -Math.PI / 2 + li * 0.18, r = rLab(t) * 0.93, p = new THREE.SphereGeometry(0.0055, 5, 4); p.translate(Math.cos(a) * r, Math.sin(a) * r * 0.86, t * L_LAB); l.push(p); } return mergeGeometries(l); })();
+const courbeCol = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0.02, -0.02), new THREE.Vector3(0, 0.07, 0.24), new THREE.Vector3(0, 0.035, 0.45));
+const geoColonne = (() => { const l = [new THREE.TubeGeometry(courbeCol, 20, 0.022, 10)]; for (let k = 0; k < 16; k++) { const p = courbeCol.getPoint(0.35 + k / 16 * 0.55), h = new THREE.SphereGeometry(0.0055, 5, 4); h.scale(0.7, 0.7, 1.6); h.translate(Math.sin(k * 5.1) * 0.01, p.y - 0.022, p.z); l.push(h); } return mergeGeometries(l); })();
+const BOUT_COL = courbeCol.getPoint(1);
+const geoAnthere = (() => { const g = new THREE.SphereGeometry(0.03, 12, 8); g.scale(1.1, 0.7, 1.2); g.translate(0, 0, 0.012); return g; })();   // opercule : pivote à sa base
+const geoPollinies = mergeGeometries([-1, 1].map(sx => { const g = new THREE.SphereGeometry(0.012, 8, 6); g.translate(sx * 0.012, 0, 0.03); return g; }));
 // ovaire : long, côtelé, il deviendra la gousse
 const geoOvaire = (() => { const g = new THREE.CylinderGeometry(0.04, 0.032, 0.62, 12, 6); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)), k = 1 + 0.12 * Math.cos(a * 6); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } g.translate(0, -0.31, 0); g.computeVertexNormals(); return g; })();
 // bouton floral : fuseau vert, pointe plus claire
@@ -421,14 +444,19 @@ const fleurs = [], gousses = [], taches = [], anneaux = [];
 function vider() { fleurs.splice(0).forEach(f => f.obj.parent && f.obj.parent.remove(f.obj)); gousses.splice(0).forEach(g => g.obj.parent && g.obj.parent.remove(g.obj)); taches.splice(0).forEach(t => scene.remove(t.obj)); grappes.forEach(gr => { gr.fleur = null; gr.gousses = []; }); }
 function creerFleur(gr, duree, or = false) {
   const g = new THREE.Group();
-  const ov = new THREE.Mesh(geoOvaire, matOvaire); ov.rotation.x = -0.5; ov.castShadow = true; g.add(ov);
+  const ov = new THREE.Mesh(geoOvaire, matOvaire); ov.rotation.x = 0.55; ov.position.z = -0.08; ov.castShadow = true; g.add(ov);   // l'ovaire part vers l'arrière, derrière le labelle
   const corolle = new THREE.Group(); g.add(corolle);
-  // 3 sépales (haut, bas gauche, bas droite) et 2 pétales plus étroits, un peu relevés
-  const pieces = [[Math.PI / 2 - Math.PI / 2, geoSepale, -0.42], [Math.PI * 2 / 3 + 0.12, geoSepale, -0.5], [-Math.PI * 2 / 3 - 0.12, geoSepale, -0.5], [Math.PI / 3 + 0.1, geoPetale, -0.3], [-Math.PI / 3 - 0.1, geoPetale, -0.3]];
-  for (const [ang, geo, inc] of pieces) { const p = new THREE.Mesh(geo, or ? matOr : matTepale); p.rotation.z = ang; p.rotation.x = inc + rnd(-0.06, 0.06); p.castShadow = true; corolle.add(p); }
-  const lab = new THREE.Mesh(geoLabelle, or ? matOr : matLabelle); lab.rotation.x = Math.PI / 2; lab.position.set(0, -0.04, -0.1); lab.scale.set(1, 1, 0.85); lab.castShadow = true; corolle.add(lab);
-  const col = new THREE.Mesh(geoColonne, matColonne); col.rotation.x = Math.PI / 2; col.position.set(0, 0.06, 0.08); corolle.add(col);
-  const ant = new THREE.Mesh(geoAnthere, matColonne); ant.position.set(0, 0.08, 0.3); corolle.add(ant);
+  // sépale dorsal en haut, deux sépales latéraux vers le bas, deux pétales entre eux ; ils se déplient un à un à l'ouverture
+  const pieces = [];
+  [[0, geoSepale, -0.4, 0], [Math.PI * 0.69, geoSepale, -0.48, 0.06], [-Math.PI * 0.69, geoSepale, -0.48, 0.1], [Math.PI * 0.36, geoPetale, -0.18, 0.16], [-Math.PI * 0.36, geoPetale, -0.18, 0.2]].forEach(([ang, geo, inc, d], k) => {
+    const p = new THREE.Mesh(geo, or ? matOr : matTepale); p.rotation.z = ang; p.rotation.y = (k % 2 ? 1 : -1) * 0.06; p.userData.inc = inc + rnd(-0.05, 0.05); p.userData.d = d; p.rotation.x = 1.25; p.castShadow = true; corolle.add(p); pieces.push(p);
+  });
+  // labelle en trompette vers l'avant, ornements, colonne barbue, opercule et pollinies
+  const lab = new THREE.Mesh(geoLabelle, or ? matOr : matLabelle); lab.rotation.x = 0.22; lab.position.set(0, -0.06, -0.02); lab.castShadow = true; corolle.add(lab);
+  if (!or) { lab.add(new THREE.Mesh(geoEcailles, matEcaille)); lab.add(new THREE.Mesh(geoPoils, matPoil)); }
+  const col = new THREE.Mesh(geoColonne, matColonne); col.position.y = -0.06; col.rotation.x = 0.22; corolle.add(col);
+  const ant = new THREE.Mesh(geoAnthere, matColonne); ant.position.copy(BOUT_COL).add(new THREE.Vector3(0, 0.012, -0.01)); col.add(ant);
+  const pol = new THREE.Mesh(geoPollinies, matPollen); pol.position.copy(BOUT_COL); col.add(pol);
   // anneau de visée : il se referme sur le cœur, toucher à ce moment = mariage parfait
   const vise = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 48), new THREE.MeshBasicMaterial({ color: or ? 0xffd040 : 0xfff2a0, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }));
   vise.position.z = 0.35; vise.renderOrder = 10; g.add(vise);   // dessiné après les lianes illustrées
@@ -437,7 +465,7 @@ function creerFleur(gr, duree, or = false) {
   g.position.set(gr.cote * 0.05, 0.15, 0.15); g.rotation.z = -gr.cote * 0.25; g.rotation.y = gr.cote * 0.35;
   gr.g.add(g); gr.fleur = true;
   gr.boutons.forEach((b, k) => b.visible = k > 0);
-  const f = { obj: g, corolle, vise, gr, t: 0, duree, etat: 'ouvre', vivant: true, or, periode: rnd(1.1, 1.4), trop: etat === 'jeu' && !or && gr.gousses.length >= LIMITE };
+  const f = { obj: g, corolle, pieces, lab, ant, vise, gr, t: 0, duree, etat: 'ouvre', vivant: true, or, periode: rnd(1.1, 1.4), trop: etat === 'jeu' && !or && gr.gousses.length >= LIMITE };
   if (f.trop) { vise.material.color.setHex(0xff6a4a); if (aideTrop < 2) { aideTrop++; setTimeout(() => popup('Grappe pleine : laisse-la faner', g.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1.1, 0)), 'chaine'), 400); } }
   fleurs.push(f); return f;
 }
@@ -861,15 +889,19 @@ function boucle() {
   for (let i = fleurs.length - 1; i >= 0; i--) {
     const f = fleurs[i]; f.t += (f.etat === 'ouvre' && ralenti > 0) ? dt * 0.4 : dt; if (f.garde > 0) f.garde -= dt;
     if (f.etat === 'ouvre') {
-      const k = Math.min(1, f.t / 0.35); f.corolle.scale.setScalar((0.01 + 0.99 * (1 - Math.pow(1 - k, 3)) * (1 + 0.04 * Math.sin(f.t * 3))) * (f.echelle || 1));
-      if (f.or) f.corolle.rotation.z += dt * 0.6;
+      const k = Math.min(1, f.t / 0.35); f.corolle.scale.setScalar((0.3 + 0.7 * (1 - Math.pow(1 - k, 3)) * (1 + 0.03 * Math.sin(f.t * 3))) * (f.echelle || 1));
+      for (const p of f.pieces) { const kp = Math.max(0, Math.min(1, (f.t - p.userData.d) / 0.45)), e = 1 - Math.pow(1 - kp, 3); p.rotation.x = 1.25 + (p.userData.inc - 1.25) * e + 0.02 * Math.sin(f.t * 2 + p.userData.d * 30); }
+      f.lab.scale.z = 0.5 + 0.5 * Math.min(1, f.t / 0.5);
+      if (f.or) f.corolle.rotation.z = 0.12 * Math.sin(f.t * 2.2);   // la fleur d'or se balance (une orchidée n'est pas symétrique)
       if (f.trop) { f.vise.scale.setScalar(0.95 + 0.05 * Math.sin(f.t * 6)); f.vise.material.opacity = etat === 'jeu' ? 0.55 + 0.25 * Math.sin(f.t * 6) : 0; }
       else { const r = anneauRayon(f); f.vise.scale.setScalar((0.22 + r * 0.8) * (f.echelle || 1)); f.vise.material.opacity = (r < fenetreParfait() ? 0.95 : 0.4) * (etat === 'jeu' ? 1 : 0);
       f.vise.material.color.setHex(r < fenetreParfait() ? 0xffe050 : 0xfff2c0); }
       const reste = 1 - f.t / f.duree; teinte(f, reste);
       if (f.t >= f.duree) { fermer(f); if (etat === 'jeu') { if (f.trop) menager(f); else { son.fane(); serie = 0; popup('Fanée…', f.obj.getWorldPosition(new THREE.Vector3()), 'aie'); if (fx) { const s0 = fxEcran(f); fx.evenement('erreur', { x: s0.x, y: s0.y }); } perdreVie(); } } }
     } else if (f.etat === 'fane') {
-      const k = Math.min(1, f.t / (f.marie ? 0.6 : 0.5)); f.corolle.scale.setScalar((f.marie ? (k < 0.25 ? 1 + 1.6 * k : 1.4 * (1 - (k - 0.25) / 0.75)) : Math.max(0.01, 1 - k)) * (f.echelle || 1) + 0.001); if (!f.marie) f.obj.position.y -= dt * 0.6;
+      const k = Math.min(1, f.t / (f.marie ? 0.6 : 0.5));
+      if (f.marie) f.ant.rotation.x = -0.9 * Math.sin(Math.min(1, k * 2.5) * Math.PI); else for (const p of f.pieces) p.rotation.x = p.userData.inc + (1.1 - p.userData.inc) * k;   // geste d'Edmond : l'opercule se soulève ; sinon la fleur se referme
+      f.corolle.scale.setScalar((f.marie ? (k < 0.25 ? 1 + 1.6 * k : 1.4 * (1 - (k - 0.25) / 0.75)) : Math.max(0.01, 1 - k)) * (f.echelle || 1) + 0.001); if (!f.marie) f.obj.position.y -= dt * 0.6;
       if (k >= 1) { f.obj.parent && f.obj.parent.remove(f.obj); fleurs.splice(i, 1); f.gr.fleur = null; f.gr.boutons.forEach(b => b.visible = true); }
     }
   }
