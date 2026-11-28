@@ -7,6 +7,7 @@ export const JEUX_3D: Jeu3D[] = [
   { id: "koup-koup-3-v2", titre: "Koup Koup 3 v2", accroche: "Deux ambiances : Mi vé zoué trankil ou Mi rode problèm.", emoji: "🍍", fond: "linear-gradient(135deg,#5fc84a,#ffcf3a 50%,#ff5a2a)" },
   { id: "koup-rougail", titre: "Koup Rougail", accroche: "Tranche les bons ingrédients du rougail et du cari.", emoji: "🍲", fond: "linear-gradient(135deg,#e8452c,#f6a31b 55%,#3f7a2a)" },
   { id: "koup-rougail-v2", titre: "Koup Rougail v2", accroche: "Cuisine les recettes péi : tranche les bons ingrédients avant que le plat brûle.", emoji: "🍲", fond: "linear-gradient(135deg,#e8452c,#f6a31b 55%,#8a3a10)" },
+  { id: "koup-pilon", titre: "Koup Pilon", accroche: "Coupe sur la planche, pile au pilon : les 14 recettes péi de Koup Rougail.", emoji: "🔪", fond: "linear-gradient(135deg,#c9965e,#e8452c 55%,#5a3a22)" },
   { id: "cascade-pei-v2", titre: "Cascade Péi v2", accroche: "Fais cascader les fruits péi : deux modes, gonis, pétards, boss et carnet.", emoji: "🍍", fond: "linear-gradient(135deg,#bff0a8,#3f8a3a 60%,#ffb21e)" },
   { id: "pete-petard", titre: "Pété Pétard", accroche: "Fais éclater les fusées de la nuit du 31 au Barachois.", emoji: "🎆", fond: "linear-gradient(135deg,#0b1450,#6a2a9a 55%,#ff9a1f)" },
   { id: "pete-petard-v2", titre: "Pété Pétard v2", accroche: "La nuit du 31 au Barachois : en douceur ou en grand bouquet.", emoji: "🎆", fond: "linear-gradient(135deg,#0b1450,#6a2a9a 55%,#ff9a1f)" },

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Koup Pilon · Kwélafé Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --or:#ffcf4a; --bois:#5a3a22; --creme:#fff8ee; --vert:#1d6b3a; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; background:#3a2414; font-family:"Baloo 2", "Avenir Next", system-ui, sans-serif; color:#2a1f17; -webkit-user-select:none; user-select:none; overscroll-behavior:none; }
+  body { overflow:hidden; }
+  #decor { position:fixed; inset:-20px; background:#3a2414 url("../koup-rougail-v2/fond-cuisine.webp") center/cover no-repeat; filter:blur(6px) brightness(.62) saturate(1.1); z-index:-1; }
+  .btn { border:0; border-radius:999px; padding:14px 30px; min-height:48px; font:800 19px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.35); cursor:pointer; }
+  .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #a8580a; }
+  .btn.sec { background:linear-gradient(#fff8ee, #ead7bb); box-shadow:0 5px 0 #8a6a4a, 0 10px 22px rgba(0,0,0,.3); }
+  .rond { position:fixed; z-index:30; top:max(14px, env(safe-area-inset-top)); min-width:44px; height:44px; padding:0 16px; border-radius:999px; border:1.5px solid rgba(255,255,255,.25); background:rgba(20,10,2,.65); color:#fff; font:800 16px "Baloo 2", system-ui, sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  #retourJeux { left:max(14px, env(safe-area-inset-left)); }
+  #btnSon { right:max(14px, env(safe-area-inset-right)); padding:0; width:44px; }
+
+  /* écrans plein cadre */
+  .ecran { position:fixed; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:calc(max(14px, env(safe-area-inset-top)) + 64px) 18px calc(110px + env(safe-area-inset-bottom)); text-align:center; color:#fff; transition:opacity .35s; }
+  .ecran.cache { opacity:0; pointer-events:none; }
+  .titre { font-size:clamp(56px, 15vw, 112px); font-weight:800; line-height:.9; color:var(--or); text-shadow:0 5px 0 #a8460a, 0 10px 0 #5a2406, 0 18px 30px rgba(0,0,0,.5); transform:rotate(-3deg); }
+  .sous { margin:18px auto 0; max-width:560px; font-size:clamp(17px, 4vw, 21px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.7); }
+  .modes { display:flex; flex-direction:column; gap:14px; align-items:center; margin-top:28px; }
+  .mode { width:min(88vw, 400px); border-radius:22px; padding:14px 20px; text-align:left; }
+  .mode b { display:block; font-size:21px; } .mode small { display:block; font:600 15px/1.25 "Baloo 2", system-ui; opacity:.85; margin-top:4px; }
+  .defi { margin:22px auto 0; font:700 16px/1.35 "Baloo 2", system-ui; color:#ffe9b0; max-width:520px; text-shadow:0 2px 0 rgba(58,26,0,.8); }
+  .defi b { color:#ffd23a; } .defi:empty { display:none; }
+  .lien { display:inline-block; margin-top:30px; padding:9px 22px; border-radius:14px; background:#140a02; color:#ffd36a; font-weight:700; font-size:15px; text-decoration:none; animation:feu 1.5s ease-in-out infinite alternate; }
+  @keyframes feu { from { box-shadow:0 0 10px 2px #ff8a1e, 0 0 24px 6px rgba(255,80,0,.45); } to { box-shadow:0 0 16px 4px #ffc23a, 0 0 42px 12px rgba(255,120,0,.65); } }
+
+  /* carnet des recettes */
+  .h2 { font-size:clamp(30px, 7vw, 44px); font-weight:800; color:var(--or); text-shadow:0 3px 0 #7a3a08, 0 8px 18px rgba(0,0,0,.45); }
+  .grille { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(46%, 230px), 1fr)); gap:12px; max-width:1000px; margin:18px auto 0; text-align:left; }
+  .carte { border:0; border-radius:18px; padding:12px 14px; background:rgba(255,248,238,.95); color:#2a1f17; font:inherit; cursor:pointer; box-shadow:0 5px 0 #8a6a4a, 0 10px 20px rgba(0,0,0,.3); min-height:96px; text-align:left; display:flex; flex-direction:column; justify-content:space-between; }
+  .carte:active { transform:translateY(3px); box-shadow:0 2px 0 #8a6a4a; }
+  .carte b { display:block; font-size:clamp(15px, 4vw, 18px); line-height:1.15; } .carte .ing { display:block; font-size:13px; font-weight:600; color:#6a5440; margin-top:4px; }
+  .carte .et { display:block; color:#e2a40c; font-size:18px; margin-top:4px; letter-spacing:2px; } .carte .et.vide { color:#cbb89a; }
+  .carte.grand { background:linear-gradient(135deg, #fff3cf, #ffe2a0); }
+
+  /* jeu */
+  #jeu { position:fixed; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:calc(max(14px, env(safe-area-inset-top)) + 54px) 10px calc(24px + env(safe-area-inset-bottom)); }
+  #jeu.cache { display:none; }
+  .barreHaut { position:fixed; z-index:20; top:max(14px, env(safe-area-inset-top)); left:calc(max(14px, env(safe-area-inset-left)) + 88px); right:calc(max(14px, env(safe-area-inset-right)) + 54px); height:44px; display:flex; align-items:center; justify-content:center; gap:10px; color:#fff; pointer-events:none; }
+  .barreHaut .nom { font-weight:800; font-size:clamp(15px, 3.8vw, 20px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  .pastille { flex:none; background:rgba(20,10,2,.65); border-radius:999px; padding:4px 12px; font-weight:800; font-size:15px; }
+  #score { color:var(--or); } #chrono { color:#bfe8ff; }
+  .barreHaut .pastille:empty { display:none; }
+  #zone { max-width:1100px; margin:0 auto; }
+  .kwfx-cuisine ol, .kwfx-cuisine > div:last-child > div { font-family:"Baloo 2", system-ui, sans-serif; }
+  .action { background:#1d6b3a !important; }
+  .action.attention { animation:appel 1.1s ease-in-out infinite; }
+  @keyframes appel { 50% { box-shadow:0 0 0 6px rgba(255,207,74,.75); } }
+
+  /* fiche de fin de recette */
+  #fiche { position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(20,10,2,.55); transition:opacity .35s; }
+  #fiche.cache { opacity:0; pointer-events:none; }
+  .fiche { width:min(94vw, 520px); max-height:92dvh; overflow-y:auto; background:var(--creme); border-radius:24px; padding:22px 20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .fiche .plat { font-size:26px; font-weight:800; line-height:1.1; }
+  .fiche .etoiles { font-size:46px; color:#e2a40c; letter-spacing:6px; margin-top:6px; text-shadow:0 3px 0 #a86a00; }
+  .fiche .etoiles .off { color:#ddd0bb; text-shadow:none; }
+  .fiche .qualite { font-size:18px; font-weight:800; color:var(--vert); }
+  .fiche .pts { font-size:34px; font-weight:800; color:#c2580a; }
+  .fiche .det { font-size:14px; color:#5a4636; margin-top:8px; line-height:1.4; }
+  .fiche .fait { margin-top:12px; padding:10px 12px; border-radius:14px; background:#fbeed2; font-size:15px; line-height:1.35; text-align:left; }
+  .fiche .fait b { color:#a8460a; }
+  .fiche .bts { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:16px; }
+  .gros { font-size:clamp(60px, 16vw, 100px); font-weight:800; color:var(--or); line-height:1; text-shadow:0 5px 0 #a8460a, 0 14px 26px rgba(0,0,0,.5); margin-top:8px; }
+</style>
+</head>
+<body>
+<div id="decor"></div>
+
+<button class="rond zone-interactive" id="retourJeux" aria-label="Retour aux jeux">‹ Jeux</button>
+<button class="rond zone-interactive" id="btnSon" aria-label="Couper ou remettre le son">🔊</button>
+<script>
+document.getElementById('retourJeux').addEventListener('pointerup', function () {
+  try { if (window.top !== window && window.top.location.origin === location.origin) { window.top.location.href = '/jeux'; return; } } catch (e) {}
+  location.href = '/jeux';
+});
+</script>
+
+<!-- accueil -->
+<section class="ecran" id="accueil">
+  <div class="titre">Koup<br>Pilon</div>
+  <p class="sous">Coupe sur la planche, pile au pilon, mélange dans le bol : les 14 recettes péi de Koup Rougail, au couteau cette fois.</p>
+  <div class="modes">
+    <button class="btn mode zone-interactive" id="bTrankil"><b>Mi vé zoué trankil</b><small>Choisis ta recette dans le carnet, prends ton temps, gagne des étoiles.</small></button>
+    <button class="btn mode sec zone-interactive" id="bProbleme"><b>Mi rode problèm</b><small>Le service du midi : 3 recettes à la suite, des points, des séries de coupes et ton record.</small></button>
+  </div>
+  <div class="defi" id="defi"></div>
+  <a class="lien zone-interactive" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+</section>
+
+<!-- carnet -->
+<section class="ecran cache" id="carnet">
+  <div class="h2">Le carnet des recettes</div>
+  <p class="sous" id="carnetInfo"></p>
+  <div style="margin-top:14px"><button class="btn zone-interactive" id="bHasard">Une recette au hasard</button></div>
+  <div class="grille" id="grille"></div>
+  <a class="lien zone-interactive" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
+</section>
+
+<!-- partie -->
+<div class="barreHaut cache" id="barreHaut"><span class="nom" id="nomRecette"></span><span class="pastille" id="chrono"></span><span class="pastille" id="score"></span></div>
+<main id="jeu" class="cache"><div id="zone"></div></main>
+
+<!-- fiche de fin -->
+<div id="fiche" class="cache"><div class="fiche" id="ficheIn"></div></div>
+
+<script src="./kwelafe-fx-v3.9.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+
+// ---------------------------------------------------------------- recettes (reprises de Koup Rougail v2)
+// Ingrédients de Koup Rougail → aliments de la cuisine KwFX : curcuma = safran péi, oignon vert = cive.
+// coupe : des (dés), emince, fin (haché fin), batonnets, rondelles (traits guides), morceaux.
+// pilon : ce qu'on pile avec le gros sel (ail, gingembre, piment, thym, safran péi) ; bol : ce qu'on mélange.
+const RECETTES = [
+  { nom: 'Rougail saucisse', couper: { tomate: [3, 'des'], oignon: [2, 'emince'] }, piler: ['ail', 'ail', 'piment', 'sel'], bol: ['tomate', 'oignon'],
+    fait: "Le rougail saucisse est considéré comme l'emblème culinaire de La Réunion : saucisses boucanées, tomates, piment, servi avec du riz." },
+  { nom: 'Rougail tomate', couper: { tomate: [3, 'des'], oignon: [1, 'emince'], gingembre: [1, 'morceaux'] }, piler: ['gingembre', 'piment', 'sel'], bol: ['tomate', 'oignon'],
+    fait: "Le rougail tomate est une vraie institution à La Réunion, mais aussi à Madagascar et à Maurice." },
+  { nom: 'Cari poulet', couper: { oignon: [2, 'emince'], tomate: [2, 'des'], safran: [1, 'morceaux'] }, piler: ['ail', 'ail', 'safran', 'sel'], bol: ['oignon', 'tomate'], cari: true,
+    fait: "Le cari est inspiré du curry indien. Dès le XIXe siècle, il devient un plat traditionnel de l'île." },
+  { nom: 'Rougail mangue', couper: { mangue: [2, 'batonnets'] }, piler: ['piment', 'sel'], bol: ['mangue'],
+    fait: "Le rougail ne se fait pas qu'à la tomate : on le prépare aussi avec des mangues vertes." },
+  { nom: 'Rougail tomate au combava', couper: { tomate: [3, 'des'], oignon: [1, 'emince'], combava: [1, 'fin'] }, piler: ['piment', 'sel'], bol: ['tomate', 'oignon', 'combava'],
+    fait: "Le zeste de combava, un agrume péi très parfumé, relève aussi les caris de poisson." },
+  { nom: 'Rougail zavocat', couper: { avocat: [2, 'des'], oignon: [1, 'fin'] }, piler: ['piment', 'sel'], bol: ['avocat', 'oignon'],
+    fait: "Dans le rougail zavocat, l'avocat prend la place de la tomate." },
+  { nom: 'Cari poulet gingembre', couper: { oignon: [2, 'emince'], tomate: [1, 'des'], gingembre: [1, 'morceaux'], safran: [1, 'morceaux'] }, piler: ['ail', 'ail', 'gingembre', 'safran', 'sel'], bol: ['oignon', 'tomate'], cari: true,
+    fait: "À La Réunion, le curcuma s'appelle « safran péi » : il parfume et colore le cari." },
+  { nom: 'Achards de légumes', couper: { carotte: [1, 'batonnets'], chou: [1, 'emince'], haricot: [2, 'rondelles'], oignon: [1, 'emince'], safran: [1, 'morceaux'] }, piler: ['safran', 'piment', 'sel'], bol: ['carotte', 'chou', 'haricot', 'oignon'],
+    fait: "Les achards se servent avec la viande, le poisson ou en sandwich : chou blanc, haricots verts, carottes et oignons, colorés au curcuma." },
+  { nom: 'Rougail morue', couper: { tomate: [3, 'des'], oignon: [2, 'emince'] }, piler: ['ail', 'ail', 'piment', 'thym', 'sel'], bol: ['tomate', 'oignon'],
+    fait: "La morue séchée, dessalée la veille, se cuisine en rougail avec la tomate, l'oignon, l'ail et une branche de thym." },
+  { nom: 'Rougail citron', couper: { citron: [3, 'morceaux'], oignon: [1, 'emince'], gingembre: [1, 'morceaux'] }, piler: ['gingembre', 'piment', 'sel'], bol: ['citron', 'oignon'],
+    fait: "Beaucoup de Réunionnais l'appellent tout simplement « sauce citron ». Le gingembre n'est pas obligatoire." },
+  { nom: 'Rougail concombre', couper: { concombre: [1, 'des'], oignon: [1, 'fin'] }, piler: ['ail', 'piment', 'thym', 'sel'], bol: ['concombre', 'oignon'],
+    fait: "Frais et croquant, le rougail concombre accompagne très bien un cari bien relevé." },
+  { nom: 'Cari porc chouchou', couper: { chouchou: [2, 'morceaux'], oignon: [1, 'emince'], tomate: [2, 'des'], safran: [1, 'morceaux'] }, piler: ['ail', 'thym', 'safran', 'sel'], bol: ['chouchou', 'oignon', 'tomate'], cari: true,
+    fait: "Le chouchou pousse en treille dans les Hauts, à Salazie surtout : en cari avec le porc, il fond dans la sauce." },
+  { nom: "Cari ti'jacque", couper: { jacque: [1, 'morceaux'], tomate: [2, 'des'], oignon: [1, 'emince'], gingembre: [1, 'morceaux'], safran: [1, 'morceaux'] }, piler: ['ail', 'gingembre', 'safran', 'thym', 'sel'], bol: ['jacque', 'tomate', 'oignon'], cari: true,
+    fait: "Le cari ti'jacque se prépare avec le jeune fruit du jacquier, souvent avec du boucané." },
+  { nom: 'Rougail poisson à la cive', couper: { tomate: [3, 'des'], oignon: [1, 'emince'], cive: [1, 'fin'], gingembre: [1, 'morceaux'] }, piler: ['ail', 'gingembre', 'piment', 'sel'], bol: ['tomate', 'oignon', 'cive'],
+    fait: "La cive, c'est l'oignon vert. Hachée fin, elle parfume le rougail de poisson au dernier moment." },
+];
+const NOMS = { tomate: ['tomate', 'tomates', 'la'], oignon: ['oignon', 'oignons', "l'"], ail: ["ail", "têtes d'ail", "l'"], piment: ['piment', 'piments', 'le'], gingembre: ['gingembre', 'gingembre', 'le'],
+  safran: ['safran péi', 'safran péi', 'le'], sel: ['gros sel', 'gros sel', 'le'], thym: ['thym', 'thym', 'le'], combava: ['combava', 'combavas', 'le'], cive: ['cive', 'cives', 'la'], carotte: ['carotte', 'carottes', 'la'],
+  chou: ['chou', 'choux', 'le'], haricot: ['haricot vert', 'haricots verts', "l'"], mangue: ['mangue verte', 'mangues vertes', 'la'], avocat: ['avocat', 'avocats', "l'"], citron: ['citron galet', 'citrons galets', 'le'],
+  concombre: ['concombre', 'concombres', 'le'], chouchou: ['chouchou', 'chouchous', 'le'], jacque: ["ti'jacque", "ti'jacques", 'le'] };
+const nom1 = (a, n) => n > 1 ? n + ' ' + NOMS[a][1] : (NOMS[a][2] === "l'" ? "l'" + NOMS[a][0] : NOMS[a][2] + ' ' + NOMS[a][0]);
+const liste = arr => { const u = [...new Set(arr)].map(a => NOMS[a][0]); return u.length > 1 ? u.slice(0, -1).join(', ') + ' et ' + u[u.length - 1] : u[0]; };
+// tailles sur la planche (cm), pour la mise en place
+const TAILLE = { tomate: [7, 7], oignon: [7.5, 7.2], carotte: [17, 2.6], gingembre: [9, 4.5], ail: [3.2, 1.8], piment: [6.5, 1.3], combava: [4.8, 4.8], safran: [6, 1.6], cive: [20, 1.1], sel: [2.6, 2.6],
+  avocat: [10, 6.6], mangue: [10, 7], chou: [12, 11.4], haricot: [12, 0.95], thym: [9, 1.4], citron: [4.6, 4.6], concombre: [18, 4.4], chouchou: [10, 7.4], jacque: [12, 9.5] };
+const JUTEUX = { tomate: 0.35, citron: 0.3, concombre: 0.22, combava: 0.2, mangue: 0.15, avocat: 0.12 }; // petites giclées sur les aliments juteux
+// Légumes des autres jeux du site : rendus vus du dessus des modèles 3D Blender (Koup Koup 2 et 3, Koup Rougail),
+// avec leur coupe (moitié du modèle vue côté chair). Longueur sur la planche en cm.
+const LONG = { tomate: 7.5, oignon: 7.5, ail: 5, piment: 7, gingembre: 9.5, safran: 7, combava: 5.2, cive: 20, carotte: 17, avocat: 11, mangue: 11,
+  chou: 13, haricot: 12, thym: 10, citron: 4.8, concombre: 18, chouchou: 11, jacque: 13 };
+const NOM_ALIM = { ail: 'Ail', safran: 'Safran péi', jacque: "Ti'jacque", haricot: 'Haricot vert', citron: 'Citron galet', mangue: 'Mangue verte', chou: 'Chou blanc' };
+let LEGUMES = null; // aliments en image, prêts pour la cuisine KwFX
+const legumesPrets = fetch('legumes/legumes.json').then(r => r.json()).then(J => {
+  LEGUMES = {};
+  Object.entries(J).forEach(([k, v]) => {
+    const img = new Image(), imgCoupe = new Image(); img.src = 'legumes/' + k + '.webp'; imgCoupe.src = 'legumes/' + k + '-coupe.webp';
+    const l = LONG[k] || 8, a = { img, imgCoupe, contour: v.contour, l, h: +(l * v.ratio).toFixed(2), peau: v.peau, peau2: v.peau, chair: v.chair };
+    if (NOM_ALIM[k]) a.nom = NOM_ALIM[k];
+    LEGUMES[k] = a; TAILLE[k] = [l, a.h];
+  });
+}).catch(() => { LEGUMES = {}; });
+const RONDS = new Set(['tomate', 'oignon', 'combava', 'citron', 'chou', 'jacque']);
+const COUPES = {
+  des: { k: 8, txt: (a, n) => `Coupe ${nom1(a, n)} en dés (au moins ${n * 8} morceaux).`, ok: (r, n) => r.morceaux >= n * 8 && r.tailleMoyenne < 6 },
+  emince: { k: 5, txt: (a, n) => `Émince ${nom1(a, n)} en fines lamelles (au moins ${n * 5}).`, ok: (r, n) => r.morceaux >= n * 5 && (r.classe === 'émincé' || r.tailleMoyenne < 4.5) },
+  fin: { k: 8, txt: (a, n) => `Hache ${nom1(a, n)} bien fin (au moins ${n * 8} morceaux).`, ok: (r, n) => r.morceaux >= n * 8, guides: 1 },
+  batonnets: { k: 6, txt: (a, n) => `Taille ${nom1(a, n)} en bâtonnets (au moins ${n * 6}).`, ok: (r, n) => r.morceaux >= n * 6 },
+  rondelles: { k: 5, txt: (a, n) => `Coupe ${nom1(a, n)} en tronçons : suis les traits blancs.`, ok: (r, n) => r.morceaux >= n * 5, guides: 1.5 },
+  morceaux: { k: 4, txt: (a, n) => `Coupe ${nom1(a, n)} en morceaux (au moins ${n * 4}).`, ok: (r, n) => r.morceaux >= n * 4 },
+};
+const nbDe = (R, a) => (R.couper[a] ? R.couper[a][0] : 0) || R.piler.filter(x => x === a).length || 1;
+
+// mise en place sur la planche (40 × 26 cm) : rangées, du plus haut au plus petit
+function miseEnPlace(R) {
+  const items = [];
+  const tous = new Set([...Object.keys(R.couper), ...R.piler]);
+  tous.forEach(a => { for (let i = 0; i < nbDe(R, a); i++) items.push(a); });
+  items.sort((p, q) => TAILLE[q][1] - TAILLE[p][1] || TAILLE[q][0] - TAILLE[p][0]);
+  const poser = []; let x = 1, y = 1, hRang = 0, rang = 0;
+  items.forEach(a => {
+    const [l, h] = TAILLE[a];
+    if (x + l > 39) { x = 1; y += hRang + 1.2; hRang = 0; rang++; }
+    poser.push([a, x + l / 2, y + h / 2, RONDS.has(a) ? Math.random() * 6.28 : (Math.random() - 0.5) * 0.25, rang]);
+    x += l + 1.1; hRang = Math.max(hRang, h);
+  });
+  // répartit la place qui reste entre les rangées (la bulle de consigne occupe le haut)
+  const reste = Math.max(0, 25 - (y + hRang)), pas = reste / (rang + 2);
+  return poser.map(q => [q[0], q[1], Math.min(25.5, q[2] + pas * (q[4] + 1.3)), q[3]]);
+}
+
+// recette du jeu → recette KwFX (étapes vérifiées sur la vraie découpe)
+function versKwfx(R, grand) {
+  const etapes = [];
+  Object.entries(R.couper).forEach(([a, [n, c]]) => {
+    const C = COUPES[c];
+    etapes.push({ type: 'couper', al: a, texte: C.txt(a, n), avant: C.guides ? () => cu.guides(a, { ecart: C.guides }) : null,
+      verif: r => { const p = r.parAliment[a]; return !!p && C.ok(p, n); } });
+  });
+  const pil = [...new Set(R.piler)];
+  etapes.push({ type: 'pilon', als: pil, texte: `Mets ${liste(pil)} dans le pilon, puis pile jusqu'à une pâte.`,
+    verif: r => { const d = r.pilon.detail.map(q => q.aliment); return pil.every(a => d.includes(a)) && r.pilon.code >= 3; } });
+  etapes.push({ type: 'bol', als: R.bol, texte: `Mets ${liste(R.bol)} dans le bol${R.cari ? ' (pour la marmite)' : ''}, puis mélange en tournant dedans.`,
+    verif: (r, api) => { const m = api.morceaux(); return R.bol.every(a => m.some(p => p.aliment === a && p.zone === 'bol') && !m.some(p => p.aliment === a && p.zone === 'planche')) && r.bol.melange >= (R.cari ? 55 : 70); } });
+  return {
+    nom: R.nom, titre: R.nom, garde: [...new Set([...Object.keys(R.couper), ...R.piler])], poser: miseEnPlace(R), etapes,
+    info: 'Trace un trait pour couper. Appuie longtemps sur un morceau pour le saisir. Tape dans le pilon pour écraser, tourne dedans pour affiner. Tourne dans le bol pour mélanger.',
+    score: r => qualite(R, r), fin: q => q >= 88 ? `${R.nom} bien coupé, bien pilé : bravo ! (${q} %)` : `${R.nom} prêt (${q} %). Des coupes plus régulières le rendront encore plus beau.`
+  };
+}
+function qualite(R, r) {
+  let reg = [], s = 55;
+  Object.entries(R.couper).forEach(([a, [n, c]]) => { const p = r.parAliment[a]; if (p && p.morceaux > 1 && !R.piler.includes(a)) reg.push(p.regularite); });
+  if (reg.length) s += Math.min(20, reg.reduce((x, y) => x + y, 0) / reg.length / 5);
+  s += r.precision != null ? r.precision / 10 : 7;
+  s += r.bol.melange >= 85 ? 8 : r.bol.melange >= 70 ? 5 : 2;
+  s += r.pilon.code >= 4 ? 10 : r.pilon.code >= 3 ? 6 : 0;
+  return Math.max(0, Math.min(100, s));
+}
+
+// ---------------------------------------------------------------- KwFX
+const S = { son: ls.get('kpil_son', true), carnet: ls.get('kpil_carnet', {}), record: ls.get('kpil_record', 0) };
+let modeJeu = 'trankil';
+const fx = window.KwFX ? KwFX.init({
+  theme: 'fruits', public: 'enfant', manga: 1, mode: 'trankil', support: 'web', jeu: 'koup-pilon',
+  reduireAnimations: false, secousses: true, complement: true, // la cuisine dessine déjà son jus et ses miettes : KwFX ajoute séries, pépites, messages
+  sons: S.son, sonsPack: '../commun/kwfx-sons/', sonsEvenements: ['combo', 'pepite', 'niveau', 'victoire', 'debut', 'clic', 'presque', 'bonne'], // le son de coupe et de pilon vient de la cuisine
+  messages: true, messagesTypes: ['serie', 'record', 'victoire', 'encourage', 'niveau', 'pepite', 'debut'], echelleMessages: 0.5, hautMessages: '42%',
+  cibleScore: $('score'), dprMax: 2
+}) : null;
+let cu = null, R = null, partie = null, t0 = 0, minuteur = 0, serieFine = 0;
+function majSon() { $('btnSon').textContent = S.son ? '🔊' : '🔇'; if (fx) fx.opt.sons = S.son; if (musique.g) musique.g.gain.value = S.son ? 0.2 : 0; }
+$('btnSon').addEventListener('click', () => { S.son = !S.son; ls.set('kpil_son', S.son); majSon(); });
+
+// musique d'ambiance (instrumentales ElevenLabs de Koup Rougail v2), en Web Audio pour régler le volume sur iPhone
+const musique = { ctx: null, g: null, src: null, buf: {} };
+function jouerMusique(nom) {
+  try {
+    if (!musique.ctx) { musique.ctx = new (window.AudioContext || window.webkitAudioContext)(); musique.g = musique.ctx.createGain(); musique.g.connect(musique.ctx.destination); }
+    musique.ctx.resume && musique.ctx.resume(); musique.g.gain.value = S.son ? 0.2 : 0;
+    const go = b => { if (musique.src) { try { musique.src.stop(); } catch (e) {} } const s = musique.ctx.createBufferSource(); s.buffer = b; s.loop = true; s.connect(musique.g); s.start(); musique.src = s; };
+    if (musique.buf[nom]) return go(musique.buf[nom]);
+    fetch('../koup-rougail-v2/sons/musique-' + nom + '.mp3').then(r => r.arrayBuffer()).then(a => new Promise((ok, ko) => musique.ctx.decodeAudioData(a, ok, ko))).then(b => { musique.buf[nom] = b; go(b); }).catch(() => {});
+  } catch (e) {}
+}
+
+// ---------------------------------------------------------------- écrans
+function montrer(id) { ['accueil', 'carnet'].forEach(e => $(e).classList.toggle('cache', e !== id)); const enJeu = id === 'jeu'; $('jeu').classList.toggle('cache', !enJeu); $('barreHaut').classList.toggle('cache', !enJeu); $('barreHaut').style.display = enJeu ? '' : 'none'; }
+function majDefi() { if (fx) { const d = fx.defiDuJour(); $('defi').innerHTML = '<b>Défi du jour :</b> ' + d.texte + (d.reussi ? ' ✓' : ''); } }
+const etoilesDe = q => q >= 88 ? 3 : q >= 72 ? 2 : 1;
+function carnet() {
+  const n = Object.keys(S.carnet).length;
+  $('carnetInfo').textContent = n ? `Recettes réussies : ${n} / ${RECETTES.length}. Vise les 3 étoiles !` : 'Choisis une recette. Chaque plat réussi entre dans ton carnet avec ses étoiles.';
+  $('grille').innerHTML = '';
+  RECETTES.forEach((r, i) => {
+    const b = document.createElement('button'); b.className = 'carte zone-interactive' + (Object.keys(r.couper).length >= 5 ? ' grand' : ''); const e = S.carnet[r.nom] || 0;
+    b.innerHTML = `<b>${r.nom}</b><span class="ing">${liste([...Object.keys(r.couper), ...r.piler.filter(a => a !== 'sel')])}</span><span class="et ${e ? '' : 'vide'}">${'★'.repeat(e)}${'☆'.repeat(3 - e)}</span>`;
+    b.addEventListener('click', () => lancerRecette(i)); $('grille').appendChild(b);
+  });
+  montrer('carnet');
+}
+$('bTrankil').addEventListener('click', () => { modeJeu = 'trankil'; if (fx) fx.opt.mode = 'trankil'; jouerMusique('calme'); carnet(); });
+$('bProbleme').addEventListener('click', () => {
+  modeJeu = 'probleme'; if (fx) fx.opt.mode = 'probleme'; jouerMusique('intense');
+  const ordre = RECETTES.map((r, i) => i).sort(() => Math.random() - 0.5).slice(0, 3);
+  partie = { ordre, n: 0, score: 0 }; if (fx) fx.evenement('debut');
+  lancerRecette(ordre[0]);
+});
+$('bHasard').addEventListener('click', () => lancerRecette(Math.floor(Math.random() * RECETTES.length)));
+
+// ---------------------------------------------------------------- partie
+function creerCuisine() {
+  if (cu) return;
+  const portrait = innerHeight > innerWidth;
+  cu = fx.cuisine($('zone'), { aliments: LEGUMES || {}, hauteur: portrait ? 'max(420px, min(calc(100dvh - 150px), calc((100vw - 20px) * 1.08 + 90px)))' : 'max(420px, min(calc(100dvh - 130px), 640px))' });
+  // boutons du jeu ajoutés à la barre d'outils de la cuisine
+  const barre = $('zone').querySelector('.kwfx-cuisine').children[1];
+  const bt = (txt, f, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'zone-interactive ' + (cls || ''); b.textContent = txt; b.style.cssText = 'min-height:44px;padding:8px 14px;border-radius:12px;border:0;font:800 14px system-ui,sans-serif;cursor:pointer;background:#7a5a3a;color:#fff8ee'; b.addEventListener('click', f); barre.appendChild(b); return b; };
+  cu.bAction = bt('', action, 'action'); cu.bAction.style.display = 'none';
+  bt('↺ Recommencer', () => lancerRecette(R.idx, true));
+  bt('Carnet', () => { if (modeJeu === 'probleme') { finService(true); } else { arreterChrono(); carnet(); } });
+  cu.sur('coupe', d => {
+    if (!fx) return; const r = $('zone').querySelector('.kwfx-cuisine canvas').getBoundingClientRect();
+    const x = r.left + d.x, y = r.top + d.y, dec = fx.evenement('coupe', { x, y, couleur: d.couleur });
+    if (JUTEUX[d.aliment]) fx.joue('jus', { x, y, couleur: d.couleur, intensite: JUTEUX[d.aliment] });
+    if (modeJeu === 'probleme' && partie) { const g = Math.min(Math.round(5 * dec.multiplicateur * d.morceaux), 300 - partie.coupes); if (g > 0) { partie.coupes += g; partie.score += g; majScore(); } } // 300 points de coupe au plus par plat : hacher à l'infini ne rapporte rien
+  });
+  cu.sur('precision', d => { if (d.precision > 85) { serieFine++; if (modeJeu === 'probleme' && partie) { partie.score += 10 * Math.min(5, serieFine); majScore(); } } else serieFine = 0; });
+  cu.sur('pose', d => {
+    if (!R || !d.piece) return; const a = d.piece.al;
+    if (d.zone === 'mortier' && !R.piler.includes(a)) { cu.dire(`Pour ce plat, ${NOMS[a] ? NOMS[a][0] : a} ne va pas au pilon. Pas grave : « Recommencer » remet tout en place.`, 'doux', 4200); if (fx) fx.evenement('presque', {}); }
+    majAction();
+  });
+  cu.sur('texture', () => majAction());
+  cu.sur('fini', d => finRecette(d));
+}
+function etapeCourante() { const e = cu && cu.etat(); return e && R ? R.k.etapes[e.etape] : null; }
+function majAction() {
+  if (!cu) return; const e = etapeCourante(), b = cu.bAction;
+  if (!e || (e.type !== 'pilon' && e.type !== 'bol')) { b.style.display = 'none'; return; }
+  const m = cu.morceaux(), zone = e.type === 'pilon' ? 'mortier' : 'bol';
+  const reste = m.filter(p => e.als.includes(p.aliment) && p.zone !== zone).length;
+  b.style.display = reste ? '' : 'none'; b.textContent = e.type === 'pilon' ? '⬇ Mettre dans le pilon' : '⬇ Racler la planche dans le bol';
+  b.classList.toggle('attention', !!reste);
+}
+function action() {
+  const e = etapeCourante(); if (!e) return;
+  const zone = e.type === 'pilon' ? 'mortier' : 'bol';
+  e.als.forEach(a => cu.tout(a, zone));
+  if (fx) fx.evenement('clic', {});
+  cu.dire(e.type === 'pilon' ? 'Tape dans le pilon pour écraser, puis tourne dedans pour affiner.' : 'Tourne dans le bol avec le doigt pour mélanger.', null, 3500);
+  majAction();
+}
+function lancerRecette(i, recommencer) {
+  $('fiche').classList.add('cache');
+  if (!fx) return;
+  if (!LEGUMES) { legumesPrets.then(() => lancerRecette(i, recommencer)); return; }
+  montrer('jeu'); creerCuisine();
+  R = RECETTES[i]; R.idx = i; R.k = versKwfx(R); if (partie) partie.coupes = 0;
+  cu.recette(R.k); serieFine = 0;
+  $('nomRecette').textContent = (modeJeu === 'probleme' && partie ? `Plat ${partie.n + 1}/3 · ` : '') + R.nom;
+  montrer('jeu'); $('jeu').scrollTop = 0; majAction(); majScore();
+  arreterChrono(); t0 = performance.now();
+  if (modeJeu === 'probleme') { minuteur = setInterval(majChrono, 250); majChrono(); } else $('chrono').textContent = '';
+  if (!recommencer && fx && modeJeu === 'trankil') fx.evenement('debut');
+  clearInterval(lancerRecette.suivi); lancerRecette.suivi = setInterval(majAction, 700);
+}
+const cible = () => 60 + R.k.etapes.length * 22; // secondes : au-delà, juste moins de bonus, jamais d'échec
+function majChrono() { const t = (performance.now() - t0) / 1000, c = cible(); $('chrono').textContent = '⏱ ' + Math.floor(t) + ' s' + (t < c ? '' : ''); $('chrono').style.color = t < c ? '#bfe8ff' : '#ffd7a8'; }
+function arreterChrono() { clearInterval(minuteur); minuteur = 0; }
+function majScore() { $('score').textContent = modeJeu === 'probleme' && partie ? '★ ' + partie.score : ''; }
+
+function finRecette(d) {
+  arreterChrono(); clearInterval(lancerRecette.suivi); cu.bAction.style.display = 'none';
+  const q = d.qualite, et = etoilesDe(q), t = (performance.now() - t0) / 1000, res = d.resultat;
+  const avant = S.carnet[R.nom] || 0; if (et > avant) { S.carnet[R.nom] = et; ls.set('kpil_carnet', S.carnet); }
+  let pts = 0, bonus = 0;
+  if (modeJeu === 'probleme' && partie) { bonus = Math.max(0, Math.round((cible() - t) * 3)); pts = q * 10 + bonus; partie.score += pts; partie.n++; majScore(); }
+  const det = Object.values(res.parAliment).filter(p => p.morceaux > 1).map(p => `${p.nom} : ${p.morceaux} morceaux, ${p.classe}, régularité ${p.regularite} %`).concat(['Pilon : ' + res.pilon.nom, 'Bol : mélangé à ' + res.bol.melange + ' %']);
+  if (res.precision != null) det.push('Précision sur les traits : ' + res.precision + ' %');
+  const dernier = modeJeu === 'probleme' && partie && partie.n >= 3;
+  setTimeout(() => {
+    $('ficheIn').innerHTML = `<div class="plat">${R.nom}</div><div class="etoiles">${'★'.repeat(et)}<span class="off">${'★'.repeat(3 - et)}</span></div>
+      <div class="qualite">Qualité ${q} %${et > avant && avant ? ' · nouvelle étoile !' : !avant ? ' · nouveau dans le carnet !' : ''}</div>
+      ${modeJeu === 'probleme' ? `<div class="pts">+${pts}</div><div class="det">${q * 10} pour la qualité${bonus ? ' + ' + bonus + ' de rapidité' : ''} · ${Math.round(t)} s</div>` : ''}
+      <div class="det">${det.join('<br>')}</div>
+      <div class="fait"><b>Le savais-tu ?</b> ${R.fait}</div>
+      <div class="bts" id="ficheBts"></div>`;
+    const bts = $('ficheBts'), bt = (txt, f, sec) => { const b = document.createElement('button'); b.className = 'btn zone-interactive' + (sec ? ' sec' : ''); b.textContent = txt; b.addEventListener('click', f); bts.appendChild(b); };
+    if (modeJeu === 'probleme') { if (dernier) bt('Voir mon score', () => finService()); else bt('Plat suivant', () => lancerRecette(partie.ordre[partie.n])); }
+    else { bt('Recette suivante', () => lancerRecette((R.idx + 1) % RECETTES.length)); bt('Carnet', () => { $('fiche').classList.add('cache'); carnet(); }, true); if (et < 3) bt('Rejouer pour 3 ★', () => lancerRecette(R.idx, true), true); }
+    $('fiche').classList.remove('cache');
+  }, 1700);
+}
+function finService(abandon) {
+  arreterChrono(); clearInterval(lancerRecette.suivi);
+  const sc = partie ? partie.score : 0, n = partie ? partie.n : 0; partie = null;
+  let rec = false; if (!abandon && sc > S.record) { S.record = sc; ls.set('kpil_record', sc); rec = true; }
+  if (fx && !abandon) fx.finPartie(sc);
+  $('ficheIn').innerHTML = `<div class="plat">${abandon ? 'Service interrompu' : 'Service terminé !'}</div><div class="gros" style="color:#c2580a;text-shadow:none">${sc}</div>
+    <div class="qualite">${rec ? 'Nouveau record !' : 'Record : ' + S.record}</div><div class="det">${n} plat${n > 1 ? 's' : ''} servi${n > 1 ? 's' : ''}</div><div class="bts" id="ficheBts"></div>`;
+  const bts = $('ficheBts'), bt = (txt, f, sec) => { const b = document.createElement('button'); b.className = 'btn zone-interactive' + (sec ? ' sec' : ''); b.textContent = txt; b.addEventListener('click', f); bts.appendChild(b); };
+  bt('Nouveau service', () => $('bProbleme').click()); bt('Accueil', () => { $('fiche').classList.add('cache'); majDefi(); montrer('accueil'); }, true);
+  $('fiche').classList.remove('cache');
+}
+
+// libération quand on quitte la page (le cadre du site appelle kwelafeLiberer)
+window.kwelafeLiberer = function () { try { arreterChrono(); clearInterval(lancerRecette.suivi); if (cu) cu.arreter(); if (fx) fx.detruire(); if (musique.ctx) musique.ctx.close(); } catch (e) {} };
+document.addEventListener('visibilitychange', () => { if (!musique.ctx) return; if (document.hidden) musique.ctx.suspend(); else musique.ctx.resume(); });
+
+majSon(); majDefi(); montrer('accueil');
+window.__kp = { RECETTES, versKwfx, get cu() { return cu; }, get fx() { return fx; }, lancerRecette };
+})();
+</script>
+</body>
+</html>
