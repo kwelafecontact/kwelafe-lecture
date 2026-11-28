@@ -13,6 +13,7 @@ import { FORMATS, formatDe, sansDoublon } from "@/lib/formats";
 import { leger } from "@/lib/leger";
 import { tous, urlCouverture } from "@/lib/cf";
 import { livresBientot } from "@/lib/donnees";
+import { livresPopulaires } from "@/lib/populaires";
 import PrevenirMoi from "@/components/PrevenirMoi";
 import ArrivesVu from "@/components/ArrivesVu";
 import Bienvenue from "@/components/Bienvenue";
@@ -27,11 +28,22 @@ function salut() {
 
 export default async function Accueil() {
   const { session, livres, progs, prog, acces, favoris, abonne } = await contexte();
-  const stats = await statistiques(session.cid);
-  const bientot = await livresBientot();
-  const mesAlertes = new Set((await tous<{ livre_id: string }>("SELECT livre_id FROM alertes WHERE client_id = ?", session.cid).catch(() => [])).map((x) => x.livre_id));
-  const arrives = (await tous<{ livre_id: string }>("SELECT livre_id FROM alertes WHERE client_id = ? AND vu = 0", session.cid).catch(() => [])).map((x) => livres.find((l) => l.id === x.livre_id)).filter((l): l is NonNullable<typeof l> => !!l && l.publie);
-  const motDuMois = (await tous<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'mot_du_mois'").catch(() => []))[0]?.valeur || "";
+  // Toutes ces lectures sont indépendantes : on les lance ensemble plutôt qu'à la file,
+  // sinon chaque aller-retour vers la base s'ajoute au temps d'affichage de l'accueil.
+  const [stats, bientot, lignesAlertes, reglageMot, populaires, jar] = await Promise.all([
+    statistiques(session.cid),
+    livresBientot(),
+    tous<{ livre_id: string; vu: number }>("SELECT livre_id, vu FROM alertes WHERE client_id = ?", session.cid).catch(() => []),
+    tous<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'mot_du_mois'").catch(() => []),
+    livresPopulaires(),
+    cookies(),
+  ]);
+  const mesAlertes = new Set(lignesAlertes.map((x) => x.livre_id));
+  const arrives = lignesAlertes
+    .filter((x) => !x.vu)
+    .map((x) => livres.find((l) => l.id === x.livre_id))
+    .filter((l): l is NonNullable<typeof l> => !!l && l.publie);
+  const motDuMois = reglageMot[0]?.valeur || "";
   const finMois = (() => { const n = new Date(); return Math.ceil((new Date(n.getFullYear(), n.getMonth() + 1, 1).getTime() - n.getTime()) / 864e5); })();
   const enCours = progs
     .filter((p) => !p.termine && p.pourcentage > 0)
@@ -42,14 +54,13 @@ export default async function Accueil() {
   const mystere = livres.find((l) => l.mystere_du_mois);
   const mesFavoris = livres.filter((l) => favoris.has(l.id));
   const lus = progs.filter((p) => p.termine).length;
-  const objectif = Math.max(5, Math.min(60, Number((await cookies()).get("kw_objectif")?.value) || 15));
+  const objectif = Math.max(5, Math.min(60, Number(jar.get("kw_objectif")?.value) || 15));
   const visibles = sansDoublon(livres, acces);
   const une = mystere ?? [...visibles].sort((a, b) => b.cree_le.localeCompare(a.cree_le))[0];
   const nouveautes = [...visibles].sort((a, b) => b.cree_le.localeCompare(a.cree_le)).slice(0, 12);
   // Top 10 : les livres les plus ouverts par les lecteurs, complétés par les nouveautés
-  const populaires = await tous<{ livre_id: string; n: number }>("SELECT livre_id, COUNT(*) AS n FROM progression GROUP BY livre_id ORDER BY n DESC LIMIT 30").catch(() => []);
   const top: typeof livres = [];
-  for (const id of [...populaires.map((p) => p.livre_id), ...nouveautes.map((l) => l.id), ...visibles.map((l) => l.id)]) {
+  for (const id of [...populaires, ...nouveautes.map((l) => l.id), ...visibles.map((l) => l.id)]) {
     const l = visibles.find((x) => x.id === id);
     if (l && !top.includes(l)) top.push(l);
     if (top.length === 10) break;
