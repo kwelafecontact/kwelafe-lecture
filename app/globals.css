@@ -53,9 +53,11 @@ img { max-width: 100%; display: block; }
 .nav-bas ul { list-style: none; margin: 0 auto; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); max-width: 680px; }
 .nav-bas a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   height: var(--nav-h); color: var(--doux); font-size: 13px; font-weight: 700; }
-.nav-bas a .ico { font-size: 25px; line-height: 1; filter: grayscale(1); opacity: .75; }
+.nav-bas a .ico { display:flex; align-items:center; justify-content:center; width:46px; height:28px; border-radius:999px; transition: background .2s, transform .2s; }
 .nav-bas a.actif { color: var(--lave); }
-.nav-bas a.actif .ico { filter: none; opacity: 1; }
+.nav-bas a.actif .ico { background: color-mix(in srgb, var(--lave) 12%, #fff); transform: translateY(-1px); }
+.nav-bas a.actif .ico svg { stroke-width: 2.3; }
+.nav-bas a:active .ico { transform: scale(.9); }
 
 /* ----- Couvertures et grilles ----- */
 .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 22px 16px; }
@@ -144,8 +146,8 @@ img { max-width: 100%; display: block; }
 .tableau { width: 100%; border-collapse: collapse; font-size: 15px; }
 .tableau td, .tableau th { padding: 10px 8px; border-bottom: 1px solid var(--beige); text-align: left; vertical-align: middle; }
 .lien-site { text-align: center; margin-top: 34px; font-size: 14px; }
-.lien-site a { display: inline-block; padding: 8px 18px; border-radius: 999px; color: var(--lave); font-weight: 800;
-  box-shadow: 0 0 0 2px rgba(200,54,29,.25), 0 0 18px rgba(255,140,40,.35); }
+.lien-site > a { display: inline-flex; align-items:center; gap:8px; padding: 10px 20px; border-radius: 999px; color: var(--lave); font-weight: 800; background:#fff; box-shadow: var(--ombre); }
+.lien-site > a::before { content:""; width:8px; height:8px; border-radius:50%; background: linear-gradient(135deg,#1f6fb2,#f2b705,#d6332a,#2e9d4f); }
 
 /* ===================== Lecteur ===================== */
 .lecteur { position: fixed; inset: 0; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -1186,3 +1188,31 @@ html[data-couleur="vanille"]{--lave:#7a5230;--lave-fonce:#5e3f24}
 .avant-partir{margin-top:12px;padding:14px;border-radius:16px;background:#f6f2ea}
 .lien-bilan{display:flex;align-items:center;gap:12px;padding:16px;border-radius:20px;background:#fff;box-shadow:var(--ombre);margin-bottom:14px;text-decoration:none;font-size:24px}
 .lien-bilan span{flex:1;display:flex;flex-direction:column;font-size:16px}.lien-bilan small{color:var(--doux)}
+
+/* ----- Finitions premium ----- */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; }
+.btn, .tuile, .raccourcis a, .carte-livre, .sv-grille button, .enf-portes a, .ce-rep, .app-tuile { transition: transform .15s ease, box-shadow .15s ease; }
+.btn:active, .tuile:active, .raccourcis a:active, .carte-livre:active, .sv-grille button:active, .enf-portes a:active { transform: scale(.97); }
+a:focus-visible, button:focus-visible { outline: 3px solid color-mix(in srgb, var(--lave) 55%, #fff); outline-offset: 2px; border-radius: 12px; }
+.couv img { transition: transform .25s ease; }
+a:hover .couv img { transform: translateY(-2px); }
+.section { scroll-margin-top: 20px; }
+/* Accueil premium : bienvenue et installation */
+.bienvenue-fond{position:fixed;inset:0;z-index:90;background:rgba(20,16,12,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:700px){.bienvenue-fond{align-items:center}}
+.bienvenue{background:var(--creme,#fbf7ef);width:100%;max-width:520px;border-radius:30px 30px 0 0;padding:26px 22px calc(22px + var(--safe-b));box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:monter .35s ease}
+@media(min-width:700px){.bienvenue{border-radius:30px}}
+@keyframes monter{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.bienvenue img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:20px}
+.bienvenue .eyebrow{margin-top:16px}
+.bienvenue h2{font-family:var(--titre);font-size:26px;margin:4px 0 8px}
+.bienvenue p{font-size:17px;line-height:1.55;margin:0 0 16px}
+.bienvenue-points{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.bienvenue-points i{width:8px;height:8px;border-radius:50%;background:#d9cfc0}.bienvenue-points i.on{background:var(--lave);width:22px;border-radius:4px}
+.bienvenue-actions{display:flex;gap:10px;justify-content:space-between;align-items:center}
+.bandeau-installer{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 14px;border-radius:18px;background:#fff;box-shadow:var(--ombre);border:1px solid var(--beige)}
+.bandeau-installer img{width:42px;height:42px;border-radius:12px}
+.bandeau-installer div{flex:1;font-size:14px;line-height:1.35}.bandeau-installer b{display:block;font-size:15px}
+.bandeau-installer .btn{padding:8px 14px;font-size:14px}
+.bandeau-installer .fermer{background:none;border:0;color:var(--doux);padding:6px}

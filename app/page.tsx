@@ -15,6 +15,7 @@ import { tous, urlCouverture } from "@/lib/cf";
 import { livresBientot } from "@/lib/donnees";
 import PrevenirMoi from "@/components/PrevenirMoi";
 import ArrivesVu from "@/components/ArrivesVu";
+import Bienvenue from "@/components/Bienvenue";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Bibliothèque · Kwélafé" };
@@ -82,6 +83,7 @@ export default async function Accueil() {
         </header>
 
         {session.visiteur && <BandeauVisiteur />}
+        <Bienvenue />
 
         {arrives.length > 0 && (
           <section className="arrives">
