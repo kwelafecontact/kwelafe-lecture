@@ -135,10 +135,47 @@
   .jauge .aiguille { position:absolute; top:-8px; bottom:-8px; width:5px; margin-left:-2px; border-radius:3px; background:#fff; box-shadow:0 0 8px #000; }
   .jauge .t { font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:24px; color:#ffe27a; }
   .jauge .p { font-size:14px; font-weight:600; }
-  .prepa { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(88vw, 460px); padding:16px 18px 18px; border-radius:22px; background:rgba(26,16,6,.9); border:2px solid #c8a050; box-shadow:0 0 22px rgba(200,160,80,.35); text-align:center; z-index:12; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .prepa { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:min(92vw, 480px); max-height:88vh; overflow-y:auto; padding:16px 18px 18px; border-radius:22px; background:rgba(26,16,6,.9); border:2px solid #c8a050; box-shadow:0 0 22px rgba(200,160,80,.35); text-align:center; z-index:12; opacity:0; pointer-events:none; transition:opacity .25s; }
   .prepa.on { opacity:1; pointer-events:auto; }
   .prepa.juste { animation:juste .35s; } .prepa.faux { animation:faux .35s; }
   @keyframes juste { 40% { box-shadow:0 0 34px #9be06a; } } @keyframes faux { 25% { transform:translate(calc(-50% - 8px),-50%); } 75% { transform:translate(calc(-50% + 8px),-50%); } }
+  .prepa .etape { font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#d8c08a; }
+  .prepa .but { font-size:19px; font-weight:800; margin:2px 0 8px; color:#fff6dc; }
+  .prepa .regles { list-style:none; padding:0; margin:8px 0 12px; text-align:left; font-size:14px; font-weight:600; line-height:1.4; }
+  .prepa .regles li { background:rgba(255,255,255,.07); border-radius:10px; padding:6px 10px; margin:5px 0; } .prepa .regles b { color:#ffe27a; }
+  .prepa .etat { min-height:26px; margin:8px 0; padding:6px 10px; border-radius:12px; font-weight:800; font-size:17px; background:rgba(255,255,255,.08); transition:background .2s; }
+  .prepa .etat.bien { background:rgba(80,170,60,.55); } .prepa .etat.mal { background:rgba(210,50,30,.7); animation:clignote .5s infinite alternate; } .prepa .etat.froid { background:rgba(50,110,210,.6); }
+  @keyframes clignote { to { filter:brightness(1.35); } }
+  .prepa .btn { font-family:"Baloo 2", system-ui, sans-serif; font-weight:800; letter-spacing:0; }
+  .prepa .btn.gros { font-size:21px; padding:16px 26px; width:100%; max-width:360px; } .prepa .btn.gros.dehors { background:linear-gradient(#8fd0ff, #3a8ad8); color:#06223a; }
+  .prepa .thermo2 { display:flex; align-items:center; gap:8px; } .prepa .thermo2 .barre { flex:1; } .prepa .lb { font-size:12px; font-weight:800; width:46px; } .prepa .lb.froid { color:#8ac8ff; } .prepa .lb.chaud { color:#ff9a7a; }
+  .prepa .zone.vert { background:rgba(110,220,90,.35); border-color:#b8ff9a; box-shadow:0 0 12px #9be06a; }
+  .prepa .deg { font-family:"Bangers", sans-serif; font-size:24px; margin:-4px 0 6px; }
+  .prepa .suivi { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:12px; font-weight:700; } .prepa .suivi .minuteur { flex:1; margin:0; } .prepa .suivi .minuteur i { background:#7ad860; transition:width .2s; }
+  .prepa .compte { font-weight:800; color:#d8c08a; }
+  .prepa .regleTri { position:relative; height:54px; margin:22px 6px 6px; border-radius:8px; background:rgba(255,255,255,.1); }
+  .prepa .graduations b { position:absolute; top:-20px; transform:translateX(-50%); font-size:12px; color:#d8c08a; }
+  .prepa .seuil { position:absolute; top:-4px; bottom:-4px; width:3px; margin-left:-1px; background:#ff6a4a; }
+  .prepa .regleTri .gousseBarre { top:18px; }
+  .prepa .caisse { flex:1; min-width:94px; padding:10px 8px; font-size:16px; } .prepa .caisse.c0 { background:linear-gradient(#ffd2b8, #e88a5a); } .prepa .caisse.c1 { background:linear-gradient(#fff0b0, #e8c040); } .prepa .caisse.c2 { background:linear-gradient(#c8f0b0, #6ab84a); }
+  .prepa .etoilesP { font-size:46px; color:#ffd24a; letter-spacing:6px; text-shadow:0 3px 0 #8a5a00; } .prepa .etoilesP .vide { color:rgba(255,255,255,.18); text-shadow:none; }
+  .prepa .gainP { font-weight:800; color:#ffe27a; margin-top:4px; }
+  .demo { position:relative; height:70px; margin:6px auto 4px; max-width:300px; }
+  .dEtuve .dThermo { position:absolute; left:10%; right:10%; top:22px; height:20px; border-radius:10px; background:linear-gradient(90deg, #3a7ad8, #f0d040 50%, #d81a10); }
+  .dEtuve .dZone { position:absolute; left:36%; width:20%; top:-3px; bottom:-3px; border:3px solid #b8ff9a; border-radius:6px; }
+  .dEtuve .dAig { position:absolute; top:-7px; bottom:-7px; width:5px; background:#fff; border-radius:3px; animation:dAig 2.4s ease-in-out infinite; }
+  @keyframes dAig { 0% { left:50%; } 45% { left:30%; } 55% { left:48%; } 100% { left:50%; } }
+  .dEtuve .dDoigt { position:absolute; left:46%; top:40px; font-size:26px; animation:dTap 2.4s infinite; }
+  @keyframes dTap { 0%,40%,60%,100% { transform:translateY(0); } 50% { transform:translateY(-8px) scale(.9); } }
+  .dSeche .dCiel { position:absolute; left:10%; width:38%; top:6px; height:56px; border-radius:12px; animation:dCiel 3s steps(1) infinite; }
+  .dSeche .dCiel::after { content:"☀"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:30px; animation:dCielTxt 3s steps(1) infinite; }
+  @keyframes dCiel { 0% { background:#f0b030; } 50% { background:#4a5a70; } } @keyframes dCielTxt { 0% { content:"☀"; } 50% { content:"🌧"; } }
+  .dSeche .dClaie { position:absolute; right:10%; width:38%; top:14px; height:40px; border:3px dashed #c89a5a; border-radius:8px; background:#6a4a20; animation:dClaie 3s steps(1) infinite; }
+  @keyframes dClaie { 0% { opacity:1; transform:none; } 50% { opacity:.35; transform:translateY(8px) scale(.85); } }
+  .dTri .dRegle { position:absolute; left:6%; right:6%; top:26px; height:30px; border-radius:6px; background:rgba(255,255,255,.12); }
+  .dTri .dRegle b { position:absolute; top:-18px; transform:translateX(-50%); font-size:12px; color:#ff9a7a; } .dTri .dRegle b::after { content:""; position:absolute; left:50%; top:16px; width:2px; height:34px; background:#ff6a4a; }
+  .dTri .dGousse { position:absolute; left:0; top:8px; height:14px; border-radius:7px 40% 40% 7px; background:linear-gradient(#9a6a34, #4a2a10); animation:dGousse 3s ease-in-out infinite; }
+  @keyframes dGousse { 0%, 100% { width:52%; } 50% { width:82%; } }
   .prepa .t { font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:28px; color:#ffe27a; }
   .prepa .p { font-size:15px; font-weight:600; margin:4px 0 10px; }
   .prepa .barre { position:relative; height:28px; margin:10px 0 14px; border-radius:14px; }
@@ -719,72 +756,109 @@ function lancerEchaudage() {
 let prepa = null, dernierGain = 0;
 const PREPAS = ['etuvage', 'sechage', 'tri'];
 const pcT = t => (t - 30) / 50 * 100;   // thermomètre de 30 à 80 °C
+// Chaque mini-jeu suit le même déroulé, pensé pour être compris sans lire un pavé :
+// 1. une carte d'explication (but en une phrase, petit schéma animé, « C'est parti ! ») : le temps ne court pas pendant la lecture ;
+// 2. le jeu, avec une seule action, un message d'état en direct (vert = bien, rouge = agis vite) et une jauge de réussite ;
+// 3. une carte de résultat (étoiles, vanille noire gagnée).
+const PREPA_INFO = {
+  etuvage: { titre: 'Étuvage', but: 'Garde la caisse bien chaude.', geste: 'Touche le bouton pour border la couverture : la chaleur monte. Si tu ne fais rien, elle redescend.', reussir: 'Garde l’aiguille dans la zone verte (48 à 58 °C).',
+    demo: '<div class="demo dEtuve"><div class="dThermo"><i class="dZone"></i><i class="dAig"></i></div><div class="dDoigt">👆</div></div>' },
+  sechage: { titre: 'Séchage au soleil', but: 'Fais sécher les gousses sans les mouiller.', geste: 'Un seul bouton : il sort ou rentre les claies.', reussir: '☀ Soleil : claies dehors. 🌧 Pluie : claies à l’abri. Le nuage te prévient juste avant.',
+    demo: '<div class="demo dSeche"><div class="dCiel"></div><div class="dClaie"></div></div>' },
+  tri: { titre: 'Le tri des gousses', but: 'Range chaque gousse dans la bonne caisse.', geste: 'Regarde où s’arrête la gousse sur la règle, puis touche sa caisse.', reussir: 'Moins de 14 cm : courte. De 14 à 17 cm : moyenne. 17 cm et plus : longue.',
+    demo: '<div class="demo dTri"><div class="dRegle"><b style="left:60.9%">14</b><b style="left:73.9%">17</b><i class="dGousse"></i></div></div>' },
+};
 function lancerPrepa() {
-  const type = PREPAS[(niveau - 1) % 3], z = $('prepa'), doux = calme();
+  const type = PREPAS[(niveau - 1) % 3], z = $('prepa'), I = PREPA_INFO[type];
+  prepa = { type, intro: true };
+  z.innerHTML = `<div class="etape">Préparation de la vanille noire · étape ${(niveau - 1) % 3 + 2} sur 4</div><div class="t">${I.titre}</div>
+    <div class="but">${I.but}</div>${I.demo}
+    <ul class="regles"><li><b>Comment :</b> ${I.geste}</li><li><b>Pour réussir :</b> ${I.reussir}</li></ul>
+    <button class="btn zone-interactive" id="pGo">C’est parti !</button>`;
+  $('pGo').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); demarrerPrepa(type); };
+  z.classList.add('on'); son.ouvre();
+}
+function demarrerPrepa(type) {
+  const z = $('prepa'), doux = calme(), I = PREPA_INFO[type];
+  jouer('cueille', 0.4, 1.2);
   if (type === 'etuvage') {
-    prepa = { type, t: 0, duree: 6.5, temp: 58, dans: 0, chute: doux ? 4.5 : 6.5, monte: doux ? 4.2 : 3.4 };
-    z.innerHTML = `<div class="t">Étuvage</div><div class="p">Les gousses encore chaudes suent dans la caisse. Borde la couverture pour garder la chaleur entre 48 et 58 °C.</div>
-      <div class="barre thermo"><div class="zone" style="left:${pcT(48)}%;width:${pcT(58) - pcT(48)}%"></div><div class="aiguille" id="pAig"></div></div>
-      <button class="btn mini zone-interactive" id="pBtn">Border la couverture</button><div class="minuteur"><i id="pMin"></i></div>`;
-    $('pBtn').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); if (prepa && prepa.type === 'etuvage') { prepa.temp = Math.min(80, prepa.temp + prepa.monte); jouer('rate', 0.22, 1.5); $('pBtn').classList.remove('tape'); void $('pBtn').offsetWidth; $('pBtn').classList.add('tape'); } };
+    prepa = { type, t: 0, duree: doux ? 8 : 7, temp: 56, dans: 0, chute: doux ? 4 : 5.5, monte: doux ? 4.5 : 3.8 };
+    z.innerHTML = `<div class="t">${I.titre}</div><div class="etat" id="pEtat">Parfait, continue !</div>
+      <div class="thermo2"><span class="lb froid">trop froid</span><div class="barre thermo"><div class="zone vert" style="left:${pcT(48)}%;width:${pcT(58) - pcT(48)}%"></div><div class="aiguille" id="pAig"></div></div><span class="lb chaud">trop chaud</span></div>
+      <div class="deg" id="pDeg">56 °C</div>
+      <button class="btn gros zone-interactive" id="pBtn">👆 Border la couverture</button>
+      <div class="suivi"><span>Temps dans la zone verte</span><div class="minuteur"><i id="pScore" style="width:0"></i></div><span id="pRest"></span></div>`;
+    $('pBtn').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); if (prepa && prepa.type === 'etuvage' && !prepa.fini) { prepa.temp = Math.min(80, prepa.temp + prepa.monte); jouer('rate', 0.22, 1.5); $('pBtn').classList.remove('tape'); void $('pBtn').offsetWidth; $('pBtn').classList.add('tape'); } };
   } else if (type === 'sechage') {
-    prepa = { type, t: 0, duree: 8, ciel: 'soleil', prochain: rnd(1.2, 2), dehors: false, bon: 0, mauvais: 0 };
-    z.innerHTML = `<div class="t">Séchage au soleil</div><div class="p">Sors les claies au soleil, rentre-les vite quand la pluie arrive.</div>
-      <div class="ciel" id="pCiel"></div><div class="claies" id="pClaies"></div>
-      <button class="btn mini zone-interactive" id="pBtn">Sortir les claies</button><div class="minuteur"><i id="pMin"></i></div>`;
-    $('pBtn').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); if (prepa && prepa.type === 'sechage') { prepa.dehors = !prepa.dehors; jouer('cueille', 0.4, 0.8); majSechage(); } };
+    prepa = { type, t: 0, duree: doux ? 10 : 9, ciel: 'soleil', prochain: rnd(1.8, 2.6), dehors: false, bon: 0, mauvais: 0 };
+    z.innerHTML = `<div class="t">${I.titre}</div><div class="ciel" id="pCiel"></div>
+      <div class="etat" id="pEtat"></div>
+      <button class="btn gros zone-interactive" id="pBtn"></button>
+      <div class="suivi"><span>Gousses bien séchées</span><div class="minuteur"><i id="pScore" style="width:0"></i></div><span id="pRest"></span></div>`;
+    $('pBtn').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); if (prepa && prepa.type === 'sechage' && !prepa.fini) { prepa.dehors = !prepa.dehors; jouer('cueille', 0.4, 0.8); majSechage(); } };
     majSechage();
   } else {
-    prepa = { type, t: 0, n: 0, total: 7, ok: 0, tg: 0, max: doux ? 3.4 : 2.3 };
-    z.innerHTML = `<div class="t">Le tri des gousses</div><div class="p">Classe chaque gousse selon sa longueur. L'IGP demande au moins 14 cm.</div>
-      <div class="gousseTri"><div class="regle14"></div><div class="gousseBarre" id="pG"></div></div><div class="cm" id="pCm"></div>
-      <div class="choix"><button class="btn mini btn2 zone-interactive" data-c="0">Courte<br><small>moins de 14 cm</small></button><button class="btn mini btn2 zone-interactive" data-c="1">Moyenne<br><small>14 à 17 cm</small></button><button class="btn mini btn2 zone-interactive" data-c="2">Longue<br><small>17 cm et plus</small></button></div>
+    prepa = { type, t: 0, n: 0, total: 6, ok: 0, tg: 0, max: doux ? 5 : 3.5, lecture: 0 };
+    z.innerHTML = `<div class="t">${I.titre}</div><div class="compte" id="pCompte"></div>
+      <div class="regleTri"><div class="graduations">${[10, 12, 14, 16, 18, 20, 22].map(c => `<b style="left:${c / 23 * 100}%">${c}</b>`).join('')}</div><i class="seuil" style="left:${14 / 23 * 100}%"></i><i class="seuil" style="left:${17 / 23 * 100}%"></i><div class="gousseBarre" id="pG"></div></div>
+      <div class="cm" id="pCm"></div><div class="etat" id="pEtat">Où s’arrête la gousse ?</div>
+      <div class="choix"><button class="btn caisse c0 zone-interactive" data-c="0">Courte<br><small>moins de 14 cm</small></button><button class="btn caisse c1 zone-interactive" data-c="1">Moyenne<br><small>14 à 17 cm</small></button><button class="btn caisse c2 zone-interactive" data-c="2">Longue<br><small>17 cm et plus</small></button></div>
       <div class="minuteur"><i id="pMin"></i></div>`;
     z.querySelectorAll('[data-c]').forEach(b => b.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); trier(+b.dataset.c); });
     nouvelleGousseTri();
   }
-  z.classList.add('on'); bandeau('Préparation de la vanille noire', 1.6); son.ouvre();
 }
+function etatPrepa(txt, cls) { const e = $('pEtat'); if (!e) return; if (e.textContent !== txt) e.textContent = txt; e.className = 'etat ' + (cls || ''); }
 function majSechage() {
   const p = prepa, ciel = $('pCiel'); if (!ciel) return;
-  ciel.className = 'ciel ' + p.ciel; ciel.textContent = p.ciel === 'soleil' ? '☀ Grand soleil' : p.ciel === 'nuage' ? '☁ La pluie arrive !' : '🌧 Il pleut !';
-  $('pClaies').className = 'claies ' + (p.dehors ? 'dehors' : 'dedans'); $('pClaies').textContent = p.dehors ? 'Claies dehors' : 'Claies à l’abri';
-  $('pBtn').textContent = p.dehors ? 'Rentrer les claies' : 'Sortir les claies';
+  ciel.className = 'ciel ' + p.ciel; ciel.innerHTML = p.ciel === 'soleil' ? '☀ Grand soleil' : p.ciel === 'nuage' ? '☁ Nuage : la pluie arrive !' : '🌧 Il pleut !';
+  $('pBtn').innerHTML = p.dehors ? '🏠 Rentrer les claies' : '☀ Sortir les claies';
+  $('pBtn').className = 'btn gros zone-interactive ' + (p.dehors ? 'dehors' : 'dedans');
 }
-function nouvelleGousseTri() { const p = prepa; p.cm = Math.round(rnd(11.5, 21.5) * 2) / 2; p.tg = 0; $('pG').style.width = (p.cm / 23 * 100) + '%'; $('pCm').textContent = p.cm.toString().replace('.', ',') + ' cm'; }
+function nouvelleGousseTri() { const p = prepa; p.cm = Math.round(rnd(11.5, 21.5) * 2) / 2; p.tg = 0; $('pG').style.width = (p.cm / 23 * 100) + '%'; $('pCm').textContent = p.cm.toString().replace('.', ',') + ' cm'; $('pCompte').textContent = `Gousse ${p.n + 1} sur ${p.total}`; etatPrepa('Où s’arrête la gousse ?'); }
+const NOMS_TRI = ['courte', 'moyenne', 'longue'];
 function trier(c) {
-  const p = prepa; if (!p || p.type !== 'tri' || p.n >= p.total) return;
-  const bon = p.cm < 14 ? 0 : p.cm < 17 ? 1 : 2;
-  if (c === bon) { p.ok++; jouer('cueille', 0.6, 1.1); } else { son.rate(); }
-  $('prepa').classList.remove('juste', 'faux'); void $('prepa').offsetWidth; $('prepa').classList.add(c === bon ? 'juste' : 'faux');
-  if (++p.n >= p.total) finPrepa(p.ok / p.total); else nouvelleGousseTri();
+  const p = prepa; if (!p || p.type !== 'tri' || p.n >= p.total || p.lecture > 0) return;
+  const bon = p.cm < 14 ? 0 : p.cm < 17 ? 1 : 2, juste = c === bon;
+  if (juste) { p.ok++; jouer('cueille', 0.6, 1.1); etatPrepa(`✔ Bien vu : ${p.cm.toString().replace('.', ',')} cm, c’est une ${NOMS_TRI[bon]}`, 'bien'); }
+  else { son.rate(); etatPrepa(`✘ ${p.cm.toString().replace('.', ',')} cm : c’était une ${NOMS_TRI[bon]}`, 'mal'); }
+  $('prepa').classList.remove('juste', 'faux'); void $('prepa').offsetWidth; $('prepa').classList.add(juste ? 'juste' : 'faux');
+  p.n++; p.lecture = 0.9;   // le temps de lire la correction
 }
 function majPrepa(dt) {
-  const p = prepa; p.t += dt;
+  const p = prepa; if (p.intro || p.fini) return; p.t += dt;
   if (p.type === 'etuvage') {
-    p.temp = Math.max(30, p.temp - p.chute * dt); if (p.temp >= 48 && p.temp <= 58) p.dans += dt;
-    $('pAig').style.left = pcT(p.temp) + '%'; $('pMin').style.width = Math.max(0, 100 - p.t / p.duree * 100) + '%';
+    p.temp = Math.max(30, p.temp - p.chute * dt); const ok = p.temp >= 48 && p.temp <= 58; if (ok) p.dans += dt;
+    $('pAig').style.left = pcT(p.temp) + '%'; $('pDeg').textContent = Math.round(p.temp) + ' °C';
+    if (ok) etatPrepa('Parfait, continue !', 'bien'); else if (p.temp < 48) etatPrepa('Trop froid ! Borde vite la couverture', 'froid'); else etatPrepa('Trop chaud ! Attends un peu', 'mal');
+    $('pScore').style.width = Math.min(100, p.dans / (p.duree * 0.8) * 100) + '%'; $('pRest').textContent = Math.ceil(p.duree - p.t) + ' s';
     if (p.t >= p.duree) finPrepa(Math.min(1, p.dans / (p.duree * 0.8)));
   } else if (p.type === 'sechage') {
     p.prochain -= dt;
-    if (p.prochain <= 0) { if (p.ciel === 'soleil') { p.ciel = 'nuage'; p.prochain = calme() ? 1.1 : 0.75; } else if (p.ciel === 'nuage') { p.ciel = 'pluie'; p.prochain = rnd(1, 1.8); } else { p.ciel = 'soleil'; p.prochain = rnd(1.4, 2.4); } majSechage(); }
-    if (p.dehors) { if (p.ciel === 'pluie') p.mauvais += dt; else p.bon += dt; }
-    $('pMin').style.width = Math.max(0, 100 - p.t / p.duree * 100) + '%';
-    if (p.t >= p.duree) finPrepa(Math.max(0, Math.min(1, (p.bon - 1.5 * p.mauvais) / (p.duree * 0.5))));
-  } else if (p.n < p.total) {
+    if (p.prochain <= 0) { if (p.ciel === 'soleil') { p.ciel = 'nuage'; p.prochain = calme() ? 1.6 : 1.2; } else if (p.ciel === 'nuage') { p.ciel = 'pluie'; p.prochain = rnd(1.4, 2); } else { p.ciel = 'soleil'; p.prochain = rnd(1.8, 2.6); } majSechage(); }
+    if (p.dehors && p.ciel === 'pluie') { p.mauvais += dt; etatPrepa('Ça mouille ! Rentre les claies', 'mal'); }
+    else if (p.dehors) { p.bon += dt; etatPrepa(p.ciel === 'nuage' ? 'Prépare-toi à rentrer les claies…' : 'Bien ! Les gousses sèchent au soleil', p.ciel === 'nuage' ? 'froid' : 'bien'); }
+    else etatPrepa(p.ciel === 'pluie' ? 'Bien à l’abri, attends le soleil' : 'Le soleil est là : sors les claies !', p.ciel === 'pluie' ? 'bien' : 'froid');
+    const q = Math.max(0, Math.min(1, (p.bon - 1.5 * p.mauvais) / (p.duree * 0.5)));
+    $('pScore').style.width = q * 100 + '%'; $('pRest').textContent = Math.ceil(p.duree - p.t) + ' s';
+    if (p.t >= p.duree) finPrepa(q);
+  } else {
+    if (p.lecture > 0) { p.lecture -= dt; if (p.lecture <= 0) { if (p.n >= p.total) finPrepa(p.ok / p.total); else nouvelleGousseTri(); } return; }
     p.tg += dt; $('pMin').style.width = Math.max(0, 100 - p.tg / p.max * 100) + '%';
-    if (p.tg > p.max) { son.rate(); if (++p.n >= p.total) finPrepa(p.ok / p.total); else nouvelleGousseTri(); }
+    if (p.tg > p.max) { son.rate(); const bon = p.cm < 14 ? 0 : p.cm < 17 ? 1 : 2; etatPrepa(`Trop tard : c’était une ${NOMS_TRI[bon]}`, 'mal'); p.n++; p.lecture = 0.9; }
   }
 }
 function finPrepa(q) {
   const p = prepa; if (!p || p.fini) return; p.fini = true;
-  const bonus = dernierGain * 0.3 * q, pts = Math.round(40 * q); noireGagnee += bonus; score += pts; majScore(); if (bonus > 0.05) voler('noire', bonus, innerWidth / 2, innerHeight * 0.5);
-  const nom = { etuvage: 'Étuvage', sechage: 'Séchage', tri: 'Tri' }[p.type], note = q >= 0.8 ? 'parfait' : q >= 0.5 ? 'réussi' : 'à revoir';
-  bandeau(`${nom} ${note} : +${pts} points, +${bonus.toFixed(1)} g de vanille noire`, 2.6);
+  const bonus = dernierGain * 0.3 * q, pts = Math.round(40 * q), et = q >= 0.8 ? 3 : q >= 0.5 ? 2 : q >= 0.2 ? 1 : 0;
+  noireGagnee += bonus; score += pts; majScore(); if (bonus > 0.05) voler('noire', bonus, innerWidth / 2, innerHeight * 0.5);
+  const msg = et === 3 ? 'Travail de maître !' : et === 2 ? 'Bien joué !' : et === 1 ? 'Pas mal, tu feras mieux demain' : 'Ce sera pour demain !';
+  $('prepa').innerHTML = `<div class="t">${PREPA_INFO[p.type].titre}</div><div class="etoilesP">${[0, 1, 2].map(i => `<span class="${i < et ? '' : 'vide'}">★</span>`).join('')}</div>
+    <div class="but">${msg}</div><div class="gainP">+${pts} points${bonus >= 0.05 ? ` · +${bonus.toFixed(1)} g de vanille noire` : ''}</div>`;
   if (q >= 0.5) { son.bonus(); if (fx) { fx.joue('poussiereOr', { x: innerWidth / 2, y: innerHeight * 0.45, intensite: 0.5 + 0.5 * q }); fx.evenement('bonne', { x: innerWidth / 2, y: innerHeight * 0.45, points: pts, couleur: '#c8a050' }); } }
   else { son.fane(); if (fx) fx.evenement('presque', { x: innerWidth / 2, y: innerHeight * 0.45 }); }
   compter('prepa');
-  setTimeout(() => { $('prepa').classList.remove('on'); prepa = null; phaseT = Math.min(phaseT, 3.4); }, 900);
+  setTimeout(() => { $('prepa').classList.remove('on'); prepa = null; phaseT = Math.min(phaseT, 3.4); }, 2200);
 }
 function arreterJauge() {
   if (!jauge || jauge.fini) return; jauge.fini = true;
