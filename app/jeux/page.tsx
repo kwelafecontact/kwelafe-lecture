@@ -75,7 +75,10 @@ export default async function PageJeux() {
               const contenu = (
                 <>
                   <div className="jeu-visuel" style={{ background: j.fond }} aria-hidden>
-                    <span className="jeu-emoji">{j.emoji}</span>
+                    {j.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="jeu-capture" src={j.image} alt="" width={720} height={480} loading="lazy" />
+                    ) : <span className="jeu-emoji">{j.emoji}</span>}
                   </div>
                   <div className="jeu-infos">
                     <h3>{j.titre}</h3>
