@@ -115,7 +115,11 @@
   .faitBulle { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(88vw, 480px); box-sizing:border-box; padding:12px 16px; border-radius:16px; background:rgba(40,12,4,.82); font-size:15px; line-height:1.35; font-weight:600; text-align:left; pointer-events:none; opacity:0; transition:opacity .5s; z-index:9; }
   .faitBulle.on { opacity:1; }
   @media (max-height:500px) { #menu .titre { font-size:54px; } #menu .sous { margin-top:4px; font-size:15px; } #menu .consigne, #menu .defi { display:none; } #menu .modes { flex-direction:row !important; margin-top:10px !important; gap:10px !important; } #menu .btn { padding:9px 18px; font-size:16px; } #menu .btn small { display:none; } #menu { padding-top:46px; justify-content:flex-start; } }
-  .hJauge { position:fixed; left:50%; top:max(124px, calc(env(safe-area-inset-top) + 110px)); transform:translateX(-50%); width:min(40vw, 320px); padding:5px 12px 8px; border-radius:16px; background:rgba(8,20,44,.62); border:1.5px solid rgba(158,231,255,.35); text-align:center; pointer-events:none; opacity:0; transition:opacity .3s; z-index:21; box-sizing:border-box; }
+  .hJauge { position:relative; margin:8px 0 0 auto; width:100%; box-sizing:border-box; padding:4px 8px 7px; border-radius:16px; background:rgba(8,20,44,.62); border:1.5px solid rgba(158,231,255,.35); text-align:center; pointer-events:none; opacity:0; transition:opacity .3s; z-index:21; box-sizing:border-box; }
+  .colD { display:flex; flex-direction:column; align-items:flex-end; flex:none; width:min(31vw, 150px); }
+  .hud > div:first-child { flex:1 1 auto; min-width:0; white-space:nowrap; }
+  .hud .vies { flex:none; white-space:nowrap; font-size:26px; letter-spacing:2px; }
+  .etoileHud { font-family:"Bangers", sans-serif; font-size:clamp(26px, 6vw, 34px); color:#ffd24a; text-shadow:0 3px 0 #8a5a00, 0 0 12px rgba(255,200,60,.5); letter-spacing:.05em; line-height:1.1; }
   .hJauge.on { opacity:1; }
   .hJauge .t { font:800 clamp(11px, 3vw, 14px)/1.2 "Baloo 2", system-ui, sans-serif; color:#dff3ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .hJauge .b { position:relative; height:11px; margin-top:5px; border-radius:6px; background:rgba(255,255,255,.16); }
@@ -137,11 +141,12 @@
 
 <div class="hud" id="hud">
   <div><div class="score" id="score">0</div><div class="meilleur" id="meilleurHud">Record : 0</div><div class="meilleur" id="olivHud">💚 0 olivine</div><div class="meilleur" id="sauvesHud">🚁 0 sauvé</div></div>
-  <div class="vies" id="vies"></div><div class="niveauHud" id="niveau">Niveau 1</div>
+  <div class="vies" id="vies"></div>
+  <div class="colD"><div class="niveauHud" id="niveau">Niveau 1</div><div class="etoileHud" id="etoileHud"></div>
+    <div class="hJauge" id="hJauge"><div class="t" id="hTxt">🚁 En approche</div><div class="b"><div class="r" id="hBarre"></div><div class="ic" id="hIc">🚁</div></div></div></div>
 </div>
 
 <div class="bandeau" id="bandeau">Bouclier activé !</div>
-<div class="hJauge" id="hJauge"><div class="t" id="hTxt">🚁 En approche</div><div class="b"><div class="r" id="hBarre"></div><div class="ic" id="hIc">🚁</div></div></div>
 <div class="bonus" id="bonus">
   <button class="bbtn zone-interactive" id="bBouclier" aria-label="Bouclier"><div class="rempli" id="rBouclier"></div>🛡️</button>
   <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ralenti">⏳<span class="nb" id="nRalenti">0</span></button>
@@ -668,7 +673,7 @@ function ajouterTouristes(n, entree) {
 function popup(txt, pos, cls, couleur) { const s = toScreen(pos), e = document.createElement('div'); e.className = 'pop ' + cls; e.textContent = txt; if (couleur) e.style.color = couleur; e.style.left = Math.min(Math.max(s.x, 110), W - 110) + 'px'; e.style.top = Math.min(Math.max(s.y, 150), H - 160) + 'px'; document.body.appendChild(e); setTimeout(() => e.remove(), 1400); }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = calme() ? '' : 'Record : ' + Math.max(record, score);
   if (calme()) { const et = Math.floor(coupees / 15); if (et > etoilesC) { etoilesC = et; bandeau('★ Une étoile de plus !', 1.6); son.bonus(); majVies(); } } }
-function majVies() { if (calme()) { $('vies').innerHTML = `<div class="temps" style="color:#ffd24a;text-shadow:0 3px 0 #8a5a00">★ ${etoilesC}</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🧡</span>`).join(''); }
+function majVies() { if (calme()) { $('vies').innerHTML = ''; $('etoileHud').textContent = '★ ' + etoilesC; return; } $('etoileHud').textContent = ''; $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🧡</span>`).join(''); }
 function majNiveau() { const e = $('niveau'); e.textContent = 'Niveau ' + niveau; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
 function majOliv() { $('olivHud').textContent = `💚 ${olivPartie} olivine${olivPartie > 1 ? 's' : ''}`; }
 function bandeau(t, d = 1.8) { const e = $('bandeau'); e.textContent = t; e.classList.add('on'); clearTimeout(bandeau.t); bandeau.t = setTimeout(() => e.classList.remove('on'), d * 1000); }
