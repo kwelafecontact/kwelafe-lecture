@@ -138,7 +138,8 @@ document.getElementById('retourJeux').addEventListener('pointerup', function () 
 <button class="btn-son zone-interactive" id="btnSon" aria-label="Couper ou remettre le son"></button>
 <a class="lien zone-interactive" id="lien" href="https://kwelafeproduction.com" target="_blank" rel="noopener">kwelafeproduction.com</a>
 
-<script src="../commun/kwelafe-fx.js"></script>
+<!-- KwFX v3.7 Stability (pilote). Retour arrière : remettre ../commun/kwelafe-fx.js (v2.3) -->
+<script src="../commun/kwelafe-fx-v3.7.js"></script>
 <script type="importmap">{ "imports": { "three": "../commun/three.module.js", "three/addons/": "../commun/addons/" } }</script>
 <script type="module">
 import * as THREE from 'three';
@@ -1069,7 +1070,9 @@ const fx = window.KwFX ? KwFX.init({
   // messages en créole aux paliers de série, record et fin ; le jeu garde son bandeau (niveaux, bonus) et ses popups (pépites)
   messages: true, messagesTypes: ['serie', 'record', 'victoire', 'defaite', 'encourage'], echelleMessages: 0.55, hautMessages: '22%',
   cibleScore: $('score'), zoneShake: glc, dprMax: MOBILE ? 1.5 : 2,
-  onHitStop: ms => { arret = Math.max(arret, ms / 1000); }
+  onHitStop: ms => { arret = Math.max(arret, ms / 1000); },
+  // v3.7 : pause/reprise automatiques quand l'appli passe en arrière-plan ; ?kwfx=canvas impose le mode Canvas 2D (tests)
+  pauseAuto: true, rendu: new URLSearchParams(location.search).get('kwfx') === 'canvas' ? 'canvas' : 'auto'
 }) : null;
 function majDefi() {
   if (!fx) return; const d = fx.defiDuJour();
@@ -1582,6 +1585,7 @@ let libere = false;
 function liberer() {
   if (libere) return; libere = true;
   perf.detruire();
+  if (fx) { try { fx.detruire(); } catch (e) {} } // KwFX v3.7 : libère ses calques, boucles, écouteurs et contextes
   [...prets].forEach(oublier);
   scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
   if (rocheMat.emissiveMap) rocheMat.emissiveMap.dispose();
@@ -1592,7 +1596,7 @@ function liberer() {
   journal('liberation', 'koup-koup-2');
 }
 window.kwelafeLiberer = liberer;
-window.kwelafeInfo = () => ({ ...renderer.info.memory, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
+window.kwelafeInfo = () => ({ ...renderer.info.memory, kwfx: fx ? fx.diagnostic() : null, fruits: prets.length, reserve: reserve.length, modeles: DOSSIER_MODELES, qualite: QUALITE, mode30: perf.mode30, dpr: renderer.getPixelRatio() });
 addEventListener('pagehide', e => { if (!e.persisted) liberer(); });
 perf.boucle(boucle);
 
