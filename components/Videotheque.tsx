@@ -52,7 +52,7 @@ export default function Videotheque({ videos, enfants }: { videos: Video[]; enfa
         <div className="vt-fond" onClick={() => setLecture(null)} role="dialog" aria-modal="true" aria-label={lecture.titre}>
           <div className="vt-lecteur" onClick={(e) => e.stopPropagation()}>
             <div className="vt-cadre">
-              <iframe src={`https://www.youtube-nocookie.com/embed/${lecture.youtube_id}?autoplay=1&rel=0&modestbranding=1&hl=fr${enfants ? "&iv_load_policy=3" : ""}`} title={lecture.titre} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen />
+              <iframe src={`https://www.youtube-nocookie.com/embed/${lecture.youtube_id}?autoplay=1&rel=0&modestbranding=1&hl=fr${enfants ? "&iv_load_policy=3" : ""}`} title={lecture.titre} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />
             </div>
             <div className="vt-infos">
               <div><b>{lecture.titre}</b><small>{lecture.chaine}{lecture.duree ? ` · ${lecture.duree}` : ""}</small></div>
