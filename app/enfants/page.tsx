@@ -44,6 +44,7 @@ export default async function CoinEnfants() {
           <Link href="/enfants/apprendre" style={{ ["--c" as any]: "#1f8a7a" }}><span>🌋</span>Apprendre</Link>
           <Link href="/enfants/coloriage" style={{ ["--c" as any]: "#f08a24" }}><span>🖍️</span>Colorier</Link>
           <Link href="/enfants/puzzle" style={{ ["--c" as any]: "#9d4edd" }}><span>🧩</span>Puzzle</Link>
+          <Link href="/decouvrir?enfants=1" style={{ ["--c" as any]: "#0f7c99" }}><span>🎬</span>Vidéos</Link>
         </nav>
 
         <div id="lire" />

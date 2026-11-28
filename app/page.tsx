@@ -101,33 +101,14 @@ export default async function Accueil() {
           </section>
         )}
 
-        {mystere && (
-          <Link href={`/livre/${mystere.slug}`} className="mystere-mois">
-            <Couverture livre={mystere} />
-            <div><div className="eyebrow">🕵️ Le mystère du mois</div><h2>{mystere.titre}</h2><p>Un nouveau mystère arrive dans <b>{finMois} jour{finMois > 1 ? "s" : ""}</b>.</p></div>
-          </Link>
-        )}
-
         <nav className="raccourcis" aria-label="Accès rapides">
           <Link href="/catalogue" style={{ ["--c" as any]: "#2e9d4f" }}><span aria-hidden>📚</span>Ma bibliothèque</Link>
           <Link href="/livres" style={{ ["--c" as any]: "#1f6fb2" }}><span aria-hidden>📖</span>Mes lectures</Link>
           <Link href="/enfants" style={{ ["--c" as any]: "#f2b705" }}><span aria-hidden>🧸</span>Coin des enfants</Link>
           <Link href="/apprendre" style={{ ["--c" as any]: "#58cc02" }}><span aria-hidden>🐦</span>Apprendre le créole</Link>
           <Link href="/jeux" style={{ ["--c" as any]: "#d6332a" }}><span aria-hidden>🎮</span>Jeux</Link>
+          <Link href="/decouvrir" style={{ ["--c" as any]: "#0f7c99" }}><span aria-hidden>🎬</span>Découvrir La Réunion</Link>
         </nav>
-
-        <section className="section univers-accueil" aria-label="Choisis ton univers">
-          <div className="bloc-editorial petit"><div className="eyebrow">Par thème</div><h2>Choisis ton univers</h2></div>
-          <div className="univers">
-            {UNIVERS.map((u) => (
-              <Link key={u.id} href={`/univers/${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
-                <span className="emoji" aria-hidden>{u.emoji}</span>
-                <b>{u.nom}</b>
-                <small>{livres.filter((l) => l.univers === u.id).length ? `${sansDoublon(livres.filter((l) => l.univers === u.id)).length} livres` : "Bientôt"}</small>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {premier ? (
           <section aria-label="Continuer ma lecture">
@@ -151,6 +132,26 @@ export default async function Accueil() {
             <Link className="btn" href="/livres">Voir mes livres</Link>
           </section>
         )}
+
+        {mystere && (
+          <Link href={`/livre/${mystere.slug}`} className="mystere-mois">
+            <Couverture livre={mystere} />
+            <div><div className="eyebrow">🕵️ Le mystère du mois</div><h2>{mystere.titre}</h2><p>Un nouveau mystère arrive dans <b>{finMois} jour{finMois > 1 ? "s" : ""}</b>.</p></div>
+          </Link>
+        )}
+
+        <section className="section univers-accueil" aria-label="Choisis ton univers">
+          <div className="bloc-editorial petit"><div className="eyebrow">Par thème</div><h2>Choisis ton univers</h2></div>
+          <div className="univers">
+            {UNIVERS.map((u) => (
+              <Link key={u.id} href={`/univers/${u.id}`} className="tuile" style={{ ["--c" as any]: u.couleur, ["--cc" as any]: u.clair }}>
+                <span className="emoji" aria-hidden>{u.emoji}</span>
+                <b>{u.nom}</b>
+                <small>{livres.filter((l) => l.univers === u.id).length ? `${sansDoublon(livres.filter((l) => l.univers === u.id)).length} livres` : "Bientôt"}</small>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {top.length >= 3 && (
           <section className="section">
@@ -182,6 +183,11 @@ export default async function Accueil() {
             </div></Carrousel>
           </section>
         )}
+
+        <Link href="/decouvrir" className="encart-decouvrir">
+          <div><div className="eyebrow">Vidéos et documentaires</div><h2>Découvrir La Réunion</h2><p>Le volcan, les cirques, les coraux, la vanille, les objets lontan, les animaux de l'île : des vidéos éducatives choisies pour toute la famille.</p></div>
+          <span className="ee-emoji" aria-hidden>🎬</span>
+        </Link>
 
         <Link href="/enfants" className="encart-enfants">
           <div><div className="eyebrow">Coin des enfants</div><h2>Grandir avec son île.</h2><p>Des activités simples, joyeuses et éducatives pour apprendre et transmettre en famille.</p></div>

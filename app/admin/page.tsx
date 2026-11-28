@@ -1,5 +1,7 @@
 import Link from "next/link";
 import MotDuMoisAdmin from "@/components/MotDuMoisAdmin";
+import VideosAdmin from "@/components/VideosAdmin";
+import { listeVideos } from "@/lib/videos";
 import { tous as tousSql } from "@/lib/cf";
 import { redirect } from "next/navigation";
 import NavBas from "@/components/NavBas";
@@ -26,6 +28,7 @@ export default async function Admin() {
   const etabs = await tous("SELECT e.*, (SELECT COUNT(*) FROM groupes g WHERE g.etab_id = e.id) AS nb FROM etablissements e ORDER BY e.cree_le DESC").catch(() => []);
   const codesTest = await tous("SELECT empreinte, nom, fin, revoque, dernier_usage, apercu FROM codes_test ORDER BY cree_le DESC LIMIT 100").catch(() => []);
 
+  const videos = await listeVideos();
   const motDuMois = (await tousSql<{ valeur: string }>("SELECT valeur FROM reglages WHERE cle = 'mot_du_mois'").catch(() => []))[0]?.valeur || "";
   return (
     <>
@@ -39,6 +42,11 @@ export default async function Admin() {
         <section className="panneau" id="mot-du-mois">
           <h2>💬 Le mot du mois (affiché en haut de l'accueil)</h2>
           <MotDuMoisAdmin valeur={motDuMois} />
+        </section>
+
+        <section className="panneau" id="videos">
+          <h2>🎬 Découvrir La Réunion : les vidéos</h2>
+          <VideosAdmin videos={videos} />
         </section>
 
         <section className="panneau" id="mes-livres">

@@ -11,6 +11,8 @@ const P: Record<string, string> = {
   fermer: "M6 6l12 12M18 6 6 18",
   flecheD: "M5 12h14m-6-6 6 6-6 6",
   plus: "M12 5v14M5 12h14",
+  play: "M8 5.5v13l11-6.5z",
+  video: "M4 7.5A1.5 1.5 0 0 1 5.5 6h9A1.5 1.5 0 0 1 16 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 16.5zM16 10l4-2.5v9L16 14",
   partager: "M12 15V4m0 0-4 4m4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6",
 };
 
