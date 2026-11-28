@@ -23,14 +23,20 @@
   @keyframes saute { 40% { transform:scale(1.25); } }
   .meilleur { font-size:15px; font-weight:600; opacity:.85; margin-top:2px; }
   .vies { font-size:30px; letter-spacing:4px; text-align:right; }
-  .vies .perdue { opacity:.2; filter:grayscale(1); }
+  .vies .perdue { opacity:.25; filter:grayscale(1); }
+  .vies img { width:42px; height:42px; display:inline-block; margin-left:2px; filter:drop-shadow(0 3px 5px rgba(0,0,0,.6)); }
+  .bbtn img { width:78%; height:78%; object-fit:contain; pointer-events:none; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+  .titreFleur { width:clamp(70px, 14vw, 120px); margin:0 auto -10px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
+  .regle { pointer-events:auto; margin-top:18px; max-width:540px; padding:12px 18px 14px; border-radius:18px; background:rgba(14,22,6,.72); border:2px solid #e8c25a; box-shadow:0 0 18px rgba(232,194,90,.35), inset 0 0 12px rgba(232,194,90,.12); }
+  .regle b { display:block; font-family:"Bangers", sans-serif; letter-spacing:.06em; font-size:22px; color:#ffe27a; margin-bottom:4px; }
+  .regle .consigne { margin-top:0; font-size:clamp(15px, 3.4vw, 18px); }
   .temps { font-family:"Bangers", sans-serif; font-size:clamp(32px, 6.5vw, 46px); color:#b8f0ff; text-shadow:0 3px 0 #1f4f94; letter-spacing:.05em; }
   .ecran { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 32px; pointer-events:none; transition:opacity .35s; }
   .ecran.cache { opacity:0; }
   .ecran.cache * { pointer-events:none !important; }
   .titre { font-family:"Bangers", sans-serif; font-size:clamp(62px, 15vw, 124px); line-height:.95; letter-spacing:.04em; transform:rotate(-3deg);
-    background:linear-gradient(90deg, #ff3b3b, #ff9a1f, #ffe23a, #5fe04a, #2fb4ff, #b45cff, #ff4fb4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 4px 0 #1a0830) drop-shadow(0 0 22px rgba(255,160,60,.45)); }
+    background:linear-gradient(180deg, #fff6c8 0%, #ffe07a 38%, #e8a83a 70%, #9a5a1a 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 0 #3a1e06) drop-shadow(0 0 22px rgba(255,200,90,.45)); }
   .sous { margin-top:14px; font-size:clamp(17px, 3.6vw, 22px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); }
   .modes { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:24px; }
   .btn { pointer-events:auto; border:0; border-radius:999px; padding:14px 30px; font:800 20px/1 "Baloo 2", system-ui, sans-serif; color:#3a1a04; background:linear-gradient(#ffe27a, #ffb21e); box-shadow:0 5px 0 #a8580a, 0 10px 22px rgba(0,0,0,.45); cursor:pointer; }
@@ -88,7 +94,11 @@
   #btnFin { left:max(130px, calc(env(safe-area-inset-left) + 130px)); }
   .faitBulle { position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(88vw, 480px); box-sizing:border-box; padding:12px 16px; border-radius:16px; background:rgba(10,30,10,.82); font-size:15px; line-height:1.35; font-weight:600; text-align:left; pointer-events:none; opacity:0; transition:opacity .5s; z-index:9; }
   .faitBulle.on { opacity:1; }
-  @media (max-height:500px) { #menu .titre { font-size:54px; } #menu .sous { margin-top:4px; font-size:15px; } #menu .consigne, #menu .defi { display:none; } #menu .modes { flex-direction:row !important; margin-top:10px !important; gap:10px !important; } #menu .btn { padding:9px 18px; font-size:16px; } #menu .btn small { display:none; } #menu { padding-top:46px; justify-content:flex-start; } }
+  #menu { justify-content:flex-start; overflow-y:auto; padding:70px 24px 96px; pointer-events:auto; background:radial-gradient(ellipse at 50% 45%, rgba(4,12,4,.55), rgba(4,12,4,.25) 75%); }
+  #menu > :first-child { margin-top:auto; } #menu > :last-child { margin-bottom:auto; }
+  @media (max-height:820px) { #menu .titre { font-size:clamp(52px, 11vw, 96px); } #menu .titreFleur { width:72px; } #menu .regle { margin-top:12px; padding:8px 14px 10px; } #menu .defi { margin-top:10px; } }
+  @media (max-width:500px) { #menu { padding-top:60px; } #menu .titre { font-size:50px; } #menu .titreFleur { width:56px; margin-bottom:-6px; } #menu .sous { font-size:15px; margin-top:8px; } #menu .modes { margin-top:12px !important; gap:8px !important; } #menu .btn { padding:11px 22px; font-size:18px; } #menu .btn.mini { padding:8px 12px; font-size:14px; } #menu .defi { font-size:13px; padding:6px 12px; } #menu .regle .consigne { font-size:14px; } #menu .regle b { font-size:19px; } }
+  @media (max-height:500px) { #menu .titre { font-size:54px; } #menu .sous { margin-top:4px; font-size:15px; } #menu .regle, #menu .defi, #menu .titreFleur { display:none; } #menu .modes { flex-direction:row !important; margin-top:10px !important; gap:10px !important; } #menu .btn { padding:9px 18px; font-size:16px; } #menu .btn small { display:none; } #menu { padding-top:46px; justify-content:flex-start; } }
   .panneau:not(.on) * { pointer-events:none !important; }
   .panneau.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
   .panneau h2 { margin:0 0 6px; font-family:"Bangers", sans-serif; letter-spacing:.05em; font-size:28px; color:#7a3a10; }
@@ -120,19 +130,19 @@
 </div>
 <div class="bandeau" id="bandeau"></div>
 <div class="bonus" id="bonus">
-  <button class="bbtn zone-interactive" id="bMain" aria-label="La main d'Edmond">✋</button>
-  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ombre fraîche">⏳<span class="nb" id="nRalenti">0</span></button>
-  <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés">✨<span class="nb" id="nFrenesie">0</span></button>
+  <button class="bbtn zone-interactive" id="bMain" aria-label="La main d'Edmond"><img src="icones/main.webp" alt=""></button>
+  <button class="bbtn zone-interactive vide" id="bRalenti" aria-label="Ombre fraîche"><img src="icones/feuille.webp" alt=""><span class="nb" id="nRalenti">0</span></button>
+  <button class="bbtn zone-interactive vide" id="bFrenesie" aria-label="Points doublés"><img src="icones/gousses.webp" alt=""><span class="nb" id="nFrenesie">0</span></button>
 </div>
 <div class="jauge zone-interactive" id="jauge"><div class="t">Échaudage</div><div class="p">Touche quand l'aiguille est dans la zone (eau vers 60-65 °C)</div><div class="barre"><div class="zone" id="jZone"></div><div class="aiguille" id="jAig"></div></div></div>
 
 <div class="ecran" id="menu">
-  <div class="titre">Mariaz la vanille</div>
+  <img class="titreFleur" src="icones/fleur.webp" alt=""><div class="titre">Mariaz la vanille</div>
   <div class="sous">Le geste d'Edmond Albius, dans les vanilleraies de l'Est</div>
   <div class="modes" style="flex-direction:column;align-items:center;margin-top:16px"><button class="btn zone-interactive" id="jouerZen" style="background:linear-gradient(#8fe06a,#3fa83a)">Mi vé zoué trankil<br><small style="font-weight:600;font-size:13px">Sans pression : étoiles, carnet du planteur</small></button><button class="btn zone-interactive" id="jouer" style="background:linear-gradient(#ff8a4a,#e03a1a)">Mi rode problèm<br><small style="font-weight:600;font-size:13px">3 fleurs, séries, fleur royale, records</small></button></div>
   <div class="modes" style="margin-top:12px;gap:10px"><button class="btn mini btn2 zone-interactive" id="ouvrirAtelier">🌿 Vanilleraie</button><button class="btn mini btn2 zone-interactive" id="ouvrirCarnet">📖 Carnet</button><button class="btn mini btn2 zone-interactive" id="ouvrirSon">🎚️ Son</button><button class="btn mini btn2 zone-interactive" id="ouvrirCredits">Crédits</button></div>
   <div class="defi" id="defiMenu"></div>
-  <div class="consigne">Touche le cœur des fleurs quand l'anneau doré se referme, cueille les gousses à la pointe jaune, coupe les taches de maladie.</div>
+  <div class="regle"><b>Règle du jeu</b><div class="consigne">Touche le cœur des fleurs quand l'anneau doré se referme, cueille les gousses à la pointe jaune, coupe les taches brunes de maladie.</div></div>
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
@@ -147,7 +157,7 @@
 </div></div>
 
 <div class="panneau" id="panSon"><h2>Son</h2><p style="margin:6px 0">Musique<br><input type="range" id="rMus" min="0" max="100" style="width:100%"></p><p style="margin:6px 0">Effets et ambiance<br><input type="range" id="rFx" min="0" max="100" style="width:100%"></p><button class="btn zone-interactive" id="fermerSon" style="margin-top:10px">Fermer</button></div>
-<div class="panneau" id="panCredits"><h2>Crédits</h2><p style="font-size:14px;line-height:1.45;text-align:left">Jeu et code : Kwélafé Production.<br>Moteur : Three.js (MIT). Polices : Bangers, Baloo 2 (SIL OFL).<br>Fond de sous-bois : image créée pour Kwélafé.<br>Sons et musiques : générés avec ElevenLabs pour Kwélafé (usage commercial autorisé par l'abonnement). Aucune voix.<br>Faits du carnet : Département de La Réunion, DAAF, cahier des charges IGP, sources botaniques.<br>Aucun personnage, logo ou son d'un autre jeu. Détail : credits.md.</p><button class="btn zone-interactive" id="fermerCredits" style="margin-top:6px">Fermer</button></div>
+<div class="panneau" id="panCredits"><h2>Crédits</h2><p style="font-size:14px;line-height:1.45;text-align:left">Jeu et code : Kwélafé Production.<br>Moteur : Three.js (MIT). Polices : Bangers, Baloo 2 (SIL OFL).<br>Sous-bois, lianes de vanille et icônes : images créées avec ElevenLabs pour Kwélafé. Fleurs, boutons et gousses : 3D calculée par le jeu.<br>Sons et musiques : générés avec ElevenLabs pour Kwélafé (usage commercial autorisé par l'abonnement). Aucune voix.<br>Faits du carnet : Département de La Réunion, DAAF, cahier des charges IGP, sources botaniques.<br>Aucun personnage, logo ou son d'un autre jeu. Détail : credits.md.</p><button class="btn zone-interactive" id="fermerCredits" style="margin-top:6px">Fermer</button></div>
 <div class="faitBulle" id="faitBulle"></div>
 <div class="panneau" id="atelier"><h2>Ma vanilleraie</h2><div id="stock"></div><div id="amelios"></div><button class="btn zone-interactive" id="fermerAtelier" style="margin-top:10px">Fermer</button></div>
 <div class="panneau" id="carnet"><h2>Carnet du planteur</h2><div id="faits"></div><button class="btn zone-interactive" id="fermerCarnet" style="margin-top:10px">Fermer</button></div>
@@ -229,8 +239,8 @@ const soleil = new THREE.DirectionalLight(0xffe6b0, 2.6); soleil.position.set(4,
 soleil.shadow.mapSize.set(PETIT ? 1024 : 2048, PETIT ? 1024 : 2048); soleil.shadow.radius = 5; soleil.shadow.bias = -0.0008; soleil.shadow.normalBias = 0.02;
 Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40 }); scene.add(soleil);
 scene.add(new THREE.HemisphereLight(0xd8f0c0, 0x203010, 0.9));
-const texFond = new THREE.TextureLoader().load('./fond-sous-bois.webp', () => { $('charge').textContent = ''; window.PRET = true; }); texFond.colorSpace = THREE.SRGBColorSpace;
-const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false, color: 0xd0d0d0 })); planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
+const texFond = new THREE.TextureLoader().load('./fond-vanilleraie.webp', () => { $('charge').textContent = ''; window.PRET = true; }); texFond.colorSpace = THREE.SRGBColorSpace;
+const planFond = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texFond, toneMapped: false, depthWrite: false, color: 0xb8b8b8 })); planFond.position.z = -26; planFond.renderOrder = -1; scene.add(planFond);
 const texRayon = (() => {   // rayon de lumière calculé par le code (aucun Canvas 2D)
   const WW = 64, HH = 256, d = new Uint8Array(WW * HH * 4);
   for (let y = 0; y < HH; y++) for (let x = 0; x < WW; x++) { const o = (y * WW + x) * 4, gx = Math.abs(x / WW - 0.5) * 2; d[o] = 255; d[o + 1] = 240; d[o + 2] = 190; d[o + 3] = 255 * 0.9 * (1 - y / (HH - 1)) * (1 - gx); }
@@ -243,74 +253,97 @@ let W = 0, H = 0, viewH = 10, viewW = 10;
 const toScreen = v => { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * W, y: (1 - p.y) / 2 * H }; };
 
 // ---------------------------------------------------------------- matières (d'après la vraie plante)
-// tépales cireux vert-jaune pâle, labelle jaune en tube, plus foncé et frangé au bout, colonne blanche, long ovaire vert qui deviendra la gousse
-const matTuteur = new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: 0.95 });
-const matLiane = new THREE.MeshStandardMaterial({ color: 0x3e8a22, roughness: 0.35 });
-const matFeuille = new THREE.MeshPhysicalMaterial({ color: 0x2f7a1a, roughness: 0.4, clearcoat: 0.08, side: THREE.DoubleSide });
-const matRacine = new THREE.MeshStandardMaterial({ color: 0x8a8a6a, roughness: 0.8 });
-const matTepale = new THREE.MeshStandardMaterial({ color: 0xa2b24c, roughness: 0.5, side: THREE.DoubleSide });
-const matLabelle = new THREE.MeshPhysicalMaterial({ color: 0xe0c448, roughness: 0.5, side: THREE.DoubleSide, vertexColors: true });
-const matColonne = new THREE.MeshStandardMaterial({ color: 0xf2f0e2, roughness: 0.6 });
-const matOvaire = new THREE.MeshStandardMaterial({ color: 0x5c9a2a, roughness: 0.45 });
-const matBouton = new THREE.MeshStandardMaterial({ color: 0x8ab83c, roughness: 0.45 });
+// Ce qui ne bouge pas est illustré (photos ElevenLabs : sous-bois, lianes sur tuteurs) ; fleurs, boutons et gousses sont en 3D.
+// Vanilla planifolia : 3 sépales et 2 pétales cireux vert-jaune pâle, labelle jaune en trompette au bord frisé, colonne crème, long ovaire vert.
+const matLiane = new THREE.MeshStandardMaterial({ color: 0x22360e, roughness: 0.6 });
+const matTepale = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.55, sheen: 0.25, sheenRoughness: 0.6, sheenColor: new THREE.Color(0xfff6c0), clearcoat: 0.2, clearcoatRoughness: 0.5, emissive: 0x000000, side: THREE.DoubleSide });
+const matLabelle = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.48, sheen: 0.6, sheenColor: new THREE.Color(0xfff0a0), clearcoat: 0.2, emissive: 0x100c02, side: THREE.DoubleSide });
+const matColonne = new THREE.MeshPhysicalMaterial({ color: 0xf6f0d8, roughness: 0.5, sheen: 0.4 });
+const matOvaire = new THREE.MeshStandardMaterial({ color: 0x5f9a2c, roughness: 0.5 });
+const matBouton = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.45, clearcoat: 0.3 });
 const matOr = new THREE.MeshPhysicalMaterial({ color: 0xffc830, roughness: 0.25, metalness: 0.6, emissive: 0x6a4000, emissiveIntensity: 0.7, side: THREE.DoubleSide });
-const matFusa = new THREE.MeshStandardMaterial({ color: 0x5a3a14, roughness: 0.9, emissive: 0x3a1000, emissiveIntensity: 0.5 });
+const matFusa = new THREE.MeshStandardMaterial({ color: 0x4a2a0e, roughness: 0.9, emissive: 0x5a1c00, emissiveIntensity: 0.5 });
 
 // ---------------------------------------------------------------- géométries
-const geoTepale = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(0.11, 0.18, 0.1, 0.72, 0, 0.95); s.bezierCurveTo(-0.1, 0.72, -0.11, 0.18, 0, 0); const g = new THREE.ShapeGeometry(s, 12); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); p.setZ(i, 0.1 * y * y - 0.06 * Math.abs(p.getX(i)) * 4); } g.computeVertexNormals(); return g; })();
-// labelle : tube qui s'évase, bord découpé en franges, rayures jaune foncé à l'intérieur
+const lin = (r, g, b) => [r, g, b].map(c => Math.pow(Math.max(0, c), 2.2));   // couleurs de sommets données en sRGB
+// tépale lancéolé, creusé en gouttière, pointe recourbée ; couleur : base verte, pointe crème, nervure médiane plus verte
+function geoTepaleF(larg, long) {
+  const s = new THREE.Shape(); s.moveTo(0, 0);
+  s.bezierCurveTo(larg * 0.9, long * 0.12, larg * 1.05, long * 0.62, 0, long);
+  s.bezierCurveTo(-larg * 1.05, long * 0.62, -larg * 0.9, long * 0.12, 0, 0);
+  const g = new THREE.ShapeGeometry(s, 24), p = g.attributes.position, col = [];
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), t = y / long, ax = Math.min(1, Math.abs(x) / (larg * 0.9));
+    p.setZ(i, -0.55 * ax * ax * larg + 0.16 * Math.pow(t, 2.4) * long - 0.05 * Math.sin(t * 3.1) * long);
+    const base = [0.44, 0.56, 0.2], bout = [0.76, 0.78, 0.4], k = Math.pow(t, 0.7), ner = (1 - ax) * 0.12 * (1 - t);
+    col.push(...lin(base[0] + (bout[0] - base[0]) * k - ner, base[1] + (bout[1] - base[1]) * k, base[2] + (bout[2] - base[2]) * k - ner));
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+}
+const geoSepale = geoTepaleF(0.17, 1.0), geoPetale = geoTepaleF(0.15, 0.92);
+// labelle : trompette qui s'évase, bord frisé ; intérieur jaune d'or veiné, extérieur jaune pâle
 const geoLabelle = (() => {
-  const pts = []; for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push(new THREE.Vector2(0.05 + 0.05 * t + 0.13 * Math.pow(t, 3), t * 0.5)); }
-  const g = new THREE.LatheGeometry(pts, 40); const p = g.attributes.position, col = [];
+  const pts = []; for (let i = 0; i <= 20; i++) { const t = i / 20; pts.push(new THREE.Vector2(0.05 + 0.05 * t + 0.16 * Math.pow(t, 3), t * 0.5)); }
+  const g = new THREE.LatheGeometry(pts, 72); const p = g.attributes.position, col = [];
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x), t = y / 0.5;
-    if (t > 0.78) { const f = (t - 0.78) / 0.22, k = 1 + f * (0.1 * Math.sin(a * 23) + 0.06 * Math.sin(a * 41)); p.setX(i, x * k); p.setZ(i, z * k); p.setY(i, y - f * 0.03 * (1 + Math.sin(a * 23))); }
-    const raie = 0.5 + 0.5 * Math.cos(a * 9), fonce = Math.max(t * t, raie * 0.35 * t);
-    col.push(1, 1 - 0.18 * fonce, 1 - 0.55 * fonce);
+    if (t > 0.7) { const f = (t - 0.7) / 0.3, k = 1 + f * (0.13 * Math.sin(a * 19) + 0.07 * Math.sin(a * 37 + 1.3) + 0.04 * Math.sin(a * 61)); p.setX(i, x * k); p.setZ(i, z * k); p.setY(i, y - f * 0.05 * (1 + Math.sin(a * 19))); }
+    const raie = Math.pow(0.5 + 0.5 * Math.cos(a * 11), 3), fonce = Math.min(1, t * t * 0.9 + raie * 0.5 * t);
+    col.push(...lin(0.92, 0.8 - 0.2 * fonce, 0.3 - 0.25 * fonce));
   }
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
 })();
-const geoColonne = new THREE.CylinderGeometry(0.025, 0.03, 0.42, 8);
-const geoOvaire = (() => { const g = new THREE.CylinderGeometry(0.035, 0.03, 0.55, 8); g.translate(0, -0.275, 0); return g; })();
-const geoBouton = (() => { const g = new THREE.SphereGeometry(0.07, 10, 8); g.scale(1, 2.4, 1); return g; })();
-const geoFeuille = (() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(0.34, 0.15, 0.32, 0.85, 0, 1.2); s.bezierCurveTo(-0.32, 0.85, -0.34, 0.15, 0, 0); const g = new THREE.ShapeGeometry(s, 12); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -0.18 * Math.abs(p.getX(i)) * 3 + 0.05 * Math.sin(p.getY(i) * 3)); g.computeVertexNormals(); return g; })();
-// gousse : long cylindre un peu triangulaire et arqué, effilé aux deux bouts (15 à 25 cm en vrai)
-const geoGousse = (() => { const g = new THREE.CylinderGeometry(0.095, 0.095, 1.5, 9, 16); g.translate(0, -0.75, 0); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i), t = -y / 1.5, k = Math.sin(Math.PI * Math.min(1, t * 1.05 + 0.04)) ** 0.35, a = Math.atan2(p.getZ(i), p.getX(i)), tri = 1 + 0.12 * Math.cos(a * 3); p.setX(i, p.getX(i) * k * tri + 0.08 * Math.sin(t * Math.PI)); p.setZ(i, p.getZ(i) * k * tri); } g.computeVertexNormals(); return g; })();
+const geoColonne = new THREE.CylinderGeometry(0.03, 0.035, 0.42, 12);
+const geoAnthere = (() => { const g = new THREE.SphereGeometry(0.045, 12, 8); g.scale(1, 0.7, 1.2); return g; })();
+// ovaire : long, côtelé, il deviendra la gousse
+const geoOvaire = (() => { const g = new THREE.CylinderGeometry(0.04, 0.032, 0.62, 12, 6); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)), k = 1 + 0.12 * Math.cos(a * 6); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } g.translate(0, -0.31, 0); g.computeVertexNormals(); return g; })();
+// bouton floral : fuseau vert, pointe plus claire
+const geoBouton = (() => { const g = new THREE.SphereGeometry(0.07, 16, 24); const p = g.attributes.position, col = []; for (let i = 0; i < p.count; i++) { const y = p.getY(i) / 0.07, k = 1 - 0.45 * Math.max(0, y) ** 1.6; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); p.setY(i, p.getY(i) * 2.6); const t = (y + 1) / 2; col.push(...lin(0.26 + 0.22 * t, 0.42 + 0.18 * t, 0.1 + 0.12 * t)); } g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g; })();
+// gousse : 15 à 25 cm, un peu triangulaire, arquée, effilée aux deux bouts ; attribut « bout » 0 (attache) → 1 (pointe)
+const geoGousse = (() => {
+  const g = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 14, 30); g.translate(0, -0.75, 0); const p = g.attributes.position, bout = [];
+  for (let i = 0; i < p.count; i++) { const y = p.getY(i), t = -y / 1.5, k = Math.sin(Math.PI * Math.min(1, t * 1.04 + 0.05)) ** 0.38, a = Math.atan2(p.getZ(i), p.getX(i)), tri = 1 + 0.13 * Math.cos(a * 3) - 0.03 * Math.cos(a * 9); p.setX(i, p.getX(i) * k * tri + 0.09 * Math.sin(t * Math.PI)); p.setZ(i, p.getZ(i) * k * tri); bout.push(t); }
+  g.setAttribute('bout', new THREE.Float32BufferAttribute(bout, 1)); g.computeVertexNormals(); return g;
+})();
+const geoPedoncule = (() => { const g = new THREE.CylinderGeometry(0.03, 0.04, 0.22, 8); g.translate(0, 0.11, 0); return g; })();
 const geoPointe = (() => { const g = new THREE.SphereGeometry(0.06, 8, 6); g.scale(1, 3, 1); return g; })();
+// matière de gousse : vert brillant, plus foncé à l'attache ; la pointe jaunit (queue de serin) grâce à uSerin
+function matGousse() {
+  const m = new THREE.MeshPhysicalMaterial({ color: 0x3a6a1a, roughness: 0.38, clearcoat: 0.55, clearcoatRoughness: 0.3, emissive: 0x0a1a00 });
+  m.userData.uSerin = { value: 0 }; m.userData.uTip = { value: new THREE.Color(0xf2d040) };
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uSerin = m.userData.uSerin; sh.uniforms.uTip = m.userData.uTip;
+    sh.vertexShader = 'attribute float bout;\nvarying float vBout;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvBout = bout;');
+    sh.fragmentShader = 'uniform float uSerin;\nuniform vec3 uTip;\nvarying float vBout;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(0.72, 1.06, smoothstep(0.0, 0.5, vBout));\ndiffuseColor.rgb = mix(diffuseColor.rgb, uTip, smoothstep(0.62, 0.95, vBout) * clamp(uSerin, 0.0, 1.0));');
+  };
+  return m;
+}
 
-// ---------------------------------------------------------------- vanilleraie : tuteurs, lianes, grappes
-// La liane s'enroule autour du tuteur ; les grappes de fleurs sont toujours placées devant, à distance du bois : rien ne le traverse.
+// ---------------------------------------------------------------- vanilleraie : lianes illustrées sur tuteurs, grappes 3D devant
+const texLianes = ['liane1', 'liane2'].map(n => { const t = new THREE.TextureLoader().load('./' + n + '.webp'); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; });
+const ECHF = 1.35;   // fleurs et gousses à l'échelle des grandes feuilles illustrées
+const LIANES_IMG = [{ asp: 517 / 1100, axe: 0.5 }, { asp: 621 / 1100, axe: 0.53 }];   // largeur/hauteur, position du tuteur dans l'image
 const decor = new THREE.Group(); scene.add(decor);
 let grappes = [], lianes = [];
 function construireVanilleraie() {
   decor.clear(); grappes = []; lianes = [];
-  const n = Math.max(3, Math.min(7, Math.round(viewW / 2.7))) + (etat === 'jeu' ? save.amelio.tuteur : 0);
+  const n = Math.max(2, Math.min(5, Math.round(viewW / 4.2))) + (etat === 'jeu' ? save.amelio.tuteur : 0);
+  const ech = Math.min(1, Math.max(0.6, viewW / 8)) * ECHF;
   for (let i = 0; i < n; i++) {
-    const x = (i + 0.5) / n * viewW * 0.8 - viewW * 0.44, z = -0.3, R = 0.13;
-    const tut = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.85, R, viewH * 1.1, 10), matTuteur);
-    tut.position.set(x, -viewH * 0.05, z); tut.castShadow = true; tut.receiveShadow = true; decor.add(tut);
-    // liane en hélice autour du tuteur, rayon nettement plus grand que le bois
-    const pts = [], tours = rnd(2.2, 3), h0 = -viewH * 0.56, h1 = viewH * 0.38, rL = R + 0.14;
-    for (let k = 0; k <= 80; k++) { const t = k / 80, a = t * tours * Math.PI * 2 + i * 1.7; pts.push(new THREE.Vector3(x + Math.cos(a) * rL, h0 + (h1 - h0) * t, z + Math.sin(a) * rL)); }
-    const courbe = new THREE.CatmullRomCurve3(pts);
-    const liane = new THREE.Mesh(new THREE.TubeGeometry(courbe, 200, 0.055, 8), matLiane); liane.castShadow = true; decor.add(liane);
-    lianes.push({ courbe, x, z, i });
-    // feuilles épaisses alternées, toujours tournées vers l'extérieur du tuteur
-    for (let k = 0; k < 10; k++) {
-      const t = 0.06 + k / 10 * 0.9, p = courbe.getPoint(t), dir = new THREE.Vector3(p.x - x, 0, p.z - z).normalize();
-      const f = new THREE.Mesh(geoFeuille, matFeuille); f.position.copy(p);
-      f.rotation.set(rnd(-0.5, -0.1), dir.x * 0.4, (dir.x > 0 ? -1 : 1) * rnd(0.95, 1.45)); f.position.x += dir.x * 0.04; f.scale.setScalar(rnd(0.62, 0.85)); f.castShadow = true; decor.add(f);
-      // petite racine aérienne qui s'accroche au tuteur
-      if (k % 3 === 1) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, rL - R + 0.02, 5), matRacine); r.position.set((p.x + x) / 2, p.y, (p.z + z) / 2); r.lookAt(new THREE.Vector3(x, p.y, z)); r.rotateX(Math.PI / 2); decor.add(r); }
-    }
-    // grappes : à gauche et à droite du tuteur, devant, bien à l'écart du bois
+    const x = (i + 0.5) / n * viewW * 0.86 - viewW * 0.43, z = -0.4 - (i % 2) * 0.25;
+    const v = (i + Math.floor(n / 2)) % 2, info = LIANES_IMG[v], miroir = i % 3 === 1 ? -1 : 1;
+    const h = viewH * (viewW < viewH ? 1.0 : 1.12), w = h * info.asp;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texLianes[v], transparent: true, alphaTest: 0.04, depthWrite: false, toneMapped: false, color: new THREE.Color().setScalar(0.7 + 0.07 * Math.sin(i * 2.3)) }));
+    m.scale.set(w * miroir, h, 1); m.position.set(x - (info.axe - 0.5) * w * miroir, viewH * 0.06, z); m.renderOrder = 1 + (i % 2); decor.add(m);
+    lianes.push({ x, z, y0: -viewH * 0.4, y1: viewH * 0.35, i, m, ph: rnd(0, 6) });
+    // grappes : à gauche et à droite du tuteur, devant, à l'écart du bois
     for (let k = 0; k < 4; k++) {
-      const t = 0.16 + k / 4 * 0.74, p = courbe.getPoint(t), cote = k % 2 ? 1 : -1;
-      const ech = Math.min(1, Math.max(0.6, viewW / 8)), pos = new THREE.Vector3(x + cote * (0.3 + 0.32 * ech), p.y, z + 0.55);
-      const g = new THREE.Group(); g.position.copy(pos); g.scale.setScalar(Math.min(1, Math.max(0.6, viewW / 8))); decor.add(g);
+      const t = 0.12 + k / 4 * 0.76, y = -viewH * 0.4 + t * viewH * 0.76, cote = (k + i) % 2 ? 1 : -1;
+      const pos = new THREE.Vector3(x + cote * (0.36 + 0.3 * ech), y, 0.25);
+      const g = new THREE.Group(); g.position.copy(pos); g.scale.setScalar(ech); decor.add(g);
       // pédoncule qui part de la liane
-      const tige = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6), matLiane); tige.position.set(-cote * 0.25, 0.04, -0.2); tige.rotation.z = cote * 1.25; tige.rotation.x = 0.4; g.add(tige);
-      const boutons = []; for (let b = 0; b < 4; b++) { const bt = new THREE.Mesh(geoBouton, matBouton); bt.position.set(cote * (0.05 + b * 0.07), 0.18 + b * 0.08, -0.05); bt.rotation.z = -cote * (0.3 + b * 0.15); g.add(bt); boutons.push(bt); }
+      const tige = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.7, 8), matLiane); tige.position.set(-cote * 0.3, 0.06, -0.3); tige.rotation.z = cote * 1.2; tige.rotation.x = 0.5; tige.castShadow = true; g.add(tige);
+      const boutons = []; for (let b = 0; b < 4; b++) { const bt = new THREE.Mesh(geoBouton, matBouton); bt.position.set(cote * (0.05 + b * 0.07), 0.18 + b * 0.08, -0.05); bt.rotation.z = -cote * (0.3 + b * 0.15); bt.castShadow = true; g.add(bt); boutons.push(bt); }
       grappes.push({ g, pos, cote, tut: i, fleur: null, gousses: [], boutons });
     }
   }
@@ -330,17 +363,20 @@ const fleurs = [], gousses = [], taches = [], anneaux = [];
 function vider() { fleurs.splice(0).forEach(f => f.obj.parent && f.obj.parent.remove(f.obj)); gousses.splice(0).forEach(g => g.obj.parent && g.obj.parent.remove(g.obj)); taches.splice(0).forEach(t => scene.remove(t.obj)); grappes.forEach(gr => { gr.fleur = null; gr.gousses = []; }); }
 function creerFleur(gr, duree, or = false) {
   const g = new THREE.Group();
-  const ov = new THREE.Mesh(geoOvaire, matOvaire); ov.rotation.x = -0.5; g.add(ov);
+  const ov = new THREE.Mesh(geoOvaire, matOvaire); ov.rotation.x = -0.5; ov.castShadow = true; g.add(ov);
   const corolle = new THREE.Group(); g.add(corolle);
-  for (let i = 0; i < 5; i++) { const p = new THREE.Mesh(geoTepale, or ? matOr : matTepale); p.rotation.z = i / 5 * Math.PI * 2 + Math.PI / 5; p.rotation.x = -0.45 - (i % 2) * 0.12; p.castShadow = true; corolle.add(p); }
-  const lab = new THREE.Mesh(geoLabelle, or ? matOr : matLabelle); lab.rotation.x = Math.PI / 2; lab.position.z = -0.08; lab.rotation.z = 0; lab.scale.set(1, 1, 0.85); corolle.add(lab);
-  const col = new THREE.Mesh(geoColonne, matColonne); col.rotation.x = Math.PI / 2; col.position.set(0, 0.07, 0.1); corolle.add(col);
+  // 3 sépales (haut, bas gauche, bas droite) et 2 pétales plus étroits, un peu relevés
+  const pieces = [[Math.PI / 2 - Math.PI / 2, geoSepale, -0.42], [Math.PI * 2 / 3 + 0.12, geoSepale, -0.5], [-Math.PI * 2 / 3 - 0.12, geoSepale, -0.5], [Math.PI / 3 + 0.1, geoPetale, -0.3], [-Math.PI / 3 - 0.1, geoPetale, -0.3]];
+  for (const [ang, geo, inc] of pieces) { const p = new THREE.Mesh(geo, or ? matOr : matTepale); p.rotation.z = ang; p.rotation.x = inc + rnd(-0.06, 0.06); p.castShadow = true; corolle.add(p); }
+  const lab = new THREE.Mesh(geoLabelle, or ? matOr : matLabelle); lab.rotation.x = Math.PI / 2; lab.position.set(0, -0.04, -0.1); lab.scale.set(1, 1, 0.85); lab.castShadow = true; corolle.add(lab);
+  const col = new THREE.Mesh(geoColonne, matColonne); col.rotation.x = Math.PI / 2; col.position.set(0, 0.06, 0.08); corolle.add(col);
+  const ant = new THREE.Mesh(geoAnthere, matColonne); ant.position.set(0, 0.08, 0.3); corolle.add(ant);
   // anneau de visée : il se referme sur le cœur, toucher à ce moment = mariage parfait
   const vise = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 48), new THREE.MeshBasicMaterial({ color: or ? 0xffd040 : 0xfff2a0, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }));
   vise.position.z = 0.35; g.add(vise);
   if (or) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffd860, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); corolle.add(h); }
   corolle.scale.setScalar(0.01);
-  g.position.set(gr.cote * 0.05, 0.15, 0.15); g.rotation.z = -gr.cote * 0.25;
+  g.position.set(gr.cote * 0.05, 0.15, 0.15); g.rotation.z = -gr.cote * 0.25; g.rotation.y = gr.cote * 0.35;
   gr.g.add(g); gr.fleur = true;
   gr.boutons.forEach((b, k) => b.visible = k > 0);
   const f = { obj: g, corolle, vise, gr, t: 0, duree, etat: 'ouvre', vivant: true, or, periode: rnd(1.1, 1.4) };
@@ -350,21 +386,21 @@ function fermer(f) { f.vivant = false; f.etat = 'fane'; f.t = 0; f.vise.visible 
 // la gousse pousse depuis l'ovaire de la fleur mariée et pend en balai sous la grappe
 function pousserGousse(f) {
   const gr = f.gr, idx = gr.gousses.length;
-  const m = new THREE.Mesh(geoGousse, new THREE.MeshPhysicalMaterial({ color: 0x6aa82a, roughness: 0.32, clearcoat: 0.7, emissive: 0x0a1a00 }));
+  const m = new THREE.Mesh(geoGousse, matGousse()); m.add(new THREE.Mesh(geoPedoncule, matOvaire));
   m.position.set(gr.cote * (0.02 + idx * 0.07), 0.05, 0.05 + idx * 0.03); m.rotation.z = gr.cote * (0.08 + idx * 0.06); m.scale.set(1, 0.01, 1); m.castShadow = true;
-  const pointe = new THREE.Mesh(geoPointe, new THREE.MeshStandardMaterial({ color: 0xf2d040, roughness: 0.45, transparent: true, opacity: 0 })); pointe.position.y = -1.42; m.add(pointe);
+  const pointe = new THREE.Mesh(geoPointe, new THREE.MeshStandardMaterial({ color: 0xf2d040, roughness: 0.45, transparent: true, opacity: 0 })); pointe.position.y = -1.42; pointe.visible = false; m.add(pointe);
   gr.g.add(m);
   const vitesse = Math.max(0.7, 1 - (niveau - 1) * 0.04);
   const g = { obj: m, pointe, gr, t: 0, etat: 'pousse', mur: rnd(7, 10) * vitesse, fenetre: calme() ? 7 : 4.2, fendue: calme() ? 6 : 3.5 };
   gr.gousses.push(g); gousses.push(g);
 }
 function retirerGousse(g) { g.obj.parent && g.obj.parent.remove(g.obj); const i = gousses.indexOf(g); if (i >= 0) gousses.splice(i, 1); const j = g.gr.gousses.indexOf(g); if (j >= 0) g.gr.gousses.splice(j, 1); }
+const geoTache = (() => { const g = new THREE.IcosahedronGeometry(0.16, 3); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const v = new THREE.Vector3().fromBufferAttribute(p, i), k = 1 + 0.22 * Math.sin(v.x * 31) * Math.sin(v.y * 27) + 0.12 * Math.sin(v.z * 45); p.setXYZ(i, v.x * k, v.y * k, v.z * k); } g.computeVertexNormals(); return g; })();
 function lancerTache() {
   if (!lianes.length) return;
-  const l = lianes[Math.floor(Math.random() * lianes.length)], t = rnd(0.15, 0.85), p = l.courbe.getPoint(t);
-  // la tache est placée sur la partie de liane qui est devant le tuteur
-  if (p.z < l.z) { p.z = l.z + (l.z - p.z); }
-  const m = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), matFusa.clone()); m.scale.set(1, 1.6, 0.6); m.position.copy(p); m.position.z += 0.06; scene.add(m);
+  // la tache brune apparaît sur la liane, juste devant le tuteur
+  const l = lianes[Math.floor(Math.random() * lianes.length)];
+  const m = new THREE.Mesh(geoTache, matFusa.clone()); m.scale.set(1, 1.6, 0.6); m.position.set(l.x + rnd(-0.15, 0.15), rnd(l.y0, l.y1), 0.15); m.rotation.z = rnd(-0.5, 0.5); scene.add(m);
   taches.push({ obj: m, l, t: 0, max: calme() ? 6 : Math.max(2.6, 4 - niveau * 0.15) });
 }
 
@@ -402,10 +438,10 @@ function musique(n) {
 function vitesseMusique() { if (musCur && musNom === 'musique-intense') musCur.s.playbackRate.setTargetAtTime(1 + Math.min(0.25, (niveau - 1) * 0.025), actx.currentTime, 0.5); }
 function chargerSons() {
   if (sonsDemandes || !actx) return; sonsDemandes = true;
-  for (const n of ['mariage-1', 'mariage-2', 'ouvre', 'fane', 'parfait', 'foret', 'musique-calme', 'musique-intense', 'cueille', 'coupe', 'rate', 'combo', 'bonus', 'niveau', 'grand'])
-    fetch('./sons/' + n + '.mp3?v=1').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => {
+  for (const n of ['mariage-1', 'mariage-2', 'ouvre', 'fane', 'parfait', 'foret', 'musique-calme', 'musique-intense', 'cueille', 'coupe', 'rate', 'combo', 'bonus', 'niveau', 'grand', 'eau'])
+    fetch('./sons/' + n + '.mp3?v=3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(b => actx.decodeAudioData(b)).then(d => {
       sons[n] = d; if (n === musVoulue) musique(n);
-      if (n === 'foret') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.3; s.connect(g).connect(fxG); s.start(); } }).catch(() => {});
+      if (n === 'foret') { const s = actx.createBufferSource(); s.buffer = d; s.loop = true; const g = actx.createGain(); g.gain.value = 0.45; s.connect(g).connect(fxG); s.start(); } }).catch(() => {});
 }
 function audio() { setTimeout(chargerSons, 0); if (actx) { if (actx.state === 'suspended') actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); maitre = actx.createGain(); maitre.gain.value = sonCoupe ? 0 : 0.6; maitre.connect(actx.destination); musG = actx.createGain(); musG.gain.value = S.mus; musG.connect(maitre); fxG = actx.createGain(); fxG.gain.value = S.fx; fxG.connect(maitre); } catch (e) {} }
 function jouer(n, vol = 1, vit = 1) { const b = sons[n]; if (!actx || !b) return false; const s = actx.createBufferSource(); s.buffer = b; s.playbackRate.value = vit * rnd(0.96, 1.04); const g = actx.createGain(); g.gain.value = vol; s.connect(g).connect(fxG); s.start(); return true; }
@@ -421,6 +457,7 @@ const son = {
   combo: () => jouer('combo', 0.8),
   bonus: () => jouer('bonus', 0.9),
   grand: () => jouer('grand', 0.95),
+  eau: () => jouer('eau', 0.75),
 };
 
 // ---------------------------------------------------------------- partie
@@ -440,7 +477,7 @@ function montrerFait() {
 function ambiancer() { renderer.toneMappingExposure = calme() ? 0.92 : 0.85; bloom.strength = calme() ? 0.28 : 0.22; }
 function majScore() { const e = $('score'); e.textContent = score; e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); $('meilleurHud').textContent = calme() ? '' : 'Record : ' + Math.max(record, score); majPanier(); }
 function majPanier() { $('panier').textContent = `🟢 ${vert} g de vanille verte · 🟤 ${Math.round(noireGagnee)} g noire`; }
-function majVies() { if (calme()) { $('vies').innerHTML = `<div class="temps" style="color:#ffd24a;text-shadow:0 3px 0 #8a5a00">★ ${etoilesC}</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<span class="${i >= vies ? 'perdue' : ''}">🌼</span>`).join(''); }
+function majVies() { if (calme()) { $('vies').innerHTML = `<div class="temps" style="color:#ffd24a;text-shadow:0 3px 0 #8a5a00">★ ${etoilesC}</div>`; return; } $('vies').innerHTML = [0, 1, 2].map(i => `<img src="icones/fleur.webp" alt="" class="${i >= vies ? 'perdue' : ''}">`).join(''); }
 function majNiveau() { $('niveau').textContent = 'Jour ' + niveau; const e = $('niveau'); e.classList.remove('saute'); void e.offsetWidth; e.classList.add('saute'); }
 function perdreVie() { if (etat !== 'jeu' || calme()) return; vies = Math.max(0, vies - 1); majVies(); if (vies === 0) finPartie(); }
 function compter(type, n = 1) { stats[type] = (stats[type] || 0) + n; const d = defiDuJour(); if (!d.fait && d.type === type && stats[type] >= d.cible) { save.defi.fait = true; save.noire += 30; sauver(); bandeau('Défi du jour réussi ! +30 g de vanille noire', 3); son.niveau(); } }
@@ -483,7 +520,7 @@ function lancerEchaudage() {
   const largeur = (0.12 + save.amelio.baguette * 0.01) * (calme() ? 1.6 : 1), debut = calme() ? 0.42 : 0.47;
   $('jZone').style.left = debut * 100 + '%'; $('jZone').style.width = largeur * 100 + '%';
   jauge = { t: 0, v: calme() ? 0.8 : 1.1 + niveau * 0.08, debut, largeur, fini: false };
-  $('jauge').classList.add('on');
+  $('jauge').classList.add('on'); son.eau();
 }
 function arreterJauge() {
   if (!jauge || jauge.fini) return; jauge.fini = true;
@@ -571,12 +608,12 @@ addEventListener('pointerdown', e => {
   // 2. fleurs ouvertes
   let meilleur = null, dMin = 1e9;
   for (const f of fleurs) { if (!f.vivant || f.t < 0.25) continue; const s = toScreen(f.obj.getWorldPosition(new THREE.Vector3())); const d = Math.hypot(s.x - px, s.y - py); if (d < dMin) { dMin = d; meilleur = f; } }
-  const rayonPx = 0.78 * unite * Math.min(1, Math.max(0.6, viewW / 8)) * (1 + save.amelio.baguette * 0.06);
+  const rayonPx = 0.78 * unite * Math.min(1, Math.max(0.6, viewW / 8)) * ECHF * (1 + save.amelio.baguette * 0.06);
   if (meilleur && dMin < rayonPx * 0.5 * (meilleur.echelle || 1)) { const k = anneauRayon(meilleur); marier(meilleur, k < fenetreParfait()); return; }
   // 3. gousses (on vise le milieu de la gousse)
   let gm = null, dg = 1e9;
   for (const g of gousses) { if (g.etat === 'pousse' || g.etat === 'cueillie' || g.etat === 'tombe') continue; const s = toScreen(g.obj.localToWorld(new THREE.Vector3(0, -0.75, 0))); const d = Math.hypot(s.x - px, (s.y - py) * 0.6); if (d < dg) { dg = d; gm = g; } }
-  if (gm && dg < unite * 0.55) { cueillir(gm); return; }
+  if (gm && dg < unite * 0.65) { cueillir(gm); return; }
   if (meilleur && dMin < rayonPx * 1.1) { serie = 0; son.rate(); popup('Vise le cœur !', meilleur.obj.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.9, 0)), 'aie'); }
 });
 const anneauRayon = f => 1 - ((f.t % f.periode) / f.periode); // 1 → 0 : l'anneau se referme
@@ -618,8 +655,8 @@ function boucle() {
     const g = gousses[i]; g.t += dt; const c = g.obj.material.color;
     if (g.etat === 'pousse') { g.obj.scale.y = Math.min(1, 0.01 + g.t / 1.4); if (g.t > 1.4) { g.etat = 'verte'; g.t = 0; } }
     else if (g.etat === 'verte') { if (g.t > g.mur) { g.etat = 'serin'; g.t = 0; } g.pointe.material.opacity = Math.max(0, (g.t - g.mur + 1.5) / 1.5) * 0.6; }
-    else if (g.etat === 'serin') { g.pointe.material.opacity = 1; g.pointe.scale.setScalar(1 + 0.15 * Math.sin(g.t * 8)); c.setRGB(0.42 + g.t * 0.04, 0.62, 0.16, THREE.SRGBColorSpace); if (g.t > g.fenetre) { g.etat = 'fendue'; g.t = 0; } }
-    else if (g.etat === 'fendue') { c.setRGB(0.5, 0.42, 0.14, THREE.SRGBColorSpace); g.pointe.material.color.setHex(0x8a6a20); if (g.t > g.fendue) { g.etat = 'tombe'; g.t = 0; if (etat === 'jeu') { serie = 0; } } }
+    else if (g.etat === 'serin') { g.pointe.material.opacity = 1; g.pointe.scale.setScalar(1 + 0.15 * Math.sin(g.t * 8)); c.setRGB(0.3 + g.t * 0.03, 0.46, 0.13, THREE.SRGBColorSpace); if (g.t > g.fenetre) { g.etat = 'fendue'; g.t = 0; } }
+    else if (g.etat === 'fendue') { c.setRGB(0.4, 0.3, 0.1, THREE.SRGBColorSpace); g.pointe.material.color.setHex(0x8a6a20); if (g.t > g.fendue) { g.etat = 'tombe'; g.t = 0; if (etat === 'jeu') { serie = 0; } } }
     else if (g.etat === 'tombe') { g.obj.position.y -= dt * 4; g.obj.rotation.z += dt; g.obj.material.transparent = true; g.obj.material.opacity = Math.max(0, 1 - g.t); if (g.t > 1) retirerGousse(g); }
     else if (g.etat === 'cueillie') { g.obj.position.y += dt * 6; g.obj.position.x += dt * 2; g.obj.scale.multiplyScalar(1 - dt * 2); if (g.t > 0.5) retirerGousse(g); }
   }
@@ -635,7 +672,9 @@ function boucle() {
   majParticules(dt);
   const tps = performance.now() / 1000;
   for (const r_ of rayons) r_.m.material.opacity = 0.06 + 0.05 * Math.sin(tps * 0.4 + r_.ph);
-  decor.rotation.y = Math.sin(tps / 4) * 0.012;
+  decor.rotation.y = Math.sin(tps / 4) * 0.008;
+  for (const l of lianes) l.m.rotation.z = Math.sin(tps * 0.5 + l.ph) * 0.004;
+  for (const g of gousses) { const u = g.obj.material.userData; if (u.uSerin) { u.uSerin.value = g.pointe.material.opacity * g.pointe.scale.x; u.uTip.value.copy(g.pointe.material.color); } }
   camera.position.x = Math.sin(tps * 0.18) * 0.22; camera.position.y = Math.sin(tps * 0.13) * 0.1; camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
   composer.render();
   requestAnimationFrame(boucle);
@@ -643,7 +682,7 @@ function boucle() {
 function teinte(f, reste) {
   if (f.or) return;
   if (!f.mat) { f.mat = matTepale.clone(); f.corolle.children.forEach(m => { if (m.material === matTepale) m.material = f.mat; }); }
-  f.mat.color.setRGB(0.64 - (1 - reste) * 0.18, 0.70 - (1 - reste) * 0.3, 0.30 - (1 - reste) * 0.16, THREE.SRGBColorSpace);
+  const u = 1 - reste; f.mat.color.setRGB(1 - u * 0.22, 1 - u * 0.42, 1 - u * 0.6);   // la fleur brunit en fanant
 }
 
 // ---------------------------------------------------------------- atelier (améliorations) et carnet
