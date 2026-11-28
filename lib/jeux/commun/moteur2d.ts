@@ -474,7 +474,7 @@ export const FONDS_AQUARELLE = new Set<string>([
   "kosa-in-shoz", "zarlor", "oussa-i-le", "memory-lontan", "ramasse-les-letchis", "cari-parfait", "gardiens-de-l-ile", "expressions-a-recoller", "case-bleue", "coulee-de-lave",
 ]);
 /** Version des décors refaits : changer le chiffre force les appareils à retélécharger l'image (cache « d'abord »). */
-const VERSIONS_FOND: Record<string, number> = { "rekolt-la": 2, "fusion-pei": 2 };
+const VERSIONS_FOND: Record<string, number> = { "rekolt-la": 2, "fusion-pei": 2, "marche-des-jus": 2 };
 export const cheminFond = (id: string) => `/jeux/fonds/${id}.webp${VERSIONS_FOND[id] ? `?v=${VERSIONS_FOND[id]}` : ""}`;
 
 export const THEMES: Record<string, Theme> = {
