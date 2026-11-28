@@ -22,7 +22,7 @@ export default function PageReglages() {
 
       <section className="rg-bloc"><h2>👁️ Affichage</h2>
         <div className="rg-ligne"><b>Taille du texte</b><Choix cle="taille" options={[["normal", "A"], ["grand", "A+"], ["tres-grand", "A++"]]} /></div>
-        <div className="rg-ligne"><b>Couleur de l'île</b><Choix cle="couleur" options={[["lave", "🌋 Volcan"], ["lagon", "🐠 Lagon"], ["cirques", "⛰️ Cirques"], ["flamboyant", "🌺 Flamboyant"], ["vanille", "🌿 Vanille"]]} /></div>
+        <div className="rg-ligne"><b>Couleur de l'île</b><Choix cle="couleur" options={[["lave", "🌋 Volcan"], ["lagon", "🐠 Lagon"], ["cirques", "⛰️ Cirques"], ["flamboyant", "🌺 Flamboyant"], ["vanille", "🌿 Vanille"], ["bourbon", "🌳 Bourbon"]]} /></div>
         <div className="rg-ligne"><b>Ambiance</b><Choix cle="theme" options={[["clair", "☀️ Clair"], ["sepia", "📜 Sépia"], ["nuit", "🌙 Nuit"]]} /></div>
         <Bascule cle="animations" titre="Animations" aide="Coupe les mouvements si tu préfères une app plus calme." />
         <Bascule cle="sons" titre="Sons des jeux" />

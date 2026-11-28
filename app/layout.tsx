@@ -1,6 +1,7 @@
 import AppliquerReglages from "@/components/AppliquerReglages";
 import RetourGlobal from "@/components/RetourGlobal";
 import type { Metadata, Viewport } from "next";
+import "./tokens.css";
 import "./globals.css";
 import EnregistrerSW from "@/components/EnregistrerSW";
 

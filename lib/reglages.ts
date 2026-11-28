@@ -2,7 +2,7 @@
 export type Reglages = {
   taille: "normal" | "grand" | "tres-grand";
   theme: "clair" | "sepia" | "nuit";
-  couleur: "lave" | "lagon" | "cirques" | "flamboyant" | "vanille"; // couleur principale, aux couleurs de l'île
+  couleur: "lave" | "lagon" | "cirques" | "flamboyant" | "vanille" | "bourbon"; // couleur principale, aux couleurs de l'île
   animations: boolean;
   sons: boolean;
   format: "epub" | "pdf";

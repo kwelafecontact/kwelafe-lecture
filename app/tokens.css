@@ -1,0 +1,59 @@
+/* =====================================================================
+   Kwélafé Lecture : couleurs et mesures de l'application
+   Une seule source. Aucune couleur ne doit plus être écrite en dur ailleurs.
+
+   Palette validée le 28 novembre 2026 :
+   le bleu nuit et le rouge lave sont gardés, le vert Bourbon et l'ivoire
+   sont ajoutés, pas d'or.
+   ===================================================================== */
+:root {
+  /* Papier et fonds */
+  --ivoire: #f7f5ee;
+  --ivoire-chaud: #fbf8f2;
+  --blanc: #ffffff;
+  --beige: #eadfcb;
+
+  /* Rouge lave : la couleur des actions, l'identité de Kwélafé */
+  --lave: #c8361d;
+  --lave-fonce: #a52a14;
+
+  /* Vert Bourbon : les surfaces profondes, les titres, les rappels de nature */
+  --bourbon: #254b3d;
+  --bourbon-fonce: #1a3730;
+  --bourbon-clair: #e4ebe6;
+  --sauge: #8da68c;
+  --sauge-clair: #e9eee3;
+
+  /* Bleu nuit : le bandeau d'accueil et l'écran d'entrée */
+  --nuit: #1b2a4a;
+  --nuit-fonce: #111c33;
+  --degrade: #1b2a4a;
+
+  /* Les quatre couleurs du logo Kwélafé : liseré, navigation, univers */
+  --bleu: #1f6fb2;
+  --jaune: #f2b705;
+  --rouge: #d6332a;
+  --vert: #2e9d4f;
+
+  /* Textes : l'encre tire légèrement sur le vert Bourbon */
+  --encre: #17241e;
+  --texte: #3a3632;
+  --doux: #7a726a;
+
+  /* Mesures */
+  --rayon: 14px;
+  --rayon-grand: 26px;
+  --ombre: 0 6px 22px rgba(37, 75, 61, 0.10);
+  --ombre-haute: 0 18px 40px rgba(27, 42, 74, 0.28);
+  --titre: "Fraunces", Georgia, "Times New Roman", serif;
+  --corps: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --nav-h: 74px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+/* « Couleur de l'île » choisie dans les Réglages : change la couleur des actions */
+html[data-couleur="lagon"] { --lave: #0f7c99; --lave-fonce: #0a5f76; }
+html[data-couleur="cirques"] { --lave: #2f7d4f; --lave-fonce: #22603b; }
+html[data-couleur="flamboyant"] { --lave: #d9480f; --lave-fonce: #b23a0b; }
+html[data-couleur="vanille"] { --lave: #7a5230; --lave-fonce: #5e3f24; }
+html[data-couleur="bourbon"] { --lave: #254b3d; --lave-fonce: #1a3730; }
