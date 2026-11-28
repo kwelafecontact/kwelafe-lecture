@@ -158,6 +158,7 @@
 </div>
 
 <div class="ecran cache" id="fin"><div class="voile">
+  <div class="sous" style="margin-top:0;color:#ffb4a0" id="causeFin"></div>
   <div class="sous" style="margin-top:0" id="sauvesFin">Tout le monde est rentré</div>
   <div class="gros" id="scoreFin">0</div>
   <div class="etoiles" id="etoilesFin"></div>
@@ -323,17 +324,30 @@ const rocheGeo = (() => {
 })();
 const rocheMat = new THREE.MeshStandardMaterial({ color: 0x2a2624, roughness: 0.92, metalness: 0.05, emissive: 0xffffff, emissiveMap: rocheTexture(), emissiveIntensity: 3.2, flatShading: true });
 const halo = new THREE.SpriteMaterial({ map: blobTex([[0, 'rgba(255,190,80,.9)'], [0.4, 'rgba(255,90,10,.35)'], [1, 'rgba(255,40,0,0)']]), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5 });
-// pierre à cristaux : roche sombre hérissée de cristaux verts (olivine), à trancher 2 ou 3 fois
-const matCaillou = new THREE.MeshStandardMaterial({ color: 0x4a5a50, roughness: 0.75, metalness: 0.12, emissive: 0x0e5a28, emissiveIntensity: 0.45, flatShading: true });
-const matCristal = new THREE.MeshStandardMaterial({ color: 0x1fa850, emissive: 0x0e8a3a, emissiveIntensity: 0.8, roughness: 0.12, metalness: 0.1, flatShading: true });
-const geoCristal = new THREE.ConeGeometry(0.16, 0.72, 6);
-const haloVert = new THREE.SpriteMaterial({ map: blobTex([[0, 'rgba(150,255,170,.85)'], [0.4, 'rgba(40,220,100,.32)'], [1, 'rgba(0,200,80,0)']]), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.12 });
+// pierre à cristaux : basalte sombre piqueté de vert, avec des grappes d'olivine (péridot) taillées en prismes à pointe, à trancher 2 ou 3 fois
+const texBasalte = (() => {
+  const N = 256, d = new Uint8Array(N * N * 4);
+  for (let i = 0; i < N * N; i++) { const v = 34 + Math.random() * 22 | 0; d[i * 4] = v; d[i * 4 + 1] = v - 1; d[i * 4 + 2] = v - 3; d[i * 4 + 3] = 255; }
+  const grain = (x, y, r, c) => { for (let yy = -r; yy <= r; yy++) for (let xx = -r; xx <= r; xx++) { if (xx * xx + yy * yy > r * r + 1) continue; const px = (Math.floor(x) + xx + N) % N, py = (Math.floor(y) + yy + N) % N, o = (py * N + px) * 4; d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; } };
+  for (let i = 0; i < 300; i++) { const k = Math.random(), c = k < 0.5 ? [140, 205, 55] : k < 0.8 ? [105, 170, 40] : [195, 232, 105]; grain(Math.random() * N, Math.random() * N, 1 + (Math.random() * 1.6 | 0), c); }
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 1.5); t.generateMipmaps = true; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.needsUpdate = true; return t;
+})();
+const matCaillou = new THREE.MeshStandardMaterial({ map: texBasalte, color: 0xffffff, roughness: 0.9, metalness: 0.05, emissive: 0x0b2a08, emissiveIntensity: 0.25, flatShading: true });
+const matsCristal = [0x5fa826, 0x76bb30, 0x4a9420].map(c => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.12, roughness: 0.16, metalness: 0.15, flatShading: true }));
+const matCristal = matsCristal[0];
+const geoCristaux = [0.9, 1.0, 1.15].map(f => { const r = 0.12 * f, h = 0.42; return new THREE.LatheGeometry([new THREE.Vector2(0, -0.1), new THREE.Vector2(r, -0.1), new THREE.Vector2(r * 1.05, h), new THREE.Vector2(r * 0.6, h + 0.12), new THREE.Vector2(0, h + 0.2)], 6); });
+const haloVert = new THREE.SpriteMaterial({ map: blobTex([[0, 'rgba(190,255,120,.85)'], [0.4, 'rgba(110,210,50,.32)'], [1, 'rgba(60,180,20,0)']]), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.07 });
 function pierreCristal() {
   const m = new THREE.Mesh(rocheGeo, matCaillou), Y = new THREE.Vector3(0, 1, 0);
-  for (let i = 0; i < 18; i++) {
-    const n = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-0.4, 1)).normalize(), c = new THREE.Mesh(geoCristal, matCristal), k = i < 11 ? 1 : 0.6;
-    c.scale.setScalar(k * rnd(0.8, 1.25)); c.position.copy(n).multiplyScalar(0.56 + 0.26 * k); c.quaternion.setFromUnitVectors(Y, n); m.add(c);
-  }
+  const grappes = [[-0.62, 0.45, 0.65], [0.6, 0.55, 0.58], [0.05, -0.62, 0.78], [0.78, -0.2, 0.6], [-0.7, -0.25, 0.66]];
+  grappes.forEach((g0, gi) => {
+    const n0 = new THREE.Vector3(g0[0] + rnd(-0.12, 0.12), g0[1] + rnd(-0.12, 0.12), g0[2]).normalize(), nb = 4 + (gi % 2);
+    for (let i = 0; i < nb; i++) {
+      const n = i === 0 ? n0.clone() : n0.clone().add(new THREE.Vector3(rnd(-0.6, 0.6), rnd(-0.6, 0.6), rnd(-0.2, 0.4))).normalize(), k = i === 0 ? rnd(1.0, 1.25) : rnd(0.5, 0.85);
+      const c = new THREE.Mesh(geoCristaux[(gi + i) % 3], matsCristal[(gi + i) % 3]);
+      c.scale.set(k, k * rnd(0.9, 1.2), k); c.position.copy(n0).multiplyScalar(0.5).addScaledVector(n, 0.05 * i); c.quaternion.setFromUnitVectors(Y, n); c.rotateY(rnd(0, 3)); m.add(c);
+    }
+  });
   return m;
 }
 const matOr = new THREE.MeshStandardMaterial({ color: 0x60c8ff, roughness: 0.3, emissive: 0x2a8aff, emissiveIntensity: 1.2 });
@@ -483,10 +497,12 @@ const matF = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, un
   fragmentShader: `varying float vA; void main() { float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; gl_FragColor = vec4(vec3(0.62, 0.6, 0.6), vA * smoothstep(0.5, 0.0, r) * 0.5); }` });
 const ptsF = new THREE.Points(geoF, matF); ptsF.frustumCulled = false; scene.add(ptsF);
 let pI = 0, fI = 0;
-function braise(x, y, z, vx, vy, c, vie, t, g = 4) { const q = PP[pI], k = pI; pI = (pI + 1) % MAXP; q.vie = q.max = vie; q.vx = vx; q.vy = vy; q.t0 = t; q.g = g; pPos[k * 3] = x; pPos[k * 3 + 1] = y; pPos[k * 3 + 2] = z; pCol[k * 3] = c[0]; pCol[k * 3 + 1] = c[1]; pCol[k * 3 + 2] = c[2]; }
+function braise(x, y, z, vx, vy, c, vie, t, g = 4, sc = 0) { const q = PP[pI], k = pI; pI = (pI + 1) % MAXP; q.sc = sc; q.vie = q.max = vie; q.vx = vx; q.vy = vy; q.t0 = t; q.g = g; pPos[k * 3] = x; pPos[k * 3 + 1] = y; pPos[k * 3 + 2] = z; pCol[k * 3] = c[0]; pCol[k * 3 + 1] = c[1]; pCol[k * 3 + 2] = c[2]; }
 function fumee(x, y, z, t = 90) { const q = FF[fI], k = fI; fI = (fI + 1) % MAXF; q.vie = q.max = rnd(1.5, 3); q.vx = rnd(-0.2, 0.2); q.vy = rnd(0.4, 0.9); q.t0 = t * rnd(0.7, 1.3); fPos[k * 3] = x; fPos[k * 3 + 1] = y; fPos[k * 3 + 2] = z; }
+let tSc = 0;
 function majParticules(dt) {
-  for (let i = 0; i < MAXP; i++) { const q = PP[i]; if (q.vie <= 0) { pAlp[i] = 0; continue; } q.vie -= dt; q.vy -= q.g * dt; q.vx *= 0.99; pPos[i * 3] += q.vx * dt; pPos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; pAlp[i] = Math.min(1, k * 1.5); pTai[i] = q.t0 * (0.5 + 0.5 * k); }
+  tSc += dt;
+  for (let i = 0; i < MAXP; i++) { const q = PP[i]; if (q.vie <= 0) { pAlp[i] = 0; continue; } q.vie -= dt; q.vy -= q.g * dt; q.vx *= 0.99; pPos[i * 3] += q.vx * dt; pPos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; pAlp[i] = Math.min(1, k * 1.5); pTai[i] = q.t0 * (0.5 + 0.5 * k) * (q.sc ? 0.72 + 0.28 * Math.sin(tSc * 11 + i * 1.7) : 1); }
   for (let i = 0; i < MAXF; i++) { const q = FF[i]; if (q.vie <= 0) { fAlp[i] = 0; continue; } q.vie -= dt; fPos[i * 3] += q.vx * dt; fPos[i * 3 + 1] += q.vy * dt; const k = q.vie / q.max; fAlp[i] = Math.min(1, k) * Math.min(1, (1 - k) * 4); fTai[i] = q.t0 * (1.6 - k); }
   for (const n of ['position', 'alpha', 'taille', 'couleur']) geoP.attributes[n].needsUpdate = true;
   for (const n of ['position', 'alpha', 'taille']) geoF.attributes[n].needsUpdate = true;
@@ -532,7 +548,7 @@ function chargerVoix() {
 }
 // un touriste crie : chacun a sa voix, on évite de répéter la même phrase et de parler tous en même temps
 function crier(m, urgent = false) {
-  if (!actx || sonCoupe || !m || m.monte) return; const liste = voixBuf[VOIX[m.voix % VOIX.length][0]]; if (!liste || !liste.length) return;
+  if (!actx || sonCoupe || !m || m.monte || m.mort) return; const liste = voixBuf[VOIX[m.voix % VOIX.length][0]]; if (!liste || !liste.length) return;
   const now = performance.now() / 1000; if (now < criGlobal) return; if (!urgent && now < m.cri) return; if (urgent && now < m.cri - 2.2) return; /* une seule voix à la fois, jamais deux touristes en même temps */
   let k; do { k = Math.floor(Math.random() * liste.length); } while (liste.length > 1 && k === m.derniere); m.derniere = k;
   const s2 = actx.createBufferSource(); s2.buffer = liste[k]; s2.playbackRate.value = rnd(0.97, 1.04); const g = actx.createGain(); g.gain.value = urgent ? 1 : 0.85;
@@ -589,9 +605,13 @@ fxSon();
 let prochainEclair = 4;
 function eclair(fort = false, versSol = false) {
   if (!fx) return;
+  let sx2 = 0;
   const c = ecran(new THREE.Vector3(cratere.x, cratere.y, -25)), sx = Math.max(W * 0.12, Math.min(W * 0.88, c.x + rnd(-0.35, 0.35) * W));
-  const cible = versSol ? { x: sx + rnd(-0.15, 0.15) * W, y: ecran(new THREE.Vector3(0, sol, 0)).y - rnd(20, 90) } : { x: sx + rnd(-0.12, 0.12) * W, y: c.y + rnd(-0.04, 0.16) * H };
-  fx.joue('eclair', { x: sx + rnd(-0.06, 0.06) * W, y: -10, x2: cible.x, y2: cible.y, intensite: fort ? 1 : rnd(0.55, 0.85), branches: fort ? 4 : undefined });
+  let cible = versSol ? { x: sx + rnd(-0.15, 0.15) * W, y: ecran(new THREE.Vector3(0, sol, 0)).y - rnd(20, 90) } : { x: sx + rnd(-0.12, 0.12) * W, y: c.y + rnd(-0.04, 0.16) * H };
+  let victime = null;
+  if (versSol && etat === 'jeu' && Math.random() < 0.8) { const cand = marcheurs.filter(m => !m.monte && !m.entree && !m.mort); if (cand.length) { victime = cand[Math.floor(Math.random() * cand.length)]; const sp = toScreen(new THREE.Vector3(victime.x, sol, 0.8)); cible.x = sp.x; cible.y = sp.y; } }
+  if (victime) { sx2 = cible.x + rnd(-0.18, 0.18) * W; setTimeout(() => etat === 'jeu' && foudreAuSol(victime), 140); }
+  fx.joue('eclair', { x: (victime ? sx2 : sx) + rnd(-0.06, 0.06) * W, y: -10, x2: cible.x, y2: cible.y, intensite: fort ? 1 : rnd(0.55, 0.85), branches: fort ? 4 : undefined });
   eclairLum = fort ? 1 : 0.7; bloom.strength = Math.max(bloom.strength, 1.15);
   if (etat === 'jeu' && Math.random() < 0.6) setTimeout(() => { const m = marcheurs[Math.floor(Math.random() * marcheurs.length)]; m && crier(m, true); }, 350);
 }
@@ -641,7 +661,7 @@ function ajouterTouristes(n, entree) {
   for (let i = 0; i < n; i++) {
     const o = randonneur(lookSuivant++), cote = Math.random() < 0.5 ? -1 : 1;
     const x = entree ? cote * (viewW / 2 + 0.6 + i * 0.7) : rnd(-viewW * .42, viewW * .42);
-    const m = { obj: o, x, dir: entree ? -cote : (Math.random() < .5 ? 1 : -1), v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0, entree, panique: true, pc: 0, vp: 1, monte: null, voix: voixSuivante++, cri: 0, derniere: -1 };
+    const m = { obj: o, x, dir: entree ? -cote : (Math.random() < .5 ? 1 : -1), v: rnd(0.5, 0.9), t: rnd(0, 6), choc: 0, entree, panique: true, pc: 0, vp: 1, monte: null, voix: voixSuivante++, cri: 0, derniere: -1, photo: null, photoCd: rnd(3, 9), coups: 0, mort: null, pT: 0 };
     o.position.set(x, sol, 0.8); scene.add(o); marcheurs.push(m);
   }
 }
@@ -719,7 +739,47 @@ function lancerHelico() {
   if (fx) fx.joue('halo', { intensite: 0.4 });
 }
 // panique : les touristes marchent tranquillement, et ne s'affolent que pendant que l'hélicoptère est là
-let affole = false;
+let affole = false, causeFin = '';
+// blessures : un caillou sur la tête = pansement, le deuxième = le randonneur s'effondre et la partie est finie
+const matPansement = new THREE.MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.9 }), matCroix = new THREE.MeshStandardMaterial({ color: 0xd62020, roughness: 0.6 }), matEtoile = new THREE.MeshStandardMaterial({ color: 0xffe066, emissive: 0xffc400, emissiveIntensity: 1.2 });
+function poserPansement(m) {
+  const tete = m.obj.userData.tete; if (!tete || m.pansement) return;
+  const g = new THREE.Group(), bande = new THREE.Mesh(new THREE.TorusGeometry(0.142, 0.032, 8, 24), matPansement); bande.rotation.x = Math.PI / 2 - 0.25; g.add(bande);
+  const c1 = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.012), matCroix), c2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.07, 0.012), matCroix); c1.position.set(0.05, 0.02, 0.15); c2.position.copy(c1.position); g.add(c1, c2);
+  g.position.y = 0.17; tete.add(g); m.pansement = g;
+}
+function blesser(m, x) {
+  if (calme() || etat !== 'jeu' || m.mort) return;
+  m.coups++; m.photo = null; poserPansement(m);
+  const pos = m.obj.position.clone().add(new THREE.Vector3(0, 1.9, 0));
+  if (m.coups === 1) { popup('Aïe ! Il est blessé', pos, 'aie'); return; }
+  m.mort = { t: 0 }; causeFin = 'mort'; popup('Oh non… 2 cailloux !', pos, 'aie'); bandeau('Touché deux fois !', 2.4);
+  const et = new THREE.Group(); for (let i = 0; i < 3; i++) { const e = new THREE.Mesh(new THREE.OctahedronGeometry(0.06, 0), matEtoile); e.userData.a = i * 2.094; et.add(e); } et.position.y = 0.3; m.obj.userData.tete.add(et); m.etoiles = et;
+}
+// photographes : certains s'arrêtent, tournent le dos aux cailloux et prennent le volcan en photo
+function bombeProche(x) { return bombes.some(b => b.vivant && !b.morceau && !b.montee && Math.abs(b.obj.position.x - x) < 2.6 && b.obj.position.y < sol + 4); }
+function flashPhoto(m) { const x = m.x, y = sol + 1.42; for (let i = 0; i < 7; i++) braise(x + rnd(-0.08, 0.08), y + rnd(-0.06, 0.1), 1.05, rnd(-1.2, 1.2), rnd(-0.5, 1.2), [3, 3, 2.6], rnd(0.14, 0.26), rnd(70, 120), 0); try { if (fx && Math.random() < 0.8) fx.son('clic'); } catch (e) {} }
+function majPhoto(m, dt) {
+  if (m.photo) {
+    m.photo.t += dt;
+    if (!m.photo.f1 && m.photo.t > 0.9) { m.photo.f1 = true; flashPhoto(m); }
+    if (!m.photo.f2 && m.photo.t > 2.1 && m.photo.dur > 2.6) { m.photo.f2 = true; flashPhoto(m); }
+    if (m.photo.t > m.photo.dur || affole || m.pT > 0 || m.choc > 0 || m.mort || bombeProche(m.x)) { m.photo = null; m.photoCd = rnd(8, 16); }
+  } else {
+    m.photoCd -= dt;
+    if (m.photoCd <= 0) {
+      if (etat === 'jeu' && !affole && m.pT <= 0 && !m.entree && !m.mort && m.choc <= 0 && !bombeProche(m.x) && marcheurs.filter(q => q.photo).length < 2) { m.photo = { t: 0, dur: rnd(2.6, 4.2), f1: false, f2: false }; popup('📸', m.obj.position.clone().add(new THREE.Vector3(0, 2.0, 0)), 'pts'); }
+      else m.photoCd = rnd(1.5, 3);
+    }
+  }
+}
+// l'éclair tombe au pied des touristes : ils paniquent quelques secondes
+function foudreAuSol(v) {
+  const x = v.x; for (let i = 0; i < 46; i++) { const a = rnd(0, 3.14), w = rnd(1.5, 6); braise(x, sol + 0.15, 0.9, Math.cos(a) * w * (Math.random() < 0.5 ? -1 : 1), Math.sin(a) * w, i % 3 ? [0.55, 0.8, 1.8] : [2, 2, 2], rnd(0.3, 0.8), rnd(30, 70), 6); }
+  for (let i = 0; i < 6; i++) fumee(x + rnd(-0.4, 0.4), sol + 0.2, 0.7, 110); tache(x); secousse = Math.max(secousse, 0.45);
+  for (const m of marcheurs) { if (m.monte || m.mort) continue; const d = Math.abs(m.x - x); if (d < 3.2) { m.pT = rnd(3, 4.5) * (d < 1 ? 1.15 : 0.85); m.photo = null; m.pc = 0; m.dir = Math.sign(m.x - x) || (Math.random() < 0.5 ? -1 : 1); } }
+  for (const m of marcheurs.filter(q => q.pT > 0).sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x)).slice(0, 2)) setTimeout(() => crier(m, true), rnd(100, 600));
+}
 function paniquer(on) { affole = on; for (const m of marcheurs) { m.pc = 0; if (on && Math.random() < 0.7) setTimeout(() => crier(m, true), rnd(0, 900)); } }
 // touriste touché pendant que l'hélicoptère est là : il monte par le treuil
 function faireMonter(m) {
@@ -819,7 +879,7 @@ function montrerFait() {
 }
 function demarrer(m) {
   audio(); mode = m; etat = 'jeu'; score = 0; vies = 3; temps = 0; prochain = 3.6; (() => { let n = 0; const t = setInterval(() => { if (son.annonce() || ++n > 8 || etat !== 'jeu') clearInterval(t); }, 250); })(); coupees = 0; niveau = 1; etoilesC = 0; $('faitBulle').classList.remove('on'); ficheIdx = 0; bouclier = 0; charge = 0; serie = 0; ralentis = 0; ondes = 0; ralenti = 0; majBonus(); $('bonus').classList.add('on');
-  phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; sauves = 0; majSauves(); helico.etat = 'loin'; helico.obj.visible = false; son.helico(false); majJauge(0, '🚁 En approche', false); $('hJauge').classList.add('on'); viderTouristes(); ajouterTouristes(nbTouristes(), false); majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); 
+  phase = 'actif'; phaseT = 0; stats = {}; olivPartie = 0; sauves = 0; majSauves(); helico.etat = 'loin'; helico.obj.visible = false; son.helico(false); majJauge(0, '🚁 En approche', false); $('hJauge').classList.add('on'); viderTouristes(); ajouterTouristes(nbTouristes(), false); majOliv(); DUREE_BOUCLIER = 5 + save.amelio.bouclier; olivines.splice(0).forEach(o => scene.remove(o.obj)); eclatsSol.splice(0).forEach(e => scene.remove(e.m)); causeFin = '';
   prochainEclair = 2.5; record = calme() ? 0 : save.record; ambiancer(); musique('musique-stress'); vitesseMusique();
   bombes.forEach(b => scene.remove(b.obj)); bombes.length = 0; oiseaux.forEach(o => scene.remove(o.obj)); oiseaux.length = 0; prochainOiseau = 6; $('bandeau').classList.remove('on');
   majScore(); majVies(); majNiveau();
@@ -830,6 +890,7 @@ function finPartie() {
   if (etat !== 'jeu') return;
   etat = 'fin'; musique('musique-calme'); $('faitBulle').classList.remove('on'); $('btnPause').classList.remove('on'); $('bonus').classList.remove('on'); $('bandeau').classList.remove('on'); $('jauge').classList.remove('on'); sismo = null;
   $('hJauge').classList.remove('on'); son.helico(false); if (helico.etat !== 'loin') { helico.etat = 'depart'; helico.t = 0; } paniquer(false);
+  $('causeFin').textContent = causeFin === 'mort' ? 'Un randonneur a reçu deux cailloux sur la tête. Protège-les mieux !' : '';
   const cleS = calme() ? 'recordSauvesZen' : 'recordSauves', nouveauS = sauves > (save[cleS] || 0); if (nouveauS) save[cleS] = sauves;
   $('sauvesFin').textContent = sauves ? `🚁 ${sauves} touriste${sauves > 1 ? 's' : ''} sauvé${sauves > 1 ? 's' : ''} par l'hélicoptère` + (nouveauS ? ' · nouveau record !' : ` (record : ${save[cleS]})`) : 'Aucun touriste sauvé cette fois : essaie de les toucher quand l\'hélicoptère est là';
   const nouveau = !calme() && score > record && score > 0;
@@ -890,7 +951,7 @@ function poserOlivine(x) {
 }
 function tapper(px, py) {
   for (const o of olivines) { const sc = toScreen(o.obj.position); if (Math.hypot(sc.x - px, sc.y - py) < 48) { o.prise = true; olivPartie++; majOliv(); score += 5; majScore(); compter('olivines'); son.olivine(); popup('+1 💚', o.obj.position, 'pts', '#a8f070'); fxJoue('eclat', o.obj.position, { intensite: 0.55, couleurs: VERT }); fxJoue('poussiereOr', o.obj.position, { intensite: 0.5, couleurs: VERT }); return true; } }
-  if (helico.etat === 'station') { let best = null, bd = 1e9; const r = 62 + save.amelio.jumelles * 14; for (const m of marcheurs) { if (m.monte || m.entree) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 0.75, 0))); const d = Math.hypot(sc.x - px, sc.y - py); if (d < r && d < bd) { bd = d; best = m; } } if (best) { faireMonter(best); return true; } }
+  if (helico.etat === 'station') { let best = null, bd = 1e9; const r = 62 + save.amelio.jumelles * 14; for (const m of marcheurs) { if (m.monte || m.entree || m.mort) continue; const sc = toScreen(m.obj.position.clone().add(new THREE.Vector3(0, 0.75, 0))); const d = Math.hypot(sc.x - px, sc.y - py); if (d < r && d < bd) { bd = d; best = m; } } if (best) { faireMonter(best); return true; } }
   return false;
 }
 function majBonus() {
@@ -950,7 +1011,7 @@ function trancher(a, b) {
         // pierre à cristaux : chaque coupe l'entaille, elle ne se brise qu'à la dernière
         bo.pv--; bo.garde = 0.2; bo.vy += bo.boss ? 0.6 : 2.2; bo.vx += dir.x * 1.6; bo.vr *= -1.4; { const kr = bo.boss ? 0.96 : 0.9; bo.obj.scale.multiplyScalar(kr); bo.base && bo.base.multiplyScalar(kr); bo.rayon *= bo.boss ? 0.97 : 0.92; }
         son.coupe(bo.obj.scale.x); anneau(bo.obj.position); score += 1; majScore(); serie++; chaine++;
-        const q = bo.obj.position; for (let i = 0; i < 46; i++) { const a = Math.random() * 6.283, v = rnd(2, 8); braise(q.x, q.y, q.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 1, i % 3 ? [0.35, 1, 0.5] : [0.8, 1, 0.8], rnd(0.4, 1), rnd(22, 55), 5); }
+        const q = bo.obj.position; for (let i = 0; i < 46; i++) { const a = Math.random() * 6.283, v = rnd(2, 8); braise(q.x, q.y, q.z + 0.4, Math.cos(a) * v, Math.sin(a) * v + 1, i % 3 ? [0.62, 0.95, 0.2] : [0.85, 1, 0.5], rnd(0.4, 1), rnd(22, 55), 5); }
         popup(bo.pv > 1 ? 'Encore ' + bo.pv + ' coupes !' : 'Encore 1 coupe !', q, 'chaine'); fxJoue(bo.boss ? 'hitstop' : 'etincelles', q, bo.boss ? { duree: 55 } : { intensite: 0.5, couleurs: VERT }); if (bo.boss) fxJoue('onomatopee', q, { texte: 'PAF !', intensite: 0.55 }); continue;
       }
       eclater(bo, dir); son.coupe(bo.obj.scale.x); coupees++; chaine++; serie++;
@@ -986,6 +1047,26 @@ function dessinerTrait() {
 // taches de lave au sol : incandescentes puis refroidies
 const taches = [];
 const texTache = blobTex([[0, 'rgba(255,242,160,1)'], [0.3, 'rgba(255,138,32,1)'], [0.7, 'rgba(160,20,0,.8)'], [1, 'rgba(40,0,0,0)']]);
+// la bombe se brise en touchant le sol : des morceaux rebondissent puis s'éteignent, et des braises restent posées sur le sentier
+const eclatsSol = [];
+function briserAuSol(b, x) {
+  const n = b.boss ? 9 : b.cristal ? 7 : 6, k0 = b.obj.scale.x || 1;
+  for (let i = 0; i < n; i++) {
+    const verts = b.cristal && i % 2 === 0, m = verts ? new THREE.Mesh(geoCristaux[i % 3], matsCristal[i % 3]) : new THREE.Mesh(rocheGeo, b.cristal ? matCaillou : rocheMat), k = verts ? k0 * rnd(0.5, 0.8) : k0 * rnd(0.13, 0.27);
+    m.scale.set(k, k * rnd(0.75, 1.1), k); m.position.set(x + rnd(-0.2, 0.2), sol + 0.3, rnd(0.6, 1.0)); m.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); scene.add(m);
+    eclatsSol.push({ m, vx: rnd(-3.4, 3.4), vy: rnd(2.5, 5.5), vr: rnd(-9, 9), k, vie: rnd(3.2, 4.6) });
+  }
+  const nb = PETIT ? 14 : 24;
+  for (let i = 0; i < nb; i++) { const c = Math.random(); braise(x + rnd(-1.3, 1.3), sol + rnd(0.03, 0.2), rnd(0.55, 1.0), rnd(-0.15, 0.15), 0, c < 0.45 ? [1, 0.35, 0.05] : c < 0.8 ? [1, 0.6, 0.12] : [1, 0.85, 0.4], rnd(3.2, 6), rnd(16, 34), 0, 1); }
+}
+function majEclatsSol(dt) {
+  for (let i = eclatsSol.length - 1; i >= 0; i--) {
+    const e = eclatsSol[i], p = e.m.position; e.vie -= dt; e.vy -= 14 * dt; p.x += e.vx * dt; p.y += e.vy * dt; e.m.rotation.z += e.vr * dt;
+    if (p.y < sol + 0.08) { p.y = sol + 0.08; if (Math.abs(e.vy) > 1.2) { e.vy *= -0.38; e.vx *= 0.6; e.vr *= 0.6; } else { e.vy = 0; e.vx *= 0.88; e.vr *= 0.85; } }
+    const r = Math.min(1, e.vie / 0.8); if (r < 1) e.m.scale.setScalar(e.k * Math.max(0.01, r));
+    if (e.vie <= 0) { scene.remove(e.m); eclatsSol.splice(i, 1); }
+  }
+}
 function tache(x) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.7), new THREE.MeshBasicMaterial({ map: texTache, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, color: new THREE.Color(3, 3, 3) })); m.position.set(x, sol + 0.05, 0.4); m.rotation.x = -1.2; scene.add(m); taches.push({ m, vie: 3 }); }
 // onde de choc et anneau lumineux à la coupe
 const anneaux = [];
@@ -1020,21 +1101,30 @@ function boucle() {
   if (Math.random() < 0.35) fumee(rnd(viewW / 2 - 1.2, viewW / 2), sol + rnd(0, 0.5), -0.5, 160);
   // randonneurs qui marchent sur le sentier balisé
   for (const m of marcheurs) {
+    if (m.mort) {   // le randonneur s'effondre, des étoiles tournent autour de sa tête
+      if (!fige) m.mort.t += dt; const kd = Math.min(1, m.mort.t / 0.45), ke = kd * kd * (3 - 2 * kd);
+      m.obj.rotation.z = (m.dir >= 0 ? -1 : 1) * ke * 1.5; m.obj.position.y = sol + ke * 0.12; m.obj.position.x = m.x;
+      if (m.etoiles) m.etoiles.children.forEach((e, ie) => { const a = e.userData.a + m.mort.t * 6; e.position.set(Math.cos(a) * 0.22, Math.sin(m.mort.t * 5 + ie) * 0.03, Math.sin(a) * 0.22); });
+      if (m.mort.t > 1.7 && etat === 'jeu') finPartie();
+      continue;
+    }
     if (m.monte) {   // montée au treuil vers l'hélicoptère
       if (!fige) m.monte.t += dt; const k = Math.min(1, m.monte.t / 0.85), ke = k * k * (3 - 2 * k), ht = helico.y - 0.6;
       m.obj.position.set(m.monte.x0 + (helico.x - 0.05 - m.monte.x0) * ke, m.monte.y0 + (ht - m.monte.y0) * ke + Math.sin(k * Math.PI) * 0.5, 0.8 - ke * 1.0);
       m.obj.scale.setScalar(0.88 * (1 - ke * 0.55)); m.obj.rotation.y += dt * 6; m.obj.visible = k < 0.98; m.t += dt * 2; animer(m.obj, m.t, true); continue;
     }
     if (!fige) {
-      m.t += dt;
+      m.t += dt; if (m.pT > 0) m.pT -= dt; majPhoto(m, dt);
       if (m.entree) { m.x += m.dir * 1.3 * dt; if (Math.abs(m.x) < viewW * 0.4) m.entree = false; }
-      else if (affole && etat === 'jeu') { m.pc -= dt; if (m.pc <= 0) { m.pc = rnd(0.25, 0.8); m.dir = Math.random() < 0.5 ? -1 : 1; m.vp = rnd(1.6, 2.9) * (calme() ? 0.8 : 1); } m.x += m.dir * m.vp * dt; }
+      else if (m.photo) { /* immobile : il photographie le volcan */ }
+      else if ((affole || m.pT > 0) && etat === 'jeu') { m.pc -= dt; if (m.pc <= 0) { m.pc = rnd(0.25, 0.8); m.dir = Math.random() < 0.5 ? -1 : 1; m.vp = rnd(1.6, 2.9) * (calme() ? 0.8 : 1); } m.x += m.dir * m.vp * dt; }
       else if (m.choc > 0) { m.choc -= dt; m.x += m.dir * dt * 2.2; } else m.x += m.dir * m.v * dt;
     }
     m.obj.position.z += (0.8 - m.obj.position.z) * Math.min(1, dt * 0.8);
     if (!m.entree && Math.abs(m.x) > viewW * 0.44) { m.dir *= -1; m.x = Math.sign(m.x) * viewW * 0.44; }
-    m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * (affole && etat === 'jeu' ? 14 : 8));
-    const fou = affole && etat === 'jeu'; animer(m.obj, m.t * (fou ? 1.25 : 1), m.choc > 0 || fou);
+    m.obj.position.x = m.x; m.obj.position.y = sol; const cibleRot = m.photo ? Math.PI * 0.96 : m.dir * 1.15; m.obj.rotation.y += (cibleRot - m.obj.rotation.y) * Math.min(1, dt * ((affole || m.pT > 0) && etat === 'jeu' ? 14 : 8));
+    const fou = (affole || m.pT > 0) && etat === 'jeu'; animer(m.obj, m.photo ? 0 : m.t * (fou ? 1.25 : 1), !m.photo && (m.choc > 0 || fou));
+    if (m.photo) { const u = m.obj.userData, k = Math.min(1, m.photo.t / 0.45); u.bras.forEach(br => { br.epaule.rotation.x = -1.35 * k; br.coude.rotation.x = -1.7 * k; }); u.tete.rotation.x = -0.22 * k; }
   }
   bulle.visible = bouclier > 0; if (bouclier > 0) { bulle.position.set(0, sol, 0.5); bulle.scale.set(viewW * 0.5, 2.2, 1.6); bulle.material.opacity = 0.18 + Math.sin(performance.now() / 150) * 0.05 + impactBulle * 0.4; bulle.material.emissiveIntensity = 0.4 + impactBulle * 3; } impactBulle = Math.max(0, impactBulle - dt);
   for (let i = bombes.length - 1; i >= 0; i--) {
@@ -1047,7 +1137,7 @@ function boucle() {
       const P = b.obj.position;
       if (b.obj.visible && P.y < b.haut) {
         P.y += b.vMont * dtb; P.x += b.vx * dtb; b.obj.rotation.z += b.vr * dtb; b.age += dtb; const k = Math.min(1, b.age / 0.5); b.obj.scale.copy(b.base).multiplyScalar(0.25 + 0.75 * (1 - (1 - k) * (1 - k)));
-        if (Math.random() < 0.8) braise(P.x + rnd(-.2, .2), P.y - 0.2, P.z, rnd(-.3, .3), rnd(-1, 0), b.cristal ? [0.4, 1, 0.5] : [1, rnd(0.4, 0.7), 0.1], rnd(0.3, 0.6), rnd(25, 45), 1);
+        if (Math.random() < 0.8) braise(P.x + rnd(-.2, .2), P.y - 0.2, P.z, rnd(-.3, .3), rnd(-1, 0), b.cristal ? [0.6, 0.95, 0.25] : [1, rnd(0.4, 0.7), 0.1], rnd(0.3, 0.6), rnd(25, 45), 1);
       } else {
         b.obj.visible = false; b.attente -= dtb;
         if (b.attente <= 0) { b.montee = false; b.obj.visible = true; b.obj.scale.copy(b.base); P.set(b.cible, b.haut, 0.6); b.vx = 0; b.vy = b.vyChute; }
@@ -1073,20 +1163,21 @@ function boucle() {
     }
     if (p.y < sol + 0.5) {
       serie = 0; b.vivant = false; scene.remove(b.obj); son.impact(b.obj.scale.x); secousse = 0.35; $('flash').style.transition = 'none'; $('flash').style.opacity = 1; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .6s'; $('flash').style.opacity = 0; });
-      tache(p.x);
+      tache(p.x); briserAuSol(b, p.x);
       for (let k = 0; k < 30; k++) braise(p.x, sol + 0.3, 0.8, rnd(-2.5, 2.5), rnd(0.5, 3.5), [1, rnd(0.4, 0.8), 0.1], rnd(0.4, 0.9), rnd(30, 60), 7);
       for (let k = 0; k < 8; k++) fumee(p.x + rnd(-.5, .5), sol + 0.3, 0.6, 140);
-      const touche = marcheurs.find(m => !m.monte && !m.entree && Math.abs(m.x - p.x) < 0.75);
+      const touche = marcheurs.find(m => !m.monte && !m.entree && !m.mort && Math.abs(m.x - p.x) < 0.75);
       if (joue) fxEvt('erreur', new THREE.Vector3(p.x, sol + 0.6, 0.8), { grave: !!touche && !calme() });
-      if (touche && joue) { crier(touche, true); if (!calme()) son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; perdreVie(); }
+      if (touche && joue) { crier(touche, true); if (!calme()) son.touche(); touche.choc = 1.2; touche.dir = Math.sign(touche.x - p.x) || 1; blesser(touche, p.x); perdreVie(); }
     }
   }
   const tps = performance.now() / 1000;
-  rocheMat.emissiveIntensity = 2.0 + Math.sin(tps * 6) * 0.45; matCristal.emissiveIntensity = 0.8 + Math.sin(tps * 7) * 0.25;
+  rocheMat.emissiveIntensity = 2.0 + Math.sin(tps * 6) * 0.45; matsCristal.forEach((mc, ik) => { mc.emissiveIntensity = 0.14 + Math.sin(tps * 7 + ik) * 0.06; });
   secousse = Math.max(0, secousse - dt);
   camera.position.x = Math.sin(tps * 0.23) * 0.35 + (Math.random() - .5) * secousse * 0.5;
   camera.position.y = Math.sin(tps * 0.17) * 0.18 + (Math.random() - .5) * secousse * 0.5;
   camera.lookAt(camera.position.x * 0.6, camera.position.y * 0.6, 0);
+  if (!fige) majEclatsSol(dt);
   for (let i = taches.length - 1; i >= 0; i--) { const t = taches[i]; if (!fige) t.vie -= dt; const k = Math.max(0, t.vie / 3); t.m.material.color.setRGB(3 * k, 2.4 * k * k, 2 * k * k * k); if (t.vie <= 0) { scene.remove(t.m); t.m.geometry.dispose(); t.m.material.dispose(); taches.splice(i, 1); } }
   for (let i = anneaux.length - 1; i >= 0; i--) { const a = anneaux[i]; a.vie -= dt; const k = 1 - a.vie / 0.45; a.m.scale.setScalar(1 + k * 2.6); a.m.material.opacity = (1 - k) * (1 - k); if (a.vie <= 0) { scene.remove(a.m); a.m.geometry.dispose(); a.m.material.dispose(); anneaux.splice(i, 1); } }
   if (joue && bouclier <= 0) for (const b of bombes) { if (!b.vivant || b.morceau || b.montee || b.vy > 0 || b.obj.position.y > sol + 4.5) continue; const m = marcheurs.find(mm => Math.abs(mm.x - b.obj.position.x) < 1.8); if (m && Math.random() < dt * 2.5) crier(m); }
@@ -1144,7 +1235,7 @@ addEventListener('resize', resize); resize(); majVies(); majScore();
 
 requestAnimationFrame(boucle);
 window.kwelafeLiberer = () => { renderer.dispose(); renderer.forceContextLoss(); if (actx) try { actx.close(); } catch (e) {} };
-if (TEST) window.jeu = { crier, voixBuf, lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, eclair, orage, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
+if (TEST) window.jeu = { crier, voixBuf, blesser, foudreAuSol, majPhoto, briserAuSol, eclatsSol, lancerBombe, majPause, cratere, rochesFond, finDeNiveau, poserOlivine, helico, lancerHelico, get sauves() { return sauves; }, eclair, orage, lancerSismo, arreterSismo, tapper, get phase() { return phase; }, save, bombes, marcheurs, toScreen, get etat() { return etat; }, demarrer, finPartie, trancher, forcerBouclier: () => { charge = RECHARGE_BOUCLIER; activerBouclier(); }, get calme() { return calme(); }, get etoilesC() { return etoilesC; }, get S() { return S; }, get vies() { return vies; }, get score() { return score; }, get coupees() { return coupees; }, get niveau() { return niveau; }, set niveau(v) { niveau = v; }, oiseaux, lancerOiseau, get actx() { return actx; }, fx, get arret() { return arret; } };
 </script>
 </body>
 </html>
