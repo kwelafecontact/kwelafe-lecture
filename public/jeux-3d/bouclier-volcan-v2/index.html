@@ -775,8 +775,12 @@ function majPhoto(m, dt) {
 }
 // l'éclair tombe au pied des touristes : ils paniquent quelques secondes
 function foudreAuSol(v) {
-  const x = v.x; for (let i = 0; i < 46; i++) { const a = rnd(0, 3.14), w = rnd(1.5, 6); braise(x, sol + 0.15, 0.9, Math.cos(a) * w * (Math.random() < 0.5 ? -1 : 1), Math.sin(a) * w, i % 3 ? [0.55, 0.8, 1.8] : [2, 2, 2], rnd(0.3, 0.8), rnd(30, 70), 6); }
-  for (let i = 0; i < 6; i++) fumee(x + rnd(-0.4, 0.4), sol + 0.2, 0.7, 110); tache(x); secousse = Math.max(secousse, 0.45);
+  const x = v.x, pied = new THREE.Vector3(x, sol + 0.2, 0.9);
+  fxJoue('etincelles', pied, { intensite: 1.4, couleurs: ['#FFFFFF', '#BFE6FF', '#7FC8FF'] });
+  fxJoue('anneau', pied, { intensite: 0.9, couleurs: ['#FFFFFF', '#9EE7FF'] });
+  fxJoue('fumee', pied, { intensite: 1 }); setTimeout(() => etat === 'jeu' && fxJoue('fumee', pied, { intensite: 0.8 }), 260);
+  for (let i = 0; i < 14; i++) { const a = rnd(0, 3.14), w = rnd(1.5, 5); braise(x, sol + 0.15, 0.9, Math.cos(a) * w * (Math.random() < 0.5 ? -1 : 1), Math.sin(a) * w, [0.55, 0.8, 1.8], rnd(0.3, 0.7), rnd(30, 60), 6); }
+  tache(x); secousse = Math.max(secousse, 0.45);
   for (const m of marcheurs) { if (m.monte || m.mort) continue; const d = Math.abs(m.x - x); if (d < 3.2) { m.pT = rnd(3, 4.5) * (d < 1 ? 1.15 : 0.85); m.photo = null; m.pc = 0; m.dir = Math.sign(m.x - x) || (Math.random() < 0.5 ? -1 : 1); } }
   for (const m of marcheurs.filter(q => q.pT > 0).sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x)).slice(0, 2)) setTimeout(() => crier(m, true), rnd(100, 600));
 }
